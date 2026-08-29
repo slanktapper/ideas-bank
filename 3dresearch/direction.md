@@ -42,8 +42,11 @@ Nothing to run yet. Read the notes in this folder:
 - `printer-shortlist.md` — candidate machines, comparison, and a recommendation.
 
 ## Open questions
-- **ABS/ASA, or is PETG enough?** The one question that decides the recommendation,
-  because it decides whether an actively heated chamber is worth paying for.
+- **ABS/ASA, or is PETG enough?** Decides whether an actively heated chamber is worth
+  paying for — though the X2D supplies one inside budget, which makes buying it a way
+  of not having to answer the question.
+- Will multi-material supports ever actually be used? Decides whether the X2D's dual
+  nozzle is a feature or just maintenance.
 - How cold does the garage actually get in winter? Below ~10 °C changes the answer.
 - Is multi-colour printing wanted? Only really easy on the Bambu AMS route.
 - Does this stay notes-only, or does it want structured data (a table of printers with
