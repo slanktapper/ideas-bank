@@ -1,6 +1,6 @@
 # 3dresearch
 
-**Status:** idea
+**Status:** working
 
 ## What it is
 A place to research 3D printers — the machines, not the models they produce.
@@ -36,13 +36,18 @@ produces. If it later needs code — a scraper, a comparison table generator, a 
 calculator — the stack gets picked then, and this section gets filled in.
 
 ## How to run
-Nothing to run yet. Read the notes in this folder.
+Nothing to run yet. Read the notes in this folder:
+
+- `requirements.md` — the buying brief. Everything else is judged against it.
+- `printer-shortlist.md` — candidate machines, comparison, and a recommendation.
 
 ## Open questions
-- What is the research actually for — buying a first printer, upgrading, or general
-  understanding? That decides how deep to go and where to stop.
-- FDM, resin, or both? Both is a much bigger surface area.
-- Is there a budget or a specific use case (functional parts, miniatures, prototypes)
-  to aim the comparisons at?
+- **ABS/ASA, or is PETG enough?** The one question that decides the recommendation,
+  because it decides whether an actively heated chamber is worth paying for.
+- How cold does the garage actually get in winter? Below ~10 °C changes the answer.
+- Is multi-colour printing wanted? Only really easy on the Bambu AMS route.
 - Does this stay notes-only, or does it want structured data (a table of printers with
   specs and prices) that would justify a small tool?
+- Once a printer is chosen: does model creation belong here, or in its own project?
+  Parametric CAD as code (OpenSCAD, CadQuery) can generate printable parts without a
+  GUI, which makes it a plausible sibling project.
