@@ -6,8 +6,11 @@
 A place to research 3D printers — the machines, not the models they produce.
 Gathering what is worth knowing before spending money or time: which printers are
 worth buying, how the technologies differ, what materials suit what jobs, what goes
-wrong and why. For now it is notes and findings; whether it grows any code depends on
-what the research turns up.
+wrong and why.
+
+The first question — which printer to buy — is settled: a Bambu Lab X2D, for an
+unheated garage, aimed at functional parts. See `decision.md`. The project now
+carries that reasoning forward into running the machine well.
 
 ## Why
 3D printer information is scattered across vendor marketing, forum threads, YouTube
@@ -38,19 +41,18 @@ calculator — the stack gets picked then, and this section gets filled in.
 ## How to run
 Nothing to run yet. Read the notes in this folder:
 
-- `requirements.md` — the buying brief. Everything else is judged against it.
-- `printer-shortlist.md` — candidate machines, comparison, and a recommendation.
+- `decision.md` — **the printer chosen, and why.** Start here.
+- `requirements.md` — the buying brief the decision was judged against.
+- `printer-shortlist.md` — the candidates and comparison that led to it.
+- `setup.md` — running an X2D in an unheated garage; humidity, and the buy list.
 
 ## Open questions
-- **ABS/ASA, or is PETG enough?** Decides whether an actively heated chamber is worth
-  paying for — though the X2D supplies one inside budget, which makes buying it a way
-  of not having to answer the question.
-- Will multi-material supports ever actually be used? Decides whether the X2D's dual
-  nozzle is a feature or just maintenance.
-- How cold does the garage actually get in winter? Below ~10 °C changes the answer.
-- Is multi-colour printing wanted? Only really easy on the Bambu AMS route.
-- Does this stay notes-only, or does it want structured data (a table of printers with
-  specs and prices) that would justify a small tool?
-- Once a printer is chosen: does model creation belong here, or in its own project?
-  Parametric CAD as code (OpenSCAD, CadQuery) can generate printable parts without a
-  GUI, which makes it a plausible sibling project.
+- **X2D base or Combo?** The only live buying decision. See `setup.md` — the AMS 2 Pro
+  is a filament dryer as much as a colour changer, which matters in a damp garage.
+- What are the garage's actual temperature and humidity across a year? Worth logging
+  rather than guessing; it decides what materials the space can realistically support.
+- Does model creation belong in this project or its own? Parametric CAD as code
+  (OpenSCAD, CadQuery) can generate printable parts without a GUI, which makes it a
+  plausible sibling project rather than a widening of this one.
+- Does this stay notes-only, or does it want structured data and tooling? So far
+  prose has been sufficient.
