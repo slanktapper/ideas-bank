@@ -1,7 +1,10 @@
 # Printer shortlist
 
-Researched 2026-08-29 against `requirements.md`. Prices are UK retail as found on
-that date and move constantly — re-check before buying.
+Researched 2026-08-29 MDT against `requirements.md`.
+
+> **Prices below are GBP from UK retailers and are NOT valid here.** This research was
+> done before the Canadian context was established. The figures show only how the
+> machines compare to each other. For real prices see `order-review.md` — all CAD.
 
 ## The headline finding
 
