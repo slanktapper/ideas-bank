@@ -57,16 +57,33 @@ than left contradicting the purchase. Worth deciding which is actually true befo
 ordering, because it is the difference between a machine bought for engineering work
 and one bought for colourful making.
 
-## Suggested change
+## Suggested change — it costs less, not more
 
-Keep the bundle. Swap **two or three** of the eight PLA spools for:
+Prices from the store's filament collection (see `filament-catalogue.md`) remove any
+cost argument for all-PLA: **PETG Basic at $13.74 is cheaper than PLA Basic, and ABS
+at $14.29 is the same price.**
 
-- **PETG × 2** (black and one colour) — the functional default.
-- **ASA × 1** — optional, but it is what the chamber was bought for, and ASA is
-  UV-stable so parts can live outdoors.
+Keep the bundle. Change the eight spools to:
 
-That still fills all eight slots, costs about the same, and makes the material
-lineup match the stated purpose. Five or six PLA colours is still plenty.
+| | Qty | Unit | Line |
+| --- | --- | --- | --- |
+| PLA Basic (colours) | 4 | $14.29 | $57.16 |
+| PETG Basic | 3 | $13.74 | $41.22 |
+| ABS | 1 | $14.29 | $14.29 |
+| **Total** | **8** | | **$112.67** |
+
+Against the current $131.92 for eight PLA, that is **$19.25 cheaper** while covering
+functional strength and finally using the heated chamber. All eight slots still full,
+four PLA colours still available.
+
+**ABS rather than ASA.** ASA is $38.99 — nearly three times PLA. Its advantage is UV
+stability for outdoor parts; indoors ABS does the heat-resistance job for a third of
+the price. Add ASA later if something needs to live outside.
+
+**Not included, worth considering:** support material for the second nozzle — Support
+for PLA (New Version) at $29.99, or Support for PLA/PETG at $44.99. The dual nozzle's
+whole purpose is clean peelable supports, and nothing in the order feeds it. Optional
+rather than essential, since single-material functional parts rarely need it.
 
 **Tip for two AMS units:** dedicate one to PLA and the other to higher-temperature
 materials. Drying cycles for PETG/ABS run hotter than PLA can survive, so keeping
