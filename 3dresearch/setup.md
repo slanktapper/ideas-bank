@@ -33,31 +33,19 @@ generally runs drier, because warming air lowers its relative humidity — so a
 controlled 10–20 °C works in your favour here. Whether it lands inside the 30–45 %
 ideal band is worth measuring rather than assuming.
 
-## The Combo case, weakened
+## The Combo case — resolved by the order
 
 The **AMS 2 Pro has active filament drying built in** — a heating module with
 controlled intake and exhaust vents, drying to 65 °C, rotating spools for evenness,
 and RFID auto-matching of drying settings for Bambu filament.
 
-That was the argument for paying ~£200 more: in a damp garage the AMS is a filament
-dryer as much as a colour changer, addressing the biggest environmental risk to your
-prints.
+**The order resolves this.** The Print More Bundle includes *two* AMS 2 Pro units —
+eight spools kept in sealed, actively dried enclosures. Whatever the workshop's
+humidity turns out to be, the filament in regular use is protected.
 
-**Climate control undermines that argument.** If the space is drier than an unheated
-garage — which a heated space usually is — then the drying function is a convenience
-rather than a fix for a real problem, and the Combo reverts to being a ~£200
-multi-colour upgrade. Multi-colour was explicitly not a priority.
-
-**Revised recommendation: measure first, then decide.** Buy a £10 hygrometer, put it
-in the space, and look at it for a fortnight.
-
-- **Consistently under ~50 % RH** → base X2D, keep the £200. Airtight boxes with
-  desiccant handle storage perfectly well at that humidity.
-- **Regularly above ~55–60 %** → the Combo earns its place, or buy a standalone
-  dryer later if multi-colour still holds no appeal.
-
-The AMS can also be added afterwards. There is no penalty for starting with the base
-machine and buying one later if the readings justify it.
+A hygrometer (about $20) is still worth having, but it is now a diagnostic rather
+than a purchasing decision: it tells you whether spools stored *outside* the AMS need
+better protection.
 
 One caveat: drying ABS or PETG runs hotter than PLA and TPU can survive. Remove
 PLA and TPU spools from the AMS before running a high-temperature dry cycle.
@@ -72,8 +60,8 @@ Essential:
 - **Airtight storage + desiccant** — even with an AMS, spools not loaded need it.
   4-litre food containers with reusable desiccant work as well as anything sold for
   the purpose.
-- **Hygrometer** — now the highest-value £10 you can spend, because it decides the
-  £200 Combo question. Buy it before the printer if possible.
+- **Hygrometer** (~$20) — tells you whether spools stored outside the AMS units need
+  more protection.
 
 Worth having early:
 
@@ -84,9 +72,9 @@ Worth having early:
 
 ## First things to do
 
-1. **Log humidity in the space for two weeks** — ideally starting now, before the
-   printer arrives. This decides base vs Combo.
-2. Print in PLA first to verify the machine.
+1. Print in PLA first to verify the machine.
+2. Log humidity in the space, to know whether spools outside the AMS units need
+   airtight storage.
 3. Enable **LAN-only mode** if the cloud dependency matters to you.
 4. Only then move to PETG, and to ABS/ASA after that.
 

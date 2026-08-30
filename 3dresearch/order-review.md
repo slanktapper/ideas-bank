@@ -4,15 +4,12 @@ Cart reviewed 2026-08-30 MDT, before purchase. **All prices CAD.**
 
 ## What is in it
 
-| Item | Qty | Unit CAD | Line CAD | ≈ GBP |
-| --- | --- | --- | --- | --- |
-| X2D Print More Bundle | 1 | $1,349.00 | $1,349.00 | £716 |
-| Extended Warranty Service for X2D | 1 | $89.00 | $89.00 | £47 |
-| PLA Basic 1 kg — 8 colours | 8 | $16.49 | $131.92 | £70 |
-| **Total** | | | **$1,569.92** | **£834** |
-
-GBP figures at CAD→GBP 0.531 (28 Aug 2026) and included only to compare against the
-budget, which was originally stated in pounds. Rates move; treat as indicative.
+| Item | Qty | Unit | Line |
+| --- | --- | --- | --- |
+| X2D Print More Bundle | 1 | $1,349.00 | $1,349.00 |
+| Extended Warranty Service for X2D | 1 | $89.00 | $89.00 |
+| PLA Basic 1 kg — 8 colours | 8 | $16.49 | $131.92 |
+| **Total** | | | **$1,569.92** |
 
 Filament colours: Hot Pink, Pumpkin Orange, Indigo Purple, Mistletoe Green, Red,
 Blue, Jade White, Black. All PLA Basic. Combo Deal takes each from $29.99 to
@@ -41,7 +38,7 @@ much better heat resistance, still easy to print.
 
 ## Issue 2: nothing in the order needs the heated chamber
 
-The X2D was chosen over the ~£90-cheaper P2S specifically for its 65 °C active
+The X2D was chosen over the cheaper P2S specifically for its 65 °C active
 chamber, which exists to print ABS, ASA, PC and nylon without warping. The order
 contains none of those. As it stands, the machine's deciding feature goes unused, and
 everything in the cart would have printed fine on the cheaper printer.
@@ -92,19 +89,16 @@ service from Alberta is not trivial. Reasonable, not essential.
 
 ## Budget note — the order is within budget
 
-The requirement was £500–900 for the printer. The Print More Bundle at CAD $1,349 is
-roughly **£716**, and the entire order including warranty and 8 kg of filament comes
-to about **£834**. Both sit inside the original range.
+The budget is **$940–1,695 CAD** for the printer (see `requirements.md`). The Print
+More Bundle at **$1,349** sits comfortably inside it, and the whole order including
+warranty and 8 kg of filament comes to **$1,569.92**.
 
 An earlier version of this note called the order "substantially above budget". That
-was wrong: it read the prices as USD when they are CAD.
+was wrong — it read the prices as USD.
 
-Two consequences worth noting:
-
-- **The filament is cheap.** CAD $16.49/kg is about £8.76/kg for branded filament —
-  a good price. It also means the suggested spool swaps cost effectively nothing, so
-  there is no reason to compromise on the material mix.
-- **The warranty is proportionally smaller** than it first appeared, at roughly £47.
+Worth noting: at **$16.49/kg** the filament is cheap for branded spools, so the
+suggested material swaps cost effectively nothing. There is no reason to compromise
+on the material mix to save money.
 
 ## Where to buy
 

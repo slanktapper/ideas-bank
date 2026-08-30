@@ -5,7 +5,11 @@ which stays as the record of how this was reached.
 
 ## What was chosen
 
-Bambu Lab X2D. ~£569 base, ~£769 for the Combo with AMS 2 Pro.
+Bambu Lab X2D. Ordered as the **X2D Print More Bundle at $1,349 CAD** — see
+`order-review.md`.
+
+(GBP figures elsewhere in this file come from the original UK-retailer research and
+are not prices available in Canada.)
 
 > **Premise revised 2026-08-30 MDT.** This decision was made on the assumption of an
 > unheated garage. The space is in fact climate controlled at 10–20 °C year round,
@@ -20,8 +24,7 @@ Bambu Lab X2D. ~£569 base, ~£769 for the Combo with AMS 2 Pro.
 - **It removes a decision instead of forcing one.** The research had stalled on
   "will you actually print ABS/ASA, or is PETG enough?" The X2D makes that question
   moot — the capability is present either way.
-- **In budget.** £569 against a £500–900 range, leaving room for the accessories
-  that materially affect print quality.
+- **In budget.** $1,349 against a $940–1,695 CAD range.
 - **300 °C nozzle** covers ABS, ASA, PC and nylon. Only a narrow band of exotic
   materials needs more.
 
@@ -57,5 +60,6 @@ So the honest position:
 
 ## Still to decide
 
-**Base (~£569) or Combo with AMS 2 Pro (~£769)?** The case for the Combo was built on
-a damp garage, and climate control undermines it. See `setup.md`.
+**Resolved.** The Print More Bundle was chosen: X2D plus *two* AMS 2 Pro units and a
+Filament Track Switch, for eight filament slots. That also settles the humidity
+question — eight spools live in active drying. See `order-review.md`.
