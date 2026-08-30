@@ -42,6 +42,7 @@ thin walls; PETG flexes instead. Better failure mode for something holding heavy
   PETG Basic being the cheapest filament on the store is a real advantage here.
 - **Gridfinity** is the de-facto standard modular bin system — worth adopting rather
   than designing a bespoke grid, since thousands of compatible bins already exist.
+  See `gridfinity.md` for the spec, the generators, and what a drawer actually costs.
 - Print flat on the bed. Low infill (10–15 %) is plenty; wall count matters far more
   than infill for stiffness — use 3.
 - PETG has slightly more dimensional variance than PLA. **Print one test bin and

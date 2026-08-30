@@ -30,6 +30,9 @@ What this does:
 What this deliberately does not do:
 
 - Not a 3D modelling or slicing project — nothing here designs or prepares models.
+  Adopting an existing printable standard is in scope — `gridfinity.md` covers what
+  a grid system costs to print and how to set it up — but authoring models from
+  scratch is not.
 - Not printer firmware, control software, or a hardware build.
 - Not a public review site or buyer's guide for anyone else; it is personal research.
 
@@ -49,6 +52,7 @@ Nothing to run yet. Read the notes in this folder:
 - `filament-catalogue.md` — Bambu CA filament prices, captured 2026-08-30 MDT.
 - `materials.md` — which filament for which job, with reasoning.
 - `filament-glossary.md` — one line on every filament in the Bambu CA range.
+- `gridfinity.md` — the modular bin standard: spec, generators, cost, print settings.
 
 ## Open questions
 - **Is this a functional-parts machine or a multi-colour one?** The order (8 slots,
@@ -58,6 +62,11 @@ Nothing to run yet. Read the notes in this folder:
   which also settles the humidity question — eight spools live in active drying.
 - Does model creation belong in this project or its own? Parametric CAD as code
   (OpenSCAD, CadQuery) can generate printable parts without a GUI, which makes it a
-  plausible sibling project rather than a widening of this one.
+  plausible sibling project rather than a widening of this one. Gridfinity does not
+  force the question — its generators produce STLs from parameters, no CAD needed —
+  but designing bespoke tool-shaped inserts would.
+- **Which drawer gets organised first?** Nothing in `gridfinity.md` can be sized
+  until one is measured. Magnets vs no magnets, and which baseplate style, follow
+  from that.
 - Does this stay notes-only, or does it want structured data and tooling? So far
   prose has been sufficient.
