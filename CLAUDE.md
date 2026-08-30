@@ -150,6 +150,30 @@ Decisions not yet made. Things to revisit.
 Keep `direction.md` current as the idea moves. When a project's direction changes,
 update the file in the same commit as the change.
 
+## Time and dates
+
+**All times and dates in this repository are Alberta, Canada time** — the
+`America/Edmonton` zone (MST, UTC−7; MDT, UTC−6 during daylight saving). This covers
+everything a person reads: answers in conversation, `direction.md` files, notes,
+status updates, and any timestamp you quote back from git, logs, or a file listing.
+
+- The session container's clock is usually **UTC**. Convert before reporting — never
+  hand the user a raw UTC time and leave the arithmetic to them.
+- Always label the zone: `2026-08-29 17:16 MDT`, not a bare `17:16`.
+- Relative words — "today", "yesterday", "this morning" — resolve against Alberta
+  time, not the container's clock. They can disagree about which day it is.
+- Convert with the zone name so daylight saving is handled for you:
+
+  ```bash
+  TZ=America/Edmonton date                                        # now, in Alberta
+  TZ=America/Edmonton date -d '2026-08-29 23:16:54 UTC'           # a known UTC instant
+  git log -1 --date=iso-local --format='%cd'                      # with TZ set in the env
+  ```
+
+- Inside code and stored data, keep timestamps in **UTC or ISO 8601 with an explicit
+  offset**, and convert only where they are displayed. Storing wall-clock Alberta
+  times with no offset loses an hour twice a year.
+
 ## Git conventions
 
 - One project per commit wherever possible. A commit touching three project folders
@@ -170,3 +194,4 @@ update the file in the same commit as the change.
 | Root directory | Direction `.md` files and project folders only |
 | Project folder | Self-contained; conventions come from inside it |
 | New idea | Short name → folder → `direction.md` → registry row |
+| Times and dates | Alberta time (`America/Edmonton`), zone always labelled |
