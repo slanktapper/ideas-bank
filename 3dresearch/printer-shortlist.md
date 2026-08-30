@@ -1,6 +1,6 @@
 # Printer shortlist
 
-Researched 2026-08-29 against `requirements.md`. Prices are UK retail as found on
+Researched 2026-08-29 MDT against `requirements.md`. Prices are UK retail as found on
 that date and move constantly — re-check before buying.
 
 ## The headline finding

@@ -1,6 +1,6 @@
 # Requirements
 
-Settled 2026-08-29. These drive every recommendation in `printer-shortlist.md`.
+Settled 2026-08-29 MDT. These drive every recommendation in `printer-shortlist.md`.
 Revisit them before acting on any conclusion — if one of these changes, the answer
 changes.
 

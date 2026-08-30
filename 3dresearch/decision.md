@@ -1,6 +1,6 @@
 # Decision: Bambu Lab X2D
 
-**Decided 2026-08-30.** Supersedes the open comparison in `printer-shortlist.md`,
+**Decided 2026-08-30 MDT.** Supersedes the open comparison in `printer-shortlist.md`,
 which stays as the record of how this was reached.
 
 ## What was chosen

@@ -1,6 +1,6 @@
 # Setup: X2D in an unheated garage
 
-Written 2026-08-30, after the printer decision. The chamber heater solves the *cold*
+Written 2026-08-30 MDT, after the printer decision. The chamber heater solves the *cold*
 problem. It does not solve the *damp* problem, and in a garage that is the one that
 will actually cost you prints.
 
