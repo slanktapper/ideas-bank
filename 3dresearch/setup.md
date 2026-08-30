@@ -1,10 +1,19 @@
 # Setup: X2D in an unheated garage
 
-Written 2026-08-30 MDT, after the printer decision. The chamber heater solves the *cold*
-problem. It does not solve the *damp* problem, and in a garage that is the one that
-will actually cost you prints.
+Written 2026-08-30 MDT, after the printer decision. Revised the same day once the
+space turned out to be climate controlled at 10–20 °C rather than unheated.
 
-## Humidity is the real garage problem
+## What climate control already solves
+
+Temperature is handled. At 10–20 °C the X2D's active chamber has an easy job, and
+even a passive enclosure would have coped with most work. Cold-start and condensation
+worries largely go away too, since the space is not swinging between freezing and warm.
+
+What climate control may *not* handle is humidity — that depends on whether the
+control is temperature-only or manages moisture as well. The section below still
+applies in full if it is temperature-only, and mostly falls away if it is not.
+
+## Humidity, if it is not controlled
 
 Filament is hygroscopic — it pulls moisture out of the air. Wet filament causes
 stringing, popping and crackling during extrusion, poor layer adhesion, and outright
@@ -19,26 +28,36 @@ The numbers:
 | Above 55–60 % | Moisture absorption begins to show in prints |
 | Around 70 % | Rapid absorption; stringing, popping, weak layers |
 
-A UK garage sits above 60 % RH for much of the year. Assume filament left out will
-degrade.
+An unheated UK garage sits above 60 % RH for much of the year. A *heated* space
+generally runs drier, because warming air lowers its relative humidity — so a
+controlled 10–20 °C works in your favour here. Whether it lands inside the 30–45 %
+ideal band is worth measuring rather than assuming.
 
-This also affects **the machine**, not just the filament: moving a cold printer into
-warm humid air, or heating a cold damp garage quickly, risks condensation on
-electronics. Let temperature changes happen slowly.
-
-## Why this argues for the Combo
+## The Combo case, weakened
 
 The **AMS 2 Pro has active filament drying built in** — a heating module with
 controlled intake and exhaust vents, drying to 65 °C, rotating spools for evenness,
 and RFID auto-matching of drying settings for Bambu filament.
 
-That reframes the ~£200 Combo premium. It is usually sold as a multi-colour upgrade,
-which is not a priority for functional parts. But in a damp garage it is also a
-**filament dryer that stores four spools in a sealed, actively dried enclosure** —
-addressing the single biggest environmental risk to your prints. Bought separately, a
-decent filament dryer plus dry storage would eat a meaningful share of that £200.
+That was the argument for paying ~£200 more: in a damp garage the AMS is a filament
+dryer as much as a colour changer, addressing the biggest environmental risk to your
+prints.
 
-**Recommendation: the Combo, for the drying rather than the colours.**
+**Climate control undermines that argument.** If the space is drier than an unheated
+garage — which a heated space usually is — then the drying function is a convenience
+rather than a fix for a real problem, and the Combo reverts to being a ~£200
+multi-colour upgrade. Multi-colour was explicitly not a priority.
+
+**Revised recommendation: measure first, then decide.** Buy a £10 hygrometer, put it
+in the space, and look at it for a fortnight.
+
+- **Consistently under ~50 % RH** → base X2D, keep the £200. Airtight boxes with
+  desiccant handle storage perfectly well at that humidity.
+- **Regularly above ~55–60 %** → the Combo earns its place, or buy a standalone
+  dryer later if multi-colour still holds no appeal.
+
+The AMS can also be added afterwards. There is no penalty for starting with the base
+machine and buying one later if the readings justify it.
 
 One caveat: drying ABS or PETG runs hotter than PLA and TPU can survive. Remove
 PLA and TPU spools from the AMS before running a high-temperature dry cycle.
@@ -53,7 +72,8 @@ Essential:
 - **Airtight storage + desiccant** — even with an AMS, spools not loaded need it.
   4-litre food containers with reusable desiccant work as well as anything sold for
   the purpose.
-- **Humidity indicator** — cheap, and tells you whether any of this is working.
+- **Hygrometer** — now the highest-value £10 you can spend, because it decides the
+  £200 Combo question. Buy it before the printer if possible.
 
 Worth having early:
 
@@ -64,9 +84,9 @@ Worth having early:
 
 ## First things to do
 
-1. Print in PLA first, indoors-grade expectations, to verify the machine.
-2. Log garage temperature and humidity across a few weeks before drawing conclusions
-   about what the space can support.
+1. **Log humidity in the space for two weeks** — ideally starting now, before the
+   printer arrives. This decides base vs Combo.
+2. Print in PLA first to verify the machine.
 3. Enable **LAN-only mode** if the cloud dependency matters to you.
 4. Only then move to PETG, and to ABS/ASA after that.
 

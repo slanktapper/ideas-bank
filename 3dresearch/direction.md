@@ -47,10 +47,11 @@ Nothing to run yet. Read the notes in this folder:
 - `setup.md` — running an X2D in an unheated garage; humidity, and the buy list.
 
 ## Open questions
-- **X2D base or Combo?** The only live buying decision. See `setup.md` — the AMS 2 Pro
-  is a filament dryer as much as a colour changer, which matters in a damp garage.
-- What are the garage's actual temperature and humidity across a year? Worth logging
-  rather than guessing; it decides what materials the space can realistically support.
+- **X2D base or Combo?** The only live buying decision, and now it hangs on one
+  measurement: humidity in the workshop. See `setup.md`. Temperature is settled —
+  the space is controlled at 10–20 °C.
+- Is the climate control temperature-only, or does it manage humidity too? Decides
+  whether the AMS 2 Pro's drying function solves a real problem or none.
 - Does model creation belong in this project or its own? Parametric CAD as code
   (OpenSCAD, CadQuery) can generate printable parts without a GUI, which makes it a
   plausible sibling project rather than a widening of this one.
