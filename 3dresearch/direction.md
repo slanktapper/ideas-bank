@@ -44,14 +44,15 @@ Nothing to run yet. Read the notes in this folder:
 - `decision.md` — **the printer chosen, and why.** Start here.
 - `requirements.md` — the buying brief the decision was judged against.
 - `printer-shortlist.md` — the candidates and comparison that led to it.
-- `setup.md` — running an X2D in an unheated garage; humidity, and the buy list.
+- `setup.md` — running an X2D in the workshop; humidity, and the buy list.
+- `order-review.md` — review of the actual cart before purchase.
 
 ## Open questions
-- **X2D base or Combo?** The only live buying decision, and now it hangs on one
-  measurement: humidity in the workshop. See `setup.md`. Temperature is settled —
-  the space is controlled at 10–20 °C.
-- Is the climate control temperature-only, or does it manage humidity too? Decides
-  whether the AMS 2 Pro's drying function solves a real problem or none.
+- **Is this a functional-parts machine or a multi-colour one?** The order (8 slots,
+  8 PLA colours, no PETG or ABS) contradicts the requirements on both counts. One of
+  the two needs correcting. See `order-review.md`.
+- Base vs Combo is **resolved**: the Print More Bundle carries two AMS 2 Pro units,
+  which also settles the humidity question — eight spools live in active drying.
 - Does model creation belong in this project or its own? Parametric CAD as code
   (OpenSCAD, CadQuery) can generate printable parts without a GUI, which makes it a
   plausible sibling project rather than a widening of this one.
