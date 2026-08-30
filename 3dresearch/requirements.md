@@ -8,18 +8,19 @@ changes.
 | Requirement | Decision | Consequence |
 | --- | --- | --- |
 | What gets printed | Functional parts; prototyping and general making | FDM, not resin. Strength and dimensional accuracy over surface finish. |
-| Budget (printer only) | £500–900 as originally stated — **superseded**, see below | The actual order is $1,349 for the printer bundle. |
+| Budget (printer only) | £500–900 | **Met.** The chosen bundle is CAD $1,349 ≈ £716; the whole order ≈ £834. |
 | Location | Garage / workshop, **climate controlled, 10–20 °C year round** | Not a cold space. An enclosure is still wanted, but active chamber heating is an upgrade rather than a necessity. Noise and fumes are not constraints. |
 | Tinkering appetite | Some tinkering fine | Calibration and maintenance acceptable; the machine should not itself be the project. |
 
 ## Region and currency correction
 
 The shortlist research priced everything in **GBP from UK retailers**. That was an
-unfounded assumption on my part — this repository's own conventions place the user in
-**Alberta, Canada**, and the actual store pricing is in **USD**. UK figures in
-`printer-shortlist.md` should be treated as indicative of the machines' relative
-positions only, not as prices available here. North American pricing, availability
-and duties differ.
+unfounded assumption — the user is in **Alberta, Canada** and buys in **CAD**. UK
+figures in `printer-shortlist.md` indicate the machines' relative positions only, not
+prices available here.
+
+Canadian retailers (NEX3D, Spool3D in Calgary, Voxel Factory, Shop3D.ca, Digitmakers)
+avoid cross-border duties; Spool3D offers local pickup in Alberta.
 
 ## What these rule out
 

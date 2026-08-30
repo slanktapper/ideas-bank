@@ -1,15 +1,18 @@
 # Order review
 
-Cart reviewed 2026-08-30 MDT, before purchase.
+Cart reviewed 2026-08-30 MDT, before purchase. **All prices CAD.**
 
 ## What is in it
 
-| Item | Qty | Unit | Line |
-| --- | --- | --- | --- |
-| X2D Print More Bundle | 1 | $1,349.00 | $1,349.00 |
-| Extended Warranty Service for X2D | 1 | $89.00 | $89.00 |
-| PLA Basic 1 kg — 8 colours | 8 | $16.49 | $131.92 |
-| **Total** | | | **$1,569.92** |
+| Item | Qty | Unit CAD | Line CAD | ≈ GBP |
+| --- | --- | --- | --- | --- |
+| X2D Print More Bundle | 1 | $1,349.00 | $1,349.00 | £716 |
+| Extended Warranty Service for X2D | 1 | $89.00 | $89.00 | £47 |
+| PLA Basic 1 kg — 8 colours | 8 | $16.49 | $131.92 | £70 |
+| **Total** | | | **$1,569.92** | **£834** |
+
+GBP figures at CAD→GBP 0.531 (28 Aug 2026) and included only to compare against the
+budget, which was originally stated in pounds. Rates move; treat as indicative.
 
 Filament colours: Hot Pink, Pumpkin Orange, Indigo Purple, Mistletoe Green, Red,
 Blue, Jade White, Black. All PLA Basic. Combo Deal takes each from $29.99 to
@@ -87,11 +90,34 @@ service from Alberta is not trivial. Reasonable, not essential.
   raised in `setup.md` far better than expected — but a ninth spool needs somewhere
   dry to live.
 
-## Budget note
+## Budget note — the order is within budget
 
-`requirements.md` records a £500–900 budget for the printer. This order is $1,349 for
-the printer bundle alone, plus warranty and filament — substantially above that, in a
-different currency. See the region correction in `requirements.md`.
+The requirement was £500–900 for the printer. The Print More Bundle at CAD $1,349 is
+roughly **£716**, and the entire order including warranty and 8 kg of filament comes
+to about **£834**. Both sit inside the original range.
+
+An earlier version of this note called the order "substantially above budget". That
+was wrong: it read the prices as USD when they are CAD.
+
+Two consequences worth noting:
+
+- **The filament is cheap.** CAD $16.49/kg is about £8.76/kg for branded filament —
+  a good price. It also means the suggested spool swaps cost effectively nothing, so
+  there is no reason to compromise on the material mix.
+- **The warranty is proportionally smaller** than it first appeared, at roughly £47.
+
+## Where to buy
+
+Canadian retailers avoid cross-border delays and duties, and one is local: **Spool3D
+is Calgary-based**, with in-store pickup. That is worth weighing — local support makes
+warranty service far less painful than shipping a machine of this size, and it
+slightly reduces the case for the extended warranty rather than strengthening it.
+
+NEX3D lists the plain X2D Combo (single AMS) at CAD $1,199. If the same store prices
+the Print More Bundle near $1,349, the second AMS 2 Pro plus Filament Track Switch is
+costing about $150 — well below what a standalone AMS 2 Pro sells for, and a genuinely
+good deal. Worth confirming the Combo price at whichever store you order from, since
+comparing across retailers is not like for like.
 
 ## Sources
 
