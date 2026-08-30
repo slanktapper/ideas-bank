@@ -47,6 +47,7 @@ Nothing to run yet. Read the notes in this folder:
 - `setup.md` — running an X2D in the workshop; humidity, and the buy list.
 - `order-review.md` — review of the actual cart before purchase.
 - `filament-catalogue.md` — Bambu CA filament prices, captured 2026-08-30 MDT.
+- `materials.md` — which filament for which job, with reasoning.
 
 ## Open questions
 - **Is this a functional-parts machine or a multi-colour one?** The order (8 slots,
