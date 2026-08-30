@@ -2,6 +2,67 @@
 
 Cart reviewed 2026-08-30 MDT, before purchase. **All prices CAD.**
 
+## Revised cart — 2026-08-30 MDT
+
+| Item | Qty | Unit | Line |
+| --- | --- | --- | --- |
+| X2D Print More Bundle | 1 | $1,349.00 | $1,349.00 |
+| Extended Warranty for X2D | 1 | $89.00 | $89.00 |
+| PETG Basic (Reflex Blue, Orange, Yellow, Red, White, Black) | 6 | $15.94 | $95.64 |
+| ABS **Refill** (Navy Blue, Orange, Red) | 3 | $14.29 | $42.87 |
+| ASA (White) | 1 | $38.99 | $38.99 |
+| PLA Basic (Indigo Purple, Hot Pink) | 2 | $16.49 | $32.98 |
+| **Total** | | | **$1,648.48** |
+
+**The material mix is now right.** PETG dominant, ABS present to use the chamber,
+PLA reduced to two colours, ASA for outdoor work. This matches `requirements.md`
+where the previous all-PLA order did not.
+
+### Blocking problem: the ABS refills have no spools
+
+The three ABS items are **Refill** SKUs — filament coils with no spool. They cannot
+be loaded into the AMS as they are; they must be mounted on a Bambu Reusable Spool
+first. None are in the cart, so as ordered these three spools arrive unusable.
+
+Worse, the spool type matters:
+
+| Spool | Rated | Material | Works with |
+| --- | --- | --- | --- |
+| Low Temperature (white) | ≤ 70 °C | ABS | PLA and PETG **only** |
+| **High Temperature (black)** | ≤ 90 °C | ABS+PC | ABS, ASA, engineering filaments |
+
+**ABS refills need the High Temperature spool.** The plain "Bambu Reusable Spool"
+at $14.99 is the low-temperature one and is the wrong part. Add three high-temp
+spools, or switch the ABS lines to spooled rather than refill.
+
+### Twelve spools, eight slots
+
+Two AMS 2 Pro units hold eight. Twelve spools means **four live outside**, without
+active drying — so the airtight boxes and desiccant from `setup.md` are needed after
+all, and the hygrometer becomes worth having again. Keep PETG and ABS (the least
+hygroscopic of what is here) as the ones stored outside if any must be.
+
+### Possibly leaving money on the table
+
+The cart shows **45 % off** ("45% off unlocked"). The store's own collection page
+listed the same materials at deeper discounts:
+
+| | Cart | Collection page | Depth |
+| --- | --- | --- | --- |
+| PLA Basic | $16.49 | $14.29 | 45 % vs 52 % |
+| PETG Basic | $15.94 | $13.74 | 45 % vs 53 % |
+
+That is $2.20 a spool — roughly **$18 across the eight affected spools**. The "45% off
+unlocked" badge has a chevron, implying further tiers. Worth opening it before
+checkout to see whether another spool or two unlocks the next tier.
+
+### Still no support material
+
+Nothing feeds the second nozzle. Support for PLA/PETG is $44.99, Support for ABS
+$19.99. Optional, but the dual nozzle stays idle without one.
+
+## Superseded: the original all-PLA cart
+
 ## What is in it
 
 | Item | Qty | Unit | Line |
