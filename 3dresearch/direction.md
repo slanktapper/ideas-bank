@@ -60,11 +60,10 @@ Nothing to run yet. Read the notes in this folder:
   the two needs correcting. See `order-review.md`.
 - Base vs Combo is **resolved**: the Print More Bundle carries two AMS 2 Pro units,
   which also settles the humidity question — eight spools live in active drying.
-- Does model creation belong in this project or its own? Parametric CAD as code
-  (OpenSCAD, CadQuery) can generate printable parts without a GUI, which makes it a
-  plausible sibling project rather than a widening of this one. Gridfinity does not
-  force the question — its generators produce STLs from parameters, no CAD needed —
-  but designing bespoke tool-shaped inserts would.
+- **Resolved: model creation lives elsewhere.** Bespoke tool-shaped inserts forced
+  the question, and the answer was a sibling project — `gridfinity-negatives`, which
+  traces a tool from a scan or photo and cuts its negative into a Gridfinity bin.
+  This project stays notes-only; that one carries the code.
 - **Which drawer gets organised first?** Nothing in `gridfinity.md` can be sized
   until one is measured. Magnets vs no magnets, and which baseplate style, follow
   from that.
