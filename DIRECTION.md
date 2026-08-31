@@ -19,5 +19,6 @@ one-line description. Add a row when you create a project.
 | Short name | Description | Status |
 | --- | --- | --- |
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
+| gridfinity-negatives | Scan or photograph a tool, get a Gridfinity bin with its shape cut into it | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
