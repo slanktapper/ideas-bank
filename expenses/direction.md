@@ -25,6 +25,10 @@ What this does:
   the same address.
 - Appends a row to the correct month tab of the existing spreadsheet, using the
   categories that tab already defines, in the existing column layout.
+- Follows the sheet's **not-shared convention**: something bought for the other
+  person at their request goes in doubled, written as `=34.95*2` so the real amount
+  is still there when you click the cell, and highlighted yellow. Only ever when the
+  email says so.
 - Refuses to guess. Anything it is not confident about — unreadable total, missing
   date, non-CAD currency, no matching month tab, mail from an address it doesn't
   recognise — is relabelled `receipts/needs-review` and left for a human. It never
@@ -107,13 +111,30 @@ Every variable expense tab has the same shape:
 
 | | A | B | C | D | E | F | … | M | N … T |
 |---|---|---|---|---|---|---|---|---|---|
-| row 5 | Description | Paid by Rob | Paid by Danielle | Date | Category | Card | | Error | Transportation, Groceries, Restaurant, Entertainment, Camping, Dog, Home |
+| row 4 | Description | Paid by Rob | Paid by Danielle | Date | Category | Card | | Error | Transportation, Groceries, Restaurant, Entertainment, Camping, Dog, Home |
 
-Rows 6 to 125 are the expense rows — 120 of them, each already carrying the formulas
+Rows 5 to 164 are the expense rows — 160 of them, each already carrying the formulas
 in columns N–T that fan its amount out into the category totals at the top. **That is
 why the script writes into an existing blank row rather than appending one** — an
 appended row falls outside the formulas, looks perfectly normal, and counts for
-nothing.
+nothing. Full detail, including the two quirks in the sheet worth knowing about, is
+in `month-tab-template.md`.
+
+## Shared, or bought for the other person
+Everything is split 50/50 by default. The exception is something one of them buys
+*for* the other at their request — the purse Rob bought Danielle — which is not
+shared: she owes the whole of it.
+
+The sheet's way of expressing that, named in the legend at the top of every month
+tab, is to enter **twice the amount** and highlight the cell. Half of double is the
+whole, so the split arithmetic lands on the right figure with no special case. It
+goes in as a formula, `=34.95*2`, not as `69.90`, so clicking the cell still shows
+what was actually spent.
+
+The script does this only when the email says so — "a purse for Danielle", "she asked
+me to grab this". A photograph of a receipt cannot tell you who a purchase was for,
+and most purchases are shared, so silence means shared. Something bought for the
+person who paid is an ordinary purchase, not a doubling.
 
 ## Who paid
 Two columns, `Paid by Rob` and `Paid by Danielle`, and every receipt goes wholly into
@@ -145,9 +166,8 @@ for a tab that already holds dates in that month. It never creates a tab: a rece
 for a month with no tab yet goes to `needs-review`.
 
 ## Open questions
-- **Splitting one receipt between the two of them** is still manual — a receipt goes
-  wholly into one column or the other. The sheet's `= Bought for the other person`
-  convention in column D suggests there is a case for it; nothing here handles it yet.
+- **Splitting one receipt** — half shared, half not — is still manual. A receipt goes
+  wholly into one column, either shared or doubled.
 - **How far to trust what the email says.** The model's reading of the message
   overrides the sending address, and its stated reason is recorded but not verified.
   That is the deliberate trade for handling the way people actually write; the cost

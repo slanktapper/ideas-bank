@@ -33,6 +33,13 @@ const CONFIG = {
   // Receipts in any other currency go to needs-review rather than being converted.
   CURRENCY: 'CAD',
 
+  // Something one of them bought for the other, at their request, is not a shared
+  // expense. The sheet's convention for that — the legend in D1 — is to enter the
+  // amount doubled, as a formula, so the 50/50 split nets out to the other person
+  // owing the whole of it, and to highlight the cell. Clicking it still shows what
+  // was actually spent.
+  NOT_SHARED_BACKGROUND: '#ffff00',
+
   MODEL: 'claude-opus-5',
   // Reading a receipt is a simple extraction; raise to 'medium' or 'high' if the
   // model starts fumbling faded or crumpled receipts.

@@ -142,6 +142,12 @@ log should say `under Danielle (the email: …)` instead. It does not have to be
 phrase: the whole message goes to the model, which is told who sent it, so "put it on
 mine" resolves to the sender and "she got this one" resolves to her.
 
+Say instead that it was **bought for** the other person — "a purse for Danielle, she
+asked me to grab it" — and the amount goes in doubled as `=34.95*2` on a yellow
+cell, the way the sheet marks an expense that is not shared. The log says
+`doubled — bought for Danielle (…)`. See `../month-tab-template.md` for why doubling
+is the right answer there.
+
 What happens when it is not sure: the mail is relabelled `receipts/needs-review` and
 nothing is written. The log says why. This is the normal outcome for a blurry total,
 a receipt in USD, a photo of something that is not a receipt, or a purchase that

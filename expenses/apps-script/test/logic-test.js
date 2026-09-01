@@ -61,8 +61,12 @@ function colNumber(letters) {
 
 function makeTab(name, entries) {
   const maxRows = FORMULA_LAST_ROW + 75, maxCols = LAST_CATEGORY_COL;
-  const values = [];
-  for (let r = 0; r < maxRows; r++) values.push(new Array(maxCols).fill(''));
+  const values = [], formulas = [], backgrounds = [];
+  for (let r = 0; r < maxRows; r++) {
+    values.push(new Array(maxCols).fill(''));
+    formulas.push(new Array(maxCols).fill(''));
+    backgrounds.push(new Array(maxCols).fill(''));
+  }
 
   // The rows above the header, so the header search has to step over real content.
   Object.keys(FIXTURE.topRows).forEach(function (rowNumber) {
@@ -130,9 +134,13 @@ function makeTab(name, entries) {
           return out;
         },
         setValue: function (value) { values[row - 1][col - 1] = value; },
+        setFormula: function (formula) { formulas[row - 1][col - 1] = '=' + formula; },
+        setBackground: function (colour) { backgrounds[row - 1][col - 1] = colour; },
       };
     },
     _values: values,
+    _formulas: formulas,
+    _backgrounds: backgrounds,
   };
 }
 
@@ -331,7 +339,7 @@ function reading(overrides) {
   return Object.assign({
     is_receipt: true, description: 'Co-op', total: 43.19, currency: 'CAD',
     date: iso, category: 'Groceries', paid_by: '', paid_by_reason: '',
-    confidence: 'high', notes: '',
+    bought_for: '', bought_for_reason: '', confidence: 'high', notes: '',
   }, overrides);
 }
 
@@ -407,9 +415,82 @@ check('from the note',
                         { from: 'rob.sinclair.bb@gmail.com', text: 'this one is hers' }).payer,
       'Danielle');
 
+// --- bought for the other person, so not shared ---------------------------------
+console.log('resolveSharing_');
+function sharing(overrides, mail, payer) {
+  return sandbox.resolveSharing_(reading(overrides), mail, payer);
+}
+const PURSE = { bought_for: 'Danielle', bought_for_reason: '"a purse for Danielle"' };
+check('the email says it was for her',
+      sharing(PURSE, { text: 'a purse for Danielle, she asked me to grab it' }, 'Rob').notShared, true);
+check('and who it was for',
+      sharing(PURSE, { text: 'a purse for Danielle' }, 'Rob').boughtFor, 'Danielle');
+check('the reason is carried through',
+      sharing(PURSE, { text: 'a purse for Danielle' }, 'Rob').sharingSource,
+      'the email: "a purse for Danielle"');
+check('bought for the person who paid is just an ordinary purchase',
+      sharing({ bought_for: 'Rob', bought_for_reason: 'for himself' },
+              { text: 'got myself a coffee' }, 'Rob').notShared, false);
+check('an email that says nothing', sharing({}, { text: 'receipt attached' }, 'Rob').notShared, false);
+check('an empty email proves nothing', sharing(PURSE, { text: '' }, 'Rob').notShared, false);
+check('a name nobody in Config.gs has',
+      sharing({ bought_for: 'Steve', bought_for_reason: 'for Steve' },
+              { text: 'for Steve' }, 'Rob').notShared, false);
+
+console.log('writing a not-shared expense');
+const purseTab = makeTab('Sept2026 - Var Expenses', []);
+const purseLayout = sandbox.readLayout_(purseTab);
+const purseRow = sandbox.writeExpense_(purseTab, purseLayout, {
+  description: 'Danielle purse', total: 34.95, date: new Date(2026, 8, 1),
+  category: 'Entertainment', payer: 'Rob', notShared: true, boughtFor: 'Danielle',
+});
+check('goes on the first entry row', purseRow, FIXTURE.firstEntryRow);
+check('doubled, as a formula so the cell still shows what was spent',
+      purseTab._formulas[purseRow - 1][1], '=34.95*2');
+check('exactly what the sheet already holds',
+      purseTab._formulas[purseRow - 1][1], '=' + FIXTURE.notShared.example.formula.replace('=', ''));
+check('no plain value written over it', purseTab._values[purseRow - 1][1], '');
+check('highlighted the colour the sheet uses',
+      purseTab._backgrounds[purseRow - 1][1], FIXTURE.notShared.background);
+check('her column is left alone', purseTab._values[purseRow - 1][2], '');
+
+const sharedRow = sandbox.writeExpense_(purseTab, purseLayout, {
+  description: 'No Frills', total: 51.24, date: new Date(2026, 8, 2),
+  category: 'Groceries', payer: 'Rob', notShared: false,
+});
+check('a shared expense is a plain number', purseTab._values[sharedRow - 1][1], 51.24);
+check('with no formula', purseTab._formulas[sharedRow - 1][1], '');
+check('and no highlight', purseTab._backgrounds[sharedRow - 1][1], '');
+
+console.log('validate_ carries the sharing through');
+check('not shared',
+      sandbox.validate_(reading(PURSE), { from: 'rob.sinclair.bb@gmail.com',
+                                          text: 'a purse for Danielle' }).notShared, true);
+check('shared by default', sandbox.validate_(reading(), FROM_ROB).notShared, false);
+
+// --- every tab name in the real workbook ----------------------------------------
+console.log('the real tab names');
+const NAMES = require('./fixtures/tab-names.json');
+const realBook = makeSpreadsheet(NAMES.monthTabs.map(function (n) { return makeTab(n, []); }));
+const wrong = [];
+Object.keys(NAMES.expected).forEach(function (key) {
+  sandbox.resetTabCache_();
+  const parts = key.split('-');
+  const found = sandbox.findMonthTab_(realBook, new Date(Number(parts[0]), Number(parts[1]) - 1, 15));
+  const got = found ? found.sheet.getName() : null;
+  if (got !== NAMES.expected[key]) wrong.push(key + ': wanted ' + NAMES.expected[key] + ', got ' + got);
+});
+sandbox.resetTabCache_();
+check('all ' + Object.keys(NAMES.expected).length + ' months resolve to the right tab, ' +
+      'the two-month ones included', wrong, []);
+check('and every month tab in the book is somebody\'s answer',
+      NAMES.monthTabs.filter(function (n) {
+        return Object.keys(NAMES.expected).every(function (k) { return NAMES.expected[k] !== n; });
+      }), []);
+
 // --- a brand-new month, exactly as the sheet makes one --------------------------
-console.log('the blank month template (' + FIXTURE.tab + ', captured ' + FIXTURE.captured + ')');
-const sept = makeTab(FIXTURE.tab, []);
+console.log('the blank month template (' + FIXTURE.capturedFrom + ', captured ' + FIXTURE.captured + ')');
+const sept = makeTab(FIXTURE.capturedFrom, []);
 const septLayout = sandbox.readLayout_(sept);
 check('is recognised as a month tab', septLayout !== null, true);
 check('the header row is where the fixture says', septLayout.headerRow, FIXTURE.headerRow);
@@ -420,7 +501,7 @@ check('the first receipt of the month goes to the first entry row',
 sandbox.resetTabCache_();
 check('found by name for September 2026',
       sandbox.findMonthTab_(makeSpreadsheet([sept]), new Date(2026, 8, 4)).sheet.getName(),
-      FIXTURE.tab);
+      FIXTURE.capturedFrom);
 sandbox.resetTabCache_();
 check('and not for August', sandbox.findMonthTab_(makeSpreadsheet([sept]), new Date(2026, 7, 4)), null);
 sandbox.resetTabCache_();
@@ -433,7 +514,7 @@ for (let i = 0; i < FIXTURE.entryRowCapacity; i++) {
     category: 'Groceries', payer: i % 2 ? 'Danielle' : 'Rob',
   });
 }
-check('holds a month of receipts', FIXTURE.entryRowCapacity, 120);
+check('holds a month of receipts', FIXTURE.entryRowCapacity, 160);
 check('the last one lands on the last formula row', written, FIXTURE.lastFormulaRow);
 throws('and refuses the one after that', function () {
   sandbox.writeExpense_(sept, septLayout, {

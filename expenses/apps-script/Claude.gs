@@ -92,6 +92,17 @@ function readReceipt_(base64, mimeType, categories, mail) {
             'the sending address settles it then, and a name printed on the receipt',
             'is not the same thing as being told who paid.',
             '',
+            'One more thing the email sometimes says: that the purchase was made',
+            'FOR the other one of them, at their request, and so is not shared —',
+            '"a purse for Danielle", "she asked me to grab this", "picking this up',
+            'for her, she\'ll pay me back". That is a different claim from who paid,',
+            'and a much narrower one: buying groceries the household eats is not it.',
+            'If the email says so, name the person it was bought for in bought_for',
+            'and why in bought_for_reason, and lead the description with their name,',
+            'the way the sheet already does it — "Danielle purse". If the email does',
+            'not say so, leave bought_for empty. Most purchases are shared, and',
+            'saying nothing is the right answer.',
+            '',
             '<email>',
             mail && mail.text ? mail.text : '(no message)',
             '</email>',
@@ -125,7 +136,8 @@ function receiptSchema_(categories, payers) {
     type: 'object',
     additionalProperties: false,
     required: ['is_receipt', 'description', 'total', 'currency', 'date', 'category',
-               'paid_by', 'paid_by_reason', 'confidence', 'notes'],
+               'paid_by', 'paid_by_reason', 'bought_for', 'bought_for_reason',
+               'confidence', 'notes'],
     properties: {
       is_receipt: {
         type: 'boolean',
@@ -160,6 +172,16 @@ function receiptSchema_(categories, payers) {
       paid_by_reason: {
         type: 'string',
         description: 'In a few words, what in the email told you. Empty if none did.',
+      },
+      bought_for: {
+        type: 'string',
+        enum: payers.concat(['']),
+        description: 'Bought for this person at their request, so not a shared ' +
+                     'expense. Empty unless the email says so.',
+      },
+      bought_for_reason: {
+        type: 'string',
+        description: 'In a few words, what in the email said so. Empty if none did.',
       },
       confidence: {
         type: 'string',

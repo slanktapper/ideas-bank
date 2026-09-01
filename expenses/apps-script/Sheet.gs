@@ -131,8 +131,9 @@ function remember_(key, value) {
 }
 
 /**
- * Does a tab name denote this month? The sheet's own convention is
- * "Aug2026 - Var Expenses"; "August 2026", "Aug 2026" and "2026-08" work too.
+ * Does a tab name denote this month? The sheet's names run "Aug2026 - Var Expenses",
+ * "Mar 2026 - Var Expenses", "April 2024 - Var Expenses", and two-month tabs like
+ * "AugSep2025" and "JanFeb 2026", which answer to both of their months.
  */
 function tabNameMatchesMonth_(name, year, month) {
   const lower = name.toLowerCase();
@@ -144,8 +145,10 @@ function tabNameMatchesMonth_(name, year, month) {
   if (numeric.test(lower)) return true;
 
   // Named forms. Match the month name as a prefix ("sept" for September) but not
-  // across months ("mar" must not match "may").
-  const words = lower.split(/[^a-z]+/).filter(Boolean);
+  // across months ("mar" must not match "may"). Run-together names — "AugSep2025",
+  // "JanFeb 2026" — are split at the case change, so both months are found.
+  const words = String(name).replace(/([a-z])([A-Z])/g, '$1 $2')
+                            .toLowerCase().split(/[^a-z]+/).filter(Boolean);
   const namesMonth = words.some(function (word) {
     return word.length >= 3 && (full.indexOf(word) === 0 || word.indexOf(full) === 0);
   });
@@ -206,9 +209,19 @@ function writeExpense_(sheet, layout, expense) {
   // Written cell by cell: everything else on the row, including the other payer's
   // column and the Card note, is left exactly as it was.
   sheet.getRange(row, layout.descriptionCol).setValue(expense.description);
-  sheet.getRange(row, payerCol).setValue(expense.total);
   sheet.getRange(row, layout.dateCol).setValue(expense.date);
   sheet.getRange(row, layout.categoryCol).setValue(expense.category);
+
+  const amount = sheet.getRange(row, payerCol);
+  if (expense.notShared) {
+    // Doubled, and written as a formula rather than a doubled number, so clicking
+    // the cell still shows what was actually spent. Highlighted the way the legend
+    // at the top of the tab says a not-shared expense is marked.
+    amount.setFormula(expense.total + '*2');
+    amount.setBackground(CONFIG.NOT_SHARED_BACKGROUND);
+  } else {
+    amount.setValue(expense.total);
+  }
   return row;
 }
 

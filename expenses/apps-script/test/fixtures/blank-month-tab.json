@@ -1,19 +1,20 @@
 {
   "_comment": [
-    "A blank month tab, captured from 'Sept2026 - Var Expenses' in the shared",
-    "spreadsheet 'DNR finances 2024' on 2026-08-31 MDT, the day it was created and",
-    "before a single receipt went into it. This is what a fresh month looks like.",
+    "A month tab's shape, read out of the workbook itself (exported as .xlsx) rather",
+    "than a text rendering of it, on 2026-09-01 MDT. The geometry here is the real",
+    "one: an earlier capture taken from the text export was off by one row, which",
+    "this replaces.",
     "The tests build their fake sheet from these numbers, so the script is exercised",
     "against the real geometry rather than one invented to suit it. If the sheet's",
     "shape ever changes, recapture this file and the tests follow."
   ],
   "spreadsheet": "DNR finances 2024",
-  "tab": "Sept2026 - Var Expenses",
-  "captured": "2026-08-31 MDT",
-  "headerRow": 5,
-  "firstEntryRow": 6,
-  "lastFormulaRow": 125,
-  "entryRowCapacity": 120,
+  "capturedFrom": "Sept2026 - Var Expenses",
+  "captured": "2026-09-01 MDT",
+  "headerRow": 4,
+  "firstEntryRow": 5,
+  "lastFormulaRow": 164,
+  "entryRowCapacity": 160,
   "columns": {
     "description": "A",
     "paidByRob": "B",
@@ -44,25 +45,54 @@
     "Home": 470
   },
   "topRows": {
-    "1": {},
-    "2": {
+    "1": {
       "D": "= Bought for the other person expense not shared",
       "M": "Budget"
     },
-    "3": {
-      "A": "$0.00",
+    "2": {
+      "A": "=sum(B5:B163)+SUM(C5:C164)",
       "B": "Total Expenses for the month",
       "M": "Actual"
     },
-    "4": {
+    "3": {
       "A": "Shared (+ owes -)",
-      "B": "$0.00",
-      "C": "$0.00",
+      "B": "=$A$2/2-SUM(B5:B164)",
       "M": "Ratio"
     }
   },
   "entryRows": {
-    "A_to_F": "empty",
-    "N_to_T": "one formula per row, fanning the amount into its category column; displays 0 while the row is blank"
-  }
+    "A_to_F": "empty, but pre-formatted: B and C carry \"$\"#,##0.00, D carries M/d/yyyy",
+    "N_to_T": "one formula per row, =IF(N$4=$E5,$B5+$C5,0), fanning the amount into its category column"
+  },
+  "notShared": {
+    "_comment": [
+      "The convention the legend in D1 names: something one of them bought for the",
+      "other, at their request, which is not a shared expense. The amount is entered",
+      "as a formula doubling it, so the 50/50 split in row 3 nets out to the other",
+      "person owing the whole of it, and the cell is highlighted.",
+      "Read from the real entry: B5 on Sept2026 held =34.95*2 on a solid FFFF00 fill,",
+      "described as 'Danielle purse'."
+    ],
+    "formula": "<amount>*2",
+    "background": "#ffff00",
+    "example": {
+      "cell": "B5",
+      "formula": "=34.95*2",
+      "displays": 69.9,
+      "description": "Danielle purse"
+    }
+  },
+  "numberFormats": {
+    "amount": "\"$\"#,##0.00",
+    "date": "M/d/yyyy"
+  },
+  "knownQuirks": [
+    "The month total in A2 sums B5:B163 but C5:C164 \u2014 one row shorter on his side.",
+    "A receipt on row 164 paid by Rob would not reach the monthly total. The script",
+    "stops where the category formulas stop (row 164), so this only matters if a",
+    "month ever runs to 160 receipts; August 2026 used five.",
+    "Rows 9 and below carry category formulas that reference 'Oct2025 - Var",
+    "Expenses'!N$4 rather than their own header row \u2014 an artefact of the tab having",
+    "been copied. They agree only because both tabs' headers say the same thing."
+  ]
 }

@@ -119,9 +119,38 @@ function fileAttachment_(attachment, mail, spreadsheet) {
 
   const row = writeExpense_(tab.sheet, tab.layout, expense);
   Logger.log('Filed ' + expense.description + ' $' + expense.total + ' under ' +
-             expense.payer + ' (' + expense.payerSource + ') to ' +
-             tab.sheet.getName() + ' row ' + row);
+             expense.payer + ' (' + expense.payerSource + ')' +
+             (expense.notShared
+               ? ', doubled — bought for ' + expense.boughtFor + ' (' +
+                 expense.sharingSource + ')'
+               : '') +
+             ' to ' + tab.sheet.getName() + ' row ' + row);
   return true;
+}
+
+/**
+ * Was this bought for the other person, at their request, rather than shared?
+ *
+ * A narrow claim, and only ever made by the email — a receipt cannot tell you who
+ * a purchase was for. Bought for the person who paid is just an ordinary purchase,
+ * so that reads as shared, not as a doubling.
+ */
+function resolveSharing_(reading, mail, payer) {
+  const boughtFor = reading.bought_for;
+  if (!boughtFor || !mail.text) return { notShared: false, boughtFor: '', sharingSource: '' };
+  if (boughtFor === payer) return { notShared: false, boughtFor: '', sharingSource: '' };
+  if (!payerForName_(boughtFor)) return { notShared: false, boughtFor: '', sharingSource: '' };
+
+  return {
+    notShared: true,
+    boughtFor: boughtFor,
+    sharingSource: 'the email: ' + (reading.bought_for_reason || 'it says so'),
+  };
+}
+
+/** Is this one of the people in Config.gs? */
+function payerForName_(name) {
+  return CONFIG.PAYERS.some(function (payer) { return payer.name === name; });
 }
 
 /**
@@ -203,6 +232,7 @@ function validate_(reading, mail) {
   if (daysAhead < -730) throw new Error('date ' + reading.date + ' is over two years old');
 
   const paid = resolvePayer_(reading, mail || {});
+  const sharing = resolveSharing_(reading, mail || {}, paid.payer);
 
   return {
     description: reading.description,
@@ -211,6 +241,9 @@ function validate_(reading, mail) {
     category: reading.category,
     payer: paid.payer,
     payerSource: paid.payerSource,
+    notShared: sharing.notShared,
+    boughtFor: sharing.boughtFor,
+    sharingSource: sharing.sharingSource,
   };
 }
 
