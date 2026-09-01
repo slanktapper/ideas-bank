@@ -1,12 +1,20 @@
 # Decision: Bambu Lab X2D
 
-**Decided 2026-08-30 MDT.** Supersedes the open comparison in `printer-shortlist.md`,
-which stays as the record of how this was reached.
+**Decided 2026-08-30 MDT. Reopened 2026-09-01 MDT.** Supersedes the open comparison in
+`printer-shortlist.md`, which stays as the record of how this was reached.
+
+> **Reopened 2026-09-01 MDT — a second option is live.** A Bambu Lab **H2D** cart is
+> now on the table alongside the X2D one. The H2D has the *same* 65 °C active chamber
+> and the *same* shared-toolhead dual nozzle, so none of the reasoning below is
+> overturned by it — but it has roughly twice the build volume, a 350 °C hotend and a
+> laser/cutting expansion path, at $2,599 against $1,349. The comparison is in
+> **`x2d-vs-h2d.md`**; both carts are in `order-review.md`. Read this file as the case
+> for the X2D, not as a closed decision.
 
 ## What was chosen
 
-Bambu Lab X2D. Ordered as the **X2D Print More Bundle at $1,349 CAD** — see
-`order-review.md`.
+Bambu Lab X2D, as the **X2D Print More Bundle at $1,349 CAD** — see `order-review.md`.
+Not yet ordered; the H2D option arrived first.
 
 (GBP figures elsewhere in this file come from the original UK-retailer research and
 are not prices available in Canada.)
@@ -60,6 +68,10 @@ So the honest position:
 
 ## Still to decide
 
-**Resolved.** The Print More Bundle was chosen: X2D plus *two* AMS 2 Pro units and a
+**Open: X2D or H2D.** The one question that separates them is build volume — 256 mm
+against 350 mm. Everything else the H2D adds is either already present on the X2D
+(the heated chamber) or not in the cart (the laser). See `x2d-vs-h2d.md`.
+
+**Resolved (within the X2D option).** The Print More Bundle was chosen: X2D plus *two* AMS 2 Pro units and a
 Filament Track Switch, for eight filament slots. That also settles the humidity
 question — eight spools live in active drying. See `order-review.md`.

@@ -1,8 +1,24 @@
 # Order review
 
-Cart reviewed 2026-08-30 MDT, before purchase. **All prices CAD.**
+**All prices CAD.** There are now **two** carts under consideration — an X2D order and
+an H2D order. Side-by-side reasoning on which machine to buy is in `x2d-vs-h2d.md`;
+this file reviews the carts themselves.
 
-## Current cart — 2026-08-30 MDT
+| | Option A — X2D | Option B — H2D |
+| --- | --- | --- |
+| Printer bundle | $1,349.00 | $2,599.00 |
+| Cart total | **$1,648.48** | **$2,733.12** |
+| Filament | 12 spools (6 PETG, 3 ABS, 1 ASA, 2 PLA) | 8 spools (4 PETG, 4 PLA) |
+| Warranty | $89 included | not in cart |
+| Budget ($940–1,695) | inside | **$904 over** |
+
+---
+
+# Option A — X2D cart
+
+Cart reviewed 2026-08-30 MDT.
+
+## The cart
 
 Excludes the two Low Temp reusable spools that were added and are the wrong part
 (see "Outstanding" below).
@@ -26,7 +42,7 @@ asks for. Three ABS finally use the 65 °C chamber the printer was chosen for. O
 covers outdoor and UV work. Two PLA is enough for prototypes and fit checks without
 dominating the shelf. This is the lineup the earlier all-PLA cart lacked.
 
-## Outstanding before checkout
+## Outstanding before checkout — X2D cart
 
 1. **The three ABS lines are Refills — bare coils with no spool.** They cannot load
    into the AMS as they are.
@@ -56,7 +72,87 @@ dominating the shelf. This is the lineup the earlier all-PLA cart lacked.
 4. **No support material** for the second nozzle. Support for ABS $19.99, Support for
    PLA/PETG $44.99. Optional; the dual nozzle sits idle without one.
 
-## Superseded: the original all-PLA cart
+---
+
+# Option B — H2D cart
+
+Cart reviewed 2026-09-01 MDT.
+
+## The cart
+
+| Item | Qty | Unit | Line |
+| --- | --- | --- | --- |
+| Bambu Lab H2D — AMS Combo / Dual AMS 2 Pro Bundle | 1 | $2,599.00 | $2,599.00 |
+| PETG Basic — Orange, Red, White, Black | 4 | $15.94 | $63.76 |
+| PLA Pure — Absolute Black, Pure White | 2 | $18.69 | $37.38 |
+| PLA Basic — Blue, Sunflower Yellow | 2 | $16.49 | $32.98 |
+| **Total** | | | **$2,733.12** |
+
+Filament: **8 spools**, 8 kg. Discount badge reads "Combo Deal" rather than the
+"Bulk Sale" on the X2D cart.
+
+### What is right about it
+
+**Eight spools against eight AMS slots.** The Dual AMS 2 Pro bundle gives exactly
+eight actively dried slots and the cart fills them exactly. That removes the storage
+problem the X2D cart has — no airtight boxes, desiccant or hygrometer needed on day
+one, because nothing lives outside a dryer.
+
+**Half the filament is PETG.** Four PETG Basic makes the functional workhorse a real
+presence rather than an afterthought, which is what `requirements.md` asks for. This
+is a much better material mix than the original all-PLA X2D cart.
+
+**No refills, so no spool problem.** Every line is a spooled product. The ABS Refill
+trap that the X2D cart fell into does not arise here.
+
+## Outstanding before checkout — H2D cart
+
+1. **The bundle is $904 over the recorded budget.** $2,599 against a $940–1,695 range
+   settled in `requirements.md`. That file needs updating either way: to record a
+   raised budget if the H2D is chosen, or to record that it was considered and
+   rejected on price. Do not leave the requirements contradicting the purchase.
+
+2. **Nothing in this cart uses the 65 °C chamber.** No ABS, no ASA, no PC, no nylon.
+   PETG and PLA both print fine on a passive enclosure. This is exactly the criticism
+   made of the original all-PLA X2D cart, and it lands harder here: the H2D's chamber
+   is the same 65 °C unit as the X2D's, so on this cart's contents the $1,250 premium
+   buys build volume and nothing else. Port the ABS and ASA across from the X2D cart —
+   ABS is **$14.29**, cheaper than every PLA line already in this order.
+
+3. **PLA Pure at $18.69 is above the bulk tier.** `filament-catalogue.md` records PLA
+   Pure at **$16.49** on the bulk tier — $2.20 a spool, $4.40 across the two. Eight
+   spools may sit below the tier threshold the twelve-spool X2D cart cleared. Worth
+   opening the discount badge to see what the next tier needs; adding the ABS and ASA
+   from item 2 may cross it on its own.
+
+4. **No extended warranty.** The X2D cart carries one at $89 on a $1,349 machine
+   (6.6 %). On a $2,599 machine with a heavier toolhead, a bigger gantry and a 31 kg
+   shipping weight, the argument for one is stronger, not weaker. Price it before
+   checkout.
+
+5. **No support material** for the second nozzle — same gap as the X2D cart. Support
+   for ABS $19.99, Support for PLA/PETG $44.99.
+
+6. **Measure the bench first.** 492 × 514 × 626 mm and 31 kg, plus two AMS 2 Pro units
+   beside or on top. Substantially larger than the X2D and a two-person lift.
+
+### Accessories the store surfaced alongside it
+
+Not in the cart; noted because they show what the platform expects you to add.
+
+| Item | Price | Comment |
+| --- | --- | --- |
+| Bambu High Flow Hotend — H2/P2S/X2D | $66.99 | Fits either machine. Worth having as a spare regardless. |
+| Vision Encoder | $128.00 | Calibration accessory. Not needed to start. |
+| Cutting Material Kit — Starter Pack | $59.00 | Only useful with the cutting module, which this bundle does not include. |
+| Laser Material Kit — Starter Pack (49 pcs) | $96.90 | Same — the laser is on the *Laser Full Combo*, not the AMS Combo. |
+
+The last two are the tell: if the laser and cutter are part of the appeal, this is
+the wrong H2D SKU. See `x2d-vs-h2d.md`.
+
+---
+
+# Superseded: the original all-PLA X2D cart
 
 ## What is in it
 
@@ -145,12 +241,17 @@ rather than essential, since single-material functional parts rarely need it.
 materials. Drying cycles for PETG/ABS run hotter than PLA can survive, so keeping
 them in separate units means never having to unload spools before drying.
 
+---
+
+# Notes that apply to either order
+
 ## Warranty
 
-$89 on a $1,349 machine is roughly 6.6 %. More defensible than most extended
+On the X2D, $89 on a $1,349 machine is roughly 6.6 %. More defensible than most extended
 warranties here: the dual-nozzle toolhead is the most complex part of the printer and
 the one reviewers flag for maintenance, and shipping a machine this size back for
-service from Alberta is not trivial. Reasonable, not essential.
+service from Alberta is not trivial. Reasonable, not essential. The H2D cart carries no warranty line; at $2,599 and
+31 kg the same reasoning argues for one more strongly.
 
 ## Not in the cart, worth having
 
@@ -158,13 +259,17 @@ service from Alberta is not trivial. Reasonable, not essential.
 - **Airtight boxes and desiccant** for spools not loaded in an AMS. Two AMS 2 Pro
   units cover eight spools with active drying, which handles the humidity question
   raised in `setup.md` far better than expected — but a ninth spool needs somewhere
-  dry to live.
+  dry to live. The X2D cart's twelve spools need this; the H2D cart's eight do not.
 
-## Budget note — the order is within budget
+## Budget note
 
-The budget is **$940–1,695 CAD** for the printer (see `requirements.md`). The Print
-More Bundle at **$1,349** sits comfortably inside it, and the whole order including
-warranty and 8 kg of filament comes to **$1,569.92**.
+The budget is **$940–1,695 CAD** for the printer (see `requirements.md`).
+
+- **X2D Print More Bundle, $1,349** — comfortably inside it. The full cart, with
+  warranty and 12 kg of filament, is $1,648.48.
+- **H2D AMS Combo / Dual AMS 2 Pro Bundle, $2,599** — **$904 over the top of the
+  range**, a 53 % overrun. The full cart is $2,733.12. Choosing it means revising
+  `requirements.md`, not just paying more.
 
 An earlier version of this note called the order "substantially above budget". That
 was wrong — it read the prices as USD.
@@ -191,3 +296,5 @@ comparing across retailers is not like for like.
 - [Bambu Lab X2D Print More Bundle — 3D Universe](https://shop3duniverse.com/products/bambu-lab-x2d-print-more-bundle)
 - [Bambu Lab X2D Combo with AMS 2 Pro — NEX3D Canada](https://www.nex3d.com/products/bambu-lab-x2d-combo-with-ams-2-pro)
 - [Filament drying guide for AMS 2 Pro — Bambu Lab Wiki](https://wiki.bambulab.com/en/ams-2-pro/manual/drying-function)
+
+H2D sources are in `x2d-vs-h2d.md`.

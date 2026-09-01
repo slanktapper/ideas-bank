@@ -1,7 +1,24 @@
-# Setup: X2D in an unheated garage
+# Setup: the printer in the workshop
 
 Written 2026-08-30 MDT, after the printer decision. Revised the same day once the
-space turned out to be climate controlled at 10–20 °C rather than unheated.
+space turned out to be climate controlled at 10–20 °C rather than unheated. Revised
+again 2026-09-01 MDT for the H2D option.
+
+Written around the X2D, but the temperature and humidity reasoning applies unchanged
+to the H2D — same 65 °C chamber, same AMS 2 Pro units. What differs is bench space;
+see "Bench space" below.
+
+## Bench space
+
+| | X2D | H2D |
+| --- | --- | --- |
+| Machine | 392 × 406 × 478 mm | 492 × 514 × 626 mm |
+| Weight | 16.25 kg | 31 kg |
+
+The H2D needs about **59 % more benchtop** and stands 148 mm taller, before the two
+AMS 2 Pro units that sit beside or on top of it. At 31 kg it is a two-person lift and
+wants a bench that will not flex. **Measure the actual spot before ordering** — this
+is the one setup question the H2D option raises that the X2D does not.
 
 ## What climate control already solves
 
