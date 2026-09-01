@@ -210,7 +210,7 @@ const august = makeTab('Aug2026 - Var Expenses', [
 ]);
 const layout = sandbox.readLayout_(august);
 check('finds the header row', layout.headerRow, HEADER_ROW);
-check('finds the payer column', layout.payerCol, 2);
+check('finds a column per payer', layout.payerCols, { Rob: 2, Danielle: 3 });
 check('finds the date column', layout.dateCol, 4);
 check('finds the category column', layout.categoryCol, 5);
 check('reads the categories off the sheet', layout.categories, CATEGORIES);
@@ -286,7 +286,8 @@ setOverrides({});
 // --- writing -------------------------------------------------------------------
 console.log('writeExpense_');
 const target = sandbox.writeExpense_(august, layout, {
-  description: 'No Frills', total: 51.24, date: new Date(2026, 7, 24), category: 'Groceries',
+  description: 'No Frills', total: 51.24, date: new Date(2026, 7, 24),
+  category: 'Groceries', payer: 'Rob',
 });
 check('writes to the first blank row', target, HEADER_ROW + 3);
 check('description in A', august._values[target - 1][0], 'No Frills');
@@ -295,9 +296,22 @@ check('leaves the other payer alone', august._values[target - 1][2], '');
 check('category in E', august._values[target - 1][4], 'Groceries');
 check('leaves the Card note alone', august._values[target - 1][5], '');
 
+const danielleRow = sandbox.writeExpense_(august, layout, {
+  description: 'Car gas', total: 47.86, date: new Date(2026, 7, 25),
+  category: 'Transportation', payer: 'Danielle',
+});
+check('a Danielle receipt goes in her column', august._values[danielleRow - 1][2], 47.86);
+check('and not in his', august._values[danielleRow - 1][1], '');
+
+throws('refuses a payer with no column', function () {
+  sandbox.writeExpense_(august, layout, {
+    description: 'x', total: 1, date: new Date(), category: 'Home', payer: 'Nobody',
+  });
+}, 'No column');
+
 throws('refuses when there is no room', function () {
   sandbox.writeExpense_(full, sandbox.readLayout_(full), {
-    description: 'x', total: 1, date: new Date(), category: 'Home',
+    description: 'x', total: 1, date: new Date(), category: 'Home', payer: 'Rob',
   });
 }, 'No blank pre-formulated row');
 
@@ -316,22 +330,82 @@ function reading(overrides) {
               '-' + ('0' + today.getDate()).slice(-2);
   return Object.assign({
     is_receipt: true, description: 'Co-op', total: 43.19, currency: 'CAD',
-    date: iso, category: 'Groceries', confidence: 'high', notes: '',
+    date: iso, category: 'Groceries', paid_by: '', paid_by_quote: '',
+    confidence: 'high', notes: '',
   }, overrides);
 }
-check('a clean receipt', sandbox.validate_(reading()).description, 'Co-op');
-check('rounds to cents', sandbox.validate_(reading({ total: 43.194999 })).total, 43.19);
-check('an unstated currency is CAD', sandbox.validate_(reading({ currency: '' })).total, 43.19);
-throws('not a receipt', function () { sandbox.validate_(reading({ is_receipt: false })); }, 'not a receipt');
-throws('low confidence', function () { sandbox.validate_(reading({ confidence: 'low' })); }, 'low confidence');
-throws('no total', function () { sandbox.validate_(reading({ total: null })); }, 'read the total');
-throws('zero total', function () { sandbox.validate_(reading({ total: 0 })); }, 'read the total');
-throws('foreign currency', function () { sandbox.validate_(reading({ currency: 'USD' })); }, 'not CAD');
-throws('no category', function () { sandbox.validate_(reading({ category: '' })); }, 'no category fits');
-throws('no merchant', function () { sandbox.validate_(reading({ description: '' })); }, 'read the merchant');
-throws('unreadable date', function () { sandbox.validate_(reading({ date: '' })); }, 'read the date');
-throws('future date', function () { sandbox.validate_(reading({ date: '2099-01-01' })); }, 'in the future');
-throws('ancient date', function () { sandbox.validate_(reading({ date: '2001-01-01' })); }, 'two years old');
+
+const FROM_ROB = { from: 'rob.sinclair.bb@gmail.com', text: 'Subject: receipt' };
+const FROM_DANIELLE = { from: 'danielle.lucas5@gmail.com', text: 'Subject: receipt' };
+check('a clean receipt', sandbox.validate_(reading(), FROM_ROB).description, 'Co-op');
+check('rounds to cents', sandbox.validate_(reading({ total: 43.194999 }), FROM_ROB).total, 43.19);
+check('an unstated currency is CAD',
+      sandbox.validate_(reading({ currency: '' }), FROM_ROB).total, 43.19);
+throws('not a receipt', function () { sandbox.validate_(reading({ is_receipt: false }), FROM_ROB); }, 'not a receipt');
+throws('low confidence', function () { sandbox.validate_(reading({ confidence: 'low' }), FROM_ROB); }, 'low confidence');
+throws('no total', function () { sandbox.validate_(reading({ total: null }), FROM_ROB); }, 'read the total');
+throws('zero total', function () { sandbox.validate_(reading({ total: 0 }), FROM_ROB); }, 'read the total');
+throws('foreign currency', function () { sandbox.validate_(reading({ currency: 'USD' }), FROM_ROB); }, 'not CAD');
+throws('no category', function () { sandbox.validate_(reading({ category: '' }), FROM_ROB); }, 'no category fits');
+throws('no merchant', function () { sandbox.validate_(reading({ description: '' }), FROM_ROB); }, 'read the merchant');
+throws('unreadable date', function () { sandbox.validate_(reading({ date: '' }), FROM_ROB); }, 'read the date');
+throws('future date', function () { sandbox.validate_(reading({ date: '2099-01-01' }), FROM_ROB); }, 'in the future');
+throws('ancient date', function () { sandbox.validate_(reading({ date: '2001-01-01' }), FROM_ROB); }, 'two years old');
+
+// --- who paid ------------------------------------------------------------------
+console.log('payerForSender_');
+check('his address', sandbox.payerForSender_('rob.sinclair.bb@gmail.com'), 'Rob');
+check('her gmail', sandbox.payerForSender_('danielle.lucas5@gmail.com'), 'Danielle');
+check('her hotmail', sandbox.payerForSender_('chickami@hotmail.com'), 'Danielle');
+check('case and spacing do not matter',
+      sandbox.payerForSender_('  Danielle.Lucas5@Gmail.com '), 'Danielle');
+check('a stranger', sandbox.payerForSender_('someone@example.com'), '');
+check('nothing at all', sandbox.payerForSender_(''), '');
+
+console.log('quotedInEmail_');
+check('words that are there',
+      sandbox.quotedInEmail_('Danielle paid this', 'hey — Danielle paid this one, receipt attached'), true);
+check('across a line break',
+      sandbox.quotedInEmail_('Danielle paid this one', 'hey,\nDanielle paid\nthis one'), true);
+check('words that are not', sandbox.quotedInEmail_('Danielle paid', 'receipt attached'), false);
+check('an empty quote proves nothing', sandbox.quotedInEmail_('', 'Danielle paid this'), false);
+
+console.log('resolvePayer_');
+function resolve(overrides, mail) {
+  return sandbox.resolvePayer_(reading(overrides), mail);
+}
+check('the sender decides by default', resolve({}, FROM_ROB).payer, 'Rob');
+check('and for her too', resolve({}, FROM_DANIELLE).payer, 'Danielle');
+check('a quoted note overrides the sender',
+      resolve({ paid_by: 'Danielle', paid_by_quote: 'Danielle paid this' },
+              { from: 'rob.sinclair.bb@gmail.com', text: 'Danielle paid this one' }).payer,
+      'Danielle');
+check('the reason says which note it read',
+      resolve({ paid_by: 'Danielle', paid_by_quote: 'Danielle paid this' },
+              { from: 'rob.sinclair.bb@gmail.com', text: 'Danielle paid this one' }).payerSource,
+      'the email said "Danielle paid this"');
+check('a note the email does not contain is ignored',
+      resolve({ paid_by: 'Danielle', paid_by_quote: 'Danielle paid this' },
+              { from: 'rob.sinclair.bb@gmail.com', text: 'receipt attached' }).payer,
+      'Rob');
+check('a note stands in for an unknown sender',
+      resolve({ paid_by: 'Rob', paid_by_quote: 'Rob paid' },
+              { from: 'someone@example.com', text: 'Rob paid, forwarding this on' }).payer,
+      'Rob');
+throws('an unknown sender and no note', function () {
+  resolve({}, { from: 'someone@example.com', text: 'receipt attached' });
+}, 'not one of the payers');
+throws('an unknown sender and an unquotable note', function () {
+  resolve({ paid_by: 'Danielle', paid_by_quote: 'she paid' },
+          { from: 'someone@example.com', text: 'receipt attached' });
+}, 'not one of the payers');
+
+console.log('validate_ carries the payer through');
+check('from the sender', sandbox.validate_(reading(), FROM_DANIELLE).payer, 'Danielle');
+check('from the note',
+      sandbox.validate_(reading({ paid_by: 'Danielle', paid_by_quote: 'hers' }),
+                        { from: 'rob.sinclair.bb@gmail.com', text: 'this one is hers' }).payer,
+      'Danielle');
 
 // --- a brand-new month, exactly as the sheet makes one --------------------------
 console.log('the blank month template (' + FIXTURE.tab + ', captured ' + FIXTURE.captured + ')');
@@ -355,14 +429,16 @@ sandbox.resetTabCache_();
 let written = 0;
 for (let i = 0; i < FIXTURE.entryRowCapacity; i++) {
   written = sandbox.writeExpense_(sept, septLayout, {
-    description: 'Co-op', total: 10, date: new Date(2026, 8, 4), category: 'Groceries',
+    description: 'Co-op', total: 10, date: new Date(2026, 8, 4),
+    category: 'Groceries', payer: i % 2 ? 'Danielle' : 'Rob',
   });
 }
 check('holds a month of receipts', FIXTURE.entryRowCapacity, 120);
 check('the last one lands on the last formula row', written, FIXTURE.lastFormulaRow);
 throws('and refuses the one after that', function () {
   sandbox.writeExpense_(sept, septLayout, {
-    description: 'Co-op', total: 10, date: new Date(2026, 8, 4), category: 'Groceries',
+    description: 'Co-op', total: 10, date: new Date(2026, 8, 4),
+    category: 'Groceries', payer: 'Rob',
   });
 }, 'No blank pre-formulated row');
 

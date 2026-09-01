@@ -25,6 +25,35 @@ function receiptAttachments_(message) {
     });
 }
 
+/**
+ * What the script knows about the mail carrying a receipt: who sent it, and what
+ * it said. The address decides who paid; the text can override that in words.
+ */
+function mailContext_(message) {
+  return {
+    from: senderAddress_(message),
+    text: emailText_(message),
+  };
+}
+
+/** The bare address out of 'Rob Sinclair <rob@example.com>', lowercased. */
+function senderAddress_(message) {
+  const from = String(message.getFrom() || '');
+  const angled = /<([^>]+)>/.exec(from);
+  return (angled ? angled[1] : from).trim().toLowerCase();
+}
+
+/**
+ * Subject and body, trimmed to something worth sending. Long bodies are almost
+ * always a quoted thread underneath a one-line note, and the note is at the top.
+ */
+function emailText_(message) {
+  const subject = String(message.getSubject() || '').trim();
+  const body = String(message.getPlainBody() || '').trim();
+  const text = (subject ? 'Subject: ' + subject + '\n\n' : '') + body;
+  return text.length > 2000 ? text.slice(0, 2000) + '\n…' : text;
+}
+
 /** Content types arrive as 'image/jpeg; name="x.jpg"' often enough to be worth stripping. */
 function normaliseType_(contentType) {
   return String(contentType).split(';')[0].trim().toLowerCase();

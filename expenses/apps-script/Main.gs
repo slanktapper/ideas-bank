@@ -59,9 +59,10 @@ function processThread_(thread, spreadsheet) {
       return;
     }
 
+    const mail = mailContext_(message);
     attachments.forEach(function (attachment) {
       try {
-        result.filed += fileAttachment_(attachment, spreadsheet) ? 1 : 0;
+        result.filed += fileAttachment_(attachment, mail, spreadsheet) ? 1 : 0;
       } catch (err) {
         result.problems.push(attachment.getName() + ': ' + err.message);
         Logger.log('Failed on ' + attachment.getName() + ': ' + err.stack);
@@ -78,7 +79,7 @@ function processThread_(thread, spreadsheet) {
  * One attachment: read it, check it, write it. Throws with a human-readable reason
  * for anything that should go to needs-review instead of into the sheet.
  */
-function fileAttachment_(attachment, spreadsheet) {
+function fileAttachment_(attachment, mail, spreadsheet) {
   const size = attachment.getSize();
   if (size > CONFIG.MAX_ATTACHMENT_BYTES) {
     throw new Error('attachment is ' + Math.round(size / 1024 / 1024) + 'MB, over the ' +
@@ -97,9 +98,9 @@ function fileAttachment_(attachment, spreadsheet) {
 
   const base64 = Utilities.base64Encode(attachment.getBytes());
   const mimeType = normaliseType_(attachment.getContentType());
-  const reading = readReceipt_(base64, mimeType, tab.layout.categories);
+  const reading = readReceipt_(base64, mimeType, tab.layout.categories, mail);
 
-  const expense = validate_(reading);
+  const expense = validate_(reading, mail);
 
   // A receipt from a previous month belongs on that month's tab.
   if (expense.date.getMonth() !== today.getMonth() ||
@@ -117,9 +118,61 @@ function fileAttachment_(attachment, spreadsheet) {
   }
 
   const row = writeExpense_(tab.sheet, tab.layout, expense);
-  Logger.log('Filed ' + expense.description + ' $' + expense.total + ' to ' +
+  Logger.log('Filed ' + expense.description + ' $' + expense.total + ' under ' +
+             expense.payer + ' (' + expense.payerSource + ') to ' +
              tab.sheet.getName() + ' row ' + row);
   return true;
+}
+
+/**
+ * Who paid. The sending address settles it; a note in the email overrides it.
+ *
+ * The override is only honoured when the model can point at the words it read it
+ * from and those words are really in the email. A model that names a payer it
+ * cannot quote is guessing, and a guess here puts money in the wrong person's
+ * column of a shared budget — so the sender wins instead.
+ */
+function resolvePayer_(reading, mail) {
+  const fromSender = payerForSender_(mail.from);
+
+  if (reading.paid_by) {
+    if (quotedInEmail_(reading.paid_by_quote, mail.text)) {
+      return {
+        payer: reading.paid_by,
+        payerSource: 'the email said "' + reading.paid_by_quote.trim() + '"',
+      };
+    }
+    Logger.log('Ignoring paid_by "' + reading.paid_by + '" — its quote is not in the email.');
+  }
+
+  if (fromSender) return { payer: fromSender, payerSource: 'sent by ' + mail.from };
+
+  throw new Error('mail is from ' + (mail.from || 'an unknown address') +
+                  ', which is not one of the payers in Config.gs, and nothing in it ' +
+                  'says who paid');
+}
+
+/** The payer an address belongs to, or '' for an address nobody claims. */
+function payerForSender_(address) {
+  const from = String(address || '').trim().toLowerCase();
+  if (!from) return '';
+  const match = CONFIG.PAYERS.filter(function (payer) {
+    return payer.senders.some(function (sender) {
+      return sender.trim().toLowerCase() === from;
+    });
+  })[0];
+  return match ? match.name : '';
+}
+
+/** Are these words actually in the email? Whitespace and case are not the point. */
+function quotedInEmail_(quote, text) {
+  const needle = flatten_(quote);
+  if (needle.length < 3) return false;
+  return flatten_(text).indexOf(needle) !== -1;
+}
+
+function flatten_(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 /**
@@ -127,7 +180,7 @@ function fileAttachment_(attachment, spreadsheet) {
  * reason to leave the receipt for a human rather than write a number that might
  * be wrong.
  */
-function validate_(reading) {
+function validate_(reading, mail) {
   if (!reading.is_receipt) {
     throw new Error('not a receipt' + (reading.notes ? ' (' + reading.notes + ')' : ''));
   }
@@ -156,11 +209,15 @@ function validate_(reading) {
   if (daysAhead > 1) throw new Error('date ' + reading.date + ' is in the future');
   if (daysAhead < -730) throw new Error('date ' + reading.date + ' is over two years old');
 
+  const paid = resolvePayer_(reading, mail || {});
+
   return {
     description: reading.description,
     total: Math.round(reading.total * 100) / 100,
     date: date,
     category: reading.category,
+    payer: paid.payer,
+    payerSource: paid.payerSource,
   };
 }
 
@@ -203,8 +260,10 @@ function checkSetup() {
       const row = firstBlankFormulaRow_(tab.sheet, tab.layout);
       lines.push('Tab for ' + monthKey_(today) + ': "' + tab.sheet.getName() + '"');
       lines.push('  categories: ' + tab.layout.categories.join(', '));
-      lines.push('  paid-by column: ' + CONFIG.PAYER_HEADER +
-                 ' (column ' + tab.layout.payerCol + ')');
+      CONFIG.PAYERS.forEach(function (payer) {
+        lines.push('  ' + payer.name + ': column ' + tab.layout.payerCols[payer.name] +
+                   ' ("' + payer.header + '"), mail from ' + payer.senders.join(', '));
+      });
       lines.push(row
         ? '  next receipt would go to row ' + row
         : '  NO BLANK FORMULA ROW LEFT — the formulas need extending down the tab');

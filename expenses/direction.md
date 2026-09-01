@@ -19,11 +19,16 @@ What this does:
 
 - Watches one Gmail label for photos of receipts (and PDF receipts).
 - Reads each one with Claude's vision API: vendor, total, date, category.
+- Works out **who paid** from the sending address — Rob's mail goes in his column,
+  Danielle's in hers, from either of her addresses — unless the email says otherwise
+  in words ("Danielle paid this one"), which wins. Both of them can mail receipts to
+  the same address.
 - Appends a row to the correct month tab of the existing spreadsheet, using the
   categories that tab already defines, in the existing column layout.
 - Refuses to guess. Anything it is not confident about — unreadable total, missing
-  date, non-CAD currency, no matching month tab — is relabelled `receipts/needs-review`
-  and left for a human. It never writes a half-read receipt.
+  date, non-CAD currency, no matching month tab, mail from an address it doesn't
+  recognise — is relabelled `receipts/needs-review` and left for a human. It never
+  writes a half-read receipt.
 - Never edits a row it did not create, never edits a formula, never adds a column.
 
 What this deliberately does not do:
@@ -110,15 +115,39 @@ why the script writes into an existing blank row rather than appending one** —
 appended row falls outside the formulas, looks perfectly normal, and counts for
 nothing.
 
+## Who paid
+Two columns, `Paid by Rob` and `Paid by Danielle`, and every receipt goes wholly into
+one of them. Which one is decided in this order:
+
+1. **A note in the email.** If it says who paid — "Danielle paid this", "put it on
+   mine" — that wins over everything. The model reports both the payer and the exact
+   words it read that from, and the override is only honoured if those words really
+   are in the email. A model that names a payer it cannot quote is guessing, and a
+   guess here puts money in the wrong person's column of a shared budget.
+2. **The sending address.** `rob.sinclair.bb@gmail.com` is Rob;
+   `danielle.lucas5@gmail.com` and `chickami@hotmail.com` are Danielle. Both of them
+   mail receipts to the same `+receipt` address; the From line is what separates them.
+3. **Neither** — an address nobody claims, and nothing in the email saying who paid.
+   That goes to `needs-review`, named in `Config.gs` so adding an address is one line.
+
+The email is shown to the model to be read, not obeyed. It is told so, its answer is
+confined to the two names, and the quote check means the email cannot talk the script
+into anything the email doesn't actually say.
+
 The script finds the month tab by name — `Aug2026 - Var Expenses` parses as August
 2026, and so do `Aug 2026`, `August 2026` and `2026-08` — and failing that by looking
 for a tab that already holds dates in that month. It never creates a tab: a receipt
 for a month with no tab yet goes to `needs-review`.
 
 ## Open questions
-- **Which column does a receipt land in?** Currently always `Paid by Rob` (column B),
-  since the receipts come from Rob's phone. Splitting a shared receipt, or filing one
-  Danielle paid, is still manual.
+- **Splitting one receipt between the two of them** is still manual — a receipt goes
+  wholly into one column or the other. The sheet's `= Bought for the other person`
+  convention in column D suggests there is a case for it; nothing here handles it yet.
+- **How far to trust a note in the email.** A note overrides the sender only when the
+  model can quote the words it read it from and those words really are in the email
+  (see below). That catches a confident guess, but not a genuinely ambiguous note —
+  "she got this one" in a thread with three people in it would still be taken at face
+  value.
 - **Who makes next month's tab, and when?** The script never creates one, and until
   the month's tab exists its receipts wait in `needs-review` — they file themselves
   on the next run once it appears. September's was made by hand on 2026-08-31 and is

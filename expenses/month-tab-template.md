@@ -49,8 +49,9 @@ Nothing here is hard-coded in `Config.gs`. Every run, from the tab itself:
 
 - **the header row** — found by looking for `Description` in column A within the
   first twelve rows;
-- **which column is which** — by header text, so `Paid by Rob` is located rather
-  than assumed to be B;
+- **which column is which** — by header text, so `Paid by Rob` and `Paid by
+  Danielle` are located rather than assumed to be B and C. A tab missing either one
+  is not treated as a month tab at all;
 - **the categories** — read from the header cells to the right of `Card`, skipping
   `Error`. These become the list of categories Claude is allowed to choose from, so
   the sheet decides what a valid category is, not the code;

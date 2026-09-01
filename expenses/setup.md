@@ -18,6 +18,12 @@ Gmail delivers anything addressed to `you+anything@gmail.com` to your normal inb
 so there is no second account to set up. The `receipts/filed` and
 `receipts/needs-review` labels are created for you in step 5.
 
+**Danielle uses the same address.** Anything she sends to
+`rob.sinclair.bb+receipt@gmail.com` from `danielle.lucas5@gmail.com` or
+`chickami@hotmail.com` lands in the same label and is filed under her column — the
+From line is what separates the two of them. Mail from any other address goes to
+`needs-review`; adding an address is one line in `CONFIG.PAYERS`.
+
 ## 2. An Anthropic API key
 
 1. Go to <https://console.anthropic.com/> → **API Keys** → **Create Key**.
@@ -68,7 +74,8 @@ API key: set (sk-ant-a…)
 Spreadsheet: "DNR finances 2024"
 Tab for 2026-09: "Sept2026 - Var Expenses"
   categories: Transportation, Groceries, Restaurant, Entertainment, Camping, Dog, Home
-  paid-by column: Paid by Rob (column 2)
+  Rob: column 2 ("Paid by Rob"), mail from rob.sinclair.bb@gmail.com
+  Danielle: column 3 ("Paid by Danielle"), mail from danielle.lucas5@gmail.com, chickami@hotmail.com
   next receipt would go to row 11
 Label "receipts": present
 Label "receipts/filed": created
@@ -123,7 +130,17 @@ Photograph a receipt, share it into Gmail, send it to
 **processReceipts** by hand and read the log.
 
 What should happen: a row appears on the current month's tab — description, amount in
-**Paid by Rob**, date, category — and the mail is relabelled `receipts/filed`.
+the sender's column, date, category — and the mail is relabelled `receipts/filed`. The
+log names who it filed it under and why:
+
+```
+Filed No Frills $51.24 under Rob (sent by rob.sinclair.bb@gmail.com) to Sept2026 - Var Expenses row 10
+```
+
+Send one with a note in the body — "Danielle paid this one" — and the log should say
+`under Danielle (the email said "Danielle paid this one")` instead. A note only
+overrides the sender when its words are really in the email; if the model can't quote
+it, the sender stands.
 
 What happens when it is not sure: the mail is relabelled `receipts/needs-review` and
 nothing is written. The log says why. This is the normal outcome for a blurry total,
@@ -149,6 +166,7 @@ whole ritual. Glance at `receipts/needs-review` now and then.
 | `No blank pre-formulated row left` | That month's tab has used up the rows carrying the category formulas. Copy the formulas in columns N–T further down the tab — that is a change to the shared sheet, so it is a conversation, not a code change. |
 | `HTTP 401` from the API | The key is wrong or revoked. |
 | `HTTP 429` | Rate limited; it retries twice on its own, then leaves the mail for the next run. |
+| `mail is from … which is not one of the payers in Config.gs` | The receipt came from an address not listed under `CONFIG.PAYERS`, and nothing in the email said who paid. Add the address, or reply to yourself with a note naming the payer. |
 | `Unsupported attachment type: image/heic` | An iPhone sent the original HEIC rather than a JPEG. Re-send it from Photos with "Most Compatible", or take a screenshot of it. |
 | Nothing in the log at all | The label is empty — check the filter in step 1 is actually catching the mail. |
 

@@ -41,13 +41,21 @@ function readLayout_(sheet) {
     const layout = {
       headerRow: r + 1,
       descriptionCol: 1,
-      payerCol: row.indexOf(CONFIG.PAYER_HEADER) + 1,
+      payerCols: {},
       dateCol: row.indexOf('Date') + 1,
       categoryCol: row.indexOf('Category') + 1,
       categories: [],
       categoryFirstCol: 0,
     };
-    if (!layout.payerCol || !layout.dateCol || !layout.categoryCol) continue;
+    if (!layout.dateCol || !layout.categoryCol) continue;
+
+    // One column per payer, found by its header text. A tab missing any of them
+    // is not one this script knows how to fill in.
+    CONFIG.PAYERS.forEach(function (payer) {
+      const index = row.indexOf(payer.header);
+      if (index !== -1) layout.payerCols[payer.name] = index + 1;
+    });
+    if (Object.keys(layout.payerCols).length !== CONFIG.PAYERS.length) continue;
 
     // The category matrix sits to the right of the entry columns: every remaining
     // header cell except the "Error" catch-all column.
@@ -184,6 +192,11 @@ function isDate_(value) {
  * Returns the row number written.
  */
 function writeExpense_(sheet, layout, expense) {
+  const payerCol = layout.payerCols[expense.payer];
+  if (!payerCol) {
+    throw new Error('No column on "' + sheet.getName() + '" for ' + expense.payer + '.');
+  }
+
   const row = firstBlankFormulaRow_(sheet, layout);
   if (!row) {
     throw new Error('No blank pre-formulated row left on "' + sheet.getName() +
@@ -193,7 +206,7 @@ function writeExpense_(sheet, layout, expense) {
   // Written cell by cell: everything else on the row, including the other payer's
   // column and the Card note, is left exactly as it was.
   sheet.getRange(row, layout.descriptionCol).setValue(expense.description);
-  sheet.getRange(row, layout.payerCol).setValue(expense.total);
+  sheet.getRange(row, payerCol).setValue(expense.total);
   sheet.getRange(row, layout.dateCol).setValue(expense.date);
   sheet.getRange(row, layout.categoryCol).setValue(expense.category);
   return row;

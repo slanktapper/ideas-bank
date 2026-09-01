@@ -12,8 +12,23 @@ const CONFIG = {
   FILED_LABEL: 'receipts/filed',
   REVIEW_LABEL: 'receipts/needs-review',
 
-  // Which "Paid by" column a receipt lands in, matched against the header text.
-  PAYER_HEADER: 'Paid by Rob',
+  // Who paid. The sending address decides, unless the email says otherwise in
+  // words — "Danielle paid this", "put it on mine". Mail from an address that is
+  // not listed here goes to needs-review rather than into a guessed column.
+  // `header` is matched against the tab's header row, so the columns are located
+  // rather than assumed.
+  PAYERS: [
+    {
+      name: 'Rob',
+      header: 'Paid by Rob',
+      senders: ['rob.sinclair.bb@gmail.com'],
+    },
+    {
+      name: 'Danielle',
+      header: 'Paid by Danielle',
+      senders: ['danielle.lucas5@gmail.com', 'chickami@hotmail.com'],
+    },
+  ],
 
   // Receipts in any other currency go to needs-review rather than being converted.
   CURRENCY: 'CAD',
