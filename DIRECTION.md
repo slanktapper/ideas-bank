@@ -19,5 +19,6 @@ one-line description. Add a row when you create a project.
 | Short name | Description | Status |
 | --- | --- | --- |
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
+| expenses | Photograph a receipt, email it in, have it land as a row in the household spreadsheet | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
