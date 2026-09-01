@@ -1,0 +1,68 @@
+{
+  "_comment": [
+    "A blank month tab, captured from 'Sept2026 - Var Expenses' in the shared",
+    "spreadsheet 'DNR finances 2024' on 2026-08-31 MDT, the day it was created and",
+    "before a single receipt went into it. This is what a fresh month looks like.",
+    "The tests build their fake sheet from these numbers, so the script is exercised",
+    "against the real geometry rather than one invented to suit it. If the sheet's",
+    "shape ever changes, recapture this file and the tests follow."
+  ],
+  "spreadsheet": "DNR finances 2024",
+  "tab": "Sept2026 - Var Expenses",
+  "captured": "2026-08-31 MDT",
+  "headerRow": 5,
+  "firstEntryRow": 6,
+  "lastFormulaRow": 125,
+  "entryRowCapacity": 120,
+  "columns": {
+    "description": "A",
+    "paidByRob": "B",
+    "paidByDanielle": "C",
+    "date": "D",
+    "category": "E",
+    "card": "F",
+    "error": "M",
+    "firstCategory": "N",
+    "lastCategory": "T"
+  },
+  "categories": [
+    "Transportation",
+    "Groceries",
+    "Restaurant",
+    "Entertainment",
+    "Camping",
+    "Dog",
+    "Home"
+  ],
+  "budgets": {
+    "Transportation": 300,
+    "Groceries": 500,
+    "Restaurant": 250,
+    "Entertainment": 500,
+    "Camping": 1,
+    "Dog": 1,
+    "Home": 470
+  },
+  "topRows": {
+    "1": {},
+    "2": {
+      "D": "= Bought for the other person expense not shared",
+      "M": "Budget"
+    },
+    "3": {
+      "A": "$0.00",
+      "B": "Total Expenses for the month",
+      "M": "Actual"
+    },
+    "4": {
+      "A": "Shared (+ owes -)",
+      "B": "$0.00",
+      "C": "$0.00",
+      "M": "Ratio"
+    }
+  },
+  "entryRows": {
+    "A_to_F": "empty",
+    "N_to_T": "one formula per row, fanning the amount into its category column; displays 0 while the row is blank"
+  }
+}

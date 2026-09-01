@@ -59,6 +59,9 @@ million input / output tokens) — a receipt photo is a small image and a ~200-t
 answer.
 
 ## How to run
+Read `month-tab-template.md` first if you are touching the sheet-writing code — it is
+the shape everything here is built against.
+
 There is nothing to run on this machine — the code runs in Google's cloud. See
 `setup.md` for the one-time install, verbatim. In short:
 
@@ -83,10 +86,11 @@ occasionally for the ones it wouldn't guess at.
 `DNR finances 2024`. Two kinds of tab matter here, and the script only ever writes to
 one of them:
 
-- **The variable expense tabs**, one per month, newest first — `Aug2026 - Var
-  Expenses`, `Jul2026 - Var Expenses`, and so on back through 2024. These are the
-  month-by-month record of what was actually spent, and the only thing this script
-  touches.
+- **The variable expense tabs**, one per month — `Sept2026 - Var Expenses`,
+  `Aug2026 - Var Expenses`, `Jul2026 - Var Expenses`, and so on back through 2024.
+  These are the month-by-month record of what was actually spent, and the only thing
+  this script touches. `month-tab-template.md` describes exactly what a fresh one
+  looks like, captured from the September tab the day it was made.
 - **`85K salary shared exp new`** — the standing plan: income, the fixed monthly bills
   (mortgage, insurance, phone, internet), the budget each variable category is
   measured against, and how the two of them split it. Nothing recurring gets a
@@ -100,10 +104,11 @@ Every variable expense tab has the same shape:
 |---|---|---|---|---|---|---|---|---|---|
 | row 5 | Description | Paid by Rob | Paid by Danielle | Date | Category | Card | | Error | Transportation, Groceries, Restaurant, Entertainment, Camping, Dog, Home |
 
-Rows 6 downward are the expense rows; columns M–T hold per-row formulas that fan the
-amount out into the category totals at the top. **That is why the script writes into
-an existing blank row rather than appending one** — an appended row falls outside the
-formulas and silently doesn't count.
+Rows 6 to 125 are the expense rows — 120 of them, each already carrying the formulas
+in columns N–T that fan its amount out into the category totals at the top. **That is
+why the script writes into an existing blank row rather than appending one** — an
+appended row falls outside the formulas, looks perfectly normal, and counts for
+nothing.
 
 The script finds the month tab by name — `Aug2026 - Var Expenses` parses as August
 2026, and so do `Aug 2026`, `August 2026` and `2026-08` — and failing that by looking
@@ -114,13 +119,11 @@ for a month with no tab yet goes to `needs-review`.
 - **Which column does a receipt land in?** Currently always `Paid by Rob` (column B),
   since the receipts come from Rob's phone. Splitting a shared receipt, or filing one
   Danielle paid, is still manual.
-- **Who makes next month's tab, and when?** The script never creates one. On the 1st,
-  until `Sep2026 - Var Expenses` exists, every receipt goes to `needs-review`. If the
-  tab is normally made by copying last month's, that copy also has to keep the
-  category formulas in columns N–T, or there is nowhere valid to write.
-- **A copied tab keeps last month's rows.** Whoever makes the new tab has to clear the
-  entries; the script writes to the first blank row it finds, and a copy that still
-  holds August's receipts will simply be filled in below them.
+- **Who makes next month's tab, and when?** The script never creates one, and until
+  the month's tab exists its receipts wait in `needs-review` — they file themselves
+  on the next run once it appears. September's was made by hand on 2026-08-31 and is
+  a clean template: formulas intact, entries cleared. Whether October's arrives the
+  same way, or wants a `newMonthTab()` helper here, is the open part.
 - Should a filed row link back to the receipt photo? It would need a new column in
   someone else's sheet — deliberately not done. The `receipts/filed` label is the
   archive for now.

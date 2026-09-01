@@ -38,22 +38,55 @@ vm.createContext(sandbox);
   vm.runInContext(source, sandbox, { filename: file });
 });
 
-// --- a fake month tab, shaped like the real ones -------------------------------
-// Row 5 is the header; rows 6+ are entries; columns N–T carry the category
-// formulas, pre-filled down to row 125 and empty after that.
-const HEADER_ROW = 5;
-const FORMULA_LAST_ROW = 125;
-const CATEGORIES = ['Transportation', 'Groceries', 'Restaurant', 'Entertainment',
-                    'Camping', 'Dog', 'Home'];
+// --- a fake month tab, built from the real one ---------------------------------
+// The geometry comes from test/fixtures/blank-month-tab.json, captured from
+// "Sept2026 - Var Expenses" the day it was created: row 5 is the header, rows 6–125
+// are entry rows, and columns N–T carry the per-row category formulas. Nothing here
+// is invented — change the sheet, recapture the fixture, and these tests follow.
+const FIXTURE = require('./fixtures/blank-month-tab.json');
+
+const HEADER_ROW = FIXTURE.headerRow;
+const FIRST_ENTRY_ROW = FIXTURE.firstEntryRow;
+const FORMULA_LAST_ROW = FIXTURE.lastFormulaRow;
+const CATEGORIES = FIXTURE.categories;
+const FIRST_CATEGORY_COL = colNumber(FIXTURE.columns.firstCategory);
+const LAST_CATEGORY_COL = colNumber(FIXTURE.columns.lastCategory);
+const ERROR_COL = colNumber(FIXTURE.columns.error);
+
+function colNumber(letters) {
+  return letters.split('').reduce(function (n, ch) {
+    return n * 26 + (ch.charCodeAt(0) - 64);
+  }, 0);
+}
 
 function makeTab(name, entries) {
-  const maxRows = 200, maxCols = 20;
+  const maxRows = FORMULA_LAST_ROW + 75, maxCols = LAST_CATEGORY_COL;
   const values = [];
   for (let r = 0; r < maxRows; r++) values.push(new Array(maxCols).fill(''));
 
-  values[HEADER_ROW - 1] = ['Description', 'Paid by Rob', 'Paid by Danielle', 'Date',
-                            'Category', 'Card', '', '', '', '', '', '', 'Error']
-                           .concat(CATEGORIES);
+  // The rows above the header, so the header search has to step over real content.
+  Object.keys(FIXTURE.topRows).forEach(function (rowNumber) {
+    const cells = FIXTURE.topRows[rowNumber];
+    Object.keys(cells).forEach(function (letter) {
+      values[Number(rowNumber) - 1][colNumber(letter) - 1] = cells[letter];
+    });
+  });
+  CATEGORIES.forEach(function (category, i) {
+    values[1][FIRST_CATEGORY_COL - 1 + i] = '$' + FIXTURE.budgets[category] + '.00';
+  });
+
+  const header = values[HEADER_ROW - 1];
+  header[0] = 'Description';
+  header[colNumber(FIXTURE.columns.paidByRob) - 1] = 'Paid by Rob';
+  header[colNumber(FIXTURE.columns.paidByDanielle) - 1] = 'Paid by Danielle';
+  header[colNumber(FIXTURE.columns.date) - 1] = 'Date';
+  header[colNumber(FIXTURE.columns.category) - 1] = 'Category';
+  header[colNumber(FIXTURE.columns.card) - 1] = 'Card';
+  header[ERROR_COL - 1] = 'Error';
+  CATEGORIES.forEach(function (category, i) {
+    header[FIRST_CATEGORY_COL - 1 + i] = category;
+  });
+
   entries.forEach(function (entry, i) {
     const row = values[HEADER_ROW + i];
     row[0] = entry.description;
@@ -89,9 +122,10 @@ function makeTab(name, entries) {
           const out = [];
           for (let r = 0; r < numRows; r++) {
             const sheetRow = row + r;
-            const isCategoryCol = col >= 14 && col <= 20;
-            out.push([isCategoryCol && sheetRow > HEADER_ROW && sheetRow <= FORMULA_LAST_ROW
-              ? '=IF($E' + sheetRow + '=N$5,$B' + sheetRow + '+$C' + sheetRow + ',0)' : '']);
+            const isCategoryCol = col >= FIRST_CATEGORY_COL && col <= LAST_CATEGORY_COL;
+            out.push([isCategoryCol && sheetRow >= FIRST_ENTRY_ROW && sheetRow <= FORMULA_LAST_ROW
+              ? '=IF($E' + sheetRow + '=N$' + HEADER_ROW + ',$B' + sheetRow +
+                '+$C' + sheetRow + ',0)' : '']);
           }
           return out;
         },
@@ -190,7 +224,7 @@ check('first blank row after the entries', sandbox.firstBlankFormulaRow_(august,
       HEADER_ROW + 2 + 1);
 
 const full = makeTab('Full', []);
-for (let r = HEADER_ROW; r < FORMULA_LAST_ROW; r++) full._values[r][0] = 'taken';
+for (let r = FIRST_ENTRY_ROW; r <= FORMULA_LAST_ROW; r++) full._values[r - 1][0] = 'taken';
 check('returns 0 when the formula block is full',
       sandbox.firstBlankFormulaRow_(full, sandbox.readLayout_(full)), 0);
 
@@ -298,6 +332,39 @@ throws('no merchant', function () { sandbox.validate_(reading({ description: '' 
 throws('unreadable date', function () { sandbox.validate_(reading({ date: '' })); }, 'read the date');
 throws('future date', function () { sandbox.validate_(reading({ date: '2099-01-01' })); }, 'in the future');
 throws('ancient date', function () { sandbox.validate_(reading({ date: '2001-01-01' })); }, 'two years old');
+
+// --- a brand-new month, exactly as the sheet makes one --------------------------
+console.log('the blank month template (' + FIXTURE.tab + ', captured ' + FIXTURE.captured + ')');
+const sept = makeTab(FIXTURE.tab, []);
+const septLayout = sandbox.readLayout_(sept);
+check('is recognised as a month tab', septLayout !== null, true);
+check('the header row is where the fixture says', septLayout.headerRow, FIXTURE.headerRow);
+check('the categories are read off it', septLayout.categories, FIXTURE.categories);
+check('the first receipt of the month goes to the first entry row',
+      sandbox.firstBlankFormulaRow_(sept, septLayout), FIXTURE.firstEntryRow);
+
+sandbox.resetTabCache_();
+check('found by name for September 2026',
+      sandbox.findMonthTab_(makeSpreadsheet([sept]), new Date(2026, 8, 4)).sheet.getName(),
+      FIXTURE.tab);
+sandbox.resetTabCache_();
+check('and not for August', sandbox.findMonthTab_(makeSpreadsheet([sept]), new Date(2026, 7, 4)), null);
+sandbox.resetTabCache_();
+
+// Fill it the way a month actually would, and check it holds what it claims to.
+let written = 0;
+for (let i = 0; i < FIXTURE.entryRowCapacity; i++) {
+  written = sandbox.writeExpense_(sept, septLayout, {
+    description: 'Co-op', total: 10, date: new Date(2026, 8, 4), category: 'Groceries',
+  });
+}
+check('holds a month of receipts', FIXTURE.entryRowCapacity, 120);
+check('the last one lands on the last formula row', written, FIXTURE.lastFormulaRow);
+throws('and refuses the one after that', function () {
+  sandbox.writeExpense_(sept, septLayout, {
+    description: 'Co-op', total: 10, date: new Date(2026, 8, 4), category: 'Groceries',
+  });
+}, 'No blank pre-formulated row');
 
 console.log(failures ? '\n' + failures + ' failure(s)' : '\nall passing');
 process.exit(failures ? 1 : 0);
