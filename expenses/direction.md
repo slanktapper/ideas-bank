@@ -80,8 +80,21 @@ and the mail is relabelled `receipts/filed`. Check `receipts/needs-review`
 occasionally for the ones it wouldn't guess at.
 
 ## The spreadsheet this writes to
-`DNR finances 2024` — one tab per month, newest first, plus a few non-month tabs
-(budget, notes). Every month tab has the same shape:
+`DNR finances 2024`. Two kinds of tab matter here, and the script only ever writes to
+one of them:
+
+- **The variable expense tabs**, one per month, newest first — `Aug2026 - Var
+  Expenses`, `Jul2026 - Var Expenses`, and so on back through 2024. These are the
+  month-by-month record of what was actually spent, and the only thing this script
+  touches.
+- **`85K salary shared exp new`** — the standing plan: income, the fixed monthly bills
+  (mortgage, insurance, phone, internet), the budget each variable category is
+  measured against, and how the two of them split it. Nothing recurring gets a
+  receipt photographed, so nothing here is ever written by this script. It is a
+  different shape entirely — no `Description` / `Paid by Rob` header row — so it
+  cannot be picked as a write target even by accident.
+
+Every variable expense tab has the same shape:
 
 | | A | B | C | D | E | F | … | M | N … T |
 |---|---|---|---|---|---|---|---|---|---|
@@ -92,18 +105,22 @@ amount out into the category totals at the top. **That is why the script writes 
 an existing blank row rather than appending one** — an appended row falls outside the
 formulas and silently doesn't count.
 
-The script finds the month tab by name (month + year), and failing that by looking
-for a tab that already holds dates in that month. It never creates a tab.
+The script finds the month tab by name — `Aug2026 - Var Expenses` parses as August
+2026, and so do `Aug 2026`, `August 2026` and `2026-08` — and failing that by looking
+for a tab that already holds dates in that month. It never creates a tab: a receipt
+for a month with no tab yet goes to `needs-review`.
 
 ## Open questions
 - **Which column does a receipt land in?** Currently always `Paid by Rob` (column B),
   since the receipts come from Rob's phone. Splitting a shared receipt, or filing one
   Danielle paid, is still manual.
-- **What are the month tabs actually called?** Resolution is by pattern, which works
-  for `Aug`, `August`, `Aug 2026`, `2026-08` and similar. `listTabs()` prints the real
-  names; if the pattern misses, put the exact name in `CONFIG.TAB_OVERRIDES`.
-- **New month, empty tab.** A tab with no dates in it yet can only be matched by name.
-  Worth confirming the naming convention once rather than discovering it on the 1st.
+- **Who makes next month's tab, and when?** The script never creates one. On the 1st,
+  until `Sep2026 - Var Expenses` exists, every receipt goes to `needs-review`. If the
+  tab is normally made by copying last month's, that copy also has to keep the
+  category formulas in columns N–T, or there is nowhere valid to write.
+- **A copied tab keeps last month's rows.** Whoever makes the new tab has to clear the
+  entries; the script writes to the first blank row it finds, and a copy that still
+  holds August's receipts will simply be filled in below them.
 - Should a filed row link back to the receipt photo? It would need a new column in
   someone else's sheet — deliberately not done. The `receipts/filed` label is the
   archive for now.

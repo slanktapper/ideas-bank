@@ -170,7 +170,7 @@ function throws(name, fn, fragment) {
 
 // --- reading a tab's layout ----------------------------------------------------
 console.log('readLayout_');
-const august = makeTab('Aug', [
+const august = makeTab('Aug2026 - Var Expenses', [
   { description: 'Car gas', danielle: 47.86, date: new Date(2026, 7, 8), category: 'Transportation' },
   { description: 'Atco', rob: 110.56, date: new Date(2026, 7, 18), category: 'Home' },
 ]);
@@ -196,37 +196,52 @@ check('returns 0 when the formula block is full',
 
 // --- matching a tab name to a month --------------------------------------------
 console.log('tabNameMatchesMonth_');
-[['Aug', true], ['August', true], ['Aug 2026', true], ['August 2026', true],
+[// the sheet's own convention
+ ['Aug2026 - Var Expenses', true], ['Aug2025 - Var Expenses', false],
+ ['Jul2026 - Var Expenses', false], ['Sept2026 - Var Expenses', false],
+ // and the other ways a month tab might reasonably be named
+ ['Aug', true], ['August', true], ['Aug 2026', true], ['August 2026', true],
  ['2026-08', true], ['8/2026', true], ['Aug 2025', false], ['Sept', false],
- ['Jul', false], ['Budget', false]].forEach(function (pair) {
+ ['Jul', false], ['Budget', false],
+ // the static tab, which is not a month at all
+ ['85K salary shared exp new', false]].forEach(function (pair) {
   check('"' + pair[0] + '" is August 2026: ' + pair[1],
         sandbox.tabNameMatchesMonth_(pair[0], 2026, 7), pair[1]);
 });
 check('"Mar" is not May', sandbox.tabNameMatchesMonth_('Mar', 2026, 4), false);
 check('"Sept" is September', sandbox.tabNameMatchesMonth_('Sept', 2026, 8), true);
+check('"Sept2026 - Var Expenses" is September',
+      sandbox.tabNameMatchesMonth_('Sept2026 - Var Expenses', 2026, 8), true);
+check('a glued year is still read', sandbox.yearsIn_('aug2026 - var expenses'), ['2026']);
+check('a spaced year is still read', sandbox.yearsIn_('august 2026'), ['2026']);
+check('adjacent years are both read', sandbox.yearsIn_('2025-2026'), ['2025', '2026']);
+check('no year is no constraint', sandbox.yearsIn_('85k salary shared exp new'), []);
 
 // --- finding the month tab -----------------------------------------------------
 console.log('findMonthTab_');
-const july = makeTab('Jul', [
+const july = makeTab('Jul2026 - Var Expenses', [
   { description: 'Co-op', rob: 82.11, date: new Date(2026, 6, 3), category: 'Groceries' },
 ]);
-const unnamed = makeTab('sheet27', [
+const unnamed = makeTab('Copy of Jun', [
   { description: 'Sushi', rob: 61.00, date: new Date(2026, 5, 12), category: 'Restaurant' },
 ]);
 const book = makeSpreadsheet([august, july, unnamed]);
 
-check('by name', sandbox.findMonthTab_(book, new Date(2026, 7, 15)).sheet.getName(), 'Aug');
+check('by name', sandbox.findMonthTab_(book, new Date(2026, 7, 15)).sheet.getName(),
+      'Aug2026 - Var Expenses');
 check('answers again from the per-run cache without re-reading the tabs',
-      sandbox.findMonthTab_(makeSpreadsheet([]), new Date(2026, 7, 2)).sheet.getName(), 'Aug');
+      sandbox.findMonthTab_(makeSpreadsheet([]), new Date(2026, 7, 2)).sheet.getName(),
+      'Aug2026 - Var Expenses');
 sandbox.resetTabCache_();
 check('by the dates already in the tab',
-      sandbox.findMonthTab_(book, new Date(2026, 5, 2)).sheet.getName(), 'sheet27');
+      sandbox.findMonthTab_(book, new Date(2026, 5, 2)).sheet.getName(), 'Copy of Jun');
 check('null when there is no tab for the month',
       sandbox.findMonthTab_(book, new Date(2026, 0, 5)), null);
 
-setOverrides({ '2026-01': 'sheet27' });
+setOverrides({ '2026-01': 'Copy of Jun' });
 sandbox.resetTabCache_();
-check('override wins', sandbox.findMonthTab_(book, new Date(2026, 0, 5)).sheet.getName(), 'sheet27');
+check('override wins',
+      sandbox.findMonthTab_(book, new Date(2026, 0, 5)).sheet.getName(), 'Copy of Jun');
 setOverrides({ '2026-01': 'nope' });
 sandbox.resetTabCache_();
 throws('override naming a missing tab', function () {

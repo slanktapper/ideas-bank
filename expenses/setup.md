@@ -66,7 +66,7 @@ Then read the **Execution log**. It should say something like:
 ```
 API key: set (sk-ant-a…)
 Spreadsheet: "DNR finances 2024"
-Tab for 2026-09: "Sept"
+Tab for 2026-08: "Aug2026 - Var Expenses"
   categories: Transportation, Groceries, Restaurant, Entertainment, Camping, Dog, Home
   paid-by column: Paid by Rob (column 2)
   next receipt would go to row 11
@@ -80,16 +80,34 @@ Anything that says MISSING or NOT FOUND, fix before going on — see Troubleshoo
 
 ## 6. If the month tab was not found
 
-Run **listTabs**. It prints every tab and whether the script recognises it as a month
-tab. Take the real name for the current month and put it in `Config.gs`:
+The sheet's own naming — `Aug2026 - Var Expenses` — is understood as it is, so this
+step is usually not needed. Two things will trip it:
 
-```js
-TAB_OVERRIDES: { '2026-09': 'Sept' },
-```
+- **The month's tab doesn't exist yet.** Nothing to configure; the tab has to be made
+  (see step 6a).
+- **A tab is named something the pattern can't read.** Run **listTabs** — it prints
+  every tab and whether the script recognises it as a month tab — then put the exact
+  name in `Config.gs`:
 
-The key is `YYYY-MM`. Add a line each month, or rename the tab to something the
-script matches on its own (`Sept`, `September`, `Sep 2026` and `2026-09` all work).
-Run `checkSetup` again.
+  ```js
+  TAB_OVERRIDES: { '2026-09': 'Sept 2026 variable' },
+  ```
+
+  The key is `YYYY-MM`. Or rename the tab to match the convention, which needs no
+  code change at all. Either way, run `checkSetup` again.
+
+### 6a. Each new month
+
+The script never creates a tab. Until `Sep2026 - Var Expenses` exists, September
+receipts pile up in `receipts/needs-review` — they are not lost, and they file
+themselves on the next run once the tab is there. Two things the new tab needs:
+
+- the category formulas in columns N–T carried down the rows, or there is nowhere
+  valid to write;
+- last month's entries cleared out, if it was made by copying.
+
+Both belong to whoever maintains the sheet — this project deliberately doesn't
+reshape someone else's spreadsheet.
 
 ## 7. Start the timer
 

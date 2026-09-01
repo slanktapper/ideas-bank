@@ -122,7 +122,10 @@ function remember_(key, value) {
   return value;
 }
 
-/** Does a tab name denote this month? Handles "Aug", "August", "Aug 2026", "2026-08". */
+/**
+ * Does a tab name denote this month? The sheet's own convention is
+ * "Aug2026 - Var Expenses"; "August 2026", "Aug 2026" and "2026-08" work too.
+ */
 function tabNameMatchesMonth_(name, year, month) {
   const lower = name.toLowerCase();
   const full = MONTH_NAMES[month];
@@ -140,10 +143,22 @@ function tabNameMatchesMonth_(name, year, month) {
   });
   if (!namesMonth) return false;
 
-  // If the name carries a year, it has to be the right one.
-  const years = lower.match(/\b(19|20)\d{2}\b/g);
-  if (years && years.indexOf(String(year)) === -1) return false;
+  // If the name carries a year, it has to be the right one. Note the year is
+  // written up against the month — "Aug2026" — so a word boundary is no help here.
+  const years = yearsIn_(lower);
+  if (years.length && years.indexOf(String(year)) === -1) return false;
   return true;
+}
+
+/** Four-digit years in a string, whether or not they are separated from the letters. */
+function yearsIn_(text) {
+  const pattern = /(?:^|[^0-9])((?:19|20)\d{2})(?![0-9])/g;
+  const found = [];
+  let match;
+  while ((match = pattern.exec(text)) !== null) {
+    found.push(match[1]);
+  }
+  return found;
 }
 
 /** Does this tab already contain entries dated in the given month? */

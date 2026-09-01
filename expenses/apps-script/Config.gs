@@ -27,8 +27,9 @@ const CONFIG = {
   MAX_THREADS_PER_RUN: 10,
   MAX_ATTACHMENT_BYTES: 5 * 1024 * 1024,
 
-  // Only needed if the month tab can't be found by name. Key is YYYY-MM.
-  //   TAB_OVERRIDES: { '2026-08': 'Aug', '2026-09': 'Sept' }
+  // Only needed if a month tab can't be found by name. Key is YYYY-MM.
+  // The sheet's convention — "Aug2026 - Var Expenses" — is matched without this.
+  //   TAB_OVERRIDES: { '2026-09': 'Sept 2026 variable' }
   TAB_OVERRIDES: {},
 
   // Email address for a digest of anything sent to needs-review. '' = no digest.
