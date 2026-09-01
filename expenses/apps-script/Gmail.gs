@@ -30,8 +30,12 @@ function receiptAttachments_(message) {
  * it said. The address decides who paid; the text can override that in words.
  */
 function mailContext_(message) {
+  const from = senderAddress_(message);
+  const payer = payerForSender_(from);
   return {
-    from: senderAddress_(message),
+    from: from,
+    // Shown to the model so that "mine" and "I paid" resolve to somebody.
+    senderLabel: payer ? payer + ' (' + from + ')' : (from || 'an unknown address'),
     text: emailText_(message),
   };
 }

@@ -330,7 +330,7 @@ function reading(overrides) {
               '-' + ('0' + today.getDate()).slice(-2);
   return Object.assign({
     is_receipt: true, description: 'Co-op', total: 43.19, currency: 'CAD',
-    date: iso, category: 'Groceries', paid_by: '', paid_by_quote: '',
+    date: iso, category: 'Groceries', paid_by: '', paid_by_reason: '',
     confidence: 'high', notes: '',
   }, overrides);
 }
@@ -362,48 +362,48 @@ check('case and spacing do not matter',
 check('a stranger', sandbox.payerForSender_('someone@example.com'), '');
 check('nothing at all', sandbox.payerForSender_(''), '');
 
-console.log('quotedInEmail_');
-check('words that are there',
-      sandbox.quotedInEmail_('Danielle paid this', 'hey — Danielle paid this one, receipt attached'), true);
-check('across a line break',
-      sandbox.quotedInEmail_('Danielle paid this one', 'hey,\nDanielle paid\nthis one'), true);
-check('words that are not', sandbox.quotedInEmail_('Danielle paid', 'receipt attached'), false);
-check('an empty quote proves nothing', sandbox.quotedInEmail_('', 'Danielle paid this'), false);
-
 console.log('resolvePayer_');
 function resolve(overrides, mail) {
   return sandbox.resolvePayer_(reading(overrides), mail);
 }
 check('the sender decides by default', resolve({}, FROM_ROB).payer, 'Rob');
 check('and for her too', resolve({}, FROM_DANIELLE).payer, 'Danielle');
-check('a quoted note overrides the sender',
-      resolve({ paid_by: 'Danielle', paid_by_quote: 'Danielle paid this' },
+check('a note overrides the sender',
+      resolve({ paid_by: 'Danielle', paid_by_reason: '"Danielle paid this one"' },
               { from: 'rob.sinclair.bb@gmail.com', text: 'Danielle paid this one' }).payer,
       'Danielle');
-check('the reason says which note it read',
-      resolve({ paid_by: 'Danielle', paid_by_quote: 'Danielle paid this' },
-              { from: 'rob.sinclair.bb@gmail.com', text: 'Danielle paid this one' }).payerSource,
-      'the email said "Danielle paid this"');
-check('a note the email does not contain is ignored',
-      resolve({ paid_by: 'Danielle', paid_by_quote: 'Danielle paid this' },
-              { from: 'rob.sinclair.bb@gmail.com', text: 'receipt attached' }).payer,
-      'Rob');
+check('the reason is carried through for the log',
+      resolve({ paid_by: 'Danielle', paid_by_reason: '"she got this one"' },
+              { from: 'rob.sinclair.bb@gmail.com', text: 'she got this one, receipt attached' }).payerSource,
+      'the email: "she got this one"');
+check('a paraphrase is honoured — no exact match required',
+      resolve({ paid_by: 'Danielle', paid_by_reason: '"hers" refers to Danielle' },
+              { from: 'rob.sinclair.bb@gmail.com', text: 'this one was hers' }).payer,
+      'Danielle');
+check('and so is a first-person one resolved against the sender',
+      resolve({ paid_by: 'Danielle', paid_by_reason: 'the sender says she paid' },
+              { from: 'chickami@hotmail.com', text: 'put this on mine' }).payer,
+      'Danielle');
 check('a note stands in for an unknown sender',
-      resolve({ paid_by: 'Rob', paid_by_quote: 'Rob paid' },
+      resolve({ paid_by: 'Rob', paid_by_reason: 'Rob paid' },
               { from: 'someone@example.com', text: 'Rob paid, forwarding this on' }).payer,
+      'Rob');
+check('a payer read out of an empty email is ignored',
+      resolve({ paid_by: 'Danielle', paid_by_reason: 'no idea really' },
+              { from: 'rob.sinclair.bb@gmail.com', text: '' }).payer,
       'Rob');
 throws('an unknown sender and no note', function () {
   resolve({}, { from: 'someone@example.com', text: 'receipt attached' });
 }, 'not one of the payers');
-throws('an unknown sender and an unquotable note', function () {
-  resolve({ paid_by: 'Danielle', paid_by_quote: 'she paid' },
-          { from: 'someone@example.com', text: 'receipt attached' });
+throws('an unknown sender and an empty email', function () {
+  resolve({ paid_by: 'Danielle', paid_by_reason: 'guessing' },
+          { from: 'someone@example.com', text: '' });
 }, 'not one of the payers');
 
 console.log('validate_ carries the payer through');
 check('from the sender', sandbox.validate_(reading(), FROM_DANIELLE).payer, 'Danielle');
 check('from the note',
-      sandbox.validate_(reading({ paid_by: 'Danielle', paid_by_quote: 'hers' }),
+      sandbox.validate_(reading({ paid_by: 'Danielle', paid_by_reason: '"hers"' }),
                         { from: 'rob.sinclair.bb@gmail.com', text: 'this one is hers' }).payer,
       'Danielle');
 

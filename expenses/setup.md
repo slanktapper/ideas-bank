@@ -137,10 +137,10 @@ log names who it filed it under and why:
 Filed No Frills $51.24 under Rob (sent by rob.sinclair.bb@gmail.com) to Sept2026 - Var Expenses row 10
 ```
 
-Send one with a note in the body — "Danielle paid this one" — and the log should say
-`under Danielle (the email said "Danielle paid this one")` instead. A note only
-overrides the sender when its words are really in the email; if the model can't quote
-it, the sender stands.
+Send one with a note in the body — "Danielle paid this one", or just "hers" — and the
+log should say `under Danielle (the email: …)` instead. It does not have to be a set
+phrase: the whole message goes to the model, which is told who sent it, so "put it on
+mine" resolves to the sender and "she got this one" resolves to her.
 
 What happens when it is not sure: the mail is relabelled `receipts/needs-review` and
 nothing is written. The log says why. This is the normal outcome for a blurry total,

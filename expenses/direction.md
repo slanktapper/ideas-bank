@@ -119,20 +119,25 @@ nothing.
 Two columns, `Paid by Rob` and `Paid by Danielle`, and every receipt goes wholly into
 one of them. Which one is decided in this order:
 
-1. **A note in the email.** If it says who paid — "Danielle paid this", "put it on
-   mine" — that wins over everything. The model reports both the payer and the exact
-   words it read that from, and the override is only honoured if those words really
-   are in the email. A model that names a payer it cannot quote is guessing, and a
-   guess here puts money in the wrong person's column of a shared budget.
+1. **What the email says.** The whole message goes to the model along with the
+   receipt, and it decides for itself whether the message names a payer. It does not
+   have to be a set phrase: "Danielle paid this", "she got this one", "on my card",
+   "D covered it" all count, and first-person words are resolved against whoever
+   sent it — the model is told who that is. It reports the payer and, in a few
+   words, what it read that from, which goes into the log and the digest so a wrong
+   call is visible after the fact rather than silent. The reason is not checked
+   against the text: requiring the words to match exactly is what stopped the
+   ordinary way people write from working. The one thing refused is a payer read out
+   of an email with no message in it at all.
 2. **The sending address.** `rob.sinclair.bb@gmail.com` is Rob;
    `danielle.lucas5@gmail.com` and `chickami@hotmail.com` are Danielle. Both of them
    mail receipts to the same `+receipt` address; the From line is what separates them.
 3. **Neither** — an address nobody claims, and nothing in the email saying who paid.
    That goes to `needs-review`, named in `Config.gs` so adding an address is one line.
 
-The email is shown to the model to be read, not obeyed. It is told so, its answer is
-confined to the two names, and the quote check means the email cannot talk the script
-into anything the email doesn't actually say.
+The email is shown to the model to be read, not obeyed. It is told so, and its answer
+is confined by the schema to the two names — so the worst an email can do is put a
+receipt in the wrong column, which the log names and a person can move.
 
 The script finds the month tab by name — `Aug2026 - Var Expenses` parses as August
 2026, and so do `Aug 2026`, `August 2026` and `2026-08` — and failing that by looking
@@ -143,11 +148,12 @@ for a month with no tab yet goes to `needs-review`.
 - **Splitting one receipt between the two of them** is still manual — a receipt goes
   wholly into one column or the other. The sheet's `= Bought for the other person`
   convention in column D suggests there is a case for it; nothing here handles it yet.
-- **How far to trust a note in the email.** A note overrides the sender only when the
-  model can quote the words it read it from and those words really are in the email
-  (see below). That catches a confident guess, but not a genuinely ambiguous note —
-  "she got this one" in a thread with three people in it would still be taken at face
-  value.
+- **How far to trust what the email says.** The model's reading of the message
+  overrides the sending address, and its stated reason is recorded but not verified.
+  That is the deliberate trade for handling the way people actually write; the cost
+  is that a genuinely ambiguous message — "she got this one" in a thread with three
+  people in it — is taken at face value. Whether the log is enough of a check, or
+  this eventually wants the payer echoed back in a reply, is open.
 - **Who makes next month's tab, and when?** The script never creates one, and until
   the month's tab exists its receipts wait in `needs-review` — they file themselves
   on the next run once it appears. September's was made by hand on 2026-08-31 and is
