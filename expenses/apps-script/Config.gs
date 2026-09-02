@@ -45,6 +45,12 @@ const CONFIG = {
   // model starts fumbling faded or crumpled receipts.
   EFFORT: 'low',
 
+  // A bill is filed as soon as its notice arrives, dated the day it is due — that
+  // is the day the money leaves on a preauthorized plan, and it is what decides
+  // which month tab the row lands on. A due date further out than this is a misread
+  // rather than a bill.
+  MAX_DUE_DAYS_AHEAD: 60,
+
   // Ceilings, so one bad run can't blow the Apps Script quota.
   MAX_THREADS_PER_RUN: 10,
   MAX_ATTACHMENT_BYTES: 5 * 1024 * 1024,

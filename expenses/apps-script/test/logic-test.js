@@ -337,8 +337,8 @@ function reading(overrides) {
   const iso = today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) +
               '-' + ('0' + today.getDate()).slice(-2);
   return Object.assign({
-    is_receipt: true, description: 'Co-op', total: 43.19, currency: 'CAD',
-    date: iso, category: 'Groceries', paid_by: '', paid_by_reason: '',
+    is_expense: true, description: 'Co-op', total: 43.19, currency: 'CAD',
+    date: iso, date_kind: 'purchase', category: 'Groceries', paid_by: '', paid_by_reason: '',
     bought_for: '', bought_for_reason: '', confidence: 'high', notes: '',
   }, overrides);
 }
@@ -349,7 +349,7 @@ check('a clean receipt', sandbox.validate_(reading(), FROM_ROB).description, 'Co
 check('rounds to cents', sandbox.validate_(reading({ total: 43.194999 }), FROM_ROB).total, 43.19);
 check('an unstated currency is CAD',
       sandbox.validate_(reading({ currency: '' }), FROM_ROB).total, 43.19);
-throws('not a receipt', function () { sandbox.validate_(reading({ is_receipt: false }), FROM_ROB); }, 'not a receipt');
+throws('nothing spent', function () { sandbox.validate_(reading({ is_expense: false }), FROM_ROB); }, 'nothing spent');
 throws('low confidence', function () { sandbox.validate_(reading({ confidence: 'low' }), FROM_ROB); }, 'low confidence');
 throws('no total', function () { sandbox.validate_(reading({ total: null }), FROM_ROB); }, 'read the total');
 throws('zero total', function () { sandbox.validate_(reading({ total: 0 }), FROM_ROB); }, 'read the total');
@@ -357,7 +357,9 @@ throws('foreign currency', function () { sandbox.validate_(reading({ currency: '
 throws('no category', function () { sandbox.validate_(reading({ category: '' }), FROM_ROB); }, 'no category fits');
 throws('no merchant', function () { sandbox.validate_(reading({ description: '' }), FROM_ROB); }, 'read the merchant');
 throws('unreadable date', function () { sandbox.validate_(reading({ date: '' }), FROM_ROB); }, 'read the date');
-throws('future date', function () { sandbox.validate_(reading({ date: '2099-01-01' }), FROM_ROB); }, 'in the future');
+throws('a purchase dated in the future', function () {
+  sandbox.validate_(reading({ date: '2099-01-01' }), FROM_ROB);
+}, 'is not a due date');
 throws('ancient date', function () { sandbox.validate_(reading({ date: '2001-01-01' }), FROM_ROB); }, 'two years old');
 
 // --- who paid ------------------------------------------------------------------
@@ -414,6 +416,60 @@ check('from the note',
       sandbox.validate_(reading({ paid_by: 'Danielle', paid_by_reason: '"hers"' }),
                         { from: 'rob.sinclair.bb@gmail.com', text: 'this one is hers' }).payer,
       'Danielle');
+
+// --- bills and payment notices, which have no photograph ------------------------
+console.log('a bill dated when it comes due');
+function isoDaysFromNow(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) +
+         '-' + ('0' + d.getDate()).slice(-2);
+}
+
+// The ATCO notice, as the model should read it: no photograph, the email is the record.
+const ATCO = {
+  description: 'Atco', total: 119.82, currency: 'CAD',
+  date: isoDaysFromNow(14), date_kind: 'due', category: 'Home',
+};
+const atco = sandbox.validate_(reading(ATCO), FROM_ROB);
+check('a bill due in a fortnight is filed now', atco.total, 119.82);
+check('dated the day it comes due', atco.date.getDate(), new Date(isoDaysFromNow(14)).getDate());
+check('and marked as not yet paid', atco.dateKind, 'due');
+check('under the sender', atco.payer, 'Rob');
+check('shared like any other household bill', atco.notShared, false);
+
+check('a due date just inside the limit is fine',
+      sandbox.validate_(reading(Object.assign({}, ATCO, { date: isoDaysFromNow(59) })),
+                        FROM_ROB).dateKind, 'due');
+throws('a due date far beyond it is a misread', function () {
+  sandbox.validate_(reading(Object.assign({}, ATCO, { date: isoDaysFromNow(120) })), FROM_ROB);
+}, 'days off');
+throws('only a due date may be in the future', function () {
+  sandbox.validate_(reading({ date: isoDaysFromNow(14), date_kind: 'payment' }), FROM_ROB);
+}, 'is not a due date');
+check('a payment already made is dated when it was made',
+      sandbox.validate_(reading({ date: isoDaysFromNow(-3), date_kind: 'payment' }),
+                        FROM_ROB).dateKind, 'payment');
+
+console.log('findDuplicate_');
+const dupTab = makeTab('Sept2026 - Var Expenses', [
+  { description: 'Atco', rob: 119.82, date: new Date(2026, 8, 15), category: 'Home' },
+  { description: 'Co-op', rob: 43.19, date: new Date(2026, 8, 2), category: 'Groceries' },
+]);
+const dupLayout = sandbox.readLayout_(dupTab);
+function dup(overrides) {
+  return sandbox.findDuplicate_(dupTab, dupLayout, Object.assign({
+    description: 'Atco', total: 119.82, date: new Date(2026, 8, 15), payer: 'Rob',
+    notShared: false,
+  }, overrides));
+}
+check('the same bill forwarded twice', dup({}), FIXTURE.firstEntryRow);
+check('case and spacing do not save it', dup({ description: '  atco ' }), FIXTURE.firstEntryRow);
+check('a different amount is a different expense', dup({ total: 119.83 }), 0);
+check('a different day is a different expense', dup({ date: new Date(2026, 8, 16) }), 0);
+check('a different description is a different expense', dup({ description: 'Enmax' }), 0);
+check('the other column is a different expense', dup({ payer: 'Danielle' }), 0);
+check('nothing like it at all', dup({ description: 'Sushi', total: 61 }), 0);
 
 // --- bought for the other person, so not shared ---------------------------------
 console.log('resolveSharing_');

@@ -10,7 +10,10 @@ const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 
 const RECEIPT_SYSTEM_PROMPT = [
-  'You read photographs of retail receipts and report what was spent.',
+  'You read records of money spent and report what was spent. Usually that is a',
+  'photograph of a till receipt. Sometimes there is no photograph and the email',
+  'itself is the record: a bill, a payment confirmation, a notice from a utility.',
+  'Both are the same job.',
   '',
   'The description you return is written into a shared household spreadsheet',
   'alongside entries a person typed by hand. Match that: the merchant, as someone',
@@ -19,7 +22,10 @@ const RECEIPT_SYSTEM_PROMPT = [
   'slogan on the receipt, and never a list of what was bought.',
   '',
   'The total is the final amount actually charged, tax and tip included — the',
-  'bottom line, not the subtotal.',
+  'bottom line, not the subtotal. On a bill it is the amount owing.',
+  '',
+  'Never put an account number, a card number, an invoice number or a URL in the',
+  'description. It goes into a household spreadsheet, not a filing system.',
   '',
   'Report low confidence rather than guessing. A blurred total, a date you inferred',
   'from context rather than read, a photo that is not a receipt at all: say so. A',
@@ -40,14 +46,9 @@ const RECEIPT_SYSTEM_PROMPT = [
  * @param {string[]} categories the category names taken from the month tab
  * @return {Object} the parsed extraction (see RECEIPT_SCHEMA)
  */
-function readReceipt_(base64, mimeType, categories, mail) {
-  const kind = SUPPORTED_TYPES[mimeType];
-  if (!kind) throw new Error('Unsupported attachment type: ' + mimeType);
-
-  const source = { type: 'base64', media_type: mimeType, data: base64 };
-  const attachmentBlock = kind === 'image'
-    ? { type: 'image', source: source }
-    : { type: 'document', source: source };
+function readExpense_(categories, mail, attachment) {
+  const content = [];
+  if (attachment) content.push(attachmentBlock_(attachment));
 
   const payers = CONFIG.PAYERS.map(function (payer) { return payer.name; });
   // Who sent it, so "mine" and "I paid" resolve to somebody.
@@ -63,12 +64,15 @@ function readReceipt_(base64, mimeType, categories, mail) {
     },
     messages: [{
       role: 'user',
-      content: [
-        attachmentBlock,
+      content: content.concat([
         {
           type: 'text',
           text: [
-            'Read this receipt.',
+            attachment
+              ? 'Read this receipt.'
+              : 'There is no photograph — the email below is the whole record. It ' +
+                'is a bill, a payment notice or something like one. Read it the ' +
+                'same way you would read a receipt.',
             '',
             'Categorise it as one of: ' + categories.join(', ') + '.',
             'If none of them fits, return an empty category rather than the',
@@ -77,6 +81,14 @@ function readReceipt_(base64, mimeType, categories, mail) {
             'Dates are day/month/year or month/day/year depending on the till;',
             'use the merchant and the year to work out which, and if the day and',
             'month are genuinely ambiguous, lower your confidence.',
+            '',
+            'Which date, and say which kind it is in date_kind:',
+            '  purchase — a till receipt: the day it was bought.',
+            '  payment  — a confirmation that money has already moved: that day.',
+            '  due      — a bill not yet paid: the day it is due, which is the day',
+            '             it will be taken. Say "due" even when that day has not',
+            '             arrived yet; a due date in the next month or two is',
+            '             normal and expected.',
             '',
             'This is the email it arrived in, sent by ' + senderLabel + '.',
             '',
@@ -108,7 +120,7 @@ function readReceipt_(base64, mimeType, categories, mail) {
             '</email>',
           ].join('\n'),
         },
-      ],
+      ]),
     }],
   };
 
@@ -130,18 +142,28 @@ function readReceipt_(base64, mimeType, categories, mail) {
   return JSON.parse(text);
 }
 
+/** An image or a PDF, however the API wants it. */
+function attachmentBlock_(attachment) {
+  const kind = SUPPORTED_TYPES[attachment.mimeType];
+  if (!kind) throw new Error('Unsupported attachment type: ' + attachment.mimeType);
+  const source = { type: 'base64', media_type: attachment.mimeType, data: attachment.base64 };
+  return kind === 'image' ? { type: 'image', source: source }
+                          : { type: 'document', source: source };
+}
+
 /** The shape the model must answer in. Categories come from the sheet, not from here. */
 function receiptSchema_(categories, payers) {
   return {
     type: 'object',
     additionalProperties: false,
-    required: ['is_receipt', 'description', 'total', 'currency', 'date', 'category',
-               'paid_by', 'paid_by_reason', 'bought_for', 'bought_for_reason',
-               'confidence', 'notes'],
+    required: ['is_expense', 'description', 'total', 'currency', 'date', 'date_kind',
+               'category', 'paid_by', 'paid_by_reason', 'bought_for',
+               'bought_for_reason', 'confidence', 'notes'],
     properties: {
-      is_receipt: {
+      is_expense: {
         type: 'boolean',
-        description: 'False if this is not a purchase receipt at all.',
+        description: 'False if this records no money spent or owed at all — a ' +
+                     'photo of something else, an advert, a delivery notice.',
       },
       description: {
         type: 'string',
@@ -157,7 +179,12 @@ function receiptSchema_(categories, payers) {
       },
       date: {
         type: 'string',
-        description: 'The purchase date as YYYY-MM-DD. Empty string if unreadable.',
+        description: 'The date as YYYY-MM-DD. Empty string if unreadable.',
+      },
+      date_kind: {
+        type: 'string',
+        enum: ['purchase', 'payment', 'due', ''],
+        description: 'What that date is: bought, already paid, or due to be paid.',
       },
       category: {
         type: 'string',

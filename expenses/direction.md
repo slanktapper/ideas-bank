@@ -17,8 +17,20 @@ photo at the till and forgetting about it is a habit that can actually be kept.
 ## Scope
 What this does:
 
-- Watches one Gmail label for photos of receipts (and PDF receipts).
+- Watches one Gmail label for photos of receipts, PDF receipts, and — when there is
+  nothing attached — bills and payment notices where the email itself is the record.
+  An ATCO bill notice with an amount and a due date in the body is filed the same way
+  a photograph of a till receipt is.
 - Reads each one with Claude's vision API: vendor, total, date, category.
+- Dates a bill by **when it comes due** — the day the money leaves on a preauthorized
+  plan, and the month tab it therefore belongs on. That is the one case where a date
+  in the future is allowed, up to two months out; anything further is treated as a
+  misread. A payment already made is dated when it was made, a receipt when it was
+  bought.
+- **Won't file the same thing twice.** Same description, same amount, same day, same
+  column already on the tab means the mail goes to needs-review instead. A forwarded
+  bill notice is easy to send twice, and a bill counted twice is money that does not
+  exist.
 - Works out **who paid** from the sending address — Rob's mail goes in his column,
   Danielle's in hers, from either of her addresses — unless the email says otherwise
   in words ("Danielle paid this one"), which wins. Both of them can mail receipts to
@@ -44,6 +56,9 @@ What this deliberately does not do:
   person, not a change to this code.
 - No OCR of its own, no receipt line items, no per-item breakdown — one receipt, one
   row, the way the sheet already works.
+- It does not read your mail. It sees one Gmail label and nothing else, so a bill only
+  reaches it if it is forwarded there deliberately. Account numbers, card numbers and
+  payment links are explicitly kept out of the sheet.
 - No categorisation model of its own: the allowed categories are read out of the
   month tab's header row at run time, so the sheet stays the source of truth.
 - No app, no server, no hosting. If it can't be done from a timer-driven Apps Script,
@@ -165,9 +180,38 @@ The script finds the month tab by name — `Aug2026 - Var Expenses` parses as Au
 for a tab that already holds dates in that month. It never creates a tab: a receipt
 for a month with no tab yet goes to `needs-review`.
 
+## Bills and payment notices
+Not everything that costs money comes with a photograph. Forwarding a bill notice —
+
+> Hi ROBERT, your ATCO Energy bill for CAD 119.82 on acct …, is due 15 Sep, 2026.
+
+— files `Atco  $119.82  15/09/2026  Home` the same way a receipt photo would. When
+nothing is attached, the email body **is** the record, and it goes to the model on its
+own; when something is attached, the attachment is the record and the email is only
+read for who paid.
+
+The date is the day the bill comes due, because on a preauthorized plan that is the
+day the money actually leaves — and it is what decides the month tab. So a notice
+arriving on 28 August for a 15 September due date lands in September, where the
+payment falls. The row therefore appears before the money has moved, which is
+deliberate: a budget wants to know what is coming.
+
+Note that these arrive addressed to Rob from the biller, so they have to be
+**forwarded** to the `+receipt` address for the From line to be one the script knows.
+Auto-labelling the biller's mail instead would work too, but then the biller's address
+has to be added to a payer's `senders` in `Config.gs`, which is the same as saying
+"anything from ATCO is Rob's".
+
 ## Open questions
 - **Splitting one receipt** — half shared, half not — is still manual. A receipt goes
   wholly into one column, either shared or doubled.
+- **A bill notice and its payment confirmation are two emails about one expense.**
+  The duplicate check catches them only if the description, amount and date all match,
+  which they often won't — a bill due the 15th and a confirmation dated the 15th
+  would, a confirmation dated the 16th would not. Worth watching before building
+  anything cleverer.
+- **A bill filed early is a row for money that has not moved yet.** If the amount
+  changes, or the payment fails, nothing here notices.
 - **How far to trust what the email says.** The model's reading of the message
   overrides the sending address, and its stated reason is recorded but not verified.
   That is the deliberate trade for handling the way people actually write; the cost

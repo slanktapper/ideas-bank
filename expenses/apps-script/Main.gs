@@ -53,19 +53,28 @@ function processThread_(thread, spreadsheet) {
     const messageId = message.getId();
     if (alreadyProcessed_(messageId)) return;
 
+    const mail = mailContext_(message);
     const attachments = receiptAttachments_(message);
-    if (!attachments.length) {
-      result.problems.push('no image or PDF attached');
+
+    // A photo or PDF is the record when there is one. When there isn't, the email
+    // itself is — a bill, a payment notice, a confirmation with nothing attached.
+    const sources = attachments.length
+      ? attachments.map(function (attachment) {
+          return { attachment: attachment, label: attachment.getName() };
+        })
+      : (mail.text ? [{ label: 'the message itself' }] : []);
+
+    if (!sources.length) {
+      result.problems.push('nothing to read: no attachment and no message');
       return;
     }
 
-    const mail = mailContext_(message);
-    attachments.forEach(function (attachment) {
+    sources.forEach(function (source) {
       try {
-        result.filed += fileAttachment_(attachment, mail, spreadsheet) ? 1 : 0;
+        result.filed += fileExpense_(source, mail, spreadsheet) ? 1 : 0;
       } catch (err) {
-        result.problems.push(attachment.getName() + ': ' + err.message);
-        Logger.log('Failed on ' + attachment.getName() + ': ' + err.stack);
+        result.problems.push(source.label + ': ' + err.message);
+        Logger.log('Failed on ' + source.label + ': ' + err.stack);
       }
     });
 
@@ -76,15 +85,12 @@ function processThread_(thread, spreadsheet) {
 }
 
 /**
- * One attachment: read it, check it, write it. Throws with a human-readable reason
- * for anything that should go to needs-review instead of into the sheet.
+ * One expense — an attached receipt, or the email itself when nothing is attached.
+ * Read it, check it, write it. Throws with a human-readable reason for anything
+ * that should go to needs-review instead of into the sheet.
  */
-function fileAttachment_(attachment, mail, spreadsheet) {
-  const size = attachment.getSize();
-  if (size > CONFIG.MAX_ATTACHMENT_BYTES) {
-    throw new Error('attachment is ' + Math.round(size / 1024 / 1024) + 'MB, over the ' +
-                    Math.round(CONFIG.MAX_ATTACHMENT_BYTES / 1024 / 1024) + 'MB limit');
-  }
+function fileExpense_(source, mail, spreadsheet) {
+  const attachment = source.attachment ? readAttachment_(source.attachment) : null;
 
   // The month tab has to be known before the model runs: its header row is where
   // the list of valid categories comes from. Today's tab is the right guess, and
@@ -96,10 +102,7 @@ function fileAttachment_(attachment, mail, spreadsheet) {
                     ' — run listTabs() and set CONFIG.TAB_OVERRIDES');
   }
 
-  const base64 = Utilities.base64Encode(attachment.getBytes());
-  const mimeType = normaliseType_(attachment.getContentType());
-  const reading = readReceipt_(base64, mimeType, tab.layout.categories, mail);
-
+  const reading = readExpense_(tab.layout.categories, mail, attachment);
   const expense = validate_(reading, mail);
 
   // A receipt from a previous month belongs on that month's tab.
@@ -117,15 +120,35 @@ function fileAttachment_(attachment, mail, spreadsheet) {
     }
   }
 
+  const already = findDuplicate_(tab.sheet, tab.layout, expense);
+  if (already) {
+    throw new Error('looks like it is already on ' + tab.sheet.getName() + ' row ' +
+                    already + ' — same description, amount and date');
+  }
+
   const row = writeExpense_(tab.sheet, tab.layout, expense);
   Logger.log('Filed ' + expense.description + ' $' + expense.total + ' under ' +
              expense.payer + ' (' + expense.payerSource + ')' +
+             (expense.dateKind === 'due' ? ', not yet paid — due ' + reading.date : '') +
              (expense.notShared
                ? ', doubled — bought for ' + expense.boughtFor + ' (' +
                  expense.sharingSource + ')'
                : '') +
              ' to ' + tab.sheet.getName() + ' row ' + row);
   return true;
+}
+
+/** An attachment, sized-checked and encoded for the API. */
+function readAttachment_(attachment) {
+  const size = attachment.getSize();
+  if (size > CONFIG.MAX_ATTACHMENT_BYTES) {
+    throw new Error('attachment is ' + Math.round(size / 1024 / 1024) + 'MB, over the ' +
+                    Math.round(CONFIG.MAX_ATTACHMENT_BYTES / 1024 / 1024) + 'MB limit');
+  }
+  return {
+    base64: Utilities.base64Encode(attachment.getBytes()),
+    mimeType: normaliseType_(attachment.getContentType()),
+  };
 }
 
 /**
@@ -203,8 +226,8 @@ function payerForSender_(address) {
  * be wrong.
  */
 function validate_(reading, mail) {
-  if (!reading.is_receipt) {
-    throw new Error('not a receipt' + (reading.notes ? ' (' + reading.notes + ')' : ''));
+  if (!reading.is_expense) {
+    throw new Error('nothing spent here' + (reading.notes ? ' (' + reading.notes + ')' : ''));
   }
   if (reading.confidence === 'low') {
     throw new Error('low confidence' + (reading.notes ? ': ' + reading.notes : ''));
@@ -228,7 +251,14 @@ function validate_(reading, mail) {
 
   const now = new Date();
   const daysAhead = (date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-  if (daysAhead > 1) throw new Error('date ' + reading.date + ' is in the future');
+  // A bill is filed when its notice arrives, dated the day it comes out of the
+  // account — so a due date is allowed to be in the future, and only that.
+  const ahead = reading.date_kind === 'due' ? CONFIG.MAX_DUE_DAYS_AHEAD : 1;
+  if (daysAhead > ahead) {
+    throw new Error('date ' + reading.date + ' is ' + Math.round(daysAhead) +
+                    ' days off' + (reading.date_kind === 'due' ? '' :
+                    ' and is not a due date'));
+  }
   if (daysAhead < -730) throw new Error('date ' + reading.date + ' is over two years old');
 
   const paid = resolvePayer_(reading, mail || {});
@@ -238,6 +268,7 @@ function validate_(reading, mail) {
     description: reading.description,
     total: Math.round(reading.total * 100) / 100,
     date: date,
+    dateKind: reading.date_kind || 'purchase',
     category: reading.category,
     payer: paid.payer,
     payerSource: paid.payerSource,

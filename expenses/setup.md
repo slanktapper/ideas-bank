@@ -157,6 +157,27 @@ Optional: set `DIGEST_TO: 'rob.sinclair.bb@gmail.com'` in `Config.gs` to get a s
 email listing anything that needed a look. It stays quiet when everything files
 cleanly.
 
+## Bills with nothing attached
+
+Forward a bill or payment notice to the same address and it files the same way — the
+email body is the record when there is no photo:
+
+> Hi ROBERT, your ATCO Energy bill for CAD 119.82 on acct 7808483721016, is due 15
+> Sep, 2026 …
+
+files `Atco  $119.82  15/09/2026  Home`, and the log says
+`not yet paid — due 2026-09-15`. It is dated the due date because that is the day the
+money leaves on a preauthorized plan, and that is what decides which month tab it
+lands on.
+
+It must be **forwarded**, not auto-labelled: the notice comes from the biller, and the
+From line is what tells the script whose column it belongs in. If you would rather
+have a Gmail filter label ATCO's mail directly, add ATCO's sending address to Rob's
+`senders` list in `Config.gs` — which is the same as saying anything from ATCO is his.
+
+Forwarding the same notice twice is safe: a row with the same description, amount,
+date and column already on the tab sends the second one to `needs-review` instead.
+
 ## Day to day
 
 Photo → share to Gmail → send to `rob.sinclair.bb+receipt@gmail.com`. That is the
@@ -172,6 +193,9 @@ whole ritual. Glance at `receipts/needs-review` now and then.
 | `No blank pre-formulated row left` | That month's tab has used up the rows carrying the category formulas. Copy the formulas in columns N–T further down the tab — that is a change to the shared sheet, so it is a conversation, not a code change. |
 | `HTTP 401` from the API | The key is wrong or revoked. |
 | `HTTP 429` | Rate limited; it retries twice on its own, then leaves the mail for the next run. |
+| `looks like it is already on … row N` | The same description, amount and date is already on the tab — a notice forwarded twice, or a re-run. Nothing was written. |
+| `nothing to read: no attachment and no message` | An empty email. Nothing to work from. |
+| `date … is N days off and is not a due date` | A receipt or payment dated in the future. Only a bill's due date may be. |
 | `mail is from … which is not one of the payers in Config.gs` | The receipt came from an address not listed under `CONFIG.PAYERS`, and nothing in the email said who paid. Add the address, or reply to yourself with a note naming the payer. |
 | `Unsupported attachment type: image/heic` | An iPhone sent the original HEIC rather than a JPEG. Re-send it from Photos with "Most Compatible", or take a screenshot of it. |
 | Nothing in the log at all | The label is empty — check the filter in step 1 is actually catching the mail. |

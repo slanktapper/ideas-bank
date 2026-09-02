@@ -226,6 +226,53 @@ function writeExpense_(sheet, layout, expense) {
 }
 
 /**
+ * Is this expense already on the tab? Same description, same amount, same day.
+ *
+ * Narrow on purpose: two coffees on one day at the same price are a real pair of
+ * expenses, and this will flag them. But the same bill notice forwarded twice, or
+ * a re-run after a half-finished one, is the case worth catching — a bill filed
+ * twice is money that does not exist.
+ */
+function findDuplicate_(sheet, layout, expense) {
+  const lastRow = Math.min(sheet.getLastRow(), lastFormulaRow_(sheet, layout));
+  if (lastRow <= layout.headerRow) return 0;
+
+  const start = layout.headerRow + 1;
+  const rows = sheet.getRange(start, 1, lastRow - layout.headerRow, layout.categoryCol)
+                    .getValues();
+  // A not-shared row holds the doubled figure, so that is what to compare against.
+  const shown = expense.notShared ? expense.total * 2 : expense.total;
+  const payerCol = layout.payerCols[expense.payer];
+  const wanted = String(expense.description || '').trim().toLowerCase();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (String(row[0]).trim().toLowerCase() !== wanted) continue;
+    if (Math.abs(Number(row[payerCol - 1]) - shown) > 0.005) continue;
+    const date = row[layout.dateCol - 1];
+    if (!isDate_(date) || !isDate_(expense.date)) continue;
+    if (date.getFullYear() === expense.date.getFullYear() &&
+        date.getMonth() === expense.date.getMonth() &&
+        date.getDate() === expense.date.getDate()) {
+      return start + i;
+    }
+  }
+  return 0;
+}
+
+/** The last row still carrying the category formulas. */
+function lastFormulaRow_(sheet, layout) {
+  const start = layout.headerRow + 1;
+  const depth = sheet.getMaxRows() - layout.headerRow;
+  if (depth < 1) return layout.headerRow;
+  const formulas = sheet.getRange(start, layout.categoryFirstCol, depth, 1).getFormulas();
+  for (let i = 0; i < formulas.length; i++) {
+    if (!formulas[i][0]) return start + i - 1;
+  }
+  return start + formulas.length - 1;
+}
+
+/**
  * The first row that is blank across the entry columns AND still inside the block
  * of rows carrying the category formulas. Both halves matter: past the formulas,
  * a row does not reach the monthly totals.
