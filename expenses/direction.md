@@ -96,6 +96,10 @@ There is nothing to run on this machine — the code runs in Google's cloud. See
 4. Run `installTrigger()` once to start the 15-minute timer.
 5. Mail a receipt photo to `rob.sinclair.bb+receipt@gmail.com`.
 
+`node test/dry-run.js` answers "what would this email do to the sheet?" — it runs the
+real script against a fake mailbox and a fake tab and prints the row it would write.
+Only the model's answer is canned, in `test/cases/`.
+
 The logic that picks the tab, picks the row, and decides what is safe to file is
 plain JavaScript and is tested — `cd expenses/apps-script && node test/logic-test.js`,
 no dependencies. The Gmail and Claude halves are only exercised by mailing yourself a

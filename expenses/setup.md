@@ -212,3 +212,19 @@ node test/logic-test.js
 
 No dependencies, no package manager — just node. Change anything in `Sheet.gs` or the
 validation in `Main.gs` and run it before pasting into the editor.
+
+## Asking "what would this email do?"
+
+There is a dry run for exactly that question. It executes the real script — the same
+five files you pasted into the editor, unmodified — against a fake Gmail label and a
+fake month tab built to the sheet's real geometry, and prints the prompt it would
+send, the row it would write, the log, and where the mail would end up:
+
+```bash
+node test/dry-run.js                                   # the ATCO bill notice
+node test/dry-run.js test/cases/atco-bill-twice.json   # the same notice sent twice
+```
+
+The one thing it cannot do is call Claude, so each case file carries the reading the
+model is assumed to return. Editing that is how you ask "and what if it read it
+differently?". Copy a file in `test/cases/` to try your own.
