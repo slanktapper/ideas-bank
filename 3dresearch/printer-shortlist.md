@@ -2,9 +2,17 @@
 
 Researched 2026-08-29 MDT against `requirements.md`.
 
+> **Closed 2026-09-03 MDT — this is history, not a live comparison.** The field has
+> been narrowed to two machines, the **Bambu Lab X2D** and the **H2D**. The P2S,
+> Prusa Core One+, QIDI Q2C and P1S are no longer under consideration. The live
+> comparison is **`x2d-vs-h2d.md`**. This file is kept as the record of how the X2D
+> was arrived at.
+>
 > **Prices below are GBP from UK retailers and are NOT valid here.** This research was
 > done before the Canadian context was established. The figures show only how the
 > machines compare to each other. For real prices see `order-review.md` — all CAD.
+> The budget quoted below ($940–1,695 CAD at the time) was raised to $3,000 on
+> 2026-09-03 MDT.
 
 ## The headline finding
 

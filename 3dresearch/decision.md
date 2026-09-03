@@ -10,6 +10,10 @@
 > laser/cutting expansion path, at $2,599 against $1,349. The comparison is in
 > **`x2d-vs-h2d.md`**; both carts are in `order-review.md`. Read this file as the case
 > for the X2D, not as a closed decision.
+>
+> **Updated 2026-09-03 MDT:** the budget was raised to $3,000 and the field narrowed
+> to these two machines. Both now fit the budget, so price no longer separates them
+> and the recommendation in `x2d-vs-h2d.md` has shifted accordingly.
 
 ## What was chosen
 
@@ -32,7 +36,9 @@ are not prices available in Canada.)
 - **It removes a decision instead of forcing one.** The research had stalled on
   "will you actually print ABS/ASA, or is PETG enough?" The X2D makes that question
   moot — the capability is present either way.
-- **In budget.** $1,349 against a $940–1,695 CAD range.
+- **In budget.** $1,349 against what was then a $940–1,695 CAD range. The budget
+  was raised to $3,000 on 2026-09-03 MDT, which removes this as a point of
+  difference — the H2D fits too.
 - **300 °C nozzle** covers ABS, ASA, PC and nylon. Only a narrow band of exotic
   materials needs more.
 
@@ -68,10 +74,12 @@ So the honest position:
 
 ## Still to decide
 
-**Open: X2D or H2D.** The one question that separates them is build volume — 256 mm
-against 350 mm. Everything else the H2D adds is either already present on the X2D
-(the heated chamber) or not in the cart (the laser). See `x2d-vs-h2d.md`.
+**Open: X2D or H2D.** With the budget at $3,000 both fit, so the one question that
+separates them is build volume — 256 mm against 350 mm. Everything else the H2D adds
+is either already present on the X2D (the heated chamber), buyable later for either
+(hotends, dryers, filament), or not in the cart (the laser). Build volume is the only
+spec that cannot be added afterwards. See `x2d-vs-h2d.md`.
 
-**Resolved (within the X2D option).** The Print More Bundle was chosen: X2D plus *two* AMS 2 Pro units and a
-Filament Track Switch, for eight filament slots. That also settles the humidity
+**Resolved (within the X2D option).** The Print More Bundle was chosen: X2D plus
+*two* AMS 2 Pro units and a Filament Track Switch, for eight filament slots. That also settles the humidity
 question — eight spools live in active drying. See `order-review.md`.

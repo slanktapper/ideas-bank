@@ -10,7 +10,7 @@ this file reviews the carts themselves.
 | Cart total | **$1,648.48** | **$2,733.12** |
 | Filament | 12 spools (6 PETG, 3 ABS, 1 ASA, 2 PLA) | 8 spools (4 PETG, 4 PLA) |
 | Warranty | $89 included | not in cart |
-| Budget ($940–1,695) | inside | **$904 over** |
+| Headroom under $3,000 budget | $1,351 | $267 |
 
 ---
 
@@ -107,10 +107,11 @@ trap that the X2D cart fell into does not arise here.
 
 ## Outstanding before checkout — H2D cart
 
-1. **The bundle is $904 over the recorded budget.** $2,599 against a $940–1,695 range
-   settled in `requirements.md`. That file needs updating either way: to record a
-   raised budget if the H2D is chosen, or to record that it was considered and
-   rejected on price. Do not leave the requirements contradicting the purchase.
+1. **~~Over budget.~~ Resolved 2026-09-03 MDT.** The budget was raised to $3,000, so
+   the $2,599 bundle and the $2,733.12 cart both fit. Price no longer rules this
+   option out or decides between the two; see `x2d-vs-h2d.md`. What remains is that
+   $267 of headroom is not much room for the warranty and support material in items 4
+   and 5 below — the cart is close to the ceiling in a way the X2D cart is not.
 
 2. **Nothing in this cart uses the 65 °C chamber.** No ABS, no ASA, no PC, no nylon.
    PETG and PLA both print fine on a passive enclosure. This is exactly the criticism
@@ -263,13 +264,15 @@ service from Alberta is not trivial. Reasonable, not essential. The H2D cart car
 
 ## Budget note
 
-The budget is **$940–1,695 CAD** for the printer (see `requirements.md`).
+The budget is **up to $3,000 CAD** for the printer, raised 2026-09-03 MDT from
+$940–1,695 (see `requirements.md`). **Both options now fit.**
 
-- **X2D Print More Bundle, $1,349** — comfortably inside it. The full cart, with
-  warranty and 12 kg of filament, is $1,648.48.
-- **H2D AMS Combo / Dual AMS 2 Pro Bundle, $2,599** — **$904 over the top of the
-  range**, a 53 % overrun. The full cart is $2,733.12. Choosing it means revising
-  `requirements.md`, not just paying more.
+- **X2D Print More Bundle, $1,349** — full cart $1,648.48, leaving $1,351 unspent.
+- **H2D AMS Combo / Dual AMS 2 Pro Bundle, $2,599** — full cart $2,733.12, leaving
+  $267. Enough for the warranty *or* a support-material spool, not comfortably both.
+
+An earlier version of this file recorded the H2D as $904 over budget. That is no
+longer the case; the number was right against the old ceiling.
 
 An earlier version of this note called the order "substantially above budget". That
 was wrong — it read the prices as USD.

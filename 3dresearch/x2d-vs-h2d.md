@@ -1,10 +1,14 @@
 # Two ordering options: X2D and H2D
 
-Written 2026-09-01 MDT. **All prices CAD.**
+Written 2026-09-01 MDT; revised 2026-09-03 MDT when the budget was raised to $3,000
+and the field narrowed to these two. **All prices CAD.**
 
-The purchase is no longer a single cart. There are two carts on the table, and they
-are not variations on the same machine — they are different classes of machine at
-close to double the price.
+These are the only two machines still under consideration. The wider shortlist —
+P2S, Prusa Core One+, QIDI Q2C — is closed; `printer-shortlist.md` is kept as the
+record of how the X2D was arrived at, not as a live comparison.
+
+There are two carts on the table, and they are not variations on the same machine —
+they are different classes of machine at close to double the price.
 
 | | **Option A — X2D** | **Option B — H2D** |
 | --- | --- | --- |
@@ -12,7 +16,7 @@ close to double the price.
 | Bundle price | **$1,349.00** | **$2,599.00** |
 | Whole cart as it stands | $1,648.48 | $2,733.12 |
 | AMS slots | 8 (two AMS 2 Pro + Track Switch) | 8 (two AMS 2 Pro) |
-| Against the $940–1,695 budget | **inside it** | **$904 over the top** |
+| Headroom under the $3,000 budget (whole cart) | $1,351 | $267 |
 
 The full carts, line by line, are in `order-review.md`.
 
@@ -76,53 +80,94 @@ dominated by geometry and cooling, not by how fast the gantry can theoretically 
   garage before ordering, along with the two AMS units that sit beside or on top.
 - **Weight.** 31 kg against 16.25 kg. A two-person lift, and it wants a bench that
   will not flex.
-- **$904 over the recorded budget**, which is not a rounding error. It is a 53 %
-  overrun on a range that was settled deliberately in `requirements.md`.
+- **$1,250 that would otherwise go unspent.** No longer a budget breach — the ceiling
+  is $3,000 and the H2D cart lands at $2,733 — but the money is real, and worth
+  measuring against what else it buys. See "What $1,250 buys instead" below.
+
+## What $1,250 buys instead
+
+With the budget at $3,000 both options fit, so the premium is opportunity cost rather
+than an overrun. What it is worth comparing against:
+
+- **Roughly a second X2D.** $1,349 for another whole machine. Two X2Ds print two
+  things at once, give sixteen filament slots, and mean a failed hotend does not stop
+  all printing. One H2D prints one bigger thing. For batches of small parts, two
+  machines beat one large one; for single large parts, they are useless.
+- **About 90 spools of PETG** at the $13.74 bulk tier — or twenty-odd spools plus a
+  full set of spare hotends, hardened nozzles, an AMS HT and the storage kit from
+  `setup.md`.
+- **Nothing.** It stays in the account. A ceiling is not a target — `requirements.md`
+  says so explicitly.
+
+None of these is obviously better than the H2D. The point is that the premium now has
+to beat a real alternative use rather than merely fit inside a range.
 
 ## How this reads against the requirements
 
 `requirements.md` asks for functional parts and prototyping, in a climate-controlled
-10–20 °C garage, within $940–1,695, with some tinkering acceptable. Measured against
-that brief as written:
+10–20 °C garage, up to $3,000, with some tinkering acceptable. Measured against that
+brief as written:
 
-- **The X2D meets it.** Every requirement, including the budget, with room left for
-  filament and accessories.
-- **The H2D exceeds it on capability and breaks it on budget.** Nothing in the brief
-  asks for a 350 mm build plate, a 350 °C nozzle, or a laser.
+- **The X2D meets it**, with $1,351 left over after the whole cart.
+- **The H2D also meets it**, with $267 left over after the whole cart.
 
-That is not an argument that the H2D is wrong. It is an argument that choosing it
-means **changing the brief**, not just spending more — and the honest version of
-that change is one of:
+The budget no longer separates them. That is a real change: in the earlier version of
+this note, the price ceiling was doing much of the work of the recommendation below,
+and it is now doing none of it. What is left is a straight capability-versus-cost
+judgment with no rule to settle it.
 
-- *"Build volume is a requirement I under-specified."* The most likely one. If parts
-  over 256 mm are genuinely expected, no amount of X2D is going to help, and the
-  gluing-parts-together tax is paid on every single print for years.
-- *"Laser and cutting are wanted."* If so, the AMS Combo in the cart is the wrong
-  H2D SKU — the Laser Full Combo is. Buying the AMS Combo *for* the laser path means
-  paying the H2D premium now and the laser premium later.
-- *"The budget was a guess and $2,600 is fine."* Legitimate, but it should be
-  written down as such rather than left contradicting the requirements file.
+The brief still does not *ask* for a 350 mm plate, a 350 °C nozzle, or a laser. But
+"not asked for" is much weaker than "out of budget", and one of those three has a
+property the others do not.
+
+## The one thing that cannot be added later
+
+Almost everything separating these machines can be bought after the fact:
+
+| | Upgradeable later? |
+| --- | --- |
+| Filament range | Yes — buy spools |
+| High-flow hotends, hardened nozzles | Yes — $66.99, fits either machine |
+| Drying for exotic materials | Yes — AMS HT is a separate unit |
+| A second AMS, more slots | Yes |
+| A laser / cutting module | Yes, on the H2D platform — no, on the X2D |
+| **Build volume** | **No. Ever.** |
+
+A 256 mm printer is 256 mm for its whole life. If a part is 300 mm, the options are
+to split and glue it, redesign it smaller, or buy another printer. That asymmetry is
+the real argument, and it is the argument the raised budget strengthens most — the
+$1,250 is now buying the *only* irreversible spec on the list.
+
+Against that: the H2D also carries an irreversible cost, which is 59 % more bench and
+31 kg in a garage that has to hold it.
 
 ## Recommendation
 
-**Option A, the X2D, unless build volume is the answer to a real question.**
+**It is now genuinely close, and it turns on one question: what is the largest thing
+you actually expect to print?**
 
-The reasoning that picked the X2D — active chamber heating, functional parts, a
-climate-controlled workshop — is entirely unaffected by the H2D's existence, because
-the H2D's chamber is identical. What separates them is size, a hotter nozzle, and a
-laser that this bundle does not include. Of those three, only size is likely to
-matter for what `requirements.md` describes, and it matters *a lot* if it matters
-at all.
+- **Under 256 mm, reliably** → **X2D.** The chamber, the dual nozzle and the material
+  range are identical, the machine is smaller and lighter, and the $1,250 goes
+  further as filament, spares or simply unspent. Everything the H2D adds would sit
+  unused, exactly as it would on the cart as it currently stands.
+- **Over 256 mm, ever, with any regularity** → **H2D.** No amount of X2D fixes this,
+  and the tax is paid on every affected print for the life of the machine.
+- **Genuinely unsure** → **H2D**, now that the budget allows it. This is a change
+  from the earlier recommendation, and the reason is the table above: an unsure buyer
+  can add hotends, dryers and filament to either machine later, but can never add
+  build volume. Under the old ceiling that argument lost to the budget. It no longer
+  has to.
 
-So the deciding question is narrow and answerable: **what is the largest thing you
-actually expect to print?** Under 256 mm, the H2D is $1,250 for headroom. Over it,
-the X2D is a machine that will annoy you on a schedule.
+Worth being explicit about what would make this wrong: if the honest answer is
+"almost everything I print fits in a hand", the H2D is $1,250 and half a bench for
+headroom that never gets used, and the X2D is the better buy without qualification.
 
 Two smaller notes that apply whichever is chosen:
 
 - **The H2D cart contains no ABS and no ASA.** Nothing in it uses the 65 °C chamber —
   the same problem the original all-PLA X2D cart had. If the H2D is chosen, port the
-  material mix across from the X2D cart, not just the colours.
+  material mix across from the X2D cart, not just the colours. There is now budget
+  room to do it: ABS is $14.29 a spool.
 - **The X2D cart carries an $89 extended warranty; the H2D cart does not.** On a
   $2,599 machine the warranty argument gets stronger, not weaker.
 

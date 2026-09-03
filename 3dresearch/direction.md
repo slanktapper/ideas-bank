@@ -9,7 +9,8 @@ worth buying, how the technologies differ, what materials suit what jobs, what g
 wrong and why.
 
 The first question — which printer to buy — is down to **two options**: a Bambu Lab
-**X2D** at $1,349 CAD, and a Bambu Lab **H2D** at $2,599 CAD. Both are enclosed,
+**X2D** at $1,349 CAD, and a Bambu Lab **H2D** at $2,599 CAD — both inside the $3,000
+budget, and the only two machines still under consideration. Both are enclosed,
 actively heated to 65 °C, dual nozzle, aimed at functional parts in a climate-controlled
 garage; the H2D adds roughly twice the build volume and a laser/cutting path. See
 `x2d-vs-h2d.md` for the comparison and `decision.md` for the case that picked the X2D
@@ -47,7 +48,7 @@ Nothing to run yet. Read the notes in this folder:
 - `x2d-vs-h2d.md` — **the two live options, side by side.** Start here.
 - `decision.md` — the case that picked the X2D, and what reopened it.
 - `requirements.md` — the buying brief both options are judged against.
-- `printer-shortlist.md` — the candidates and comparison that led to the X2D.
+- `printer-shortlist.md` — the original wider field. **Closed**; kept as history.
 - `setup.md` — running the machine in the workshop; humidity, and the buy list.
 - `order-review.md` — review of both carts before purchase.
 - `filament-catalogue.md` — Bambu CA filament prices, captured 2026-08-30 MDT.
@@ -55,10 +56,10 @@ Nothing to run yet. Read the notes in this folder:
 - `filament-glossary.md` — one line on every filament in the Bambu CA range.
 
 ## Open questions
-- **X2D or H2D?** The deciding question is build volume — 256 mm against 350 mm — since
-  the two machines share the 65 °C chamber and the dual-nozzle design. The H2D bundle
-  is $904 over the recorded budget, so choosing it means amending `requirements.md`,
-  not just spending more. See `x2d-vs-h2d.md`.
+- **X2D or H2D?** These are the only two machines still in play. Both now fit the
+  $3,000 budget, and they share the 65 °C chamber and the dual-nozzle design — so the
+  deciding question is build volume, 256 mm against 350 mm, and it is the one spec
+  that cannot be upgraded later. See `x2d-vs-h2d.md`.
 - **What is the largest part actually expected?** Unanswered, and it settles the above.
 - **Is this a functional-parts machine or a multi-colour one?** The X2D cart has been
   fixed (6 PETG, 3 ABS, 1 ASA); the H2D cart has not — it carries no ABS or ASA, so
