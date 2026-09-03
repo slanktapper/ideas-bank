@@ -15,7 +15,18 @@ what it can see.
    → **Create** → **Create filter**.
 
 Gmail delivers anything addressed to `you+anything@gmail.com` to your normal inbox,
-so there is no second account to set up. The `receipts/filed` and
+so there is no second account to set up.
+
+**The address is the real boundary, not the label.** The script re-checks the To and
+Cc lines of every message and reads only the ones actually sent to
+`rob.sinclair.bb+receipt@gmail.com`. Labelling something by hand will not get it
+scanned; nor will a reply arriving in a thread you already filed. Dots don't matter
+(`robsinclairbb+receipt@gmail.com` is the same address), but the `+receipt` tag
+does. To change or add an address, edit `CONFIG.RECEIPT_ADDRESSES`.
+
+One consequence worth knowing: **Bcc is invisible** on a received message, so a
+receipt blind-copied to the address cannot be recognised and is left alone. Put the
+address in To or Cc. The `receipts/filed` and
 `receipts/needs-review` labels are created for you in step 5.
 
 **Danielle uses the same address.** Anything she sends to
@@ -194,6 +205,7 @@ whole ritual. Glance at `receipts/needs-review` now and then.
 | `HTTP 401` from the API | The key is wrong or revoked. |
 | `HTTP 429` | Rate limited; it retries twice on its own, then leaves the mail for the next run. |
 | `looks like it is already on … row N` | The same description, amount and date is already on the tab — a notice forwarded twice, or a re-run. Nothing was written. |
+| `not sent to rob.sinclair.bb+receipt@gmail.com` | The thread carries the label but nothing in it was addressed to the receipts address, so nothing was read. Usually a hand-applied label, or the address was in Bcc. |
 | `nothing to read: no attachment and no message` | An empty email. Nothing to work from. |
 | `date … is N days off and is not a due date` | A receipt or payment dated in the future. Only a bill's due date may be. |
 | `mail is from … which is not one of the payers in Config.gs` | The receipt came from an address not listed under `CONFIG.PAYERS`, and nothing in the email said who paid. Add the address, or reply to yourself with a note naming the payer. |
@@ -223,6 +235,7 @@ send, the row it would write, the log, and where the mail would end up:
 ```bash
 node test/dry-run.js                                   # the ATCO bill notice
 node test/dry-run.js test/cases/atco-bill-twice.json   # the same notice sent twice
+node test/dry-run.js test/cases/labelled-but-not-addressed.json   # labelled, wrong address
 ```
 
 The one thing it cannot do is call Claude, so each case file carries the reading the

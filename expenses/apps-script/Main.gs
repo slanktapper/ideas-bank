@@ -48,10 +48,19 @@ function processReceipts() {
 /** One mail thread. Returns what got filed and what didn't. */
 function processThread_(thread, spreadsheet) {
   const result = { filed: 0, problems: [] };
+  let notAddressed = 0;
 
   thread.getMessages().forEach(function (message) {
     const messageId = message.getId();
     if (alreadyProcessed_(messageId)) return;
+
+    // Before anything is read: was this message actually sent to the receipts
+    // address? A label on a conversation puts every reply in front of the script,
+    // and only the ones addressed to +receipt are its business.
+    if (!addressedToReceipts_(message)) {
+      notAddressed++;
+      return;
+    }
 
     const mail = mailContext_(message);
     const attachments = receiptAttachments_(message);
@@ -80,6 +89,15 @@ function processThread_(thread, spreadsheet) {
 
     markProcessed_(messageId);
   });
+
+  // A reply to a filed receipt is not addressed to +receipt either, and is no cause
+  // for alarm. It is only worth reporting when the whole thread turned out to be
+  // mail that was labelled but never sent to the receipts address.
+  if (notAddressed && !result.filed && !result.problems.length) {
+    result.problems.push('not sent to ' + CONFIG.RECEIPT_ADDRESSES.join(' or ') +
+                         ' — labelled, but not addressed to the receipts address, ' +
+                         'so nothing in it was read');
+  }
 
   return result;
 }
@@ -210,11 +228,11 @@ function resolvePayer_(reading, mail) {
 
 /** The payer an address belongs to, or '' for an address nobody claims. */
 function payerForSender_(address) {
-  const from = String(address || '').trim().toLowerCase();
+  const from = normaliseAddress_(address);
   if (!from) return '';
   const match = CONFIG.PAYERS.filter(function (payer) {
     return payer.senders.some(function (sender) {
-      return sender.trim().toLowerCase() === from;
+      return normaliseAddress_(sender) === from;
     });
   })[0];
   return match ? match.name : '';
@@ -331,6 +349,8 @@ function checkSetup() {
   } catch (err) {
     lines.push('Spreadsheet: ' + err.message);
   }
+
+  lines.push('Reads only mail sent to: ' + CONFIG.RECEIPT_ADDRESSES.join(', '));
 
   [CONFIG.INBOX_LABEL, CONFIG.FILED_LABEL, CONFIG.REVIEW_LABEL].forEach(function (name) {
     const existed = !!GmailApp.getUserLabelByName(name);

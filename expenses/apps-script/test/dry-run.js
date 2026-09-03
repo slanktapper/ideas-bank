@@ -48,6 +48,8 @@ function fakeLabel(name) {
 const message = {
   getId: function () { return 'msg-1'; },
   getFrom: function () { return testCase.email.from; },
+  getTo: function () { return testCase.email.to || ''; },
+  getCc: function () { return testCase.email.cc || ''; },
   getSubject: function () { return testCase.email.subject; },
   getPlainBody: function () { return testCase.email.body; },
   getAttachments: function () { return []; },
@@ -127,6 +129,8 @@ function heading(text) { console.log('\n' + text + '\n' + rule); }
 
 heading('THE EMAIL');
 console.log('From:    ' + testCase.email.from);
+console.log('To:      ' + (testCase.email.to || '(nobody)'));
+if (testCase.email.cc) console.log('Cc:      ' + testCase.email.cc);
 console.log('Subject: ' + testCase.email.subject);
 console.log('\n' + testCase.email.body.trim());
 
@@ -151,8 +155,10 @@ if (!sentRequest) {
   });
 }
 
-heading('WHAT THE MODEL IS ASSUMED TO ANSWER  (the only invented part)');
-console.log(JSON.stringify(testCase.reading, null, 2));
+if (sentRequest) {
+  heading('WHAT THE MODEL IS ASSUMED TO ANSWER  (the only invented part)');
+  console.log(JSON.stringify(testCase.reading, null, 2));
+}
 
 heading('WHAT LANDS IN THE SPREADSHEET');
 const layout = vm.runInContext('readLayout_', sandbox)(sept);

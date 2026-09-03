@@ -7,7 +7,15 @@ const CONFIG = {
   // docs.google.com/spreadsheets/d/<THIS PART>/edit
   SPREADSHEET_ID: '1LqSywjtOAsjJDqXkh9Bk0tU3n7U54DWv8D5Jyq4v-i0',
 
-  // Gmail labels. INBOX_LABEL is the only mail the script ever looks at.
+  // The only address whose mail is ever read. The Gmail filter puts the label on;
+  // this is checked again on every message, so a label applied by hand, by another
+  // filter, or to a whole conversation does not get anything scanned. Gmail ignores
+  // dots in the part before the @, and so does this — the +receipt tag is what
+  // matters. A message not addressed here is never sent anywhere or read for
+  // content; it is simply left alone.
+  RECEIPT_ADDRESSES: ['rob.sinclair.bb+receipt@gmail.com'],
+
+  // Gmail labels. INBOX_LABEL is where the filter puts the mail.
   INBOX_LABEL: 'receipts',
   FILED_LABEL: 'receipts/filed',
   REVIEW_LABEL: 'receipts/needs-review',

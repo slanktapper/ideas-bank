@@ -33,7 +33,7 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
-['Config.gs', 'Sheet.gs', 'Main.gs'].forEach(function (file) {
+['Config.gs', 'Sheet.gs', 'Gmail.gs', 'Main.gs'].forEach(function (file) {
   const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   vm.runInContext(source, sandbox, { filename: file });
 });
@@ -241,6 +241,8 @@ check('her gmail', sandbox.payerForSender_('danielle.lucas5@gmail.com'), 'Daniel
 check('her hotmail', sandbox.payerForSender_('chickami@hotmail.com'), 'Danielle');
 check('case and spacing do not matter',
       sandbox.payerForSender_('  Danielle.Lucas5@Gmail.com '), 'Danielle');
+check('nor do the dots Gmail ignores',
+      sandbox.payerForSender_('daniellelucas5@gmail.com'), 'Danielle');
 check('a stranger', sandbox.payerForSender_('someone@example.com'), '');
 check('nothing at all', sandbox.payerForSender_(''), '');
 
@@ -288,6 +290,58 @@ check('from the note',
       sandbox.validate_(reading({ paid_by: 'Danielle', paid_by_reason: '"hers"' }),
                         { from: 'rob.sinclair.bb@gmail.com', text: 'this one is hers' }).payer,
       'Danielle');
+
+// --- only mail actually sent to the receipts address -----------------------------
+console.log('normaliseAddress_');
+check('lowercased', sandbox.normaliseAddress_('Rob.Sinclair.BB+Receipt@Gmail.com'),
+      'robsinclairbb+receipt@gmail.com');
+check('gmail ignores dots, so this does too',
+      sandbox.normaliseAddress_('robsinclairbb+receipt@gmail.com'),
+      'robsinclairbb+receipt@gmail.com');
+check('the +receipt tag is kept', sandbox.normaliseAddress_('rob.sinclair.bb@gmail.com'),
+      'robsinclairbb@gmail.com');
+check('dots elsewhere are left alone', sandbox.normaliseAddress_('a.b@some.co.uk'),
+      'a.b@some.co.uk');
+
+console.log('addressesIn_');
+check('a plain address', sandbox.addressesIn_('rob.sinclair.bb+receipt@gmail.com'),
+      ['robsinclairbb+receipt@gmail.com']);
+check('a display name around it',
+      sandbox.addressesIn_('Rob Sinclair <rob.sinclair.bb+receipt@gmail.com>'),
+      ['robsinclairbb+receipt@gmail.com']);
+check('several, commas and quotes and all',
+      sandbox.addressesIn_('"Lucas, Danielle" <danielle.lucas5@gmail.com>, ' +
+                           'Rob <rob.sinclair.bb+receipt@gmail.com>'),
+      ['daniellelucas5@gmail.com', 'robsinclairbb+receipt@gmail.com']);
+check('nothing at all', sandbox.addressesIn_(''), []);
+
+console.log('addressedToReceipts_');
+function messageTo(to, cc) {
+  return { getTo: function () { return to; }, getCc: function () { return cc || ''; } };
+}
+check('sent to the receipts address',
+      sandbox.addressedToReceipts_(messageTo('rob.sinclair.bb+receipt@gmail.com')), true);
+check('with a display name',
+      sandbox.addressedToReceipts_(messageTo('Rob <Rob.Sinclair.BB+Receipt@gmail.com>')), true);
+check('without the dots',
+      sandbox.addressedToReceipts_(messageTo('robsinclairbb+receipt@gmail.com')), true);
+check('cc counts',
+      sandbox.addressedToReceipts_(messageTo('danielle.lucas5@gmail.com',
+                                             'rob.sinclair.bb+receipt@gmail.com')), true);
+check('one of several recipients',
+      sandbox.addressedToReceipts_(messageTo('a@b.com, rob.sinclair.bb+receipt@gmail.com, c@d.com')),
+      true);
+check('the plain inbox address is NOT the receipts address',
+      sandbox.addressedToReceipts_(messageTo('rob.sinclair.bb@gmail.com')), false);
+check('a different tag is not it',
+      sandbox.addressedToReceipts_(messageTo('rob.sinclair.bb+bills@gmail.com')), false);
+check('somebody else entirely',
+      sandbox.addressedToReceipts_(messageTo('danielle.lucas5@gmail.com')), false);
+check('a lookalike domain',
+      sandbox.addressedToReceipts_(messageTo('rob.sinclair.bb+receipt@gmai1.com')), false);
+check('the address merely mentioned in a display name',
+      sandbox.addressedToReceipts_(messageTo('"rob.sinclair.bb+receipt" <someone@else.com>')), false);
+check('no recipients at all', sandbox.addressedToReceipts_(messageTo('')), false);
 
 // --- bills and payment notices, which have no photograph ------------------------
 console.log('a bill dated when it comes due');

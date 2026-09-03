@@ -17,7 +17,12 @@ photo at the till and forgetting about it is a habit that can actually be kept.
 ## Scope
 What this does:
 
-- Watches one Gmail label for photos of receipts, PDF receipts, and — when there is
+- Reads **only mail sent to `rob.sinclair.bb+receipt@gmail.com`**. The Gmail filter
+  puts a label on it; the script then checks the To and Cc lines of every message
+  itself before reading a word of it. Two gates, because a label is not one: labels
+  get applied by hand, by other filters, and to whole conversations. Anything
+  labelled but not addressed there is left unread and flagged.
+- Watches that label for photos of receipts, PDF receipts, and — when there is
   nothing attached — bills and payment notices where the email itself is the record.
   An ATCO bill notice with an amount and a due date in the body is filed the same way
   a photograph of a till receipt is.
@@ -56,8 +61,10 @@ What this deliberately does not do:
   person, not a change to this code.
 - No OCR of its own, no receipt line items, no per-item breakdown — one receipt, one
   row, the way the sheet already works.
-- It does not read your mail. It sees one Gmail label and nothing else, so a bill only
-  reaches it if it is forwarded there deliberately. Account numbers, card numbers and
+- It does not read your mail. It reads messages addressed to one purpose-made
+  address and nothing else — not the inbox, not a thread that happens to carry the
+  label, not a reply to a receipt you already filed. A bill only reaches it if it is
+  forwarded there deliberately. Account numbers, card numbers and
   payment links are explicitly kept out of the sheet.
 - No categorisation model of its own: the allowed categories are read out of the
   month tab's header row at run time, so the sheet stays the source of truth.

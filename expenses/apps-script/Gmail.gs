@@ -1,8 +1,15 @@
 /**
- * The Gmail side: labels, attachments, and the record of what has already been done.
+ * The Gmail side: what may be read, labels, attachments, and the record of what has
+ * already been done.
  *
- * The script reads exactly one label. Nothing else in the mailbox is touched, and
- * nothing is ever deleted — filing a receipt moves a label, that is all.
+ * Two gates, not one. The Gmail filter puts the label on; the script then checks
+ * every message itself for the +receipt address before reading a word of it. The
+ * label alone is not enough — labels get applied by hand, by other filters, and to
+ * whole conversations — so the address is the real boundary and the label is only
+ * how the mail gets noticed.
+ *
+ * Nothing outside that boundary is opened, sent anywhere, or deleted. Filing a
+ * receipt moves a label, that is all.
  */
 
 function getLabel_(name) {
@@ -13,6 +20,46 @@ function getLabel_(name) {
 function pendingThreads_() {
   const threads = getLabel_(CONFIG.INBOX_LABEL).getThreads(0, CONFIG.MAX_THREADS_PER_RUN);
   return threads.reverse();
+}
+
+/**
+ * Was this message actually sent to the receipts address? Checked before the body,
+ * the attachments or the sender are looked at, so mail that only carries the label
+ * is never read.
+ *
+ * To and Cc are what a person can address. Bcc is not visible on a received message
+ * — a receipt blind-copied to the address cannot be recognised, and is left alone.
+ */
+function addressedToReceipts_(message) {
+  const wanted = CONFIG.RECEIPT_ADDRESSES.map(normaliseAddress_);
+  const fields = [message.getTo(), message.getCc()];
+  const seen = [];
+  fields.forEach(function (field) {
+    addressesIn_(field).forEach(function (address) { seen.push(address); });
+  });
+  return seen.some(function (address) { return wanted.indexOf(address) !== -1; });
+}
+
+/** Pull the bare addresses out of a header like: Rob <a@b.com>, "C, D" <c@d.com> */
+function addressesIn_(header) {
+  const matches = String(header || '').match(/[^\s<>,;"]+@[^\s<>,;"]+/g) || [];
+  return matches.map(normaliseAddress_);
+}
+
+/**
+ * Lowercased, and with the dots Gmail ignores taken out of the part before the @,
+ * so rob.sinclair.bb+receipt and robsinclairbb+receipt are recognised as the one
+ * address they are. The +receipt tag is kept — it is the whole point.
+ */
+function normaliseAddress_(address) {
+  const trimmed = String(address || '').trim().toLowerCase().replace(/^<|>$/g, '');
+  const at = trimmed.lastIndexOf('@');
+  if (at < 1) return trimmed;
+  const local = trimmed.slice(0, at), domain = trimmed.slice(at + 1);
+  const dotless = (domain === 'gmail.com' || domain === 'googlemail.com')
+    ? local.replace(/\./g, '')
+    : local;
+  return dotless + '@' + domain;
 }
 
 /** Attachments worth sending to the model: images and PDFs, inline ones included. */

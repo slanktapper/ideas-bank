@@ -2,15 +2,21 @@
   "_comment": [
     "The ATCO bill notice, forwarded to the +receipt address with nothing attached.",
     "'reading' is what the model is assumed to answer. It is the one invented part of",
-    "the dry run — change it to ask what happens if the model reads it differently."
+    "the dry run \u2014 change it to ask what happens if the model reads it differently."
   ],
   "email": {
     "from": "Rob Sinclair <rob.sinclair.bb@gmail.com>",
+    "to": "rob.sinclair.bb+receipt@gmail.com",
     "subject": "Fwd: ATCO Energy bill",
     "body": "Hi ROBERT, your ATCO Energy bill for  CAD 119.82 on acct 7808483721016, is due 15 Sep, 2026 . To pay online, please visit us at: https://store.atcoenergy.com/login. If you're set up on the preauthorized payment plan, no further action is required -Thx 1 msg/month to opt out, reply STOP. Std msg rates may apply."
   },
   "existingRows": [
-    { "description": "Danielle purse", "rob": 69.9, "date": "2026-09-01", "category": "Entertainment" }
+    {
+      "description": "Danielle purse",
+      "rob": 69.9,
+      "date": "2026-09-01",
+      "category": "Entertainment"
+    }
   ],
   "reading": {
     "is_expense": true,
