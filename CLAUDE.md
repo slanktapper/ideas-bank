@@ -102,7 +102,7 @@ mechanism even when the intent is clear.
 ## Working inside a project
 
 - Each project folder is self-contained: its own dependencies, its own tooling, its
-  own tests, its own README/`direction.md`.
+  own tests, its own `direction.md`.
 - **Read the project's `direction.md` first.** It states what the idea is for and
   what it is deliberately not doing. It outranks your assumptions about the idea.
 - There is no repo-wide language, framework, or test runner. Infer conventions from
