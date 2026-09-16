@@ -8,13 +8,12 @@ Gathering what is worth knowing before spending money or time: which printers ar
 worth buying, how the technologies differ, what materials suit what jobs, what goes
 wrong and why.
 
-The first question — which printer to buy — is down to **two options**: a Bambu Lab
-**X2D** at $1,349 CAD, and a Bambu Lab **H2D** at $2,599 CAD — both inside the $3,000
-budget, and the only two machines still under consideration. Both are enclosed,
-actively heated to 65 °C, dual nozzle, aimed at functional parts in a climate-controlled
-garage; the H2D adds roughly twice the build volume and a laser/cutting path. See
-`x2d-vs-h2d.md` for the comparison and `decision.md` for the case that picked the X2D
-first. The project also carries the reasoning forward into running the machine well.
+The first question — which printer to buy — is **answered**. A Bambu Lab **H2D** (AMS
+Combo, dual AMS 2 Pro) was ordered 2026-09-16 MDT at $2,599 CAD, $3,533.56 all-in with
+a cutting module, the Vision Encoder, a warranty and 13.5 kg of filament. See
+`order-review.md`. The X2D was the alternative and was not taken; `x2d-vs-h2d.md` and
+`decision.md` record the reasoning. The project now carries forward into running the
+machine well.
 
 ## Why
 3D printer information is scattered across vendor marketing, forum threads, YouTube
@@ -45,28 +44,26 @@ calculator — the stack gets picked then, and this section gets filled in.
 ## How to run
 Nothing to run yet. Read the notes in this folder:
 
-- `x2d-vs-h2d.md` — **the two live options, side by side.** Start here.
-- `decision.md` — the case that picked the X2D, and what reopened it.
-- `requirements.md` — the buying brief both options are judged against.
+- `order-review.md` — **what was ordered, and what is open on arrival.** Start here.
+- `setup.md` — running the machine in the workshop; bench space, humidity, buy list.
+- `requirements.md` — the buying brief the purchase was judged against.
+- `x2d-vs-h2d.md` — how the H2D beat the X2D. **Resolved**; kept as reasoning.
+- `decision.md` — the earlier case for the X2D. **Not taken**; kept as history.
 - `printer-shortlist.md` — the original wider field. **Closed**; kept as history.
-- `setup.md` — running the machine in the workshop; humidity, and the buy list.
-- `order-review.md` — review of both carts before purchase.
 - `filament-catalogue.md` — Bambu CA filament prices, captured 2026-08-30 MDT.
 - `materials.md` — which filament for which job, with reasoning.
 - `filament-glossary.md` — one line on every filament in the Bambu CA range.
 
 ## Open questions
-- **X2D or H2D?** These are the only two machines still in play. Both now fit the
-  $3,000 budget, and they share the 65 °C chamber and the dual-nozzle design — so the
-  deciding question is build volume, 256 mm against 350 mm, and it is the one spec
-  that cannot be upgraded later. See `x2d-vs-h2d.md`.
-- **What is the largest part actually expected?** Unanswered, and it settles the above.
-- **Is this a functional-parts machine, a multi-colour one, or a small fab shop?** Both
-  carts now carry PETG and ABS, so the functional-parts question is answered. The H2D
-  cart has since added a cutting module and vinyl, which widens the project's scope
-  again — see `order-review.md`.
-- **Support material is still unbought**, on either cart, and the dual nozzle has no
-  purpose without it. `order-review.md` names the three SKUs.
+- **~~X2D or H2D?~~ Settled** — the H2D, ordered 2026-09-16 MDT.
+- **A second High Temp reusable spool is needed.** Two ABS refills were ordered against
+  one spool, so the second kilo cannot be loaded until another is bought. Not urgent;
+  see `order-review.md`.
+- **Spool storage is still unbought.** Thirteen spools, eight AMS slots — five live
+  outside active drying. Airtight boxes, desiccant, hygrometer.
+- **Does the cutting module widen this project or start a sibling?** The order buys
+  blade cutting and vinyl, which is not 3D printing. Worth deciding whether cutting
+  notes live here or in their own folder.
 - Base vs Combo is **resolved**: the Print More Bundle carries two AMS 2 Pro units,
   which also settles the humidity question — eight spools live in active drying.
 - Does model creation belong in this project or its own? Parametric CAD as code

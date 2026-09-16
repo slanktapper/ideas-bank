@@ -1,21 +1,75 @@
 # Order review
 
-**All prices CAD.** There are now **two** carts under consideration — an X2D order and
-an H2D order. Side-by-side reasoning on which machine to buy is in `x2d-vs-h2d.md`;
-this file reviews the carts themselves.
+**ORDERED 2026-09-16 MDT.** The H2D was bought. This file is now the record of what
+was purchased and why, not a live comparison. The X2D option was not taken.
 
-| | Option A — X2D | Option B — H2D |
-| --- | --- | --- |
-| Printer bundle | $1,349.00 | $2,599.00 |
-| Cart total | **$1,648.48** | **$3,272.18** |
-| Filament | 12 spools (6 PETG, 3 ABS, 1 ASA, 2 PLA) | 12 spools (5 PETG, 5 PLA Basic, 1 PLA Pure, 1 ABS) |
-| Warranty | $89 | $189 |
-| Cutting module + consumables | — | $176.71 |
-| Vision Encoder | — | $96.00 |
-| Against the $3,000 budget | printer and whole cart inside | printer inside; **whole cart $272 over** |
+## The order as placed
 
-The H2D cart has changed substantially since it was first reviewed — it now carries the
-cutting module, and the filament discount tier has dropped from 45 % to 22 %.
+Order **ca776792976599851009**, placed 2026-09-16 10:29 MDT. Status: Processing.
+**All prices CAD.**
+
+| | |
+| --- | --- |
+| Subtotal | $3,302.98 |
+| Shipping | $0.00 |
+| GST (5 %) | $165.19 |
+| Worry-Free Delivery | $65.39 |
+| **Grand total** | **$3,533.56** |
+
+Rewards earned: 3,304 credits. GST only — no PST in Alberta — and it is charged on the
+subtotal, not on the Worry-Free Delivery line, which was added afterwards.
+
+### What shipped in it
+
+| Item | Qty | Unit | Line |
+| --- | --- | --- | --- |
+| Bambu Lab H2D — AMS Combo / Dual AMS 2 Pro Bundle | 1 | $2,599.00 | $2,599.00 |
+| Extended Warranty Service for H2D (1 year) | 1 | $189.00 | $189.00 |
+| Cutting Upgrade Kit — H2 Series/A2L | 1 | $109.00 | $109.00 |
+| Vision Encoder — H2 Series | 1 | $96.00 | $96.00 |
+| Cutting Essentials Refill Pack | 1 | $35.98 | $35.98 |
+| Matte Removable Vinyl 300×300 mm — Red, Black, Orange | 3 | $7.91 | $23.73 |
+| Bambu Reusable Spool — High Temp (≤ 90 °C) | 1 | $8.99 | $8.99 |
+| Support for ABS — White, 0.5 kg, with spool | 1 | $15.99 | $15.99 |
+| PETG Basic — Yellow, Reflex Blue, Orange, White, Black | 5 | $17.15 | $85.75 |
+| PLA Basic — Indigo Purple, Blue, Red, Black, Jade White | 5 | $17.93 | $89.65 |
+| PLA Pure — Milky Pink | 1 | $20.27 | $20.27 |
+| ABS **Refill** — Orange | 2 | $14.81 | $29.62 |
+| **Subtotal** | | | **$3,302.98** |
+
+Filament: 13 × 1 kg spools plus 0.5 kg of ABS support = **13.5 kg**.
+
+### Against the brief
+
+| `requirements.md` | Outcome |
+| --- | --- |
+| Budget, printer only, up to $3,000 | **Met.** $2,599, $401 to spare. |
+| Functional parts, prototyping | PETG is the largest single block (5 kg), ABS 2 kg. |
+| Climate-controlled garage, 10–20 °C | 65 °C active chamber; see `setup.md` for bench space. |
+| Build volume — the deciding question | **Answered by buying the bigger machine.** 350 mm. |
+
+The all-in $3,533.56 is above $3,000, but the brief sets that ceiling as *printer only*,
+and the printer clears it.
+
+## Open on arrival
+
+1. **One ABS refill has no spool.** Two 1 kg Refills were ordered against **one** High
+   Temperature reusable spool. The Support for ABS has its own high-temp spool but it
+   arrives loaded, so it is not available. The second kilo of ABS cannot be loaded until
+   another **Reusable Spool — High Temp (≤ 90 °C)** is bought ($8.99 on the add-ons
+   deal, $14.99 list). Not urgent — the first kilo has to be printed through first — but
+   it should go on the next order.
+
+2. **Thirteen spools, eight AMS slots.** Five live outside active drying. The airtight
+   boxes, desiccant and hygrometer from `setup.md` are needed on arrival, and matter
+   more now that two of the spools are ABS.
+
+3. **Bench space.** 492 × 514 × 626 mm, 31 kg, plus two AMS 2 Pro units. Measure before
+   delivery; it is a two-person lift.
+
+4. **Cutting is a toolhead swap.** Printing and cutting are not a same-session activity.
+
+Everything below is the review that led here, kept as the record.
 
 ---
 

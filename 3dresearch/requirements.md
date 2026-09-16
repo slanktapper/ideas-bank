@@ -9,8 +9,9 @@ changes.
 | Requirement | Decision | Consequence |
 | --- | --- | --- |
 | What gets printed | Functional parts; prototyping and general making | FDM, not resin. Strength and dimensional accuracy over surface finish. |
-| Budget (printer only) | **Up to $3,000 CAD** (raised 2026-09-03 MDT from $940–1,695) | **Both live options fit.** X2D $1,349 bundle / $1,648.48 cart; H2D $2,599 bundle / $2,733.12 cart. Price no longer decides between them. |
-| Machines under consideration | **Bambu Lab X2D and H2D only** (narrowed 2026-09-03 MDT) | The wider shortlist — P2S, Prusa Core One+, QIDI Q2C, P1S — is closed. `printer-shortlist.md` is history, not a live comparison. |
+| Budget (printer only) | **Up to $3,000 CAD** (raised 2026-09-03 MDT from $940–1,695) | **Met.** The H2D bundle was bought at $2,599, $401 inside the ceiling. The whole order came to $3,533.56 all-in — above $3,000, but the ceiling is printer-only. |
+| Machine | **Bambu Lab H2D, AMS Combo / Dual AMS 2 Pro** — ordered 2026-09-16 MDT | Settled. The X2D was the alternative and was not taken; `decision.md` records why. |
+| Build volume | **350 × 320 × 325 mm** — settled by the purchase, 2026-09-16 MDT | The question this brief never stated and that ended up deciding the machine. |
 | Location | Garage / workshop, **climate controlled, 10–20 °C year round** | Not a cold space. An enclosure is still wanted, but active chamber heating is an upgrade rather than a necessity. Noise and fumes are not constraints. |
 | Tinkering appetite | Some tinkering fine | Calibration and maintenance acceptable; the machine should not itself be the project. |
 
@@ -31,7 +32,12 @@ capability worth $1,250 that could otherwise go unspent or go elsewhere". See
 Canadian retailers (NEX3D, Spool3D in Calgary, Voxel Factory, Shop3D.ca, Digitmakers)
 avoid cross-border duties; Spool3D offers local pickup in Alberta.
 
-## Build volume — unstated, and now the only deciding requirement
+## Build volume — unstated, and the spec that decided it
+
+> **Settled 2026-09-16 MDT** by buying the 350 mm machine. The section below is the
+> record of how the question surfaced.
+
+### How it surfaced
 
 This brief never named a build volume, because every machine on the original shortlist
 sat at roughly 256 mm cubed and the question never came up. With the budget raised to
@@ -39,7 +45,7 @@ $3,000 it becomes *the* deciding requirement: 350 mm against 256 mm is now the o
 difference between the two live options that this brief has any opinion about
 (`x2d-vs-h2d.md`).
 
-**Unresolved:** what is the largest single part expected? Under 256 mm, the H2D
+**Was unresolved:** what is the largest single part expected? Under 256 mm, the H2D
 premium buys headroom. Over it, the X2D means splitting and gluing parts indefinitely.
 
 Whichever is chosen, write the answer into this table as a stated build-volume

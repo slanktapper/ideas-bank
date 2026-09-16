@@ -1,4 +1,14 @@
-# Two ordering options: X2D and H2D
+# Two ordering options: X2D and H2D — RESOLVED
+
+> **Resolved 2026-09-16 MDT — the H2D was ordered.** Order ca776792976599851009, with
+> the Cutting Upgrade Kit, the Vision Encoder, a warranty and 13.5 kg of filament;
+> $3,533.56 CAD all-in. See `order-review.md`. The comparison below is the reasoning
+> that led there and is kept intact.
+>
+> Which argument actually decided it: **build volume is the only spec that cannot be
+> added later**, and once the budget ceiling rose to $3,000 there was no rule left to
+> block it. The cutting module — a capability the X2D cannot have at any price — was
+> bought in the same order, which settled the remaining doubt.
 
 Written 2026-09-01 MDT; revised 2026-09-03 MDT when the budget was raised to $3,000
 and the field narrowed to these two. **All prices CAD.**

@@ -1,6 +1,13 @@
-# Decision: Bambu Lab X2D
+# Decision: Bambu Lab X2D — NOT TAKEN
 
-**Decided 2026-08-30 MDT. Reopened 2026-09-01 MDT.** Supersedes the open comparison in
+> **Closed 2026-09-16 MDT. The H2D was bought instead.** Order
+> ca776792976599851009, $3,533.56 CAD all-in; see `order-review.md`. This file is kept
+> as the record of the case that was made for the X2D and why it did not win: the two
+> machines shared the 65 °C chamber and the dual nozzle, the raised $3,000 budget let
+> both through, and build volume — the one spec that cannot be upgraded later — decided
+> it. Nothing below is live.
+
+**Decided 2026-08-30 MDT. Reopened 2026-09-01 MDT. Closed 2026-09-16 MDT.** Supersedes the open comparison in
 `printer-shortlist.md`, which stays as the record of how this was reached.
 
 > **Reopened 2026-09-01 MDT — a second option is live.** A Bambu Lab **H2D** cart is
@@ -74,7 +81,9 @@ So the honest position:
 
 ## Still to decide
 
-**Open: X2D or H2D.** With the budget at $3,000 both fit, so the one question that
+**Resolved 2026-09-16 MDT: the H2D.** The reasoning below stood until the end.
+
+**Was open: X2D or H2D.** With the budget at $3,000 both fit, so the one question that
 separates them is build volume — 256 mm against 350 mm. Everything else the H2D adds
 is either already present on the X2D (the heated chamber), buyable later for either
 (hotends, dryers, filament), or not in the cart (the laser). Build volume is the only
