@@ -4,6 +4,24 @@ Captured from the Bambu Lab Canada store filament collection, 2026-08-30 MDT. 47
 items. All CAD. Two discount schemes appear and it is not clear whether they stack —
 see the note at the end.
 
+> **Stale as of 2026-09-16 MDT — the bulk tier has dropped from 45 % to 22 %.** The
+> prices below were captured while a 45 % Bulk Sale badge was live. A cart checked on
+> 2026-09-16 shows **22 % off**, which is roughly **$1.30 more per spool**. The table
+> below is still a valid *ranking* of the materials against each other; it is no longer
+> a price list. Observed 2026-09-16:
+>
+> | Material | This table (45 %) | 2026-09-16 (22 %) | List |
+> | --- | --- | --- | --- |
+> | PETG Basic | $13.74 / $15.94 in cart | **$17.15** | $21.99 |
+> | PLA Basic | $14.29 / $16.49 in cart | **$17.93** | $22.99 |
+> | PLA Pure | $16.49 / $18.69 in cart | **$20.27** | $25.99 |
+> | ABS Refill | $14.29 | **$14.81** | $18.99 |
+>
+> Two things this changes: PETG Basic is **no longer cheaper than PLA Basic** at the
+> same tier, though it stays within a dollar; and a twelve-spool order no longer clears
+> a 45 % threshold, so the tier is driven by the promotion running, not by cart size.
+> Re-capture the page before treating any figure here as current.
+
 ## Bulk Sale tier — the cheap materials
 
 These carry a "Bulk Sale" badge and the price shown is "after bulk sale".

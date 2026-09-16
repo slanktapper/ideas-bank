@@ -63,11 +63,17 @@ parts actually live.
 
 **3. An expansion path into laser and cutting.** The H2D platform takes a 10 W or
 40 W laser module and a cutting module — engraving, cutting plywood and acrylic,
-drawing. **The bundle in the cart does not include any of this.** That is the
-*Laser Full Combo*, a different and dearer SKU with laser-safe glazing, an air pump,
-exhaust ducting and an emergency stop. The AMS Combo in the cart is a 3D printer.
-The laser is a door left open, not a thing being bought — and switching between
-print and laser is a physical toolhead swap, not a menu option.
+drawing. **The AMS Combo bundle includes none of this**; the laser lives on the
+*Laser Full Combo*, a dearer SKU with laser-safe glazing, an air pump, exhaust ducting
+and an emergency stop.
+
+> **Updated 2026-09-16 MDT — this is no longer hypothetical.** The current H2D cart
+> adds the **Cutting Upgrade Kit at $109** plus vinyl, which is the blade-cutting half
+> of that path and does *not* require the Laser Full Combo. That changes the comparison
+> materially: cutting is a capability the X2D cannot have at any price, and it is now
+> something being actively bought rather than a door left open. The laser proper is
+> still not in the cart. Switching between print and cut is a physical toolhead swap,
+> not a menu option.
 
 **4. Faster motion.** 1000 mm/s toolhead speed, 20,000 mm/s² acceleration, servo
 motors. Real, but the smallest item on this list: print time on functional parts is
@@ -157,6 +163,9 @@ you actually expect to print?**
   can add hotends, dryers and filament to either machine later, but can never add
   build volume. Under the old ceiling that argument lost to the budget. It no longer
   has to.
+- **Cutting or engraving is wanted at all** → **H2D**, settled. Added 2026-09-16: the
+  current cart buys the Cutting Upgrade Kit, and that capability does not exist on the
+  X2D in any configuration.
 
 Worth being explicit about what would make this wrong: if the honest answer is
 "almost everything I print fits in a hand", the H2D is $1,250 and half a bench for
@@ -164,12 +173,9 @@ headroom that never gets used, and the X2D is the better buy without qualificati
 
 Two smaller notes that apply whichever is chosen:
 
-- **The H2D cart contains no ABS and no ASA.** Nothing in it uses the 65 °C chamber —
-  the same problem the original all-PLA X2D cart had. If the H2D is chosen, port the
-  material mix across from the X2D cart, not just the colours. There is now budget
-  room to do it: ABS is $14.29 a spool.
-- **The X2D cart carries an $89 extended warranty; the H2D cart does not.** On a
-  $2,599 machine the warranty argument gets stronger, not weaker.
+- **Both carts now carry a warranty and some ABS.** As of 2026-09-16 the H2D cart has
+  an $189 warranty and one ABS refill with the correct High Temp spool, so the two
+  criticisms made here on 2026-09-01 are resolved. See `order-review.md`.
 
 ## Sources
 

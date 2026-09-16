@@ -61,9 +61,12 @@ Nothing to run yet. Read the notes in this folder:
   deciding question is build volume, 256 mm against 350 mm, and it is the one spec
   that cannot be upgraded later. See `x2d-vs-h2d.md`.
 - **What is the largest part actually expected?** Unanswered, and it settles the above.
-- **Is this a functional-parts machine or a multi-colour one?** The X2D cart has been
-  fixed (6 PETG, 3 ABS, 1 ASA); the H2D cart has not — it carries no ABS or ASA, so
-  nothing in it uses the heated chamber. See `order-review.md`.
+- **Is this a functional-parts machine, a multi-colour one, or a small fab shop?** Both
+  carts now carry PETG and ABS, so the functional-parts question is answered. The H2D
+  cart has since added a cutting module and vinyl, which widens the project's scope
+  again — see `order-review.md`.
+- **Support material is still unbought**, on either cart, and the dual nozzle has no
+  purpose without it. `order-review.md` names the three SKUs.
 - Base vs Combo is **resolved**: the Print More Bundle carries two AMS 2 Pro units,
   which also settles the humidity question — eight spools live in active drying.
 - Does model creation belong in this project or its own? Parametric CAD as code

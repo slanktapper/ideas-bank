@@ -7,10 +7,15 @@ this file reviews the carts themselves.
 | | Option A — X2D | Option B — H2D |
 | --- | --- | --- |
 | Printer bundle | $1,349.00 | $2,599.00 |
-| Cart total | **$1,648.48** | **$2,733.12** |
-| Filament | 12 spools (6 PETG, 3 ABS, 1 ASA, 2 PLA) | 8 spools (4 PETG, 4 PLA) |
-| Warranty | $89 included | not in cart |
-| Headroom under $3,000 budget | $1,351 | $267 |
+| Cart total | **$1,648.48** | **$3,272.18** |
+| Filament | 12 spools (6 PETG, 3 ABS, 1 ASA, 2 PLA) | 12 spools (5 PETG, 5 PLA Basic, 1 PLA Pure, 1 ABS) |
+| Warranty | $89 | $189 |
+| Cutting module + consumables | — | $176.71 |
+| Vision Encoder | — | $96.00 |
+| Against the $3,000 budget | printer and whole cart inside | printer inside; **whole cart $272 over** |
+
+The H2D cart has changed substantially since it was first reviewed — it now carries the
+cutting module, and the filament discount tier has dropped from 45 % to 22 %.
 
 ---
 
@@ -76,9 +81,129 @@ dominating the shelf. This is the lineup the earlier all-PLA cart lacked.
 
 # Option B — H2D cart
 
-Cart reviewed 2026-09-01 MDT.
+Cart reviewed 2026-09-16 MDT. Supersedes the 2026-09-01 version, kept below.
 
 ## The cart
+
+| Item | Qty | Unit | Line |
+| --- | --- | --- | --- |
+| Bambu Lab H2D — AMS Combo / Dual AMS 2 Pro Bundle | 1 | $2,599.00 | $2,599.00 |
+| Extended Warranty Service for H2D | 1 | $189.00 | $189.00 |
+| Cutting Upgrade Kit — H2 Series/A2L | 1 | $109.00 | $109.00 |
+| Vision Encoder — H2 Series | 1 | $96.00 | $96.00 |
+| Cutting Essentials Refill Pack | 1 | $35.98 | $35.98 |
+| Matte Removable Vinyl 300×300 mm (10 pcs) — Red, Black, Orange | 3 | $7.91 | $23.73 |
+| Bambu Reusable Spool — **High Temp (≤ 90 °C)** | 1 | $8.99 | $8.99 |
+| PETG Basic — Yellow, Reflex Blue, Orange, White, Black | 5 | $17.15 | $85.75 |
+| PLA Basic — Indigo Purple, Red, Blue, Black, Jade White | 5 | $17.93 | $89.65 |
+| PLA Pure — Milky Pink | 1 | $20.27 | $20.27 |
+| ABS **Refill** — Orange | 1 | $14.81 | $14.81 |
+| **Total** | | | **$3,272.18** |
+
+Non-filament $3,061.70; filament $210.48 across **12 spools**, 12 kg.
+
+### What is right about it
+
+**The ABS refill/spool problem is fixed.** One ABS Refill, one **High Temperature
+(≤ 90 °C)** reusable spool. Right grade — the Low Temp spool in the earlier X2D cart
+was rated for PLA and PETG only — and the counts match. This was the blocking issue
+from 2026-08-30 and it is now resolved.
+
+**The cutting kit is the correct SKU.** "Cutting Upgrade Kit — H2 Series/A2L" is the
+module sold for non-laser H2 machines; blade cutting does not need the Laser Full
+Combo's protective glazing or exhaust. Worth knowing that the module is a *physical
+toolhead swap*, so cutting and printing are not a same-session activity.
+
+**Vinyl is bought the cheap way.** Three colours of sheet vinyl at $23.73 rather than
+the $59.00 Cutting Material Kit — Starter Pack.
+
+## Outstanding before checkout — H2D cart
+
+1. **The Cutting Essentials Refill Pack duplicates the Cutting Upgrade Kit.** This is
+   the one genuine redundancy in the cart.
+
+   | | Cutting Upgrade Kit ($109) | Cutting Essentials Refill Pack ($35.98) |
+   | --- | --- | --- |
+   | Cutting module | yes | — |
+   | Cutting platform | yes | — |
+   | StrongGrip mat | yes | yes |
+   | LightGrip mat | yes | yes |
+   | Fine Point blade | yes (×2) | yes (×1) |
+   | Pen holder, markers, extraction tool | yes | — |
+
+   The Refill Pack is entirely spares of three items the Upgrade Kit already ships,
+   and the kit carries two blades, so the order would start with three. Worth having
+   eventually; not before a mat has lost its tack. **Drop it, reorder on wear.**
+
+   *Caveat:* every Bambu store domain is blocked by this environment's network policy,
+   so both packing lists come from retailer listings rather than the product pages.
+   Confirm the mats are in the Upgrade Kit box before deleting the line.
+
+2. **No support material — open since the very first cart.** The dual nozzle exists to
+   lay peelable supports in a second material, and nothing in this order feeds it. See
+   "Support material" below for the three SKUs and which to buy.
+
+3. **Twelve spools, eight AMS slots.** Four live outside active drying, so the airtight
+   boxes, desiccant and hygrometer from `setup.md` are needed on arrival. The earlier
+   eight-spool H2D cart avoided this; this one does not.
+
+4. **The filament discount has collapsed to 22 %.** The badge read 45 % when
+   `filament-catalogue.md` was captured on 2026-08-30. Per spool: PETG Basic $17.15
+   (was $15.94), PLA Basic $17.93 (was $16.49), PLA Pure $20.27 (was $18.69), ABS
+   Refill $14.81 (was $14.29). About $1.30 a spool more, ~$16 across the order. If
+   there is no deadline, the tier may return.
+
+5. **The whole cart is $272 over $3,000.** `requirements.md` sets the ceiling as
+   *printer only*, and the $2,599 bundle clears it — so this is not a breach by the
+   letter of the brief. It is worth knowing by its spirit, and adding support material
+   plus spool storage would take the order to roughly $3,400.
+
+6. **Measure the bench first.** 492 × 514 × 626 mm and 31 kg, plus two AMS 2 Pro units
+   beside or on top. A two-person lift.
+
+### Kept, and why
+
+| Item | Verdict |
+| --- | --- |
+| Vision Encoder, $96.00 | **Keep.** Not duplicated by anything. XY motion calibration to under 50 µm in about five minutes, good for weeks. Lines up directly with what `requirements.md` asks for — hole placement and assembly fit on functional parts. |
+| Extended warranty, $189.00 | **Keep.** 7.3 % of the machine, a worse ratio than the X2D's $89 (6.6 %), but this is a 31 kg machine to ship back from Alberta. |
+| Cutting Upgrade Kit, $109.00 | **Keep.** Correct SKU, nothing else in the cart covers it. |
+| Vinyl ×3, $23.73 | **Keep.** Three distinct colours; not redundant. |
+
+### Still missing beyond support material
+
+- **Spool storage** — airtight boxes, desiccant, hygrometer. Required by item 3, not
+  optional.
+- **Spare high-flow hotend, $66.99.** The part that strands the machine when it clogs.
+  The warranty softens the case, so this is a convenience rather than a necessity.
+
+## Support material — the three SKUs
+
+Nothing in any cart to date has fed the second nozzle. What to buy depends on which
+base material the supports are printed against:
+
+| Product | Price | Use with | Link |
+| --- | --- | --- | --- |
+| **Support for PLA/PETG** | $44.99 | PLA and PETG — the material this order is mostly made of | [ca.store.bambulab.com](https://ca.store.bambulab.com/products/support-for-pla-petg) |
+| **Support for ABS** | $19.99 | ABS and ASA only | [ca.store.bambulab.com](https://ca.store.bambulab.com/products/support-for-abs) |
+| Support for PLA (New Edition) | $29.99 | PLA only — cheaper, narrower | [ca.store.bambulab.com](https://ca.store.bambulab.com/products/support-for-pla-new) |
+
+**Buy Support for PLA/PETG first.** Eleven of the twelve spools in this cart are PLA or
+PETG, and it covers both. Add Support for ABS ($19.99) only once ABS printing is
+actually happening — it is cheap, and it ships on a High Temperature (PC+ABS, 90 °C)
+spool, the same grade as the reusable spool already in the cart.
+
+Support for PLA (New Edition) at $29.99 is a false economy here: $15 cheaper than the
+PLA/PETG version but useless against the five PETG spools.
+
+Both support spools are **0.5 kg**, not 1 kg. Support material is used sparingly, so
+that is normally a year or more of interfaces.
+
+---
+
+# Superseded: the 2026-09-01 H2D cart
+
+Reviewed before the cutting module was added and while the 45 % filament tier held.
 
 | Item | Qty | Unit | Line |
 | --- | --- | --- | --- |
@@ -88,68 +213,18 @@ Cart reviewed 2026-09-01 MDT.
 | PLA Basic — Blue, Sunflower Yellow | 2 | $16.49 | $32.98 |
 | **Total** | | | **$2,733.12** |
 
-Filament: **8 spools**, 8 kg. Discount badge reads "Combo Deal" rather than the
-"Bulk Sale" on the X2D cart.
-
-### What is right about it
-
-**Eight spools against eight AMS slots.** The Dual AMS 2 Pro bundle gives exactly
-eight actively dried slots and the cart fills them exactly. That removes the storage
-problem the X2D cart has — no airtight boxes, desiccant or hygrometer needed on day
-one, because nothing lives outside a dryer.
-
-**Half the filament is PETG.** Four PETG Basic makes the functional workhorse a real
-presence rather than an afterthought, which is what `requirements.md` asks for. This
-is a much better material mix than the original all-PLA X2D cart.
-
-**No refills, so no spool problem.** Every line is a spooled product. The ABS Refill
-trap that the X2D cart fell into does not arise here.
-
-## Outstanding before checkout — H2D cart
-
-1. **~~Over budget.~~ Resolved 2026-09-03 MDT.** The budget was raised to $3,000, so
-   the $2,599 bundle and the $2,733.12 cart both fit. Price no longer rules this
-   option out or decides between the two; see `x2d-vs-h2d.md`. What remains is that
-   $267 of headroom is not much room for the warranty and support material in items 4
-   and 5 below — the cart is close to the ceiling in a way the X2D cart is not.
-
-2. **Nothing in this cart uses the 65 °C chamber.** No ABS, no ASA, no PC, no nylon.
-   PETG and PLA both print fine on a passive enclosure. This is exactly the criticism
-   made of the original all-PLA X2D cart, and it lands harder here: the H2D's chamber
-   is the same 65 °C unit as the X2D's, so on this cart's contents the $1,250 premium
-   buys build volume and nothing else. Port the ABS and ASA across from the X2D cart —
-   ABS is **$14.29**, cheaper than every PLA line already in this order.
-
-3. **PLA Pure at $18.69 is above the bulk tier.** `filament-catalogue.md` records PLA
-   Pure at **$16.49** on the bulk tier — $2.20 a spool, $4.40 across the two. Eight
-   spools may sit below the tier threshold the twelve-spool X2D cart cleared. Worth
-   opening the discount badge to see what the next tier needs; adding the ABS and ASA
-   from item 2 may cross it on its own.
-
-4. **No extended warranty.** The X2D cart carries one at $89 on a $1,349 machine
-   (6.6 %). On a $2,599 machine with a heavier toolhead, a bigger gantry and a 31 kg
-   shipping weight, the argument for one is stronger, not weaker. Price it before
-   checkout.
-
-5. **No support material** for the second nozzle — same gap as the X2D cart. Support
-   for ABS $19.99, Support for PLA/PETG $44.99.
-
-6. **Measure the bench first.** 492 × 514 × 626 mm and 31 kg, plus two AMS 2 Pro units
-   beside or on top. Substantially larger than the X2D and a two-person lift.
+Eight spools against eight AMS slots — the storage problem the current cart
+reintroduces. No ABS or ASA, so nothing in it used the 65 °C chamber; the current cart
+fixes that with one ABS refill. No warranty line; the current cart has one.
 
 ### Accessories the store surfaced alongside it
 
-Not in the cart; noted because they show what the platform expects you to add.
-
 | Item | Price | Comment |
 | --- | --- | --- |
-| Bambu High Flow Hotend — H2/P2S/X2D | $66.99 | Fits either machine. Worth having as a spare regardless. |
-| Vision Encoder | $128.00 | Calibration accessory. Not needed to start. |
-| Cutting Material Kit — Starter Pack | $59.00 | Only useful with the cutting module, which this bundle does not include. |
-| Laser Material Kit — Starter Pack (49 pcs) | $96.90 | Same — the laser is on the *Laser Full Combo*, not the AMS Combo. |
-
-The last two are the tell: if the laser and cutter are part of the appeal, this is
-the wrong H2D SKU. See `x2d-vs-h2d.md`.
+| Bambu High Flow Hotend — H2/P2S/X2D | $66.99 | Fits either machine. Still not in the cart. |
+| Vision Encoder | $128.00 | **Now in the cart at $96.00** under a Combo Deal. |
+| Cutting Material Kit — Starter Pack | $59.00 | Passed over in favour of $23.73 of sheet vinyl. |
+| Laser Material Kit — Starter Pack (49 pcs) | $96.90 | Still not applicable — the laser is on the *Laser Full Combo*. |
 
 ---
 
@@ -268,8 +343,10 @@ The budget is **up to $3,000 CAD** for the printer, raised 2026-09-03 MDT from
 $940–1,695 (see `requirements.md`). **Both options now fit.**
 
 - **X2D Print More Bundle, $1,349** — full cart $1,648.48, leaving $1,351 unspent.
-- **H2D AMS Combo / Dual AMS 2 Pro Bundle, $2,599** — full cart $2,733.12, leaving
-  $267. Enough for the warranty *or* a support-material spool, not comfortably both.
+- **H2D AMS Combo / Dual AMS 2 Pro Bundle, $2,599** — the bundle clears the ceiling
+  with $401 to spare, but the cart as it now stands is **$3,272.18**, or $272 over
+  $3,000. The brief sets the ceiling as *printer only*, so this is not a breach — but
+  support material and spool storage would take the order to roughly $3,400.
 
 An earlier version of this file recorded the H2D as $904 over budget. That is no
 longer the case; the number was right against the old ceiling.
