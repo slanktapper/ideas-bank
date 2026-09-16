@@ -8,7 +8,9 @@ or data unless a deliberate decision was made to connect them.
 
 The root holds direction `.md` files and project folders. Nothing else.
 
-See `CLAUDE.md` for the working rules.
+See `CLAUDE.md` for the working rules, and `available-tools.md` for the physical and
+fabrication capability any project can draw on — there is a 3D printer and a blade
+cutter, so not every idea here has to be software.
 
 ## Project registry
 

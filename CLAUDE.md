@@ -16,8 +16,9 @@ product; treat them as binding.
 
 The root of the repository contains exactly two kinds of entries:
 
-1. **Direction `.md` files** — repo-level guidance (this file, `DIRECTION.md`, and any
-   future direction docs). These describe intent and rules, not implementation.
+1. **Direction `.md` files** — repo-level guidance (this file, `DIRECTION.md`,
+   `available-tools.md`, and any future direction docs). These describe intent and
+   rules, not implementation.
 2. **Project folders**, one per idea/tool/experiment, named with the project's
    **short name**.
 
@@ -29,6 +30,7 @@ inside that idea's folder.
 ideas-bank/
 ├── CLAUDE.md            # this file — how Claude works in this repo
 ├── DIRECTION.md         # repo-level direction + the project registry
+├── available-tools.md   # physical/fabrication capability available to any project
 ├── <short-name>/        # one idea/tool per folder
 │   ├── direction.md     # what this idea is, where it is going
 │   └── ...              # that idea's own code, config, docs, data
@@ -150,6 +152,32 @@ Decisions not yet made. Things to revisit.
 Keep `direction.md` current as the idea moves. When a project's direction changes,
 update the file in the same commit as the change.
 
+## Available tools: check before assuming software-only
+
+**`available-tools.md` lists physical and fabrication capability available to every
+project in this repository.** Read it when starting a new idea, and whenever a project
+turns out to have a physical dimension.
+
+The capability is real, not hypothetical: a large-format FDM 3D printer with a heated
+chamber and eight filament slots, a blade cutter for vinyl and card, filament on the
+shelf, and the means to generate printable files from code without a GUI.
+
+Three responses, and the third is the one that gets forgotten:
+
+1. **Obvious fit** — propose it as part of the solution, no need to ask.
+2. **Obvious non-fit** — say nothing; do not pad an answer with irrelevant hardware.
+3. **Plausible but not obvious** — **put the choice to the user with
+   `AskUserQuestion`.** Say what could be made, what it would take, and what the
+   alternative is. Name a recommendation, then wait.
+
+`available-tools.md` carries the full decision rule and the machine's real limits.
+Consult it rather than guessing what the printer can do — build volume, materials on
+hand, and what it explicitly cannot do are all specified there.
+
+The failure this exists to prevent is silent omission: finishing a project that would
+have been better with a printed or cut part, without the user ever learning that option
+existed.
+
 ## Time and dates
 
 **All times and dates in this repository are Alberta, Canada time** — the
@@ -194,4 +222,5 @@ status updates, and any timestamp you quote back from git, logs, or a file listi
 | Root directory | Direction `.md` files and project folders only |
 | Project folder | Self-contained; conventions come from inside it |
 | New idea | Short name → folder → `direction.md` → registry row |
+| Physical capability | Check `available-tools.md`; ask when a fit is plausible but unclear |
 | Times and dates | Alberta time (`America/Edmonton`), zone always labelled |
