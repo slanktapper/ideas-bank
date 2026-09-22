@@ -114,6 +114,40 @@ a lawyer should look at it before it is sold. Nothing here is legal advice.
   the whole collector to one process and one file; if node count or retention ever
   outgrows it, Postgres is the escape hatch and the schema should not make that hard.
 
+## Expected load
+Estimated, not measured — the bench milestone exists partly to check these numbers.
+
+A node near the house hears **100–400 frames per second** of raw radio: beacons alone
+run about 10/sec per BSSID, and each BLE advertiser emits 1–10 packets/sec. That rate
+is a firmware constraint rather than a collector problem, and it forces the central
+design rule on the node side: **aggregate in RAM, never stream raw frames.** Each node
+keeps a table keyed by device address and frame type — first seen, last seen, count,
+RSSI min/max/mean — and POSTs a rollup every 30 seconds. A useful property falls out
+of this: a deauthentication flood, the busiest realistic event, arrives as one row
+with a count of 50,000 rather than 50,000 rows. The system gets quieter under attack,
+not louder.
+
+With five nodes, that leaves the collector handling:
+
+- ~0.17 requests/sec, batched one SQLite transaction per POST
+- ~215,000 rows/day, about 2.5 inserts/sec
+- ~30 MB/day raw, ~1 GB/month; with raw kept 14–30 days and hourly aggregates after,
+  a steady state around 2–4 GB
+- ~150–250 MB RSS for the Python process; budget 512 MB
+- ~1 GB/month inbound
+
+CPU averages **1–3% of one vCPU**, spiking to perhaps half a core during hourly
+compaction or a dashboard query. The collector therefore does not size the host. If it
+runs on a cloud instance, a 2 GiB burstable box is ample and the cost is dominated by
+the public IP and storage, not compute; the sizing question belongs to whatever else
+shares the host.
+
+Two consequences worth carrying into the build. Retention policy, not throughput, is
+the thing to design — the row count is what grows without bound. And if the collector
+is reached over the internet, nodes need TLS with per-node credentials, which on ESP32
+costs roughly 40 KB of RAM per session plus a certificate bundle, so a node should
+hold one connection and batch through it rather than opening a socket per POST.
+
 ## How to run
 Nothing to run yet — no firmware and no collector exist. This file is the design so
 far. The first milestone is a single node on a bench that captures management frames
