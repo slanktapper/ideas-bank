@@ -19,5 +19,6 @@ one-line description. Add a row when you create a project.
 | Short name | Description | Status |
 | --- | --- | --- |
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
+| honeypot-wifi | Passive ESP32 Wi-Fi/BLE sensor net for acreage perimeter awareness | idea |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
