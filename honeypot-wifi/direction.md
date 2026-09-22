@@ -104,9 +104,15 @@ a lawyer should look at it before it is sold. Nothing here is legal advice.
 - **Transport:** nodes batch observations and **HTTP POST JSON** to the collector over
   the property LAN, with on-device buffering so a node that loses its link backfills
   rather than drops.
-- **Collector:** a small service on the home network — HTTP endpoint, SQLite store,
-  baseline/rules engine, alerting, and an outbound webhook for automations.
-  Implementation language not chosen yet; see Open questions.
+- **Collector:** **Python + FastAPI**, storing to **SQLite** — HTTP ingest endpoint,
+  baseline/rules engine, alerting, and an outbound webhook for automations. Packaged
+  as a **Docker container**, intended to run on a shared Docker host alongside other
+  unrelated containers, so it must behave as a well-mannered tenant: modest and
+  predictable CPU, bounded memory, its database on a named volume rather than inside
+  the image, configuration through environment variables, and a health endpoint.
+  SQLite suits the write pattern here (a handful of nodes POSTing batches) and keeps
+  the whole collector to one process and one file; if node count or retention ever
+  outgrows it, Postgres is the escape hatch and the schema should not make that hard.
 
 ## How to run
 Nothing to run yet — no firmware and no collector exist. This file is the design so
@@ -150,9 +156,16 @@ frame rates, drop rates and duty-cycle limits look like before anything goes out
   passing traffic on the road low enough that alerts stay worth reading.
 
 **Software**
-- Collector implementation language. Python with FastAPI and SQLite is the obvious
-  first pick — fast to write, good enough for this event volume, easy to hand to
-  someone else later. Not decided; picking it means picking it deliberately.
+- Where the Docker host lives, which is not just a hosting question. A box on the
+  property keeps the nodes' POSTs on the LAN, keeps the data on site, and keeps
+  working when the uplink is down — matching the design above. A cloud host (the
+  current candidate is a single small EC2 instance running Docker Compose) means
+  node traffic crosses the internet, which adds TLS and per-node authentication as
+  requirements rather than nice-to-haves, needs on-device buffering to ride out
+  uplink outages, and puts device-presence data about the property off site — which
+  bears directly on the privacy posture above and on the service ambition. Decide
+  deliberately; the firmware's transport code differs little either way, but the
+  security work does not.
 - Retention: how long raw observations are kept versus rolled up. Short by default,
   for the privacy reasons above.
 - Where alerts and automation calls go — push notification service, Home Assistant
