@@ -116,6 +116,7 @@ a lawyer should look at it before it is sold. Nothing here is legal advice.
 
 ## Expected load
 Estimated, not measured — the bench milestone exists partly to check these numbers.
+Figures assume six nodes and two 4 MP cameras.
 
 A node near the house hears **100–400 frames per second** of raw radio: beacons alone
 run about 10/sec per BSSID, and each BLE advertiser emits 1–10 packets/sec. That rate
@@ -127,26 +128,66 @@ of this: a deauthentication flood, the busiest realistic event, arrives as one r
 with a count of 50,000 rather than 50,000 rows. The system gets quieter under attack,
 not louder.
 
-With five nodes, that leaves the collector handling:
+### Visitors are not the load
+Row count is `devices × nodes that hear them × 30-second windows`, which makes a visit
+cheap and a resident device expensive. One person dwelling five minutes with a phone
+and a watch, heard by four nodes, produces roughly **100 rows**. Twenty-four such
+visits a day come to ~2,400 rows — against a household baseline of 20–40 permanently
+present advertisers (phones, watches, earbuds, tablets, the TV, BLE tags, the vehicle
+in the driveway) that generates ~180,000.
 
-- ~0.17 requests/sec, batched one SQLite transaction per POST
-- ~215,000 rows/day, about 2.5 inserts/sec
-- ~30 MB/day raw, ~1 GB/month; with raw kept 14–30 days and hourly aggregates after,
-  a steady state around 2–4 GB
-- ~150–250 MB RSS for the Python process; budget 512 MB
-- ~1 GB/month inbound
+| Source | Rows/day | Share |
+| --- | --- | --- |
+| Always-present household devices | ~180,000 | 94% |
+| Transient/passing devices | ~10,000 | 5% |
+| 24 visits/day at 5 minutes each | ~2,400 | 1% |
+| **Total** | **~192,000** | ~29 MB/day |
 
-CPU averages **1–3% of one vCPU**, spiking to perhaps half a core during hourly
-compaction or a dashboard query. The collector therefore does not size the host. If it
-runs on a cloud instance, a 2 GiB burstable box is ample and the cost is dominated by
-the public IP and storage, not compute; the sizing question belongs to whatever else
-shares the host.
+Visitor traffic therefore scales linearly and harmlessly — ten times the visits still
+sits under the baseline. The lever that matters is the opposite one: allowlisted
+household devices do not need 30-second granularity around the clock. Dropping them to
+five-minute rollups once established as normally present, or logging only their
+arrival and departure transitions, cuts the total to **~30,000 rows/day (~4.5 MB)**.
 
-Two consequences worth carrying into the build. Retention policy, not throughput, is
-the thing to design — the row count is what grows without bound. And if the collector
-is reached over the internet, nodes need TLS with per-node credentials, which on ESP32
-costs roughly 40 KB of RAM per session plus a certificate bundle, so a node should
-hold one connection and batch through it rather than opening a socket per POST.
+### Collector
+- ~0.2 requests/sec, batched one SQLite transaction per POST
+- **1–3% of one vCPU**, ~150–250 MB RSS; budget 512 MB
+- Zone classification is k-NN against a few hundred calibration points — microseconds
+  per observation, and not a meaningful cost
+- ~1 GB/month of RF data before rollup, a few GB steady state after
+
+The collector does not size the host and never will.
+
+### Cameras size everything
+Two 4 MP cameras at ~3 Mbps is ~1.35 GB per camera-hour:
+
+| Mode | Per day | 30 days |
+| --- | --- | --- |
+| Detection clips only (~5 h/day) | ~13.5 GB | ~400 GB |
+| Continuous | ~65 GB | ~2 TB |
+| 7 days continuous + 30 days clips | — | ~860 GB |
+
+2 TB is comfortable, 4 TB roomy. Expect false triggers — deer, branches, rain,
+headlights — to roughly double the real event count, which is the practical argument
+for RF-cued recording. With hardware decode on an iGPU and inference offloaded to a
+Hailo-8L, Frigate costs **~0.3–0.5 core for two cameras**; without acceleration it is
+over a core per camera.
+
+Whole-host budget: Frigate 0.5 core / 2 GB, collector 0.05 core / 250 MB, MQTT broker
+50 MB, Home Assistant if added 0.2 core / 1 GB, OS and Docker 0.2 core / 700 MB —
+**about 1 core and 4 GB**, so a four-core mini PC with 8 GB and a 2–4 TB disk.
+
+### Consequences
+- **Video settles the hosting question.** Tens of GB per day cannot go to a cloud
+  instance over an acreage uplink, at any sane cost. The Docker host lives on the
+  property, which is also the answer that keeps the data on site, survives an uplink
+  outage, and exposes no ingest endpoint to the internet.
+- **Retention policy, not throughput, is the design problem.** Row count and video
+  both grow without bound; nothing else does.
+- **For the service case the two halves split.** RF events from dozens of properties
+  would fit on one small box; video cannot leave the property at this volume. So the
+  shape is a local box per property with only events and alerts aggregating centrally
+  — which is also the privacy-friendly shape.
 
 ## How to run
 Nothing to run yet — no firmware and no collector exist. This file is the design so
