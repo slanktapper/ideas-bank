@@ -12,6 +12,23 @@ scan / photo ──► trace outline ──► offset by clearance ──► + f
                                       STL · STEP · preview PNG
 ```
 
+## Start with the drawer
+
+Nothing else can be sized until the drawer is measured. Use the **internal clear**
+dimensions at the base, not the nominal size.
+
+```bash
+gfneg drawer --width 442 --depth 390 --height 95 --plan-only
+```
+
+```
+Grid     : 10 x 9 units (419.5 x 377.5 mm), 90 bin positions
+Margins  : 11.0 mm each side, 6.0 mm front and back (8% of the floor unused)
+Baseplate: 4 tiles -- 2 x 5x5, 2 x 5x4
+```
+
+Drop `--plan-only` to write the baseplate STLs, the spacer set, and a layout PNG.
+
 ## Quick start
 
 ```bash
@@ -59,7 +76,7 @@ Silent wrongness costs a print; an error costs nothing. So it errors on:
   confidently too small
 - a blank or featureless image — otherwise the background traces as one
   enormous "tool"
-- a bin wider than 6 units — past the X2D's 256 mm bed
+- a bin past the printer's bed — 7 × 7 units on the H2D, 6 × 6 on the X2D
 - a pocket deeper than `(U-1) x 7` mm — it names the height that would work
 
 ## Options that matter
@@ -76,7 +93,7 @@ Silent wrongness costs a print; an error costs nothing. So it errors on:
 ## Tests
 
 ```bash
-pytest -q      # 30 tests
+pytest -q      # 52 tests
 ```
 
 The `test_model.py` contract tests pin down cq-gridfinity's coordinate system

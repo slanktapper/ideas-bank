@@ -9,10 +9,11 @@ from pathlib import Path
 import cv2
 
 from .calibrate import Mat, render_mat
-from .config import DEFAULTS, MAX_UNITS_ON_BED, Tuning
+from .config import DEFAULT_PRINTER, DEFAULTS, PRINTERS, Tuning
 from .geometry import pocket_profile, straighten
+from .drawer import build_baseplates, build_spacers, plan as plan_drawer
 from .model import BedTooSmall, BinSpec, PocketTooDeep, auto_spec, build, export
-from .preview import render
+from .preview import render, render_drawer
 from .trace import Trace, trace_photo, trace_scan
 
 
@@ -90,10 +91,11 @@ def cmd_build(a: argparse.Namespace) -> int:
 
         spec = BinSpec(lu, wu, a.height or height_units_for(a.depth), a.depth,
                        magnet_holes=a.magnets, keep_lip=not a.no_lip,
-                       label_shelf=a.label)
+                       label_shelf=a.label, printer=PRINTERS[a.printer])
     else:
         spec = auto_spec(pocket, a.depth, t, magnet_holes=a.magnets,
-                         keep_lip=not a.no_lip, label_shelf=a.label)
+                         keep_lip=not a.no_lip, label_shelf=a.label,
+                         printer=PRINTERS[a.printer])
         if a.height:
             spec.height_u = a.height
 
@@ -124,6 +126,54 @@ def cmd_build(a: argparse.Namespace) -> int:
     print()
     print("Print one before committing to a set: check the tool actually drops "
           "in, and that the base seats in a baseplate.")
+    return 0
+
+
+def cmd_drawer(a: argparse.Namespace) -> int:
+    printer = PRINTERS[a.printer]
+    try:
+        p = plan_drawer(a.width, a.depth, a.height, printer)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+    dead = 100.0 * (1 - (p.units_x * 42.0 * p.units_y * 42.0)
+                    / (p.drawer_w_mm * p.drawer_d_mm))
+    print(f"Drawer   : {p.drawer_w_mm:.0f} x {p.drawer_d_mm:.0f} mm internal")
+    print(f"Printer  : {printer.name} "
+          f"({printer.max_units_x}x{printer.max_units_y} units per plate)")
+    print(f"Grid     : {p.units_x} x {p.units_y} units "
+          f"({p.units_x * 42 - 0.5:.1f} x {p.units_y * 42 - 0.5:.1f} mm), "
+          f"{p.total_units} bin positions")
+    print(f"Margins  : {p.margin_x_mm:.1f} mm each side, "
+          f"{p.margin_y_mm:.1f} mm front and back ({dead:.0f}% of the floor unused)")
+    print(f"Baseplate: {len(p.tiles)} tiles -- " + ", ".join(
+        f"{q} x {lu}x{wu}" for (lu, wu), q in sorted(p.tile_counts.items(), reverse=True)))
+    for n in p.notes:
+        print(f"note     : {n}")
+
+    if a.plan_only:
+        return 0
+
+    print()
+    total = 0.0
+    for path, qty, grams in build_baseplates(p, a.out, a.name, magnets=a.magnets):
+        total += qty * grams
+        print(f"wrote {path}  x{qty}  ~{grams:.0f} g each")
+    sp = build_spacers(p, a.out, a.name)
+    if sp:
+        print(f"wrote {sp}")
+    else:
+        print(f"skipped spacers: margins under 4 mm are too fragile to print")
+    print(f"baseplate filament: ~{total:.0f} g total (~${total / 1000 * 13.74:.2f} "
+          f"in PETG Basic)")
+
+    png = str(Path(a.out) / f"{a.name}-layout.png")
+    render_drawer(p, png)
+    print(f"wrote {png}")
+    print()
+    print("Measure twice. Print ONE tile and check it sits flat in the drawer "
+          "before printing the rest.")
     return 0
 
 
@@ -158,6 +208,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="add a finger scallop so the tool can be lifted out")
         sp.add_argument("--relief-radius", type=float,
                         default=DEFAULTS.relief_radius_mm)
+        sp.add_argument("--printer", choices=sorted(PRINTERS), default="h2d",
+                        help="machine whose bed limits the bin size")
         sp.add_argument("--min-feature", type=float,
                         default=DEFAULTS.min_feature_mm2,
                         help="ignore traced blobs smaller than this, in mm^2")
@@ -181,6 +233,22 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--name", help="output filename stem")
     b.add_argument("--out", default="out", help="output directory")
     b.set_defaults(func=cmd_build)
+
+    d = sub.add_parser("drawer", help="plan a drawer and generate its baseplates")
+    d.add_argument("--width", type=float, required=True,
+                   help="internal clear width of the drawer in mm")
+    d.add_argument("--depth", type=float, required=True,
+                   help="internal clear depth of the drawer in mm")
+    d.add_argument("--height", type=float, default=None,
+                   help="internal clear height, to check bin headroom")
+    d.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")
+    d.add_argument("--magnets", action="store_true",
+                   help="add corner screw tabs to the baseplates")
+    d.add_argument("--plan-only", action="store_true",
+                   help="report the layout without generating any CAD")
+    d.add_argument("--name", default="drawer", help="output filename stem")
+    d.add_argument("--out", default="out", help="output directory")
+    d.set_defaults(func=cmd_drawer)
 
     a = p.parse_args(argv)
     return a.func(a)

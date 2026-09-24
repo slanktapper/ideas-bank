@@ -27,6 +27,8 @@ See `../3dresearch/gridfinity.md` for the standard itself and why it was adopted
 ## Scope
 What this does:
 
+- Plan a drawer: how many grid units fit its measured internal size, how much
+  is left over, and how to tile the baseplate across the printer's bed.
 - Trace a tool outline from a flatbed scan (scale from DPI) or a phone photo
   on an ArUco calibration mat (scale from fiducials + homography).
 - Offset by a clearance, simplify, optionally add a finger-relief notch.
@@ -40,6 +42,8 @@ What this deliberately does not do:
   do not seat in a baseplate, that is a slicer or tolerance issue, not this.
 - **Not parametric pockets from primitives** — no "ten circles for sockets"
   spec file. Image-derived outlines only, for now. See open questions.
+- Not bin *contents* planning. It says how many positions a drawer has, not
+  what should go in each.
 - Not a GUI, not a web service, not a slicer. It emits files.
 - Not multi-tool layout. One tool per bin; arranging several is manual.
 
@@ -57,7 +61,11 @@ Python 3.9–3.12, pip + venv.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
-pytest                                   # 30 tests, ~15s
+pytest                                   # 52 tests, ~16s
+
+# Plan a drawer and generate its baseplates (measure internal clear size!)
+gfneg drawer --width 442 --depth 390 --height 95 --plan-only
+gfneg drawer --width 442 --depth 390 --height 95
 
 # Flatbed scan: scale comes from the file's DPI
 gfneg trace scan.png --depth 12          # report only, no CAD
@@ -75,6 +83,11 @@ path for the OCCT dependency chain: `conda install -c conda-forge cadquery`,
 then `pip install -e .` for the rest.
 
 ## Print notes
+The machine is a **Bambu Lab H2D** (delivered week of 2026-09-21 MDT), 325 × 320 mm
+single-nozzle, so 7 × 7 grid units per plate. `config.PRINTERS` carries the table;
+`--printer x2d` is there because this project was first written against a machine
+that was never bought, and a hard-coded bed silently caps every part.
+
 PETG Basic, 3 walls, 0.2 mm layers, 10–15% infill — per `../3dresearch/materials.md`.
 Bins print base-down, no supports; `--magnets` uses cq-gridfinity's unsupported
 hole style so the slicer bridges them.
@@ -84,9 +97,11 @@ fighting, and that the base seats in a baseplate. PETG runs slightly looser
 than PLA; adjust `--clearance` rather than scaling the model.
 
 ## Open questions
+- **Nothing here has been printed yet.** The H2D was delivered but is not
+  commissioned. Every tolerance below is reasoned, not measured.
 - **What clearance is actually right?** 0.4 mm is a considered guess, not a
   measured value. It needs a printed test ladder (0.2/0.3/0.4/0.5) in PETG on
-  the X2D before the default can be trusted.
+  the H2D before the default can be trusted.
 - **Parametric pockets** — sockets, driver bits and hex keys are circles on a
   pitch and need no camera at all. Deliberately left out of v1; likely the
   single highest-value addition.
@@ -96,4 +111,4 @@ than PLA; adjust `--clearance` rather than scaling the model.
   leaving a locating pillar. Deliberate — pillars are fragile — but the
   opposite choice is defensible and should be a flag.
 - **Second nozzle.** Body and pocket export as one solid. Separate bodies would
-  let the X2D print a contrasting-colour pocket floor. Not attempted yet.
+  let the H2D print a contrasting-colour pocket floor. Not attempted yet.

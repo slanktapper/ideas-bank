@@ -25,10 +25,40 @@ BASE_PROFILE_MM = 4.75
 """Height of the 0.8 / 1.8 / 2.15 chamfer stack under every bin."""
 
 # --- Printer envelope ----------------------------------------------------
-X2D_BED_MM = 256.0
-"""Bambu Lab X2D usable bed, single nozzle. 235mm on the second nozzle."""
+@dataclass(frozen=True)
+class Printer:
+    """A machine's usable single-nozzle print area.
 
-MAX_UNITS_ON_BED = int(X2D_BED_MM // GRID_PITCH_MM)  # 6
+    Kept as a table rather than a constant because this project was first
+    written against an X2D that was never bought -- the H2D was. Hard-coding
+    one machine's bed silently caps every part at the wrong size.
+    """
+
+    name: str
+    bed_x_mm: float
+    bed_y_mm: float
+
+    @property
+    def max_units_x(self) -> int:
+        return int((self.bed_x_mm + 0.5) // GRID_PITCH_MM)
+
+    @property
+    def max_units_y(self) -> int:
+        return int((self.bed_y_mm + 0.5) // GRID_PITCH_MM)
+
+    def fits(self, length_u: int, width_u: int) -> bool:
+        return length_u <= self.max_units_x and width_u <= self.max_units_y
+
+
+PRINTERS = {
+    # Single-nozzle usable area. The H2D's 350mm figure is total plate span,
+    # not printable area, so it is deliberately not used here.
+    "h2d": Printer("Bambu Lab H2D", 325.0, 320.0),
+    "x2d": Printer("Bambu Lab X2D", 256.0, 256.0),
+}
+
+DEFAULT_PRINTER = PRINTERS["h2d"]
+"""The machine actually in the workshop -- delivered week of 2026-09-21 MDT."""
 
 
 @dataclass(frozen=True)

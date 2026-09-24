@@ -21,7 +21,7 @@ import cadquery as cq
 from cqgridfinity import GridfinityBox
 from shapely.geometry import Polygon
 
-from .config import DEFAULTS, MAX_UNITS_ON_BED, Tuning
+from .config import DEFAULT_PRINTER, DEFAULTS, Printer, Tuning
 from .geometry import centre_on, grid_units_for, height_units_for
 
 
@@ -44,6 +44,7 @@ class BinSpec:
     magnet_holes: bool = False
     keep_lip: bool = True
     label_shelf: bool = False
+    printer: Printer = DEFAULT_PRINTER
 
     def describe(self) -> str:
         return (
@@ -103,13 +104,14 @@ def build(pocket: Polygon, spec: BinSpec, tuning: Tuning = DEFAULTS) -> Build:
     """Make the bin and cut the pocket into it."""
     warnings: list[str] = []
 
-    if max(spec.length_u, spec.width_u) > MAX_UNITS_ON_BED:
+    p = spec.printer
+    if not p.fits(spec.length_u, spec.width_u):
         raise BedTooSmall(
             f"{spec.length_u}x{spec.width_u} units is "
-            f"{max(spec.length_u, spec.width_u) * 42 - 0.5:.0f} mm across, past the "
-            f"X2D's {MAX_UNITS_ON_BED}-unit ({MAX_UNITS_ON_BED * 42 - 0.5:.0f} mm) "
-            "bed. Split the tool across two bins, or print it on a machine with "
-            "a larger bed."
+            f"{spec.length_u * 42 - 0.5:.0f} x {spec.width_u * 42 - 0.5:.0f} mm, past "
+            f"the {p.name}'s {p.max_units_x}x{p.max_units_y}-unit "
+            f"({p.bed_x_mm:.0f} x {p.bed_y_mm:.0f} mm) bed. Split the tool across two "
+            "bins, or print it on a machine with a larger bed."
         )
 
     box = GridfinityBox(
