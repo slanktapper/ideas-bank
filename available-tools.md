@@ -4,10 +4,10 @@ Physical and fabrication capability available to projects in this repository. Re
 this before concluding that an idea is software-only, or that a physical part has to
 be bought.
 
-**Status: ordered 2026-09-16 MDT, not yet delivered.** Everything below describes
-capability that is paid for and arriving, not capability in hand today. Until it
-lands, treat printing as a plan rather than a step you can take this week. See
-`3dresearch/order-review.md` for the order itself.
+**Status: delivered, week of 2026-09-21 MDT.** The machine is physically in the
+workshop. Everything below is capability in hand, not a plan — though it has not yet
+been commissioned, so allow for first-print setup before promising a turnaround. See
+`3dresearch/order-review.md` for the order and what is still outstanding.
 
 ---
 
@@ -87,8 +87,12 @@ price for functional parts; see the reasoning in `3dresearch/order-review.md`.
 ### Where it lives
 
 A climate-controlled garage workshop in Alberta, 10–20 °C year round. Noise and fumes
-are not constraints there. Setup notes, humidity and storage are in
-`3dresearch/setup.md`.
+are not constraints there.
+
+Eight of the thirteen spools live in the two AMS 2 Pro units under active drying; the
+rest are in six airtight boxes with rechargeable indicating silica gel, bought
+2026-09-23 MDT. Six hygrometers came with them. Setup notes, humidity and the
+storage reasoning are in `3dresearch/setup.md`.
 
 ---
 

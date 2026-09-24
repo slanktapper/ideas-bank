@@ -67,18 +67,53 @@ better protection.
 One caveat: drying ABS or PETG runs hotter than PLA and TPU can survive. Remove
 PLA and TPU spools from the AMS before running a high-temperature dry cycle.
 
+## Storage — bought 2026-09-23 MDT
+
+The gap this file flagged from the start is closed. **$132.88 CAD**, ordered after the
+printer arrived:
+
+| Item | Qty | Price |
+| --- | --- | --- |
+| YOOPAI filament storage boxes, 4.0 L, airtight, with desiccant and labels | 6 | $54.99 |
+| Wisesorb indicating silica gel beads, blue→pink, rechargeable | 8 lb (3.6 kg) | $59.99 |
+| JEDEW digital hygrometer/thermometer, °F/°C | 6 | $17.90 |
+| **Total** | | **$132.88** |
+
+**The coverage works out.** Thirteen 1 kg spools against eight actively-dried AMS slots
+leaves **five outside**; six boxes covers them with one spare for the 0.5 kg ABS
+support. Six hygrometers, one per box.
+
+Three notes on using it:
+
+- **Put one hygrometer in the room, not in a box.** A box with fresh desiccant reads
+  low by definition; that tells you the box works, not whether the workshop is dry.
+  The open question in this file — whether the climate control manages moisture or only
+  temperature — is answered by the *ambient* reading, and that is the number that
+  decides whether the AMS units are fighting the room. Five boxes monitored, one room
+  monitored, is the better split than six boxes.
+- **Indicating gel means you can see when it is spent** — blue when dry, pink when
+  saturated — and it recharges rather than being thrown away. Regeneration wants an
+  oven at roughly 120 °C; the AMS dries to 65 °C, which is not hot enough to drive the
+  water back out properly. Do not plan to recharge desiccant in the printer.
+- **Blue-to-pink indicating gel is traditionally cobalt chloride.** Worth checking the
+  listing, keeping it out of the kitchen, and not handling the beads bare-handed.
+
+Box fit is worth checking on arrival: the boxes are listed at 9.03 × 8 × 3 in
+(≈ 229 × 203 × 76 mm) and a Bambu 1 kg spool is about 200 mm across by 67 mm wide. It
+fits, but with only a few millimetres to spare on the short axis.
+
 ## Buy list
+
+**Storage is done** — see above. The rest:
 
 Essential:
 
 - **PLA** — for learning the machine and for parts that don't need heat resistance.
 - **PETG** — the functional workhorse. Tougher and more heat-tolerant than PLA,
   far easier than ABS.
-- **Airtight storage + desiccant** — even with an AMS, spools not loaded need it.
-  4-litre food containers with reusable desiccant work as well as anything sold for
-  the purpose.
-- **Hygrometer** (~$20) — tells you whether spools stored outside the AMS units need
-  more protection.
+- ~~**Airtight storage + desiccant**~~ — **bought 2026-09-23 MDT.** Six 4 L boxes and
+  8 lb of rechargeable indicating silica gel.
+- ~~**Hygrometer**~~ — **bought 2026-09-23 MDT.** Six of them; put one in the room.
 
 Worth having early:
 
@@ -90,8 +125,9 @@ Worth having early:
 ## First things to do
 
 1. Print in PLA first to verify the machine.
-2. Log humidity in the space, to know whether spools outside the AMS units need
-   airtight storage.
+2. Log ambient humidity in the space with one of the hygrometers left out of a box.
+   That reading, not the in-box one, says whether the climate control manages moisture
+   or only temperature.
 3. Enable **LAN-only mode** if the cloud dependency matters to you.
 4. Only then move to PETG, and to ABS/ASA after that.
 

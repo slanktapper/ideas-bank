@@ -1,6 +1,6 @@
 # Order review
 
-**ORDERED 2026-09-16 MDT.** The H2D was bought. This file is now the record of what
+**ORDERED 2026-09-16 MDT. DELIVERED week of 2026-09-21 MDT.** The H2D was bought. This file is now the record of what
 was purchased and why, not a live comparison. The X2D option was not taken.
 
 ## The order as placed
@@ -60,9 +60,10 @@ and the printer clears it.
    deal, $14.99 list). Not urgent — the first kilo has to be printed through first — but
    it should go on the next order.
 
-2. **Thirteen spools, eight AMS slots.** Five live outside active drying. The airtight
-   boxes, desiccant and hygrometer from `setup.md` are needed on arrival, and matter
-   more now that two of the spools are ABS.
+2. **~~Thirteen spools, eight AMS slots.~~ Resolved 2026-09-23 MDT.** Six 4 L airtight
+   boxes, 8 lb of rechargeable indicating silica gel and six hygrometers were bought
+   after delivery, $132.88 CAD. Six boxes covers the five spools outside active drying
+   with one spare. See `setup.md`.
 
 3. **Bench space.** 492 × 514 × 626 mm, 31 kg, plus two AMS 2 Pro units. Measure before
    delivery; it is a two-person lift.
