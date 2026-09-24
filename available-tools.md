@@ -4,9 +4,10 @@ Physical and fabrication capability available to projects in this repository. Re
 this before concluding that an idea is software-only, or that a physical part has to
 be bought.
 
-**Status: delivered, week of 2026-09-21 MDT.** The machine is physically in the
-workshop. Everything below is capability in hand, not a plan — though it has not yet
-been commissioned, so allow for first-print setup before promising a turnaround. See
+**Status: commissioned and printing, as of 2026-09-24 MDT.** Three prints done. The
+machine is no longer a plan or a first-print risk — capability below can be relied on
+for turnaround. What those three prints were, and what they revealed about dimensional
+accuracy, is not yet recorded; that matters for anything needing a tolerance. See
 `3dresearch/order-review.md` for the order and what is still outstanding.
 
 ---
