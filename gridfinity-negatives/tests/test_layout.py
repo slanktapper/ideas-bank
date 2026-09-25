@@ -278,7 +278,7 @@ def test_the_front_row_is_entirely_one_unit_deep():
     every bin touching row 1 must be exactly one unit deep."""
     layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
     front = [p for p in layout.placements if p.y_u == 0]
-    assert len(front) == 5
+    assert len(front) == 4
     for p in front:
         assert p.width_u == 1, (
             f"bin at x={p.x_u} is {p.width_u} deep; it cannot absorb the gap"
@@ -312,10 +312,25 @@ def test_named_items_sit_where_they_were_placed():
     assert at["GPS"] == ["A4:E5"]
     assert at["Flashlight"] == ["H6:L7"]
     assert at["BBQ lighter"] == ["A6:G7"]
-    assert sorted(at["Accessories"]) == ["A2:C3", "H4:I5", "J4:L5"]
+    assert sorted(at["Accessories"]) == ["A2:C3", "F4:I5", "J4:L5"]
 
 
 def test_every_bin_is_explicitly_placed():
     """Nothing is auto-packed, so the arrangement cannot drift on a re-run."""
     items = load_items("items-KWL1N1T.yml")
     assert all(i.at for i in items), "an item has no stated position"
+
+
+def test_the_merged_accessories_bin_clears_an_84mm_item():
+    """The old 2x2 was 78.7mm inside and could not take it; a 4x2 can."""
+    items = {(" ".join([i.name, i.at or ""])).strip(): i
+             for i in load_items("items-KWL1N1T.yml")}
+    merged = items["Accessories F4"]
+    assert merged.bin_size == "4x2"
+    lu, wu = merged.footprint_units()
+    interior_long = lu * 42 - 0.5 - 4.8
+    assert interior_long >= merged.width_mm, (
+        f"{interior_long:.1f} mm inside cannot take an "
+        f"{merged.width_mm:.0f} mm accessory"
+    )
+    assert merged.capacity() >= 1

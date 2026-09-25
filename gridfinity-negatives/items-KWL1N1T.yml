@@ -20,8 +20,7 @@ items:
   # --- row 1, the front: all 1 deep, to be extended over the front gap ---
   - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1}
   - {name: Spare, size: [0, 0], bin_size: 2x1, at: D1}
-  - {name: Spare, size: [0, 0], bin_size: 2x1, at: F1}
-  - {name: Spare, size: [0, 0], bin_size: 2x1, at: H1}
+  - {name: Spare, size: [0, 0], bin_size: 4x1, at: F1}   # was two 2x1s
   - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1}
 
   # --- rows 2-3 ---
@@ -54,14 +53,15 @@ items:
     at: A4
     qty_max: 1
 
-  - {name: Spare, size: [0, 0], bin_size: 2x2, at: F4}
-
   - name: Accessories
     size: [84, 75, 40]
-    bin_size: 2x2
-    at: H4
+    bin_size: 4x2
+    at: F4
     measured: false
-    note: 78.7 mm square inside — too short for an 84 mm accessory.
+    note: >
+      Merged from the F4 spare and the H4 accessories bin. At 162.7 mm inside
+      it clears the 84 mm the old 2x2 could not. Width and height assumed,
+      NOT measured.
 
   - name: Accessories
     size: [84, 75, 40]

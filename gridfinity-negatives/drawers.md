@@ -113,31 +113,37 @@ arrangement cannot drift on a re-run. **84 of 84 units, 16 bins.**
 | --- | --- | --- | --- |
 | 1 | A1:C1 | 3×1 | Spare |
 | 2 | D1:E1 | 2×1 | Spare |
-| 3 | F1:G1 | 2×1 | Spare |
-| 4 | H1:I1 | 2×1 | Spare |
-| 5 | J1:L1 | 3×1 | Spare |
-| 6 | A2:C3 | 3×2 | Accessories |
-| 7 | D2:E3 | 2×2 | Spare |
-| 8 | F2:G3 | 2×2 | Spare |
-| 9 | H2:I3 | 2×2 | Spare |
-| 10 | J2:L3 | 3×2 | Bic lighters (rotated 90°) |
-| 11 | A4:E5 | 5×2 | GPS |
-| 12 | F4:G5 | 2×2 | Spare |
-| 13 | H4:I5 | 2×2 | Accessories |
-| 14 | J4:L5 | 3×2 | Accessories |
-| 15 | A6:G7 | 7×2 | BBQ lighters |
-| 16 | H6:L7 | 5×2 | Flashlights |
+| 3 | F1:I1 | 4×1 | Spare |
+| 4 | J1:L1 | 3×1 | Spare |
+| 5 | A2:C3 | 3×2 | Accessories |
+| 6 | D2:E3 | 2×2 | Spare |
+| 7 | F2:G3 | 2×2 | Spare |
+| 8 | H2:I3 | 2×2 | Spare |
+| 9 | J2:L3 | 3×2 | Bic lighters (rotated 90°) |
+| 10 | A4:E5 | 5×2 | GPS |
+| 11 | F4:I5 | 4×2 | Accessories |
+| 12 | J4:L5 | 3×2 | Accessories |
+| 13 | A6:G7 | 7×2 | BBQ lighters |
+| 14 | H6:L7 | 5×2 | Flashlights |
+
+**14 bins.** Two merges, 2026-09-25 MDT: the F4 spare and the H4 accessories
+bin became one 4×2 at F4:I5, and the two 2×1 spares at F1 and H1 became one
+4×1 at F1:I1.
+
+The merge fixed a real problem. The old 2×2 accessories bin was 78.7 mm square
+inside and could not take an 84 mm accessory in any orientation. At 162.7 mm
+inside, the 4×2 clears it.
 
 **Bins renumber by position**, front to back then left to right, so the numbers
 above are not the ones used before the rearrangement.
 
 ### The front row absorbs the front gap
 
-Bins 1–5 are **all exactly one unit deep** and together span the full width.
+Bins 1–4 are **all exactly one unit deep** and together span the full width.
 They are the ones to lengthen over the 34 mm front gap once it is measured —
 a bin two units deep could not be extended without losing a row.
 
-The **left** gap has no equivalent row: bins 1, 6, 11 and 15 all start at
+The **left** gap has no equivalent row: bins 1, 5, 10 and 13 all start at
 column A but none is one unit wide. Absorbing the left gap means widening
 those four, or a spacer strip.
 
