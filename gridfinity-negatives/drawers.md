@@ -169,6 +169,29 @@ ten gauges fit together on a second.
 
 Both bins are engraved `KWL1N1T` underneath.
 
+### Print sessions
+
+The full baseplate is **504 × 294 mm = 148,176 mm²** against a single-nozzle bed
+of **325 × 320 = 104,000 mm²**. It cannot go on one plate however it is split,
+so **two plate sessions is a hard floor**, not a choice.
+
+Both tiles are **6×7 and identical** — one STL, printed twice.
+
+| Session | Contents | Mass |
+| --- | --- | --- |
+| 1 | baseplate 6×7 + three 2-unit bar bins in the side strip | ~106 g |
+| 2 | baseplate 6×7 alone | ~37 g |
+| 3+ | remaining bins, including the 2×2 test bin | — |
+
+**Use one nozzle.** Single-nozzle print area is 325 mm in X; engaging the second
+drops it to 300 mm. The tile fits either way, but the leftover strip beside it
+goes from **69 mm to 44 mm**, which is the difference between the bar bins
+riding along and not. Everything here is one colour, so there is no reason to
+load the second nozzle.
+
+The 2×2 test bin is **83.6 mm** and the strip is **69 mm**, so it cannot share a
+plate with a tile. It goes in the first bin session.
+
 ### Still unmeasured
 
 - **Bic lighter** — commodity size, not measured from yours.
