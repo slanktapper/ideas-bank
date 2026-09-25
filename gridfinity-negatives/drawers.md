@@ -121,7 +121,7 @@ arrangement cannot drift on a re-run. **84 of 84 units, 16 bins.**
 
 | # | Cells | Bin | Item | Holds |
 | --- | --- | --- | --- | --- |
-| 1 | A1:C1 | 3×1 +34.5F | Spare | — |
+| 1 | A1:C1 | 3×1 **+38.5L +34.5F** | Spare — corner bin | — |
 | 2 | D1:E1 | 2×1 +34.5F | Spare | — |
 | 3 | F1:I1 | 4×1 +34.5F | **GPS** | **0 of 1** |
 | 4 | J1:L1 | 3×1 +34.5F | Spare | — |
@@ -137,15 +137,14 @@ arrangement cannot drift on a re-run. **84 of 84 units, 16 bins.**
 | 14 | G6:I7 | 3×2 | Accessories | 1 |
 | 15 | J6:L7 | 3×2 | Bic lighters | 6 of 10 |
 
-### The left gap, and the corner that stays open
+### Every wall is met
 
-Three bands now close the left gap — bins **5**, **9** and **13**, each the
-leftmost of its band, each reaching 38.5 mm to the wall.
+All four bands close the left gap — bins **1**, **5**, **9** and **13**, each
+the leftmost of its band. All four row-1 bins close the front gap.
 
-**Row 1 does not.** Bin 1 reaches forward to the drawer front but not left, so a
-38.5 × 76.0 mm pocket stays open at the **front-left corner**. Closing it means
-extending bin 1 both ways, which is the only bin that would need two
-extensions.
+**Bin 1 is the corner bin**, and the only one extended in two directions:
+3×1 on the grid, +38.5 mm left and +34.5 mm forward, printing at
+**164.0 × 76.0 mm**. Nothing pink remains against a wall.
 
 ### The GPS does not fit box 3
 

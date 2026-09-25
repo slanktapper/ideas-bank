@@ -382,23 +382,40 @@ def test_the_whole_front_row_reaches_the_drawer_front():
     )
 
 
-def test_the_left_gap_is_closed_in_every_band_except_row_one():
-    """Rows 2-3, 4-5 and 6-7 each have a leftmost bin reaching the wall.
-    Row 1 does not, leaving an open corner at the front-left."""
+def test_every_band_closes_the_left_gap():
+    """All four bands have a leftmost bin reaching the wall, row 1 included."""
     dp = plan(542.5, 328.5, 63.0)
     layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     reaching = sorted((p.y_u for p in layout.placements if p.extend_left_mm > 0))
-    assert reaching == [1, 3, 5], (
-        "expected one left-reaching bin in each of rows 2-3, 4-5 and 6-7"
-    )
+    assert reaching == [0, 1, 3, 5], "a band was left short of the left wall"
     for p in layout.placements:
         if p.extend_left_mm:
             assert p.x_u == 0, "a bin not in column A tried to reach the wall"
             assert p.extend_left_mm == pytest.approx(dp.gaps_mm["left"])
-    front_left = [p for p in layout.placements if p.y_u == 0 and p.x_u == 0]
-    assert front_left and front_left[0].extend_left_mm == 0, (
-        "row 1 should still leave the front-left corner open"
-    )
+
+
+def test_the_corner_bin_reaches_both_ways():
+    """Bin 1 is the only bin extended on two sides; it closes the corner."""
+    dp = plan(542.5, 328.5, 63.0)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
+    both = [p for p in layout.placements
+            if p.extend_left_mm > 0 and p.extend_front_mm > 0]
+    assert len(both) == 1, "exactly one bin sits in the front-left corner"
+    corner = both[0]
+    assert (corner.x_u, corner.y_u) == (0, 0)
+    w, h = corner.outer_size_mm()
+    assert w == pytest.approx(3 * 42 - 0.5 + 38.5)
+    assert h == pytest.approx(1 * 42 - 0.5 + 34.5)
+
+
+def test_no_pink_is_left_anywhere_along_the_walls():
+    """Every gap-facing edge of the drawer is now met by a bin."""
+    dp = plan(542.5, 328.5, 63.0)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
+    left_bands = {p.y_u for p in layout.placements if p.extend_left_mm > 0}
+    front_cols = {p.x_u for p in layout.placements if p.extend_front_mm > 0}
+    assert left_bands == {p.y_u for p in layout.placements if p.x_u == 0}
+    assert front_cols == {p.x_u for p in layout.placements if p.y_u == 0}
 
 
 def test_the_locked_height_is_5u():
