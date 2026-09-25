@@ -27,7 +27,23 @@ from pathlib import Path
 
 import cadquery as cq
 
+import yaml
+
 from .stamp import DEFAULT_FONT
+
+STANDARD_DELTAS: tuple[float, ...] = (-3.0, -2.0, -1.0, 0.0, 1.0)
+"""The standard ladder, as offsets from nominal.
+
+Weighted below nominal on purpose. A gauge longer than the gap will not go in
+at all and tells you only "smaller than this", while a shorter one goes in and
+tells you how much slack is left. Errors in a recorded drawer dimension also
+tend to run generous, so the true gap is more often under nominal than over.
+One step above is enough to confirm the upper bound."""
+
+LIBRARY_FILE = "gauge-library.yml"
+"""Lengths that physically exist. Gauges are reusable across drawers -- a
+14.5 mm stick does not care which drawer it came from -- so the library is
+consulted before anything is printed again."""
 
 
 @dataclass(frozen=True)
@@ -116,7 +132,7 @@ def _engrave_underside(
 
 def gauge_set(
     exact_mm: float,
-    deltas: tuple[float, ...] = (-2.0, -1.0, 0.0, 1.0, 2.0),
+    deltas: tuple[float, ...] = STANDARD_DELTAS,
     spec: GaugeSpec = DEFAULT_GAUGE,
 ) -> list[tuple[float, cq.Workplane]]:
     """A ladder of gauges around a nominal gap."""
@@ -129,14 +145,62 @@ def gauge_set(
 
 def export_set(
     exact_mm: float, out_dir: str, prefix: str,
-    deltas: tuple[float, ...] = (-2.0, -1.0, 0.0, 1.0, 2.0),
+    deltas: tuple[float, ...] = STANDARD_DELTAS,
     spec: GaugeSpec = DEFAULT_GAUGE,
+    only: set[float] | None = None,
 ) -> list[str]:
     d = Path(out_dir)
     d.mkdir(parents=True, exist_ok=True)
     paths = []
     for length, body in gauge_set(exact_mm, deltas, spec):
+        if only is not None and length not in only:
+            continue
         p = d / f"{prefix}-{_format_length(length).replace('.', 'p')}mm.stl"
         cq.exporters.export(body, str(p))
         paths.append(str(p))
     return paths
+
+
+# --- the physical library --------------------------------------------------
+
+def ladder(exact_mm: float,
+           deltas: tuple[float, ...] = STANDARD_DELTAS) -> list[float]:
+    """The lengths a nominal gap calls for."""
+    return [round(exact_mm + d, 3) for d in deltas]
+
+
+def load_library(path: str | Path = LIBRARY_FILE) -> dict[float, str]:
+    """Lengths already printed, mapped to a note about where they came from."""
+    f = Path(path)
+    if not f.exists():
+        return {}
+    data = yaml.safe_load(f.read_text()) or {}
+    out: dict[float, str] = {}
+    for row in data.get("gauges", []):
+        if isinstance(row, dict):
+            out[float(row["length"])] = str(row.get("note", ""))
+        else:
+            out[float(row)] = ""
+    return out
+
+
+def save_library(lib: dict[float, str], path: str | Path = LIBRARY_FILE) -> None:
+    rows = [{"length": L, "note": lib[L]} for L in sorted(lib)]
+    header = (
+        "# Gap gauges that physically exist.\n"
+        "# A gauge is just a length -- it is reusable across every drawer, so\n"
+        "# check here before printing. Managed by `gfneg gauge`.\n"
+    )
+    Path(path).write_text(header + yaml.safe_dump({"gauges": rows},
+                                                  sort_keys=False))
+
+
+def check_ladder(exact_mm: float, path: str | Path = LIBRARY_FILE,
+                 deltas: tuple[float, ...] = STANDARD_DELTAS
+                 ) -> tuple[list[float], list[float]]:
+    """Split a ladder into what is already owned and what must be printed."""
+    lib = load_library(path)
+    want = ladder(exact_mm, deltas)
+    have = [L for L in want if L in lib]
+    need = [L for L in want if L not in lib]
+    return have, need

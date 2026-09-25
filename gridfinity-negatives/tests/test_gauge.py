@@ -73,9 +73,10 @@ def test_engraving_is_mirrored_to_read_when_turned_over():
     )
 
 
-def test_a_ladder_is_evenly_spaced_around_the_nominal():
+def test_a_ladder_uses_the_standard_offsets_by_default():
+    """Standard is -3 -2 -1 0 +1, not symmetric: see STANDARD_DELTAS."""
     lengths = [L for L, _ in gauge_set(14.5)]
-    assert lengths == [12.5, 13.5, 14.5, 15.5, 16.5]
+    assert lengths == [11.5, 12.5, 13.5, 14.5, 15.5]
 
 
 def test_a_gauge_shorter_than_its_own_foot_is_refused():
@@ -86,3 +87,66 @@ def test_a_gauge_shorter_than_its_own_foot_is_refused():
 def test_each_gauge_is_a_valid_solid():
     for _, body in gauge_set(17.0):
         assert body.vals()[0].isValid()
+
+
+# --- the standard ladder and the library -----------------------------------
+
+def test_the_standard_ladder_is_weighted_below_nominal():
+    """A gauge longer than the gap will not go in and teaches nothing."""
+    from gridfinity_negatives.gauge import STANDARD_DELTAS, ladder
+    assert STANDARD_DELTAS == (-3.0, -2.0, -1.0, 0.0, 1.0)
+    assert sum(1 for d in STANDARD_DELTAS if d < 0) == 3
+    assert sum(1 for d in STANDARD_DELTAS if d > 0) == 1
+    assert ladder(14.5) == [11.5, 12.5, 13.5, 14.5, 15.5]
+
+
+def test_ladder_includes_the_nominal_itself():
+    from gridfinity_negatives.gauge import ladder
+    assert 17.0 in ladder(17.0)
+
+
+def test_library_round_trips(tmp_path):
+    from gridfinity_negatives.gauge import load_library, save_library
+    f = tmp_path / "lib.yml"
+    save_library({14.5: "drawer A", 17.0: "drawer B"}, f)
+    assert load_library(f) == {14.5: "drawer A", 17.0: "drawer B"}
+
+
+def test_a_missing_library_is_empty_not_an_error(tmp_path):
+    from gridfinity_negatives.gauge import load_library
+    assert load_library(tmp_path / "nope.yml") == {}
+
+
+def test_check_ladder_splits_owned_from_needed(tmp_path):
+    from gridfinity_negatives.gauge import check_ladder, save_library
+    f = tmp_path / "lib.yml"
+    save_library({12.5: "", 13.5: "", 14.5: "", 15.5: ""}, f)
+    have, need = check_ladder(14.5, f)
+    assert have == [12.5, 13.5, 14.5, 15.5]
+    assert need == [11.5], "a length already owned was going to be reprinted"
+
+
+def test_a_fully_covered_ladder_needs_nothing(tmp_path):
+    from gridfinity_negatives.gauge import check_ladder, ladder, save_library
+    f = tmp_path / "lib.yml"
+    save_library({L: "" for L in ladder(17.0)}, f)
+    have, need = check_ladder(17.0, f)
+    assert need == []
+    assert len(have) == 5
+
+
+def test_export_set_can_be_limited_to_the_missing_lengths(tmp_path):
+    from gridfinity_negatives.gauge import export_set
+    paths = export_set(14.5, str(tmp_path), "g", only={11.5})
+    assert len(paths) == 1
+    assert "11p5" in paths[0]
+
+
+def test_the_shipped_library_matches_what_was_actually_printed():
+    """Guards the register against drifting from reality."""
+    from gridfinity_negatives.gauge import load_library
+    lib = load_library("gauge-library.yml")
+    for L in (12.5, 13.5, 14.5, 15.5, 16.5):   # KWL1N1T width ladder
+        assert L in lib, f"{L} was printed but is not recorded"
+    for L in (15.0, 16.0, 17.0, 18.0, 19.0):   # KWL1N1T depth ladder
+        assert L in lib, f"{L} was printed but is not recorded"

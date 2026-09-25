@@ -90,6 +90,71 @@ Silent wrongness costs a print; an error costs nothing. So it errors on:
 | `--size` | auto | Force units, e.g. `2x3`. Otherwise smallest that fits. |
 | `--no-straighten` | off | Keep the trace's original rotation. |
 
+## Gap gauges — standard for every drawer
+
+A 42 mm pitch never divides a drawer evenly. What is left over decides whether
+spacers fit, whether the grid slides, and sometimes whether another whole row
+would fit. Measuring a 14 mm gap at the back of a loaded drawer with a tape is
+guesswork, so **every drawer gets gauged before anything else is printed.**
+
+A gauge is a small stick: a foot that butts flat against the baseplate's outer
+edge, and an arm that reaches across the gap. **The longest one that still
+drops in is the gap.**
+
+```
+    ┌────────────────────────┐  ← foot, butts against the baseplate edge
+    │          ██            │     (26 mm wide, so it cannot skew)
+    └──────────██────────────┘
+               ██               ← arm: its length IS the measurement,
+               ██                 read from the foot's contact face
+               ▼ tip touches the drawer wall
+```
+
+Each is 26 × L × 3 mm, about 0.7 g. Three millimetres thick on purpose: the
+baseplate edge is vertical for its full 4.75 mm, so a thinner gauge meets the
+flat and cannot ride up a chamfer. The length is **engraved into the
+underside**, mirrored to read when turned over, which is what makes them
+reusable rather than disposable.
+
+### The standard ladder: −3, −2, −1, 0, +1
+
+Five sticks per gap, weighted **below** nominal.
+
+| Offset | Why |
+| --- | --- |
+| −3, −2, −1 | A gauge shorter than the gap goes in and shows how much slack is left. Errors in a recorded drawer dimension tend to run generous, so the true gap is more often under nominal than over. |
+| 0 | The nominal. |
+| +1 | One step above is enough to confirm the upper bound. Anything longer than the gap simply will not go in, and tells you nothing beyond "smaller than this". |
+
+A drawer needs **two ladders**, because the two dimensions leave different
+remainders: one for the **width** gaps (left and right), one for the **depth**
+gaps (front and back).
+
+### The library — check before printing
+
+A gauge is just a length. It does not care which drawer it came from, so a
+14.5 mm stick serves every drawer that needs 14.5 mm. `gauge-library.yml`
+lists the lengths that physically exist, and `gfneg gauge` consults it:
+
+```bash
+$ gfneg gauge --gap 14.5
+Nominal gap : 14.5 mm
+Ladder      : 11.5, 12.5, 13.5, 14.5, 15.5 mm   (standard -3 -2 -1 0 +1)
+Already own : 12.5, 13.5, 14.5, 15.5 mm -- reuse these, do not print them again
+                12.5 mm: KWL1N1T width ladder, 2026-09-25
+To print    : 11.5 mm
+```
+
+Only the missing lengths are exported. After printing, record them so the next
+drawer benefits:
+
+```bash
+gfneg gauge --gap 17 --register "KSL1W1T depth ladder"
+```
+
+`--all` forces the whole ladder out anyway; `--library` points at a different
+file. A drawer whose ladder is entirely covered prints nothing and says so.
+
 ## Printing a tiled baseplate
 
 A baseplate for anything but a small drawer is wider than the bed, so it prints

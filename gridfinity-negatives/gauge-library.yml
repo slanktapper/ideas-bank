@@ -1,0 +1,24 @@
+# Gap gauges that physically exist.
+# A gauge is just a length -- it is reusable across every drawer, so
+# check here before printing. Managed by `gfneg gauge`.
+gauges:
+- length: 12.5
+  note: KWL1N1T width ladder, 2026-09-25
+- length: 13.5
+  note: KWL1N1T width ladder, 2026-09-25
+- length: 14.5
+  note: KWL1N1T width ladder, 2026-09-25
+- length: 15.0
+  note: KWL1N1T depth ladder, 2026-09-25
+- length: 15.5
+  note: KWL1N1T width ladder, 2026-09-25
+- length: 16.0
+  note: KWL1N1T depth ladder, 2026-09-25
+- length: 16.5
+  note: KWL1N1T width ladder, 2026-09-25
+- length: 17.0
+  note: KWL1N1T depth ladder, 2026-09-25
+- length: 18.0
+  note: KWL1N1T depth ladder, 2026-09-25
+- length: 19.0
+  note: KWL1N1T depth ladder, 2026-09-25

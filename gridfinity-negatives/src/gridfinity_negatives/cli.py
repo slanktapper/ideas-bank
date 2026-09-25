@@ -18,7 +18,10 @@ from .calibrate import Mat, render_mat
 from .config import DEFAULT_PRINTER, DEFAULTS, PRINTERS, Tuning
 from .geometry import pocket_profile, straighten
 from .codes import is_valid, parse as parse_code
-from .gauge import DEFAULT_GAUGE, export_set, make_gauge
+from .gauge import (
+    DEFAULT_GAUGE, LIBRARY_FILE, STANDARD_DELTAS, check_ladder, export_set,
+    ladder, load_library, make_gauge, save_library,
+)
 from .drawer import build_baseplates, build_spacers, estimate_mass_g, plan as plan_drawer
 from .model import BedTooSmall, BinSpec, PocketTooDeep, auto_spec, build, export
 from .layout import fill_remaining, load_items, pack
@@ -332,28 +335,52 @@ def cmd_layout(a: argparse.Namespace) -> int:
 
 
 def cmd_gauge(a: argparse.Namespace) -> int:
-    """Print a ladder of gap gauges around a nominal measurement."""
-    deltas = tuple(float(d) for d in a.deltas)
+    """Print a ladder of gap gauges, skipping lengths already owned."""
+    deltas = tuple(float(d) for d in a.deltas) if a.deltas else STANDARD_DELTAS
+    want = ladder(a.gap, deltas)
+    have, need = check_ladder(a.gap, a.library, deltas)
+    lib = load_library(a.library)
+
+    print(f"Nominal gap : {a.gap:g} mm")
+    print(f"Ladder      : " + ", ".join(f"{L:g}" for L in want) + " mm"
+          + ("" if a.deltas else "   (standard -3 -2 -1 0 +1)"))
+    if have:
+        print(f"Already own : " + ", ".join(f"{L:g}" for L in have) + " mm"
+              " -- reuse these, do not print them again")
+        for L in have:
+            if lib.get(L):
+                print(f"                {L:g} mm: {lib[L]}")
+    if not need:
+        print()
+        print("Nothing to print. The whole ladder is already in the library.")
+        return 0
+
+    print(f"To print    : " + ", ".join(f"{L:g}" for L in need) + " mm")
+
+    only = None if a.all else set(need)
     try:
-        paths = export_set(a.gap, a.out, a.name, deltas)
+        paths = export_set(a.gap, a.out, a.name, deltas, only=only)
     except ValueError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
     g = make_gauge(a.gap)
-    bb = g.vals()[0].BoundingBox()
-    print(f"Nominal gap : {a.gap:g} mm")
-    print(f"Ladder      : "
-          + ", ".join(f"{a.gap + d:g}" for d in deltas) + " mm")
-    print(f"Each gauge  : {bb.xlen:.0f} x (length) x {bb.zlen:.0f} mm, "
+    print(f"Each gauge  : {g.vals()[0].BoundingBox().xlen:.0f} x (length) x "
+          f"{g.vals()[0].BoundingBox().zlen:.0f} mm, "
           f"~{g.vals()[0].Volume() / 1000 * 1.24:.1f} g")
     print()
     for p_ in paths:
         print(f"wrote {p_}")
-    print()
-    print("Foot butts flat against the baseplate's outer edge; the arm reaches")
-    print("across the gap. The longest one that still drops in is the gap.")
-    print("The length is engraved underneath, mirrored to read turned over.")
+
+    if a.register:
+        for L in need:
+            lib[L] = a.register
+        save_library(lib, a.library)
+        print()
+        print(f"recorded {len(need)} new length(s) in {a.library}")
+    else:
+        print()
+        print(f"Once printed, record them:  --register \"<what they were for>\"")
     return 0
 
 
@@ -468,8 +495,14 @@ def main(argv: list[str] | None = None) -> int:
     ga = sub.add_parser("gauge", help="gap gauges: feeler sticks at known lengths")
     ga.add_argument("--gap", type=float, required=True,
                     help="nominal gap in mm, the centre of the ladder")
-    ga.add_argument("--deltas", nargs="*", default=["-2", "-1", "0", "1", "2"],
-                    help="offsets from nominal (default: -2 -1 0 1 2)")
+    ga.add_argument("--deltas", nargs="*", default=None,
+                    help="offsets from nominal (default: the standard -3 -2 -1 0 +1)")
+    ga.add_argument("--library", default=LIBRARY_FILE,
+                    help="file listing gauges that physically exist")
+    ga.add_argument("--all", action="store_true",
+                    help="export the whole ladder, including lengths already owned")
+    ga.add_argument("--register", metavar="NOTE",
+                    help="record the new lengths in the library after printing")
     ga.add_argument("--name", default="gauge", help="output filename stem")
     ga.add_argument("--out", default="out")
     ga.set_defaults(func=cmd_gauge)
