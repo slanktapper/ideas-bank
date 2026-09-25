@@ -269,3 +269,53 @@ def test_gps_and_flashlight_are_swapped():
           for p in layout.placements if p.item.name in ("GPS", "Flashlight")}
     assert at["GPS"] == "A4:E5"
     assert at["Flashlight"] == "H6:L7"
+
+
+# --- the directed arrangement ----------------------------------------------
+
+def test_the_front_row_is_entirely_one_unit_deep():
+    """Row 1 bins get extended over the front gap once it is measured, so
+    every bin touching row 1 must be exactly one unit deep."""
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    front = [p for p in layout.placements if p.y_u == 0]
+    assert len(front) == 5
+    for p in front:
+        assert p.width_u == 1, (
+            f"bin at x={p.x_u} is {p.width_u} deep; it cannot absorb the gap"
+        )
+    assert sum(p.length_u for p in front) == KWL1N1T.units_x, (
+        "the front row does not span the drawer"
+    )
+
+
+def test_the_arrangement_tiles_the_grid_exactly():
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    seen = set()
+    for p in layout.placements:
+        for i in range(p.length_u):
+            for j in range(p.width_u):
+                cell = (p.x_u + i, p.y_u + j)
+                assert cell not in seen, f"overlap at {cell}"
+                seen.add(cell)
+    assert len(seen) == KWL1N1T.total_units
+    assert not layout.unplaced
+
+
+def test_named_items_sit_where_they_were_placed():
+    from gridfinity_negatives.layout import cell_range
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    at = {}
+    for p in layout.placements:
+        at.setdefault(p.item.name, []).append(
+            cell_range(p.x_u, p.y_u, p.length_u, p.width_u))
+    assert at["Bic lighter"] == ["J2:L3"], "Bic did not rotate into J2:L3"
+    assert at["GPS"] == ["A4:E5"]
+    assert at["Flashlight"] == ["H6:L7"]
+    assert at["BBQ lighter"] == ["A6:G7"]
+    assert sorted(at["Accessories"]) == ["A2:C3", "H4:I5", "J4:L5"]
+
+
+def test_every_bin_is_explicitly_placed():
+    """Nothing is auto-packed, so the arrangement cannot drift on a re-run."""
+    items = load_items("items-KWL1N1T.yml")
+    assert all(i.at for i in items), "an item has no stated position"

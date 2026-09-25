@@ -1,73 +1,86 @@
 # KWL1N1T — kitchen, west wall, lower section, 1st north column, 1st from top
-# Drawer 533 x 328 x 63 mm internal, 12 x 7 units. Columns A-L, rows 1-7 with
-# row 1 at the FRONT.
+# Drawer 533 x 328 x 63 mm internal, 12 x 7 units, grid in the BACK-RIGHT corner.
+# Columns A-L from the left, rows 1-7 with row 1 at the FRONT.
 #
-# at: places a bin exactly. Layout as directed 2026-09-25 MDT.
-
 # Every bin in this drawer is ONE height. The value is provisional until the
 # first print is in the drawer -- change bin_height_u here and it reaches
-# every bin, including the auto-filled spares.
+# every bin.
+#
+# Layout set explicitly 2026-09-25 MDT. Every bin has an `at`, so nothing is
+# auto-placed and the arrangement is exactly as directed.
+#
+# THE FRONT ROW (row 1) IS ALL ONE UNIT DEEP. Those five bins are the ones to
+# extend forward over the front gap once it is measured.
+
 defaults:
   bin_height_u: 8
   bin_height_provisional: true
 
 items:
-  - name: BBQ lighter
-    size: [272, 43, 24]
-    bin_size: 7x2
-    at: A6
-    qty_typical: 3
-    qty_max: 4
-    note: >
-      Back left. A 7x2 at 8U is 288.7 x 78.7 x 49 mm inside: one lighter
-      across the width, two stacked in the depth. CAPACITY IS 2, not 4.
+  # --- row 1, the front: all 1 deep, to be extended over the front gap ---
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1}
+  - {name: Spare, size: [0, 0], bin_size: 2x1, at: D1}
+  - {name: Spare, size: [0, 0], bin_size: 2x1, at: F1}
+  - {name: Spare, size: [0, 0], bin_size: 2x1, at: H1}
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1}
 
+  # --- rows 2-3 ---
+  - name: Accessories
+    size: [84, 75, 40]
+    bin_size: 3x2
+    at: A2
+    measured: false
+    note: Formerly "GPS small". Width and height assumed, NOT measured.
+
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: D2}
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: F2}
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: H2}
+
+  - name: Bic lighter
+    size: [81, 24, 12]
+    bin_size: 3x2
+    at: J2
+    qty_typical: 2
+    qty_max: 10
+    measured: false
+    note: >
+      Rotated 90 degrees from its former 2x3. Commodity Bic size, NOT
+      measured from yours.
+
+  # --- rows 4-5 ---
   - name: GPS
     size: [167, 75, 40]
     bin_size: 5x2
     at: A4
-    qty_typical: 1
     qty_max: 1
-    note: Swapped with the flashlights 2026-09-25 MDT.
 
-  - name: Flashlight
-    size: [195, 39, 39]
-    bin_size: 5x2
-    at: H6
-    qty_typical: 4
-    qty_max: 4
-    note: Back right, alongside the BBQ lighters. Swapped with the GPS 2026-09-25 MDT.
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: F4}
 
   - name: Accessories
     size: [84, 75, 40]
     bin_size: 2x2
     at: H4
     measured: false
-    note: >
-      Replaced the right-hand flashlight bin, 2026-09-25 MDT. Width and
-      height assumed to match the large GPS and NOT measured.
+    note: 78.7 mm square inside — too short for an 84 mm accessory.
 
   - name: Accessories
     size: [84, 75, 40]
     bin_size: 3x2
     at: J4
     measured: false
-    note: Second half of the former right flashlight bin.
 
-  - name: Bic lighter
-    size: [81, 24, 12]
-    bin_size: 2x3
-    at: H1
-    qty_typical: 2
-    qty_max: 10
-    measured: false
-    note: In front of the GPS. Commodity Bic size, NOT measured from yours.
+  # --- rows 6-7, the back ---
+  - name: BBQ lighter
+    size: [272, 43, 24]
+    bin_size: 7x2
+    at: A6
+    qty_typical: 3
+    qty_max: 4
+    note: Holds 2 — one across the 78.7 mm width, two stacked in the 49 mm depth.
 
-  - name: Accessories
-    size: [84, 75, 40]
-    bin_size: 3x2
-    at: A1
-    measured: false
-    note: >
-      Formerly "GPS small". Width and height assumed to match the large GPS
-      and NOT measured.
+  - name: Flashlight
+    size: [195, 39, 39]
+    bin_size: 5x2
+    at: H6
+    qty_max: 4
+    note: Holds 2 — two 39 mm barrels across, one layer deep.

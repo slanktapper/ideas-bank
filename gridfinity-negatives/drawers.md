@@ -106,26 +106,40 @@ asked for by number rather than by cell range.
 
 ### Layout as directed
 
-Columns A–L from the left, rows 1–7 with **row 1 at the front**. Full drawer,
-**84 of 84 units, 16 bins, nothing wasted.**
+Rearranged 2026-09-25 MDT. Every bin has a stated position, so the
+arrangement cannot drift on a re-run. **84 of 84 units, 16 bins.**
 
-| Cells | Bin | Item |
-| --- | --- | --- |
-| A6:G7 | 7×2 | BBQ lighters |
-| H6:L7 | 5×2 | Flashlights |
-| A4:E5 | 5×2 | GPS |
-| H4:I5 | 2×2 | Accessories |
-| J4:L5 | 3×2 | Accessories |
-| H1:I3 | 2×3 | Bic lighters |
-| A1:C2 | 3×2 | Accessories |
-| D1:E2, F1:G2, J1:K2, F3:G4 | 2×2 | Spare |
-| A3:C3, J3:L3 | 3×1 | Spare |
-| D3:E3, F5:G5 | 2×1 | Spare |
-| L1:L2 | 1×2 | Spare |
+| # | Cells | Bin | Item |
+| --- | --- | --- | --- |
+| 1 | A1:C1 | 3×1 | Spare |
+| 2 | D1:E1 | 2×1 | Spare |
+| 3 | F1:G1 | 2×1 | Spare |
+| 4 | H1:I1 | 2×1 | Spare |
+| 5 | J1:L1 | 3×1 | Spare |
+| 6 | A2:C3 | 3×2 | Accessories |
+| 7 | D2:E3 | 2×2 | Spare |
+| 8 | F2:G3 | 2×2 | Spare |
+| 9 | H2:I3 | 2×2 | Spare |
+| 10 | J2:L3 | 3×2 | Bic lighters (rotated 90°) |
+| 11 | A4:E5 | 5×2 | GPS |
+| 12 | F4:G5 | 2×2 | Spare |
+| 13 | H4:I5 | 2×2 | Accessories |
+| 14 | J4:L5 | 3×2 | Accessories |
+| 15 | A6:G7 | 7×2 | BBQ lighters |
+| 16 | H6:L7 | 5×2 | Flashlights |
 
-Nine spare bins, 28 units, for the keychains and anything else.
+**Bins renumber by position**, front to back then left to right, so the numbers
+above are not the ones used before the rearrangement.
 
-**"Accessories" is the item formerly called GPS small.**
+### The front row absorbs the front gap
+
+Bins 1–5 are **all exactly one unit deep** and together span the full width.
+They are the ones to lengthen over the 34 mm front gap once it is measured —
+a bin two units deep could not be extended without losing a row.
+
+The **left** gap has no equivalent row: bins 1, 6, 11 and 15 all start at
+column A but none is one unit wide. Absorbing the left gap means widening
+those four, or a spacer strip.
 
 ### The BBQ lighter bin holds two, not four
 
