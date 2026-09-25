@@ -96,6 +96,10 @@ hole style so the slicer bridges them.
 fighting, and that the base seats in a baseplate. PETG runs slightly looser
 than PLA; adjust `--clearance` rather than scaling the model.
 
+## The drawer register
+`drawers.md` records measured drawers, their locations and the grid each takes.
+It is the input to `gfneg drawer` and the reason nothing gets printed twice.
+
 ## Open questions
 - **Nothing here has been printed yet.** The H2D was delivered but is not
   commissioned. Every tolerance below is reasoned, not measured.

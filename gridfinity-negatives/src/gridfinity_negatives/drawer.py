@@ -14,7 +14,12 @@ from pathlib import Path
 import cadquery as cq
 from cqgridfinity import GridfinityBaseplate, GridfinityDrawerSpacer
 
-from .config import BASE_PROFILE_MM, DEFAULT_PRINTER, GRID_PITCH_MM, Printer
+from .config import (
+    BASE_PROFILE_MM, DEFAULT_PRINTER, GRID_PITCH_MM, HEIGHT_UNIT_MM, Printer,
+)
+
+LIP_RIM_MM = 3.8
+"""How far the stacking lip stands proud of a bin's nominal U * 7 height."""
 
 PETG_DENSITY_G_CM3 = 1.27
 """Bambu PETG Basic. PLA is 1.24, near enough the same for an estimate."""
@@ -131,16 +136,23 @@ def plan(
                 "the base, and checking whether the drawer's own walls taper."
             )
     if drawer_h_mm is not None:
-        headroom = drawer_h_mm - BASE_PROFILE_MM
-        notes.append(
-            f"Baseplate takes {BASE_PROFILE_MM:.2f} mm, leaving {headroom:.1f} mm "
-            f"of headroom -- up to a {int(headroom // 7)}U bin "
-            f"({int(headroom // 7) * 7} mm nominal)."
-        )
-        if headroom < 14:
+        # The baseplate is a frame, not a platform: a bin's base profile drops
+        # through its socket to the drawer floor, so the baseplate adds nothing
+        # to the stack. What does count is the 3.8mm lip rim standing proud of
+        # the bin's nominal U * 7.
+        tallest_u = int((drawer_h_mm - LIP_RIM_MM) // HEIGHT_UNIT_MM)
+        if tallest_u < 1:
             notes.append(
-                "That is under two height units. Verify the drawer actually "
-                "closes over the bins you intend to use."
+                f"At {drawer_h_mm:.0f} mm there is not room for even a 1U bin "
+                f"({HEIGHT_UNIT_MM + LIP_RIM_MM:.1f} mm tall). Check the height."
+            )
+        else:
+            actual = tallest_u * HEIGHT_UNIT_MM + LIP_RIM_MM
+            notes.append(
+                f"{drawer_h_mm:.0f} mm of height takes a bin up to {tallest_u}U "
+                f"({actual:.1f} mm tall including the lip), with "
+                f"{drawer_h_mm - actual:.1f} mm to spare. Bins sit on the drawer "
+                "floor -- the baseplate is a frame and adds no height."
             )
     return DrawerPlan(
         drawer_w_mm, drawer_d_mm, units_x, units_y,

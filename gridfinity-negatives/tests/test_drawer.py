@@ -73,14 +73,15 @@ def test_drawer_too_small_for_one_unit_is_refused():
 
 
 def test_height_note_reports_the_largest_bin_that_fits():
+    """95mm takes a 13U bin (94.8mm). The old formula said 12U."""
     p = plan(400.0, 300.0, drawer_h_mm=95.0)
     note = " ".join(p.notes)
-    assert "12U" in note, note
+    assert "up to 13U" in note, note
 
 
-def test_shallow_drawer_warns_about_headroom():
-    p = plan(400.0, 300.0, drawer_h_mm=16.0)
-    assert any("closes over" in n for n in p.notes)
+def test_headroom_note_states_the_baseplate_adds_nothing():
+    p = plan(400.0, 300.0, drawer_h_mm=63.0)
+    assert any("adds no height" in n for n in p.notes), p.notes
 
 
 def test_near_miss_on_an_extra_unit_is_flagged():
@@ -101,3 +102,32 @@ def test_margin_can_never_exceed_half_a_pitch():
     for w in range(60, 700, 7):
         p = plan(float(w), 300.0)
         assert 0 <= p.margin_x_mm < GRID_PITCH_MM / 2
+
+
+@pytest.mark.parametrize("drawer_h,expect_u", [
+    (63.0, 8),    # 8U = 59.8mm, fits
+    (60.0, 8),    # 8U = 59.8mm, just fits -- the old formula said 7
+    (53.0, 7),    # 7U = 52.8mm, fits -- the old formula said 6
+    (24.0, 2),    # 2U = 17.8mm
+    (101.0, 13),  # 13U = 94.8mm
+])
+def test_headroom_accounts_for_the_lip_not_the_baseplate(drawer_h, expect_u):
+    """Regression: the note subtracted the baseplate and ignored the lip rim.
+
+    A bin's base drops through the baseplate socket to the drawer floor, so
+    the baseplate adds no height. What stands proud is the 3.8mm lip.
+    """
+    from gridfinity_negatives.drawer import LIP_RIM_MM
+
+    p = plan(400.0, 300.0, drawer_h_mm=drawer_h)
+    note = " ".join(p.notes)
+    assert f"up to {expect_u}U" in note, note
+    # And the bin it names must genuinely fit.
+    assert expect_u * 7 + LIP_RIM_MM <= drawer_h
+    # One more unit must genuinely not fit.
+    assert (expect_u + 1) * 7 + LIP_RIM_MM > drawer_h
+
+
+def test_drawer_too_shallow_for_any_bin_says_so():
+    p = plan(400.0, 300.0, drawer_h_mm=9.0)
+    assert any("not room for even a 1U" in n for n in p.notes), p.notes
