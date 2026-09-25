@@ -90,6 +90,34 @@ Silent wrongness costs a print; an error costs nothing. So it errors on:
 | `--size` | auto | Force units, e.g. `2x3`. Otherwise smallest that fits. |
 | `--no-straighten` | off | Keep the trace's original rotation. |
 
+## Printing a tiled baseplate
+
+A baseplate for anything but a small drawer is wider than the bed, so it prints
+as tiles. `gfneg drawer` splits the grid evenly and writes one STL per distinct
+tile size.
+
+**The tiles do not clip together.** cq-gridfinity baseplates have no interlock —
+its `corner_tab_size` is for screw tabs, not for joining plates. Four things
+hold a tiled grid in place, and the first is free:
+
+1. **Bins straddling the seam.** Any bin wider than the tile boundary pins the
+   two plates in plane once it is loaded. Worth checking where the seam falls:
+   a seam no bin crosses is a seam that can open.
+2. **Drawer walls plus spacers.** Filling the margins wedges the whole assembly
+   so nothing can slide. `gfneg drawer` writes the spacer set.
+3. **Screws into the drawer floor.** `GridfinityBaseplate(corner_screws=True)`
+   adds countersunk corner tabs. The definitive fix, at the cost of holes.
+4. **Double-sided tape under each tile.** No holes, very effective, and the
+   usual answer for a drawer you may want to re-do later.
+
+Gluing the tiles into one slab also works and is permanent. Third-party
+click-lock designs (Clickfinity, CLICKbase) do interlock, but they replace
+cq-gridfinity's baseplate rather than extending it.
+
+**Print settings:** flat on the bed, 0.2 mm layers, 3 walls, 15–20% infill, no
+supports. A large flat first layer is the one thing that can lift at the
+corners — add a brim if it does.
+
 ## Tests
 
 ```bash
