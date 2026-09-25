@@ -441,3 +441,48 @@ def test_no_front_row_bin_can_hold_the_gps():
     # Two units of depth does hold it.
     deep = Item("GPS", 167, 75, 40, bin_size="5x2", bin_height_u=5)
     assert deep.capacity() >= 1
+
+
+# --- the no-printed-label rule ---------------------------------------------
+
+def test_the_kitchen_drawer_forbids_a_printed_label_shelf():
+    from gridfinity_negatives.layout import load_defaults
+    d = load_defaults("items-KWL1N1T.yml")
+    assert d.get("label_shelf") is False, (
+        "the kitchen drawer must record that clip-on labels are the only kind"
+    )
+
+
+def test_no_generated_bin_carries_a_label_shelf():
+    """The shelf shows as a horizontal face partway up the wall; there must
+    be none on any bin in this drawer, plain or extended."""
+    import cadquery as cq
+    from cqgridfinity import GridfinityBox
+    from gridfinity_negatives.extended import extended_bin
+
+    def shelf_faces(shape):
+        s = cq.Shape.cast(shape.wrapped)
+        ztop = s.BoundingBox().zmax
+        return [f for f in s.Faces()
+                if f.normalAt().z > 0.99 and 7.5 < f.Center().z < ztop - 0.05]
+
+    # the control: a labelled bin really does show one
+    assert len(shelf_faces(GridfinityBox(3, 1, 5, labels=True).cq_obj.vals()[0])) == 1
+
+    dp = plan(542.5, 328.5, 63.0)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
+    for pl in layout.placements:
+        body = extended_bin(pl.length_u, pl.width_u, 5,
+                            extend_left_mm=pl.extend_left_mm,
+                            extend_front_mm=pl.extend_front_mm)
+        assert not shelf_faces(body.vals()[0]), (
+            f"bin at ({pl.x_u},{pl.y_u}) carries a label shelf"
+        )
+
+
+def test_a_label_shelf_costs_real_volume():
+    """Records why the rule exists: ~9.4 cm3 a bin, and it never comes off."""
+    from cqgridfinity import GridfinityBox
+    plain = GridfinityBox(3, 1, 5, labels=False).cq_obj.vals()[0].Volume()
+    lab = GridfinityBox(3, 1, 5, labels=True).cq_obj.vals()[0].Volume()
+    assert lab - plain > 9000

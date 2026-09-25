@@ -13,6 +13,10 @@
 
 defaults:
   bin_height_u: 5
+  # NO PRINTED LABEL SHELF, EVER, IN THE KITCHEN. Clip-on labels only, added
+  # later if wanted. A moulded shelf overhangs the opening, cannot be removed,
+  # and costs ~9.4 cm3 a bin. gfneg refuses to add one while this is false.
+  label_shelf: false
 
 items:
   # --- row 1, the front: 1 unit deep + 34.5 mm to the drawer front ---

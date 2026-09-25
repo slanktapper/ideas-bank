@@ -434,6 +434,21 @@ def cmd_bins(a: argparse.Namespace) -> int:
         return 1
 
     height_u = a.bin_height or defaults.get("bin_height_u") or 5
+
+    # A printed label shelf is a permanent overhang over the opening. Where a
+    # drawer has ruled it out, it cannot be switched back on from the command
+    # line -- that is the point of recording it with the drawer.
+    allow_label = defaults.get("label_shelf", True)
+    if a.label and not allow_label:
+        print("error: this drawer forbids a printed label shelf "
+              f"(label_shelf: false in {a.items}).", file=sys.stderr)
+        print("       Clip-on labels only. Remove --label, or change the "
+              "drawer's own setting if you really mean it.", file=sys.stderr)
+        return 2
+    use_label = bool(a.label and allow_label)
+    if not allow_label:
+        print("Labels   : none — clip-on only (drawer rule)")
+
     layout = pack(p, items, height_u=height_u)
     if layout.unplaced:
         print(f"error: {len(layout.unplaced)} bin(s) could not be placed",
@@ -451,6 +466,7 @@ def cmd_bins(a: argparse.Namespace) -> int:
         try:
             body = extended_bin(pl.length_u, pl.width_u, height_u,
                                 extend_left_mm=el, extend_front_mm=ef,
+                                labels=use_label,
                                 holes=a.magnets, unsupported_holes=a.magnets)
         except ValueError as e:
             print(f"error on bin {num}: {e}", file=sys.stderr)
@@ -563,7 +579,8 @@ def main(argv: list[str] | None = None) -> int:
     n.add_argument("--count", type=int, default=1, help="how many, for the estimate")
     n.add_argument("--magnets", action="store_true")
     n.add_argument("--label", action="store_true",
-                   help="add the overhanging label shelf (clip-on holders avoid this)")
+                   help="add a moulded label shelf -- a permanent overhang "
+                        "over the opening; clip-on holders avoid it")
     n.add_argument("--scoop", action="store_true", help="finger scoop at one end")
     n.add_argument("--length-div", type=int, default=0, help="dividing walls along length")
     n.add_argument("--width-div", type=int, default=0, help="dividing walls along width")
@@ -616,6 +633,9 @@ def main(argv: list[str] | None = None) -> int:
     bs.add_argument("--bin-height", type=int, default=None)
     bs.add_argument("--align", default=None)
     bs.add_argument("--magnets", action="store_true")
+    bs.add_argument("--label", action="store_true",
+                    help="add a moulded label shelf; refused where the drawer "
+                         "has set label_shelf: false")
     bs.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")
     bs.add_argument("--out", default="out")
     bs.set_defaults(func=cmd_bins)

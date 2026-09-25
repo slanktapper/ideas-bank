@@ -184,6 +184,33 @@ gfneg gauge --gap 17 --register "KSL1W1T depth ladder"
 `--all` forces the whole ladder out anyway; `--library` points at a different
 file. A drawer whose ladder is entirely covered prints nothing and says so.
 
+## Labels: clip-on only
+
+**No bin carries a moulded label shelf.** A drawer records the rule in its own
+item file and `gfneg` will not override it:
+
+```yaml
+defaults:
+  label_shelf: false
+```
+
+```
+$ gfneg bins --items items-KWL1N1T.yml --label
+error: this drawer forbids a printed label shelf (label_shelf: false in items-KWL1N1T.yml).
+       Clip-on labels only. Remove --label, or change the drawer's own setting.
+```
+
+Three reasons it is a rule rather than a default:
+
+- A moulded shelf **overhangs the opening** and never comes off. A clip-on
+  holder does, which matters in a drawer whose contents change.
+- It costs about **9.4 cm³ a bin** — on a fifteen-bin drawer, roughly 175 g.
+- It is decided once, per drawer, in writing. A flag someone can pass is
+  exactly how an unwanted shelf ends up on a plate.
+
+Clip-on holders are a separate part, printed later if wanted, and cost nothing
+until then.
+
 ## Bins that meet a drawer wall
 
 A drawer's leftover is never a whole grid unit, so closing it means bins that
