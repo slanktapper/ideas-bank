@@ -165,6 +165,19 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
 
     palette = ["#1e3a5f", "#c2410c", "#166534", "#6b21a8", "#0f766e",
                "#9a3412", "#3730a3", "#854d0e", "#9f1239", "#155e75"]
+
+    # Total capacity per item, so a shortfall is judged across all its bins.
+    per_item_cap: dict[str, int] = {}
+    per_item_wanted: dict[str, int] = {}
+    for pl in layout.placements:
+        if pl.item.width_mm > 0:
+            per_item_cap[pl.item.name] = (
+                per_item_cap.get(pl.item.name, 0) + pl.item.capacity())
+            per_item_wanted[pl.item.name] = pl.item.wanted()
+    for name in list(per_item_wanted):
+        if per_item_cap.get(name, 0) >= per_item_wanted[name]:
+            per_item_wanted.pop(name)
+
     seen: dict[str, str] = {}
     for p in layout.placements:
         colour = seen.setdefault(p.item.name, palette[len(seen) % len(palette)])
@@ -176,6 +189,18 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
                                edgecolor=colour, lw=1.8, zorder=3))
         label = p.item.name if p.item.measured else f"{p.item.name} ?"
         ref = cell_range(p.x_u, p.y_u, p.length_u, p.width_u)
+        # Flag a bin that holds less than is owned -- the single most useful
+        # thing to see on a layout, and invisible from footprint alone.
+        short = ""
+        if p.item.width_mm > 0:
+            cap = p.item.capacity()
+            want = per_item_wanted.get(p.item.name, 0)
+            if cap < want:
+                short = f"holds {cap} of {want}"
+        if short:
+            ax.add_patch(Rectangle((x, y), w, h, facecolor="none",
+                                   edgecolor="#b91c1c", lw=2.6, ls=(0, (4, 2)),
+                                   zorder=5))
         fs = max(5.5, min(9.5, w / (0.60 * max(7, len(label)))))
         ax.text(x + w / 2, y + h / 2 + (4.5 if h > 30 else 0), label,
                 ha="center", va="center", fontsize=fs, color=colour,
@@ -192,6 +217,9 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
         else:
             ax.text(x + w / 2, y + h / 2 - 7, ref, ha="center", va="center",
                     fontsize=6.5, color=colour, alpha=0.95, zorder=4)
+        if short:
+            ax.text(x + w / 2, y + 4.5, short, ha="center", va="bottom",
+                    fontsize=6.8, color="#b91c1c", fontweight="bold", zorder=6)
 
     # Grid references in place of millimetres.
     ax.set_xticks([mx + (i + 0.5) * GRID_PITCH_MM for i in range(ux)])
