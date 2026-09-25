@@ -18,6 +18,7 @@ from .calibrate import Mat, render_mat
 from .config import DEFAULT_PRINTER, DEFAULTS, PRINTERS, Tuning
 from .geometry import pocket_profile, straighten
 from .codes import is_valid, parse as parse_code
+from .extended import describe as describe_bin, extended_bin
 from .gauge import (
     DEFAULT_GAUGE, LIBRARY_FILE, STANDARD_DELTAS, check_ladder, export_set,
     ladder, load_library, make_gauge, save_library,
@@ -231,14 +232,23 @@ def cmd_bin(a: argparse.Namespace) -> int:
               f"{printer.max_units_x}x{printer.max_units_y}-unit bed.", file=sys.stderr)
         return 1
 
-    box = GridfinityBox(
-        lu, wu, a.height,
-        holes=a.magnets, unsupported_holes=a.magnets,
-        labels=a.label, scoops=a.scoop,
-        length_div=a.length_div, width_div=a.width_div,
-        no_lip=a.no_lip,
-    )
-    body = box.cq_obj
+    if a.extend_left or a.extend_front:
+        body = extended_bin(
+            lu, wu, a.height, extend_left_mm=a.extend_left,
+            extend_front_mm=a.extend_front,
+            holes=a.magnets, unsupported_holes=a.magnets,
+            labels=a.label, scoops=a.scoop, no_lip=a.no_lip,
+        )
+        box = GridfinityBox(lu, wu, a.height)
+    else:
+        box = GridfinityBox(
+            lu, wu, a.height,
+            holes=a.magnets, unsupported_holes=a.magnets,
+            labels=a.label, scoops=a.scoop,
+            length_div=a.length_div, width_div=a.width_div,
+            no_lip=a.no_lip,
+        )
+        body = box.cq_obj
     if a.code:
         body, size = engrave_code(body, a.code, depth=a.code_depth)
         print(f"Engraved : {size:.1f} mm text, {a.code_depth} mm deep, "
@@ -405,6 +415,66 @@ def cmd_gauge(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_bins(a: argparse.Namespace) -> int:
+    """Generate every bin in a drawer's layout, extensions and codes included."""
+    rc = _check_code(a.code)
+    if rc:
+        return rc
+    from .drawer import DEFAULT_ALIGN
+    from .layout import cell_range, numbered
+
+    printer = PRINTERS[a.printer]
+    try:
+        p = plan_drawer(a.width, a.depth, a.height, printer,
+                        align=a.align or DEFAULT_ALIGN)
+        items = load_items(a.items)
+        defaults = load_defaults(a.items)
+    except (ValueError, OSError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+    height_u = a.bin_height or defaults.get("bin_height_u") or 5
+    layout = pack(p, items, height_u=height_u)
+    if layout.unplaced:
+        print(f"error: {len(layout.unplaced)} bin(s) could not be placed",
+              file=sys.stderr)
+        return 1
+
+    d = Path(a.out)
+    d.mkdir(parents=True, exist_ok=True)
+    stem = (a.code or "bin").upper()
+    total = 0.0
+    made = 0
+    print(f"{'#':>3}  {'file':<40} {'printed mm':<15} grams")
+    for num, pl in numbered(layout):
+        el, ef = pl.extend_left_mm, pl.extend_front_mm
+        try:
+            body = extended_bin(pl.length_u, pl.width_u, height_u,
+                                extend_left_mm=el, extend_front_mm=ef,
+                                holes=a.magnets, unsupported_holes=a.magnets)
+        except ValueError as e:
+            print(f"error on bin {num}: {e}", file=sys.stderr)
+            return 1
+        if a.code:
+            body, _ = engrave_code(body, a.code)
+        label = describe_bin(pl.length_u, pl.width_u, height_u, el, ef)
+        name = f"{stem}-bin-{num:02d}-{label}.stl"
+        cq_export(body, str(d / name))
+        grams = estimate_mass_g(body, infill=0.10)
+        total += grams
+        made += 1
+        ow, oh = pl.outer_size_mm()
+        print(f"{num:>3}  {name:<40} {ow:>6.1f}x{oh:<6.1f}  {grams:>5.0f}")
+
+    print()
+    print(f"{made} bins, ~{total:.0f} g total "
+          f"(~${total / 1000 * 14.29:.2f} in PLA Basic)")
+    ext = sum(1 for _, pl in numbered(layout)
+              if pl.extend_left_mm or pl.extend_front_mm)
+    print(f"{ext} of them reach a drawer wall and are non-standard sizes.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         prog="gfneg",
@@ -485,6 +555,10 @@ def main(argv: list[str] | None = None) -> int:
     n.add_argument("--size", default="1x1", help="bin size in units, e.g. 1x2")
     n.add_argument("--height", type=int, default=3, help="height in units")
     n.add_argument("--code", help="location code to engrave underneath, e.g. KWL1N1T")
+    n.add_argument("--extend-left", type=float, default=0.0,
+                   help="mm the bin reaches past the grid to the left wall")
+    n.add_argument("--extend-front", type=float, default=0.0,
+                   help="mm the bin reaches past the grid to the drawer front")
     n.add_argument("--code-depth", type=float, default=DEFAULT_DEPTH_MM)
     n.add_argument("--count", type=int, default=1, help="how many, for the estimate")
     n.add_argument("--magnets", action="store_true")
@@ -532,6 +606,19 @@ def main(argv: list[str] | None = None) -> int:
     ga.add_argument("--name", default="gauge", help="output filename stem")
     ga.add_argument("--out", default="out")
     ga.set_defaults(func=cmd_gauge)
+
+    bs = sub.add_parser("bins", help="generate every bin in a drawer's layout")
+    bs.add_argument("--width", type=float, required=True)
+    bs.add_argument("--depth", type=float, required=True)
+    bs.add_argument("--height", type=float, default=None)
+    bs.add_argument("--items", required=True)
+    bs.add_argument("--code", help="location code engraved on every bin")
+    bs.add_argument("--bin-height", type=int, default=None)
+    bs.add_argument("--align", default=None)
+    bs.add_argument("--magnets", action="store_true")
+    bs.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")
+    bs.add_argument("--out", default="out")
+    bs.set_defaults(func=cmd_bins)
 
     a = p.parse_args(argv)
     return a.func(a)

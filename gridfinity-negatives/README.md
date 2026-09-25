@@ -184,6 +184,37 @@ gfneg gauge --gap 17 --register "KSL1W1T depth ladder"
 `--all` forces the whole ladder out anyway; `--library` points at a different
 file. A drawer whose ladder is entirely covered prints nothing and says so.
 
+## Bins that meet a drawer wall
+
+A drawer's leftover is never a whole grid unit, so closing it means bins that
+are not standard sizes. `extended.py` welds a skirt to the outside of a normal
+bin and punches the interior through, so the cavity is continuous:
+
+```bash
+gfneg bin --size 6x2 --height 5 --extend-left 38.5 --code KWL1N1T
+gfneg bins --width 542.5 --depth 328.5 --items items-DRAWER.yml --code KWL1N1T
+```
+
+`bins` generates every bin in a layout at once, extensions and code stamps
+included.
+
+**The grid keeps its 42 mm pitch throughout.** Only the bins facing a wall are
+odd, and only on that side — their grid base profile is untouched, so they
+still seat in a baseplate normally. The skirt rests on the drawer floor, which
+works because a baseplate is a frame and a bin passes through it to the floor
+anyway; both halves of the bin sit on the same surface.
+
+Three properties are tested, none of them visible from the bounding box:
+
+1. **Outer size** is grid plus reach, and the part still sits on z = 0.
+2. **The interior is one cavity, not two.** If the original wall survived, the
+   skirt is dead space.
+3. **The grid base pads survive**, so the bin still seats.
+
+The wall inset is **measured from the bin, not taken from `wall_th`** — a bin
+reporting `wall_th = 1.0` has a 2.1 mm usable inset, and building the skirt's
+cavity from the wrong figure leaves a ridge at the joint.
+
 ## Printing a tiled baseplate
 
 A baseplate for anything but a small drawer is wider than the bed, so it prints
