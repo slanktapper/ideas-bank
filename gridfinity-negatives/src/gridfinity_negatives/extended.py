@@ -1,124 +1,110 @@
-"""Bins that reach past the grid to meet a drawer wall.
+"""Bins built at an arbitrary outer size, so they meet a drawer wall.
 
-A drawer's leftover is never a whole grid unit, so closing it means a few bins
-that are not standard sizes. The grid keeps its 42 mm pitch throughout; only
-the bins facing a wall are odd, and only on the side that faces it.
+A drawer's leftover is never a whole grid unit, so closing it needs bins that
+are not standard sizes.
 
-The construction is a skirt welded to the outside of a standard bin, with the
-interior punched through so the cavity is continuous:
+**Not by welding a block onto a stock bin.** That was the first attempt and it
+was wrong in three ways at once: a Gridfinity bin has 3.75 mm rounded corners,
+so a square block butted against one leaves the original corner fillets
+stranded in the middle of a wall, kinks the side where block meets curve, and
+gives the finished part square outer corners where every other bin is rounded.
 
-    ├── skirt ──┤├──────── standard bin ────────┤
-    ┌───────────┬───────────────────────────────┐
-    │           │                               │  ← wall punched through,
-    │   .................................       │    so it is one cavity
-    │   :                                :      │
-    └───┴────────────────────────────────┴──────┘
-        └ floor continues at the same height
+Instead the bin is **built at its true size from the start**. cq-gridfinity
+derives the whole shell from ``outer_l``/``outer_w`` -- the outer sketch, the
+inner sketch, the corner radii and the stacking lip all follow -- while the
+base pads are placed independently at ``grid_centres``. Overriding the former
+and leaving the latter alone gives a bin of any size whose base still seats in
+a standard baseplate.
 
-The skirt sits on the drawer floor, not on the baseplate -- there is no
-baseplate out there. That works because a Gridfinity baseplate is a frame and
-a bin passes through it to the floor anyway, so both halves of the bin rest on
-the same surface.
+    ├─ extension ─┤├──── grid cells ────┤
+    ╭─────────────────────────────────╮     one rounded rectangle,
+    │                                 │     one continuous wall,
+    │    ╭───────────────────────╮    │     one lip all the way round
+    │    ╰───────────────────────╯    │
+    ╰──────┬────────┬────────┬────────╯
+       solid│      ╰─ chamfered base pads, 42 mm pitch
+       to the floor   (the extension has no baseplate under it)
 """
 
 from __future__ import annotations
 
-from functools import lru_cache
-
 import cadquery as cq
 from cqgridfinity import GridfinityBox
+from cqgridfinity.constants import GR_BASE_HEIGHT, GR_TOL, GRU, GRU2
+from cqgridfinity.gf_box import rounded_rect_sketch
 
 
 class ExtensionError(ValueError):
     """The requested extension cannot be built."""
 
 
-def _block(x, y, z, dx, dy, dz) -> cq.Workplane:
-    return (
-        cq.Workplane("XY")
-        .box(dx, dy, dz, centered=False)
-        .translate((x, y, z))
-    )
+class ExtendedBox(GridfinityBox):
+    """A Gridfinity bin whose footprint is larger than its grid.
 
-
-def interior_of(body: cq.Workplane) -> tuple[float, float]:
-    """Measure a bin's interior floor height and its wall inset.
-
-    Measured rather than taken from ``wall_th``: the usable inset is 2.1 mm on
-    a bin whose wall_th reads 1.0, because the outer profile is not a plain
-    vertical wall. Building the skirt's cavity from the wrong number would
-    leave a ridge where the two halves meet.
+    ``extend_left_mm`` and ``extend_front_mm`` add to the outer size on the
+    -X and -Y sides only, so the grid cells stay where a baseplate expects
+    them and the extra material lands against the drawer wall.
     """
-    shape = cq.Shape.cast(body.vals()[0].wrapped)
-    bb = shape.BoundingBox()
-    floors = [
-        f for f in shape.Faces()
-        if f.normalAt().z > 0.99 and f.Center().z < bb.zmax - 1e-6
-    ]
-    if not floors:
-        raise ExtensionError(
-            "No interior floor found. A solid or vase-mode bin cannot be "
-            "extended this way."
+
+    def __init__(self, length_u, width_u, height_u, *,
+                 extend_left_mm: float = 0.0, extend_front_mm: float = 0.0,
+                 **kwargs):
+        if extend_left_mm < 0 or extend_front_mm < 0:
+            raise ExtensionError("Extensions cannot be negative.")
+        self._ext_l = float(extend_left_mm)
+        self._ext_f = float(extend_front_mm)
+        super().__init__(length_u, width_u, height_u, **kwargs)
+
+    # --- the size the part is actually built at --------------------------
+    @property
+    def outer_l(self) -> float:
+        return self.length_u * GRU - GR_TOL + self._ext_l
+
+    @property
+    def outer_w(self) -> float:
+        return self.width_u * GRU - GR_TOL + self._ext_f
+
+    # Shifting the centre by half the extension puts all the extra material
+    # on the left and front, leaving the right and back edges on the grid.
+    @property
+    def half_l(self) -> float:
+        return (self.length_u - 1) * GRU2 - self._ext_l / 2
+
+    @property
+    def half_w(self) -> float:
+        return (self.width_u - 1) * GRU2 - self._ext_f / 2
+
+    # --- the one thing the base class cannot know about ------------------
+    def _skirt_base(self) -> cq.Workplane:
+        """Fill the extension's footprint down to the drawer floor.
+
+        Base pads exist only under grid cells, so without this the extension
+        would hang 4.75 mm above the drawer floor. The grid cells are left
+        alone: their chamfered pads are what seat the bin in a baseplate.
+        """
+        sketch = rounded_rect_sketch(self.outer_l, self.outer_w, self.outer_rad)
+        full = (
+            cq.Workplane("XY")
+            .placeSketch(sketch)
+            .extrude(GR_BASE_HEIGHT + 1.0)
+            .translate((*self.half_dim, -GR_BASE_HEIGHT))
         )
-    floor = max(floors, key=lambda f: f.Area())
-    fb = floor.BoundingBox()
-    inset = min(fb.xmin - bb.xmin, fb.ymin - bb.ymin)
-    return floor.Center().z, inset
+        grid = (
+            cq.Workplane("XY")
+            .box(self.length_u * GRU - GR_TOL, self.width_u * GRU - GR_TOL,
+                 3 * (GR_BASE_HEIGHT + 2))
+            .translate(((self.length_u - 1) * GRU2,
+                        (self.width_u - 1) * GRU2, 0))
+        )
+        return full.cut(grid)
 
-
-def deepest_inset(body: cq.Workplane, floor_z: float, ztop: float,
-                  samples: int = 10) -> tuple[float, float]:
-    """How far the bin's walls reach inward at their narrowest point.
-
-    The wall is not a straight vertical face. The stacking lip is a stepped
-    profile occupying the top few millimetres, and it reaches further inward
-    than the plain wall does -- 2.6 mm against 2.1 mm on a stock bin.
-
-    Cutting the skirt's cavity to the plain inset therefore leaves a thin
-    ledge of surviving lip running along the joint, which reads as a stray
-    shelf in a slicer. So the cavity is cut to the narrowest point found over
-    the bin's whole height, measured rather than assumed.
-    """
-    bb = body.vals()[0].BoundingBox()
-    left = front = 0.0
-    # The lip lives in the top few millimetres, so sample there densely and
-    # the plain wall below it sparsely. Sectioning is the expensive part.
-    lip_band = min(8.0, (ztop - floor_z) * 0.5)
-    heights = [floor_z + (ztop - lip_band - floor_z) * (i + 0.5) / 3
-               for i in range(3)]
-    heights += [ztop - lip_band + lip_band * (i + 0.5) / (samples - 3)
-                for i in range(samples - 3)]
-    for z in heights:
-        try:
-            faces = body.section(z).faces().vals()
-        except Exception:
-            continue
-        for f in faces:
-            wires = sorted(f.Wires(),
-                           key=lambda w: w.BoundingBox().DiagonalLength,
-                           reverse=True)
-            if len(wires) < 2:
-                continue
-            inner = wires[1].BoundingBox()
-            left = max(left, inner.xmin - bb.xmin)
-            front = max(front, inner.ymin - bb.ymin)
-    return left, front
-
-
-@lru_cache(maxsize=64)
-def _bin_profile(length_u: int, width_u: int, height_u: int,
-                 kw: tuple) -> tuple[float, float, float, float]:
-    """Cache the measurements for a given bin size.
-
-    Sampling twenty sections costs about a second, and a drawer's worth of
-    bins repeats the same few sizes. Returns floor z, wall inset, and the
-    deepest left/front inset.
-    """
-    body = GridfinityBox(length_u, width_u, height_u, **dict(kw)).cq_obj
-    floor_z, inset = interior_of(body)
-    ztop = body.vals()[0].BoundingBox().zmax
-    left, front = deepest_inset(body, floor_z, ztop)
-    return floor_z, inset, left, front
+    def render_shell(self, as_solid=False):
+        shell = super().render_shell(as_solid=True)
+        if self._ext_l or self._ext_f:
+            shell = shell.union(self._skirt_base())
+        if not as_solid:
+            return shell.cut(self.interior_solid)
+        return shell
 
 
 def extended_bin(
@@ -130,68 +116,21 @@ def extended_bin(
     extend_front_mm: float = 0.0,
     **box_kwargs,
 ) -> cq.Workplane:
-    """A Gridfinity bin with a skirt reaching left and/or forward.
-
-    ``extend_left_mm`` and ``extend_front_mm`` are the distances to the drawer
-    walls, i.e. the gaps the grid leaves over. The bin's grid footprint and its
-    base profile are untouched, so it still seats in a baseplate normally.
-    """
-    if extend_left_mm < 0 or extend_front_mm < 0:
-        raise ExtensionError("Extensions cannot be negative.")
-    if box_kwargs.get("solid"):
+    """A Gridfinity bin of any outer size, correctly structured throughout."""
+    if box_kwargs.get("solid") and (extend_left_mm or extend_front_mm):
         raise ExtensionError("A solid bin has no cavity to extend.")
-
-    box = GridfinityBox(length_u, width_u, height_u, **box_kwargs)
-    body = box.cq_obj
     if not (extend_left_mm or extend_front_mm):
-        return body
-
-    bb = body.vals()[0].BoundingBox()
-    ztop = bb.zmax
-    # The lip reaches further in than the plain wall; cut to the narrowest
-    # point or a ledge of surviving lip is left along the joint.
-    floor_z, inset, lip_left, lip_front = _bin_profile(
-        length_u, width_u, height_u, tuple(sorted(box_kwargs.items()))
-    )
-    cut_left = max(inset, lip_left)
-    cut_front = max(inset, lip_front)
-
-    # --- outer skirts, full height, sitting on the drawer floor -----------
-    if extend_left_mm:
-        body = body.union(_block(
-            bb.xmin - extend_left_mm, bb.ymin - extend_front_mm, 0.0,
-            extend_left_mm, bb.ylen + extend_front_mm, ztop,
-        ))
-    if extend_front_mm:
-        body = body.union(_block(
-            bb.xmin, bb.ymin - extend_front_mm, 0.0,
-            bb.xlen, extend_front_mm, ztop,
-        ))
-
-    # --- punch the cavity through, so it is one continuous interior -------
-    # Each strip reaches `inset` past the original wall, removing it.
-    y0 = bb.ymin - extend_front_mm + inset
-    y1 = bb.ymax - cut_front
-    x0 = bb.xmin - extend_left_mm + inset
-    x1 = bb.xmax - cut_left
-    depth = ztop - floor_z + 1.0
-
-    if extend_left_mm:
-        body = body.cut(_block(
-            x0, y0, floor_z,
-            (bb.xmin + cut_left) - x0, y1 - y0, depth,
-        ))
-    if extend_front_mm:
-        body = body.cut(_block(
-            x0, y0, floor_z,
-            x1 - x0, (bb.ymin + cut_front) - y0, depth,
-        ))
-    return body
+        return GridfinityBox(length_u, width_u, height_u, **box_kwargs).cq_obj
+    return ExtendedBox(
+        length_u, width_u, height_u,
+        extend_left_mm=extend_left_mm, extend_front_mm=extend_front_mm,
+        **box_kwargs,
+    ).cq_obj
 
 
 def describe(length_u, width_u, height_u,
              extend_left_mm=0.0, extend_front_mm=0.0) -> str:
-    """'6x2+38.5L' -- the label used in the layout and on filenames."""
+    """'6x2x5+38.5L' -- the label used in the layout and on filenames."""
     s = f"{length_u}x{width_u}x{height_u}"
     if extend_left_mm:
         s += f"+{extend_left_mm:g}L"

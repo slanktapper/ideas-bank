@@ -213,34 +213,41 @@ until then.
 
 ## Bins that meet a drawer wall
 
-A drawer's leftover is never a whole grid unit, so closing it means bins that
-are not standard sizes. `extended.py` welds a skirt to the outside of a normal
-bin and punches the interior through, so the cavity is continuous:
+A drawer's leftover is never a whole grid unit, so closing it needs bins that
+are not standard sizes.
+
+**Not by welding a block onto a stock bin.** That was the first attempt and it
+failed three ways at once, all visible in a slicer: a Gridfinity bin has
+3.75 mm rounded corners, so a square block butted against one leaves the
+original corner fillets stranded in the middle of a wall, kinks the side where
+block meets curve, and gives the finished part square outer corners where
+every other bin is rounded.
+
+**The bin is built at its true size from the start.** cq-gridfinity derives
+the whole shell from `outer_l` / `outer_w` — outer sketch, inner sketch, corner
+radii and stacking lip all follow — while the base pads are placed separately
+at `grid_centres`. Overriding the former and leaving the latter alone gives a
+bin of any size whose base still seats in a standard baseplate.
 
 ```bash
 gfneg bin --size 6x2 --height 5 --extend-left 38.5 --code KWL1N1T
 gfneg bins --width 542.5 --depth 328.5 --items items-DRAWER.yml --code KWL1N1T
 ```
 
-`bins` generates every bin in a layout at once, extensions and code stamps
-included.
+The one thing the base class cannot know: base pads exist only under grid
+cells, so the extension would hang 4.75 mm above the drawer floor. A filler
+gives it a floor, cut around the grid cells so their chamfered pads survive.
 
-**The grid keeps its 42 mm pitch throughout.** Only the bins facing a wall are
-odd, and only on that side — their grid base profile is untouched, so they
-still seat in a baseplate normally. The skirt rests on the drawer floor, which
-works because a baseplate is a frame and a bin passes through it to the floor
-anyway; both halves of the bin sit on the same surface.
+Six properties are tested on every shape, none visible from a bounding box:
 
-Three properties are tested, none of them visible from the bounding box:
-
-1. **Outer size** is grid plus reach, and the part still sits on z = 0.
-2. **The interior is one cavity, not two.** If the original wall survived, the
-   skirt is dead space.
-3. **The grid base pads survive**, so the bin still seats.
-
-The wall inset is **measured from the bin, not taken from `wall_th`** — a bin
-reporting `wall_th = 1.0` has a 2.1 mm usable inset, and building the skirt's
-cavity from the wrong figure leaves a ridge at the joint.
+| Property | Why |
+| --- | --- |
+| Outer size is grid + extension, sitting on z = 0 | the part is the right size |
+| Corner radii **identical to a stock bin** | the square-corner failure |
+| One wall loop in section (2 wires) | a weld seam shows as extra wires |
+| No horizontal ledge up the wall | the stranded-fillet failure |
+| The lip closes all the way round | the kinked-side failure |
+| Grid pads unchanged, still on 42 mm pitch | it must still seat |
 
 ## Printing a tiled baseplate
 
