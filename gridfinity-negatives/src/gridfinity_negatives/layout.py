@@ -21,6 +21,43 @@ from .drawer import DrawerPlan
 from .geometry import height_units_for
 
 
+def cell_ref(x_u: int, y_u: int) -> str:
+    """Spreadsheet-style reference for a grid position: column letter, row number.
+
+    Columns run A.. from the left, rows 1.. from the front of the drawer, so a
+    position can be named out loud -- "make C4 taller" -- without measuring.
+    """
+    letters = ""
+    n = x_u
+    while True:
+        letters = chr(ord("A") + n % 26) + letters
+        n = n // 26 - 1
+        if n < 0:
+            break
+    return f"{letters}{y_u + 1}"
+
+
+def parse_cell(ref: str) -> tuple[int, int]:
+    """Inverse of :func:`cell_ref`. 'C4' -> (2, 3)."""
+    ref = ref.strip().upper()
+    i = 0
+    while i < len(ref) and ref[i].isalpha():
+        i += 1
+    if i == 0 or i == len(ref):
+        raise ValueError(f"{ref!r} is not a cell reference, e.g. C4")
+    col = 0
+    for ch in ref[:i]:
+        col = col * 26 + (ord(ch) - ord("A") + 1)
+    return col - 1, int(ref[i:]) - 1
+
+
+def cell_range(x_u: int, y_u: int, length_u: int, width_u: int) -> str:
+    """'A1' for a single unit, 'A1:E4' for a block."""
+    if length_u == 1 and width_u == 1:
+        return cell_ref(x_u, y_u)
+    return f"{cell_ref(x_u, y_u)}:{cell_ref(x_u + length_u - 1, y_u + width_u - 1)}"
+
+
 @dataclass
 class Item:
     """A measured object that needs somewhere to live."""
@@ -46,6 +83,16 @@ class Item:
     """Fraction of a bin's volume loose irregular objects actually occupy."""
     bin_height_u: int | None = None
     """Bin height for a loose item. Deeper bins need less floor."""
+    bins: int | None = None
+    """Explicit number of bins, overriding the calculation. For items split
+    across several bins by purpose rather than by capacity."""
+    bin_size: str | None = None
+    """Explicit bin footprint, "LxW", overriding all sizing.
+
+    Needed for sparse objects. The volume model reasons from a bounding box,
+    which is a fair description of a lighter and a poor one of a keychain --
+    a ring, a fob and some keys are mostly air, so their box overstates them
+    several times over and asks for an absurd bin."""
     measured: bool = True
     """False marks a placeholder, so a layout built on guesses says so."""
     note: str = ""
@@ -53,6 +100,8 @@ class Item:
     @property
     def bins_needed(self) -> int:
         """Bins required to hold ``qty_max`` objects at ``per_bin`` each."""
+        if self.bins is not None:
+            return max(1, self.bins)
         if self.loose:
             return 1
         total = self.qty_max if self.qty_max is not None else self.qty
@@ -66,6 +115,8 @@ class Item:
     def _loose_footprint(self, tuning: Tuning) -> tuple[int, int]:
         """Smallest bin whose interior swallows the heap and one whole object."""
         total = self.qty_max if self.qty_max is not None else self.qty
+        if self.bins:
+            total = math.ceil(total / self.bins)   # per-bin share
         volume = self.width_mm * self.depth_mm * max(self.height_mm, 1.0) * total
         needed = volume / max(0.05, self.packing_factor)
         usable_depth = max(7.0, (self.height_units() - 1) * 7.0)
@@ -93,6 +144,15 @@ class Item:
         The objects need clearance each, plus the bin's walls once, and the
         usable width across n units is n * 42 - 0.5 less both walls.
         """
+        if self.bin_size:
+            try:
+                lu, wu = (int(v) for v in self.bin_size.lower().split("x"))
+            except ValueError as e:
+                raise ValueError(
+                    f"{self.name!r}: bin_size must be LxW, e.g. 2x1 "
+                    f"(got {self.bin_size!r})"
+                ) from e
+            return max(1, lu), max(1, wu)
         if self.loose:
             return self._loose_footprint(tuning)
         best = None
@@ -180,6 +240,8 @@ def load_items(path: str | Path) -> list[Item]:
                 packing_factor=float(row.get("packing_factor", 0.55)),
                 bin_height_u=(int(row["bin_height_u"])
                               if row.get("bin_height_u") is not None else None),
+                bins=(int(row["bins"]) if row.get("bins") is not None else None),
+                bin_size=(str(row["bin_size"]) if row.get("bin_size") else None),
                 measured=bool(row.get("measured", True)),
                 note=str(row.get("note", "")),
             )

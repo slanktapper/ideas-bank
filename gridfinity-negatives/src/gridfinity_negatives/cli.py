@@ -278,14 +278,15 @@ def cmd_layout(a: argparse.Namespace) -> int:
     print(f"Placed   : {len(layout.placements)} bins, "
           f"{layout.used_units} units used, {layout.free_units} free")
 
-    by_size: dict = {}
-    for pl in layout.placements:
-        key = (pl.length_u, pl.width_u, pl.item.height_units(), pl.item.name)
-        by_size[key] = by_size.get(key, 0) + 1
+    from .layout import cell_range
+
     print()
-    print(f"{'qty':>4}  {'bin':<10} {'height':<8} item")
-    for (lu, wu, hu, name), qty in sorted(by_size.items(), key=lambda kv: -kv[1]):
-        print(f"{qty:>4}  {lu}x{wu:<8} {hu}U{'':<5} {name}")
+    print(f"{'cells':<10} {'bin':<8} {'height':<7} item")
+    for pl in sorted(layout.placements, key=lambda p: (p.y_u, p.x_u)):
+        ref = cell_range(pl.x_u, pl.y_u, pl.length_u, pl.width_u)
+        name = pl.item.name + ("" if pl.item.measured else " ?")
+        print(f"{ref:<10} {pl.length_u}x{pl.width_u:<6} "
+              f"{pl.item.height_units()}U{'':<4} {name}")
 
     unmeasured = {i.name for i in items if not i.measured}
     if unmeasured:

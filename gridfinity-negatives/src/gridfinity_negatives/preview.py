@@ -135,27 +135,32 @@ def render_drawer(plan_result, path: str) -> str:
 
 
 def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
-    """Top-down view of a packed drawer: every bin, sized and labelled."""
+    """Top-down view of a packed drawer, on grid references rather than mm.
+
+    Positions are named A1, C4, A1:G5 so a change can be asked for out loud
+    without anyone measuring anything.
+    """
     from .config import GRID_PITCH_MM
+    from .layout import cell_range
 
     plan_result = layout.plan
     W, D = plan_result.drawer_w_mm, plan_result.drawer_d_mm
     mx, my = plan_result.margin_x_mm, plan_result.margin_y_mm
+    ux, uy = plan_result.units_x, plan_result.units_y
 
-    fig, ax = plt.subplots(figsize=(max(7, W / 42), max(6, D / 42)))
+    fig, ax = plt.subplots(figsize=(max(8, W / 38), max(7, D / 38) + 0.9))
     ax.add_patch(Rectangle((0, 0), W, D, facecolor="#fdeaea",
                            edgecolor="#2d3748", lw=2.2, zorder=0))
-    ax.add_patch(Rectangle((mx, my), plan_result.units_x * GRID_PITCH_MM,
-                           plan_result.units_y * GRID_PITCH_MM,
+    ax.add_patch(Rectangle((mx, my), ux * GRID_PITCH_MM, uy * GRID_PITCH_MM,
                            facecolor="#f2f4f7", edgecolor="none", zorder=1))
 
-    for i in range(plan_result.units_x + 1):
+    for i in range(ux + 1):
         x = mx + i * GRID_PITCH_MM
-        ax.plot([x, x], [my, my + plan_result.units_y * GRID_PITCH_MM],
+        ax.plot([x, x], [my, my + uy * GRID_PITCH_MM],
                 color="#cfd6e0", lw=0.6, zorder=2)
-    for j in range(plan_result.units_y + 1):
+    for j in range(uy + 1):
         y = my + j * GRID_PITCH_MM
-        ax.plot([mx, mx + plan_result.units_x * GRID_PITCH_MM], [y, y],
+        ax.plot([mx, mx + ux * GRID_PITCH_MM], [y, y],
                 color="#cfd6e0", lw=0.6, zorder=2)
 
     palette = ["#1e3a5f", "#c2410c", "#166534", "#6b21a8", "#0f766e",
@@ -170,33 +175,81 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
         ax.add_patch(Rectangle((x, y), w, h, facecolor=colour, alpha=0.20,
                                edgecolor=colour, lw=1.8, zorder=3))
         label = p.item.name if p.item.measured else f"{p.item.name} ?"
-        fs = max(5.5, min(9, w / (0.62 * max(6, len(label)))))
-        ax.text(x + w / 2, y + h / 2 + (2.5 if h > 26 else 0), label,
+        ref = cell_range(p.x_u, p.y_u, p.length_u, p.width_u)
+        fs = max(5.5, min(9.5, w / (0.60 * max(7, len(label)))))
+        ax.text(x + w / 2, y + h / 2 + (4.5 if h > 30 else 0), label,
                 ha="center", va="center", fontsize=fs, color=colour,
                 fontweight="bold", zorder=4)
-        if h > 26:
-            ax.text(x + w / 2, y + h / 2 - 7,
-                    f"{p.length_u}x{p.width_u}" + ("  rot" if p.rotated else ""),
+        if h > 30:
+            ax.text(x + w / 2, y + h / 2 - 5.5, ref, ha="center", va="center",
+                    fontsize=max(6, fs - 1.5), color=colour, zorder=4,
+                    fontweight="bold", alpha=0.95)
+            ax.text(x + w / 2, y + h / 2 - 15,
+                    f"{p.length_u}x{p.width_u} · {p.item.height_units()}U"
+                    + ("  rot" if p.rotated else ""),
                     ha="center", va="center", fontsize=6.5,
-                    color=colour, alpha=0.8, zorder=4)
+                    color=colour, alpha=0.75, zorder=4)
+        else:
+            ax.text(x + w / 2, y + h / 2 - 7, ref, ha="center", va="center",
+                    fontsize=6.5, color=colour, alpha=0.95, zorder=4)
+
+    # Grid references in place of millimetres.
+    ax.set_xticks([mx + (i + 0.5) * GRID_PITCH_MM for i in range(ux)])
+    ax.set_xticklabels([chr(ord("A") + i) for i in range(ux)], fontsize=9,
+                       fontweight="bold", color="#43506b")
+    ax.set_yticks([my + (j + 0.5) * GRID_PITCH_MM for j in range(uy)])
+    ax.set_yticklabels([str(j + 1) for j in range(uy)], fontsize=9,
+                       fontweight="bold", color="#43506b")
+    ax.tick_params(length=0)
+    ax.set_xlabel("column  ·  row 1 is the front of the drawer", fontsize=8,
+                  color="#5a6678")
+
+    interior = GRID_PITCH_MM - 0.5 - 2 * 2.4
+    legend = (
+        f"1 square = 42 × 42 mm pitch   ·   bin outside {GRID_PITCH_MM - 0.5:.1f} mm "
+        f"per unit   ·   usable inside ≈ {interior:.1f} mm per unit\n"
+        f"height 1U = 7 mm (usable depth = (U−1) × 7)   ·   drawer "
+        f"{W:.0f} × {D:.0f}"
+        + (f" × {plan_result.drawer_h_mm:.0f}" if plan_result.drawer_h_mm else "")
+        + f" mm   ·   margins {mx:.1f} mm sides / {my:.1f} mm front-back (pink)"
+    )
+    ax.text(0.5, -0.085, legend, transform=ax.transAxes, ha="center", va="top",
+            fontsize=7.8, color="#43506b",
+            bbox=dict(boxstyle="round,pad=0.5", facecolor="#f2f4f7",
+                      edgecolor="#cfd6e0", linewidth=0.8))
+
+    if layout.unplaced:
+        short = {}
+        for i in layout.unplaced:
+            lu, wu = i.footprint_units()
+            short[i.name] = short.get(i.name, 0) + 1
+        lines = ", ".join(f"{n} x{q}" for n, q in sorted(short.items()))
+        need = sum(i.footprint_units()[0] * i.footprint_units()[1]
+                   for i in layout.unplaced)
+        ax.text(0.5, 1.004,
+                f"DOES NOT FIT — {len(layout.unplaced)} bins unplaced "
+                f"({lines}), needing {need} more units",
+                transform=ax.transAxes, ha="center", va="bottom",
+                fontsize=9, fontweight="bold", color="#b91c1c", zorder=10,
+                bbox=dict(boxstyle="round,pad=0.4", facecolor="#fee2e2",
+                          edgecolor="#b91c1c", linewidth=1.2))
 
     ax.set_aspect("equal")
     ax.set_xlim(-14, W + 14)
     ax.set_ylim(-14, D + 14)
-    ax.set_xlabel("mm")
     head = title or (f"{code} — " if code else "")
     ax.set_title(
-        f"{head}{W:.0f} x {D:.0f} mm, {plan_result.units_x} x {plan_result.units_y} units\n"
-        f"{len(layout.placements)} bins placed, {layout.free_units} of "
-        f"{plan_result.total_units} units free"
+        f"{head}{ux} × {uy} units, {len(layout.placements)} bins, "
+        f"{layout.free_units} of {plan_result.total_units} units free"
         + ("" if layout.all_measured else
-           "\nCONTAINS UNMEASURED PLACEHOLDER SIZES - marked ?"),
-        fontsize=10,
+           "\nCONTAINS UNMEASURED PLACEHOLDER SIZES — marked ?"),
+        fontsize=11,
         color="#1f2933" if layout.all_measured else "#b91c1c",
+        pad=32 if layout.unplaced else 10,
     )
-    for s in ax.spines.values():
-        s.set_visible(False)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
     fig.tight_layout()
-    fig.savefig(path, dpi=140)
+    fig.savefig(path, dpi=140, bbox_inches="tight")
     plt.close(fig)
     return path

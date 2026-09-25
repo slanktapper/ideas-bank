@@ -85,8 +85,27 @@ Measured 2026-09-25 MDT; the item list is `items-KWL1N1T.yml`.
 | GPS large | 167 × 75 × 40 | 1 | 5×2 | 7U |
 | GPS small | ~84 × 75 × 40 ? | 1 | 3×2 | 7U |
 | Bic lighter | 81 × 24 × 12 ? | 2–10 | 3×2 loose | 8U |
+| Keychains ? | ~80 × 38 × 14 ? | ~15 | 2×1 × 6 bins | 3U |
 
-**77 of 84 units used, 7 free.**
+**The drawer is over capacity: 84 units available, ~89 wanted.** Three keychain
+bins do not fit. Something has to give — see "Options" below.
+
+Positions are named by grid reference — column letter from the left, row number
+from the **front** of the drawer — so a change can be asked for by name:
+"make G6:G7 taller". One square is the 42 mm pitch; a bin is 41.5 mm outside
+and about 36.7 mm usable inside, per unit.
+
+### Options for the shortfall
+
+| Option | Effect |
+| --- | --- |
+| **Re-measure the depth** | 328 mm is 8 mm short of an 8th row. At ≥336 mm the drawer becomes 12 × 8 = **96 units** and everything fits with 7 spare. Cheapest fix by far, if the figure was nominal. |
+| Move the BBQ lighters out | Frees **35 units**. They are 42% of the drawer for four objects. |
+| Halve the BBQ lighters (2 not 4) | 7×3 instead of 7×5, frees **14 units**. |
+| Four keychain bins, not six | Frees **4 units** — not enough on its own. |
+
+Nothing here is decided. The measurement is worth checking first, because it
+may make the rest moot.
 
 Two sizes are assumed, not measured, and are marked `?`:
 

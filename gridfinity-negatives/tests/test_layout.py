@@ -62,11 +62,13 @@ def test_packing_never_overlaps_and_stays_in_bounds():
     assert len(seen) == layout.used_units
 
 
-def test_the_real_drawer_contents_fit():
+def test_the_drawer_is_over_capacity_with_the_keychains_added():
+    """84 units available, ~89 wanted. Recorded so the shortfall is tracked."""
     layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"))
-    assert not layout.unplaced, [i.name for i in layout.unplaced]
-    assert layout.used_units <= KWL1N1T.total_units
-    assert layout.free_units >= 0
+    shortfall = sum(i.footprint_units()[0] * i.footprint_units()[1]
+                    for i in layout.unplaced)
+    assert shortfall > 0, "expected an overflow; the item list may have changed"
+    assert layout.used_units + shortfall > KWL1N1T.total_units
 
 
 def test_unmeasured_items_mark_the_whole_layout():
@@ -87,3 +89,47 @@ def test_item_without_a_size_is_rejected(tmp_path):
     f.write_text("items:\n  - name: mystery\n")
     with pytest.raises(ValueError, match="size of at least"):
         load_items(f)
+
+
+# --- grid references -------------------------------------------------------
+
+@pytest.mark.parametrize("x,y,ref", [
+    (0, 0, "A1"), (2, 3, "C4"), (11, 6, "L7"), (25, 0, "Z1"), (26, 0, "AA1"),
+])
+def test_cell_ref_round_trips(x, y, ref):
+    from gridfinity_negatives.layout import cell_ref, parse_cell
+    assert cell_ref(x, y) == ref
+    assert parse_cell(ref) == (x, y)
+
+
+def test_cell_range_collapses_a_single_unit():
+    from gridfinity_negatives.layout import cell_range
+    assert cell_range(0, 0, 1, 1) == "A1"
+    assert cell_range(0, 0, 7, 5) == "A1:G5"
+
+
+@pytest.mark.parametrize("bad", ["", "4", "C", "::"])
+def test_bad_cell_reference_is_rejected(bad):
+    from gridfinity_negatives.layout import parse_cell
+    with pytest.raises(ValueError, match="cell reference"):
+        parse_cell(bad)
+
+
+def test_explicit_bin_size_overrides_every_other_model():
+    """Sparse objects need a stated bin; a bounding box badly overstates them."""
+    keychain = Item("keys", 80, 38, 14, bin_size="2x1", bins=6, qty_max=18)
+    assert keychain.footprint_units() == (2, 1)
+    assert keychain.bins_needed == 6
+
+
+def test_malformed_bin_size_is_rejected():
+    with pytest.raises(ValueError, match="bin_size must be LxW"):
+        Item("x", 10, 10, 10, bin_size="big").footprint_units()
+
+
+def test_overflow_is_reported_rather_than_quietly_dropped():
+    """The real drawer is over capacity; that must be visible, not silent."""
+    items = load_items("items-KWL1N1T.yml")
+    layout = pack(KWL1N1T, items)
+    assert layout.unplaced, "overflow vanished -- check the item list"
+    assert layout.used_units <= KWL1N1T.total_units

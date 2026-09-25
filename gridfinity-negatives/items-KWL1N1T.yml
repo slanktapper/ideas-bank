@@ -50,3 +50,17 @@ items:
     note: >
       Standard full-size Bic, 81 x 24 x 12 mm. NOT measured from yours —
       taken from the commodity size. Verify before printing.
+
+  - name: Keychains
+    size: [80, 38, 14]
+    bin_size: 2x1
+    bins: 6
+    bin_height_u: 3
+    qty_typical: 15
+    qty_max: 18
+    measured: false
+    note: >
+      ~15 keychains split across 6 bins so they can be grouped by purpose
+      rather than heaped together. Size is ASSUMED — a couple of keys, a ring
+      and a fob. NOT measured. Measure the largest one you own, not a typical
+      one, or the biggest will not go in.
