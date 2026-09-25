@@ -267,7 +267,7 @@ def test_gps_took_the_front_row_slot_and_the_spare_took_its_place():
         at.setdefault(p.item.name, []).append(
             cell_range(p.x_u, p.y_u, p.length_u, p.width_u))
     assert at["GPS"] == ["F1:I1"]
-    assert "A4:E5" in at["Spare"], "the spare did not take the old GPS slot"
+    assert "D4:H5" in at["Spare"], "the 5x2 spare is missing from rows 4-5"
 
 
 # --- the directed arrangement ----------------------------------------------
@@ -309,9 +309,9 @@ def test_named_items_sit_where_they_were_placed():
             cell_range(p.x_u, p.y_u, p.length_u, p.width_u))
     assert at["Bic lighter"] == ["J6:L7"]
     assert at["GPS"] == ["F1:I1"]
-    assert at["Flashlight"] == ["A2:E3"]
+    assert at["Flashlight"] == ["F2:J3"]
     assert at["BBQ lighter"] == ["A6:F7"]
-    assert sorted(at["Accessories"]) == ["F2:H3", "G6:I7", "I4:L5"]
+    assert sorted(at["Accessories"]) == ["C2:E3", "G6:I7", "I4:L5"]
 
 
 def test_every_bin_is_explicitly_placed():
@@ -352,7 +352,7 @@ def test_capacity_counts_the_reach_into_the_gap():
 
 def test_outer_size_includes_the_extension():
     p = pack(plan(542.5, 328.5, 63.0),
-             load_items("items-KWL1N1T.yml"), height_u=8)
+             load_items("items-KWL1N1T.yml"), height_u=5)
     by_name = {pl.item.name: pl for pl in p.placements}
     w, h = by_name["BBQ lighter"].outer_size_mm()
     assert w == pytest.approx(6 * 42 - 0.5 + 38.5)
@@ -362,7 +362,7 @@ def test_outer_size_includes_the_extension():
 def test_extended_bins_reach_the_drawer_walls_exactly():
     """An extension equal to the gap must land flush, not over or short."""
     dp = plan(542.5, 328.5, 63.0)
-    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=8)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     gaps = dp.gaps_mm
     for pl in layout.placements:
         if pl.extend_left_mm:
@@ -375,20 +375,30 @@ def test_extended_bins_reach_the_drawer_walls_exactly():
 
 def test_the_whole_front_row_reaches_the_drawer_front():
     dp = plan(542.5, 328.5, 63.0)
-    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=8)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     front = [p for p in layout.placements if p.y_u == 0]
     assert front and all(p.extend_front_mm > 0 for p in front), (
         "a front-row bin was left short of the drawer front"
     )
 
 
-def test_the_left_gap_is_left_alone_except_for_the_bbq_bin():
-    """Only rows 6-7 close the left gap; rows 1-5 keep it, as directed."""
+def test_the_left_gap_is_closed_in_every_band_except_row_one():
+    """Rows 2-3, 4-5 and 6-7 each have a leftmost bin reaching the wall.
+    Row 1 does not, leaving an open corner at the front-left."""
     dp = plan(542.5, 328.5, 63.0)
-    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=8)
-    reaching = [p for p in layout.placements if p.extend_left_mm > 0]
-    assert len(reaching) == 1
-    assert reaching[0].item.name == "BBQ lighter"
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
+    reaching = sorted((p.y_u for p in layout.placements if p.extend_left_mm > 0))
+    assert reaching == [1, 3, 5], (
+        "expected one left-reaching bin in each of rows 2-3, 4-5 and 6-7"
+    )
+    for p in layout.placements:
+        if p.extend_left_mm:
+            assert p.x_u == 0, "a bin not in column A tried to reach the wall"
+            assert p.extend_left_mm == pytest.approx(dp.gaps_mm["left"])
+    front_left = [p for p in layout.placements if p.y_u == 0 and p.x_u == 0]
+    assert front_left and front_left[0].extend_left_mm == 0, (
+        "row 1 should still leave the front-left corner open"
+    )
 
 
 def test_the_locked_height_is_5u():

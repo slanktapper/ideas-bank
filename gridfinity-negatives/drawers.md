@@ -125,17 +125,27 @@ arrangement cannot drift on a re-run. **84 of 84 units, 16 bins.**
 | 2 | D1:E1 | 2×1 +34.5F | Spare | — |
 | 3 | F1:I1 | 4×1 +34.5F | **GPS** | **0 of 1** |
 | 4 | J1:L1 | 3×1 +34.5F | Spare | — |
-| 5 | A2:E3 | 5×2 | Flashlights | 2 of 4 |
-| 6 | F2:H3 | 3×2 | Accessories | 1 |
-| 7 | I2:J3 | 2×2 | Spare | — |
+| 5 | A2:B3 | 2×2 **+38.5L** | Spare | — |
+| 6 | C2:E3 | 3×2 | Accessories | 1 |
+| 7 | F2:J3 | 5×2 | Flashlights | 2 of 4 |
 | 8 | K2:L3 | 2×2 | Spare | — |
-| 9 | A4:E5 | 5×2 | Spare | — |
-| 10 | F4:G5 | 2×2 | Spare | — |
-| 11 | H4:H5 | 1×2 | Spare | — |
+| 9 | A4:A5 | 1×2 **+38.5L** | Spare | — |
+| 10 | B4:C5 | 2×2 | Spare | — |
+| 11 | D4:H5 | 5×2 | Spare | — |
 | 12 | I4:L5 | 4×2 | Accessories (right edge) | 1 |
-| 13 | A6:F7 | 6×2 +38.5L | BBQ lighters | 1 of 4 |
+| 13 | A6:F7 | 6×2 **+38.5L** | BBQ lighters | 1 of 4 |
 | 14 | G6:I7 | 3×2 | Accessories | 1 |
 | 15 | J6:L7 | 3×2 | Bic lighters | 6 of 10 |
+
+### The left gap, and the corner that stays open
+
+Three bands now close the left gap — bins **5**, **9** and **13**, each the
+leftmost of its band, each reaching 38.5 mm to the wall.
+
+**Row 1 does not.** Bin 1 reaches forward to the drawer front but not left, so a
+38.5 × 76.0 mm pocket stays open at the **front-left corner**. Closing it means
+extending bin 1 both ways, which is the only bin that would need two
+extensions.
 
 ### The GPS does not fit box 3
 

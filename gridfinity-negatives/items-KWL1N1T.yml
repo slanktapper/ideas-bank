@@ -7,8 +7,9 @@
 # Items thicker than 28 mm stand proud of the rim, which the 63 mm drawer
 # has room for.
 #
-# Row 1 reaches 34.5 mm forward to the drawer front. The BBQ bin reaches
-# 38.5 mm left to the wall. The left gap stands in rows 1-5.
+# Row 1 reaches 34.5 mm forward to the drawer front.
+# The leftmost bin in rows 2-3, 4-5 and 6-7 reaches 38.5 mm left to the wall.
+# Only row 1 leaves the left gap open, at the front-left corner.
 
 defaults:
   bin_height_u: 5
@@ -32,26 +33,27 @@ items:
   - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1, extend_front_mm: 34.5}
 
   # --- rows 2-3 ---
-  - name: Flashlight
-    size: [195, 39, 39]
-    bin_size: 5x2
-    at: A2
-    qty_max: 4
-    note: Moved out of rows 6-7 to make room for the Bic and accessories bins.
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: A2, extend_left_mm: 38.5}
 
   - name: Accessories
     size: [84, 75, 40]
     bin_size: 3x2
-    at: F2
+    at: C2
     measured: false
 
-  - {name: Spare, size: [0, 0], bin_size: 2x2, at: I2}
+  - name: Flashlight
+    size: [195, 39, 39]
+    bin_size: 5x2
+    at: F2
+    qty_max: 4
+    note: Swapped right past the accessories and spare bins.
+
   - {name: Spare, size: [0, 0], bin_size: 2x2, at: K2}
 
   # --- rows 4-5 ---
-  - {name: Spare, size: [0, 0], bin_size: 5x2, at: A4}   # was the GPS bin
-  - {name: Spare, size: [0, 0], bin_size: 2x2, at: F4}
-  - {name: Spare, size: [0, 0], bin_size: 1x2, at: H4}
+  - {name: Spare, size: [0, 0], bin_size: 1x2, at: A4, extend_left_mm: 38.5}
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: B4}
+  - {name: Spare, size: [0, 0], bin_size: 5x2, at: D4}   # was the GPS bin
 
   - name: Accessories
     size: [84, 75, 40]
