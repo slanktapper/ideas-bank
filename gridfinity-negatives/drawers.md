@@ -192,6 +192,29 @@ load the second nozzle.
 The 2×2 test bin is **83.6 mm** and the strip is **69 mm**, so it cannot share a
 plate with a tile. It goes in the first bin session.
 
+### Width re-measure, 2026-09-25 MDT
+
+The width gap measured at roughly **35 mm**, against the 14.5 mm predicted from
+a 533 mm drawer. Gauges at 34 / 34.5 / 35 / 36 mm were cut to pin it down;
+36 mm is there to bound the top, since a gauge that drops in tells you nothing
+about the ceiling.
+
+**What 35 mm means depends on how it was taken**, and the two readings differ
+by a whole column:
+
+| Reading | Drawer width | Grid | Effect |
+| --- | --- | --- | --- |
+| 35 mm is the **total** leftover, grid pushed to one side | 539 mm | still 12 units | Layout unchanged. Margins become 17.5 mm a side if centred. |
+| 35 mm is **one of two** gaps | 574 mm | **13 units** would fit (546 mm) | A whole extra column, 7 more positions. Layout changes. |
+
+A grid of 11 units in a 533 mm drawer would also give 35.5 mm a side, which is
+suspiciously close to the recorded width — worth ruling out that only 11
+units' worth of baseplate was laid down when the measurement was taken.
+
+**Either way the number is significant**: a grid unit is 42 mm, so a 35 mm gap
+is 7 mm short of one. 70 mm of total dead width would swallow another column
+with 28 mm to spare.
+
 ### Still unmeasured
 
 - **Bic lighter** — commodity size, not measured from yours.
