@@ -229,10 +229,8 @@ def test_bin_height_is_declared_in_the_item_file():
     """It belongs with the drawer, not in a flag someone has to remember."""
     from gridfinity_negatives.layout import load_defaults
     d = load_defaults("items-KWL1N1T.yml")
-    assert d.get("bin_height_u") == 8
-    assert d.get("bin_height_provisional") is True, (
-        "the height is not yet confirmed against the drawer; say so"
-    )
+    assert d.get("bin_height_u") == 5
+    assert not d.get("bin_height_provisional"), "5U is locked in, not provisional"
 
 
 def test_every_bin_takes_the_declared_height_including_spares():
@@ -241,7 +239,6 @@ def test_every_bin_takes_the_declared_height_including_spares():
     d = load_defaults("items-KWL1N1T.yml")
     h = d["bin_height_u"]
     layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=h)
-    fill_remaining(layout, ["2x2", "1x3", "1x2"], height_u=h)
     heights = {p.item.height_units() for p in layout.placements}
     assert heights == {h}, f"mixed heights in one drawer: {sorted(heights)}"
 
@@ -261,14 +258,16 @@ def test_missing_defaults_block_is_not_an_error(tmp_path):
     assert load_defaults(f) == {}
 
 
-def test_gps_and_flashlight_are_swapped():
-    """GPS to A4:E5, flashlights to the back at H6:L7."""
+def test_gps_took_the_front_row_slot_and_the_spare_took_its_place():
+    """GPS swapped into the F1 front-row position; a spare holds A4:E5."""
     from gridfinity_negatives.layout import cell_range
-    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
-    at = {p.item.name: cell_range(p.x_u, p.y_u, p.length_u, p.width_u)
-          for p in layout.placements if p.item.name in ("GPS", "Flashlight")}
-    assert at["GPS"] == "A4:E5"
-    assert at["Flashlight"] == "H6:L7"
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=5)
+    at = {}
+    for p in layout.placements:
+        at.setdefault(p.item.name, []).append(
+            cell_range(p.x_u, p.y_u, p.length_u, p.width_u))
+    assert at["GPS"] == ["F1:I1"]
+    assert "A4:E5" in at["Spare"], "the spare did not take the old GPS slot"
 
 
 # --- the directed arrangement ----------------------------------------------
@@ -308,11 +307,11 @@ def test_named_items_sit_where_they_were_placed():
     for p in layout.placements:
         at.setdefault(p.item.name, []).append(
             cell_range(p.x_u, p.y_u, p.length_u, p.width_u))
-    assert at["Bic lighter"] == ["J2:L3"], "Bic did not rotate into J2:L3"
-    assert at["GPS"] == ["A4:E5"]
-    assert at["Flashlight"] == ["H6:L7"]
-    assert at["BBQ lighter"] == ["A6:F7"], "BBQ should be 6 wide now"
-    assert sorted(at["Accessories"]) == ["A2:C3", "F4:I5", "J4:L5"]
+    assert at["Bic lighter"] == ["J6:L7"]
+    assert at["GPS"] == ["F1:I1"]
+    assert at["Flashlight"] == ["A2:E3"]
+    assert at["BBQ lighter"] == ["A6:F7"]
+    assert sorted(at["Accessories"]) == ["F2:H3", "G6:I7", "I4:L5"]
 
 
 def test_every_bin_is_explicitly_placed():
@@ -325,7 +324,7 @@ def test_the_merged_accessories_bin_clears_an_84mm_item():
     """The old 2x2 was 78.7mm inside and could not take it; a 4x2 can."""
     items = {(" ".join([i.name, i.at or ""])).strip(): i
              for i in load_items("items-KWL1N1T.yml")}
-    merged = items["Accessories F4"]
+    merged = items["Accessories I4"]
     assert merged.bin_size == "4x2"
     lu, wu = merged.footprint_units()
     interior_long = lu * 42 - 0.5 - 4.8
@@ -390,3 +389,28 @@ def test_the_left_gap_is_left_alone_except_for_the_bbq_bin():
     reaching = [p for p in layout.placements if p.extend_left_mm > 0]
     assert len(reaching) == 1
     assert reaching[0].item.name == "BBQ lighter"
+
+
+def test_the_locked_height_is_5u():
+    """5U: 38.8 mm tall, 28 mm usable. Locked, no longer provisional."""
+    from gridfinity_negatives.layout import load_defaults
+    d = load_defaults("items-KWL1N1T.yml")
+    assert d["bin_height_u"] == 5
+    assert 5 * 7 + 3.8 == pytest.approx(38.8)
+    assert (5 - 1) * 7 == 28
+
+
+def test_no_front_row_bin_can_hold_the_gps():
+    """A front-row bin is 1 unit + the 34.5 mm gap = 76.0 mm deep, whatever
+    its length. The GPS is 75 mm wide, leaving 1 mm for two walls."""
+    outer_depth = 1 * 42 - 0.5 + 34.5
+    assert outer_depth == pytest.approx(76.0)
+    for length_u in (4, 5, 6):
+        gps = Item("GPS", 167, 75, 40, bin_size=f"{length_u}x1",
+                   bin_height_u=5, extend_front_mm=34.5)
+        assert gps.capacity() == 0, (
+            f"a {length_u}x1 front-row bin should not hold the GPS"
+        )
+    # Two units of depth does hold it.
+    deep = Item("GPS", 167, 75, 40, bin_size="5x2", bin_height_u=5)
+    assert deep.capacity() >= 1

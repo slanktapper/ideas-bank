@@ -1,75 +1,64 @@
 # KWL1N1T — kitchen, west wall, lower section, 1st north column, 1st from top
-# Drawer 542.5 x 328.5 x 63 mm internal (MEASURED 2026-09-25 from the gaps:
-# left 38.5 mm, front 34.5 mm). 12 x 7 units, grid in the BACK-RIGHT corner.
+# Drawer 542.5 x 328.5 x 63 mm internal (gauged 2026-09-25: left gap 38.5 mm,
+# front gap 34.5 mm). 12 x 7 units, grid in the BACK-RIGHT corner.
 # Columns A-L from the left, rows 1-7 with row 1 at the FRONT.
 #
-# Every bin in this drawer is ONE height. The value is provisional until the
-# first print is in the drawer -- change bin_height_u here and it reaches
-# every bin.
+# BIN HEIGHT IS 5U AND LOCKED. 38.8 mm tall, 28 mm usable depth.
+# Items thicker than 28 mm stand proud of the rim, which the 63 mm drawer
+# has room for.
 #
-# Layout set explicitly 2026-09-25 MDT. Every bin has an `at`, so nothing is
-# auto-placed and the arrangement is exactly as directed.
-#
-# THE FRONT ROW (row 1) reaches 34.5 mm forward to meet the drawer front.
-# The BBQ bin reaches 38.5 mm left to meet the left wall. Everything else
-# stops at the grid; the left gap stands in rows 1-5.
+# Row 1 reaches 34.5 mm forward to the drawer front. The BBQ bin reaches
+# 38.5 mm left to the wall. The left gap stands in rows 1-5.
 
 defaults:
-  bin_height_u: 8
-  bin_height_provisional: true
+  bin_height_u: 5
 
 items:
-  # --- row 1, the front: all 1 deep, to be extended over the front gap ---
+  # --- row 1, the front: 1 unit deep + 34.5 mm to the drawer front ---
   - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1, extend_front_mm: 34.5}
   - {name: Spare, size: [0, 0], bin_size: 2x1, at: D1, extend_front_mm: 34.5}
-  - {name: Spare, size: [0, 0], bin_size: 4x1, at: F1, extend_front_mm: 34.5}
+
+  - name: GPS
+    size: [167, 75, 40]
+    bin_size: 4x1
+    at: F1
+    extend_front_mm: 34.5
+    qty_max: 1
+    note: >
+      Moved here from A4:E5, swapping names with the spare that was in this
+      position. NOTE: a front-row bin is 76.0 mm deep whatever its length,
+      and the GPS is 75 mm wide — it does not fit. See drawers.md.
+
   - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1, extend_front_mm: 34.5}
 
   # --- rows 2-3 ---
+  - name: Flashlight
+    size: [195, 39, 39]
+    bin_size: 5x2
+    at: A2
+    qty_max: 4
+    note: Moved out of rows 6-7 to make room for the Bic and accessories bins.
+
   - name: Accessories
     size: [84, 75, 40]
     bin_size: 3x2
-    at: A2
+    at: F2
     measured: false
-    note: Formerly "GPS small". Width and height assumed, NOT measured.
 
-  - {name: Spare, size: [0, 0], bin_size: 2x2, at: D2}
-  - {name: Spare, size: [0, 0], bin_size: 2x2, at: F2}
-  - {name: Spare, size: [0, 0], bin_size: 2x2, at: H2}
-
-  - name: Bic lighter
-    size: [81, 24, 12]
-    bin_size: 3x2
-    at: J2
-    qty_typical: 2
-    qty_max: 10
-    measured: false
-    note: >
-      Rotated 90 degrees from its former 2x3. Commodity Bic size, NOT
-      measured from yours.
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: I2}
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: K2}
 
   # --- rows 4-5 ---
-  - name: GPS
-    size: [167, 75, 40]
-    bin_size: 5x2
-    at: A4
-    qty_max: 1
+  - {name: Spare, size: [0, 0], bin_size: 5x2, at: A4}   # was the GPS bin
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: F4}
+  - {name: Spare, size: [0, 0], bin_size: 1x2, at: H4}
 
   - name: Accessories
     size: [84, 75, 40]
     bin_size: 4x2
-    at: F4
+    at: I4
     measured: false
-    note: >
-      Merged from the F4 spare and the H4 accessories bin. At 162.7 mm inside
-      it clears the 84 mm the old 2x2 could not. Width and height assumed,
-      NOT measured.
-
-  - name: Accessories
-    size: [84, 75, 40]
-    bin_size: 3x2
-    at: J4
-    measured: false
+    note: Moved to the right edge as directed.
 
   # --- rows 6-7, the back ---
   - name: BBQ lighter
@@ -79,15 +68,20 @@ items:
     extend_left_mm: 38.5
     qty_typical: 3
     qty_max: 4
-    note: >
-      Six squares plus the 38.5 mm left gap — 290.5 mm long, meeting the left
-      wall. Was 7x2; column G is freed for the filler below.
+    note: Six squares plus the 38.5 mm left gap — 290.5 mm long, meets the wall.
 
-  - {name: Spare, size: [0, 0], bin_size: 1x2, at: G6}   # between lighter and flashlight
+  - name: Accessories
+    size: [84, 75, 40]
+    bin_size: 3x2
+    at: G6
+    measured: false
+    note: Moved to G6:I7 as directed.
 
-  - name: Flashlight
-    size: [195, 39, 39]
-    bin_size: 5x2
-    at: H6
-    qty_max: 4
-    note: Holds 2 — two 39 mm barrels across, one layer deep.
+  - name: Bic lighter
+    size: [81, 24, 12]
+    bin_size: 3x2
+    at: J6
+    qty_typical: 2
+    qty_max: 10
+    measured: false
+    note: Moved to J6:L7 as directed. Commodity Bic size, NOT measured.

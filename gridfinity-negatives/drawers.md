@@ -83,11 +83,21 @@ accessories, keychains. Measured 2026-09-25 MDT; item list is
 `items-KWL1N1T.yml` under `defaults: bin_height_u`, and reaches every bin
 including the auto-filled spares.
 
-**Currently 8U — provisional.** 59.8 mm with the lip against a 63 mm drawer,
-and 9U at 66.8 mm would foul it. But the drawer's numbers are unconfirmed: the
-width already measured 35 mm against a predicted 14.5, so the height deserves
-the same scepticism. Confirm it against the real drawer once the first print is
-in, then change the one value.
+**5U, locked in 2026-09-25 MDT.** 38.8 mm tall with the lip, **28 mm usable
+depth**. Well under the 63 mm drawer, so shallow bins you can see into rather
+than deep ones things get lost in.
+
+Items thicker than 28 mm stand proud of the rim. The drawer has room for it:
+
+| Item | Thickness | At 5U |
+| --- | --- | --- |
+| BBQ lighter | 24 mm | inside |
+| Bic lighter | 12 mm | inside |
+| Flashlight | 39 mm | protrudes 11 mm |
+| GPS, Accessories | 40 mm | protrudes 12 mm |
+
+The cost is stacking. At 8U the BBQ bin took two lighters stacked in 49 mm; at
+5U it takes **one**. The Bic bin drops from 12 to 6.
 
 ### Alignment and gaps
 
@@ -109,30 +119,37 @@ asked for by number rather than by cell range.
 Rearranged 2026-09-25 MDT. Every bin has a stated position, so the
 arrangement cannot drift on a re-run. **84 of 84 units, 16 bins.**
 
-| # | Cells | Bin | Item |
-| --- | --- | --- | --- |
-| 1 | A1:C1 | 3×1 | Spare |
-| 2 | D1:E1 | 2×1 | Spare |
-| 3 | F1:I1 | 4×1 | Spare |
-| 4 | J1:L1 | 3×1 | Spare |
-| 5 | A2:C3 | 3×2 | Accessories |
-| 6 | D2:E3 | 2×2 | Spare |
-| 7 | F2:G3 | 2×2 | Spare |
-| 8 | H2:I3 | 2×2 | Spare |
-| 9 | J2:L3 | 3×2 | Bic lighters (rotated 90°) |
-| 10 | A4:E5 | 5×2 | GPS |
-| 11 | F4:I5 | 4×2 | Accessories |
-| 12 | J4:L5 | 3×2 | Accessories |
-| 13 | A6:G7 | 7×2 | BBQ lighters |
-| 14 | H6:L7 | 5×2 | Flashlights |
+| # | Cells | Bin | Item | Holds |
+| --- | --- | --- | --- | --- |
+| 1 | A1:C1 | 3×1 +34.5F | Spare | — |
+| 2 | D1:E1 | 2×1 +34.5F | Spare | — |
+| 3 | F1:I1 | 4×1 +34.5F | **GPS** | **0 of 1** |
+| 4 | J1:L1 | 3×1 +34.5F | Spare | — |
+| 5 | A2:E3 | 5×2 | Flashlights | 2 of 4 |
+| 6 | F2:H3 | 3×2 | Accessories | 1 |
+| 7 | I2:J3 | 2×2 | Spare | — |
+| 8 | K2:L3 | 2×2 | Spare | — |
+| 9 | A4:E5 | 5×2 | Spare | — |
+| 10 | F4:G5 | 2×2 | Spare | — |
+| 11 | H4:H5 | 1×2 | Spare | — |
+| 12 | I4:L5 | 4×2 | Accessories (right edge) | 1 |
+| 13 | A6:F7 | 6×2 +38.5L | BBQ lighters | 1 of 4 |
+| 14 | G6:I7 | 3×2 | Accessories | 1 |
+| 15 | J6:L7 | 3×2 | Bic lighters | 6 of 10 |
 
-**14 bins.** Two merges, 2026-09-25 MDT: the F4 spare and the H4 accessories
-bin became one 4×2 at F4:I5, and the two 2×1 spares at F1 and H1 became one
-4×1 at F1:I1.
+### The GPS does not fit box 3
 
-The merge fixed a real problem. The old 2×2 accessories bin was 78.7 mm square
-inside and could not take an 84 mm accessory in any orientation. At 162.7 mm
-inside, the 4×2 clears it.
+A front-row bin is **1 unit + the 34.5 mm gap = 76.0 mm deep, whatever its
+length**. The GPS is 75 mm wide, which leaves 1 mm for two walls.
+
+| Wall | Interior | vs GPS 167 × 75 |
+| --- | --- | --- |
+| 2.4 mm | 162.7 × 71.2 | short 4.3 and 3.8 mm |
+| 1.0 mm | 165.5 × 74.0 | short 1.5 and 1.0 mm |
+
+Lengthening the bin does not help — depth is the binding constraint, and every
+front-row bin has the same depth. **The GPS needs two units of depth.** Until
+that is resolved it is recorded as holding 0 of 1.
 
 **Bins renumber by position**, front to back then left to right, so the numbers
 above are not the ones used before the rearrangement.
