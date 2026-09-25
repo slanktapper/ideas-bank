@@ -23,6 +23,8 @@ the same surface.
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import cadquery as cq
 from cqgridfinity import GridfinityBox
 
@@ -64,6 +66,61 @@ def interior_of(body: cq.Workplane) -> tuple[float, float]:
     return floor.Center().z, inset
 
 
+def deepest_inset(body: cq.Workplane, floor_z: float, ztop: float,
+                  samples: int = 10) -> tuple[float, float]:
+    """How far the bin's walls reach inward at their narrowest point.
+
+    The wall is not a straight vertical face. The stacking lip is a stepped
+    profile occupying the top few millimetres, and it reaches further inward
+    than the plain wall does -- 2.6 mm against 2.1 mm on a stock bin.
+
+    Cutting the skirt's cavity to the plain inset therefore leaves a thin
+    ledge of surviving lip running along the joint, which reads as a stray
+    shelf in a slicer. So the cavity is cut to the narrowest point found over
+    the bin's whole height, measured rather than assumed.
+    """
+    bb = body.vals()[0].BoundingBox()
+    left = front = 0.0
+    # The lip lives in the top few millimetres, so sample there densely and
+    # the plain wall below it sparsely. Sectioning is the expensive part.
+    lip_band = min(8.0, (ztop - floor_z) * 0.5)
+    heights = [floor_z + (ztop - lip_band - floor_z) * (i + 0.5) / 3
+               for i in range(3)]
+    heights += [ztop - lip_band + lip_band * (i + 0.5) / (samples - 3)
+                for i in range(samples - 3)]
+    for z in heights:
+        try:
+            faces = body.section(z).faces().vals()
+        except Exception:
+            continue
+        for f in faces:
+            wires = sorted(f.Wires(),
+                           key=lambda w: w.BoundingBox().DiagonalLength,
+                           reverse=True)
+            if len(wires) < 2:
+                continue
+            inner = wires[1].BoundingBox()
+            left = max(left, inner.xmin - bb.xmin)
+            front = max(front, inner.ymin - bb.ymin)
+    return left, front
+
+
+@lru_cache(maxsize=64)
+def _bin_profile(length_u: int, width_u: int, height_u: int,
+                 kw: tuple) -> tuple[float, float, float, float]:
+    """Cache the measurements for a given bin size.
+
+    Sampling twenty sections costs about a second, and a drawer's worth of
+    bins repeats the same few sizes. Returns floor z, wall inset, and the
+    deepest left/front inset.
+    """
+    body = GridfinityBox(length_u, width_u, height_u, **dict(kw)).cq_obj
+    floor_z, inset = interior_of(body)
+    ztop = body.vals()[0].BoundingBox().zmax
+    left, front = deepest_inset(body, floor_z, ztop)
+    return floor_z, inset, left, front
+
+
 def extended_bin(
     length_u: int,
     width_u: int,
@@ -90,8 +147,14 @@ def extended_bin(
         return body
 
     bb = body.vals()[0].BoundingBox()
-    floor_z, inset = interior_of(body)
     ztop = bb.zmax
+    # The lip reaches further in than the plain wall; cut to the narrowest
+    # point or a ledge of surviving lip is left along the joint.
+    floor_z, inset, lip_left, lip_front = _bin_profile(
+        length_u, width_u, height_u, tuple(sorted(box_kwargs.items()))
+    )
+    cut_left = max(inset, lip_left)
+    cut_front = max(inset, lip_front)
 
     # --- outer skirts, full height, sitting on the drawer floor -----------
     if extend_left_mm:
@@ -108,20 +171,20 @@ def extended_bin(
     # --- punch the cavity through, so it is one continuous interior -------
     # Each strip reaches `inset` past the original wall, removing it.
     y0 = bb.ymin - extend_front_mm + inset
-    y1 = bb.ymax - inset
+    y1 = bb.ymax - cut_front
     x0 = bb.xmin - extend_left_mm + inset
-    x1 = bb.xmax - inset
+    x1 = bb.xmax - cut_left
     depth = ztop - floor_z + 1.0
 
     if extend_left_mm:
         body = body.cut(_block(
             x0, y0, floor_z,
-            (bb.xmin + inset) - x0, y1 - y0, depth,
+            (bb.xmin + cut_left) - x0, y1 - y0, depth,
         ))
     if extend_front_mm:
         body = body.cut(_block(
             x0, y0, floor_z,
-            x1 - x0, (bb.ymin + inset) - y0, depth,
+            x1 - x0, (bb.ymin + cut_front) - y0, depth,
         ))
     return body
 

@@ -94,3 +94,50 @@ def test_describe_matches_the_layout_label():
     assert describe(6, 2, 5, 38.5, 0) == "6x2x5+38.5L"
     assert describe(3, 1, 5, 38.5, 34.5) == "3x1x5+38.5L+34.5F"
     assert describe(2, 2, 5) == "2x2x5"
+
+
+def test_no_stray_ledge_survives_from_the_stacking_lip():
+    """Regression: a 0.5 mm shelf was left running along the joint.
+
+    The lip is a stepped profile reaching 2.6 mm inward, while the plain wall
+    inset is 2.1 mm. Cutting the cavity to 2.1 left a sliver of lip behind,
+    which in a slicer reads as a stray label shelf.
+    """
+    from gridfinity_negatives.extended import deepest_inset
+
+    body = extended_bin(3, 1, 5, extend_left_mm=38.5, extend_front_mm=34.5)
+    shape = cq.Shape.cast(body.vals()[0].wrapped)
+    floor_z, _ = interior_of(GridfinityBox(3, 1, 5).cq_obj)
+    ztop = shape.BoundingBox().zmax
+
+    strays = [f for f in shape.Faces()
+              if f.normalAt().z > 0.99
+              and floor_z + 0.5 < f.Center().z < ztop - 0.05]
+    assert not strays, (
+        f"{len(strays)} horizontal ledge(s) between the floor and the rim, at z="
+        + ", ".join(f"{f.Center().z:.2f}" for f in strays)
+    )
+
+
+def test_the_lip_reaches_further_in_than_the_plain_wall():
+    """The fact that made the ledge possible; pinned so it is not forgotten."""
+    from gridfinity_negatives.extended import deepest_inset
+    plain = GridfinityBox(3, 1, 5).cq_obj
+    floor_z, inset = interior_of(plain)
+    ztop = plain.vals()[0].BoundingBox().zmax
+    left, front = deepest_inset(plain, floor_z, ztop)
+    assert left > inset, "the lip no longer reaches past the wall inset"
+    assert left == pytest.approx(2.6, abs=0.1)
+
+
+@pytest.mark.parametrize("lu,wu,el,ef", [(2, 2, 38.5, 0.0), (1, 2, 38.5, 0.0),
+                                         (4, 1, 0.0, 34.5)])
+def test_every_extended_shape_is_ledge_free(lu, wu, el, ef):
+    body = extended_bin(lu, wu, 5, extend_left_mm=el, extend_front_mm=ef)
+    shape = cq.Shape.cast(body.vals()[0].wrapped)
+    floor_z, _ = interior_of(GridfinityBox(lu, wu, 5).cq_obj)
+    ztop = shape.BoundingBox().zmax
+    strays = [f for f in shape.Faces()
+              if f.normalAt().z > 0.99
+              and floor_z + 0.5 < f.Center().z < ztop - 0.05]
+    assert not strays, f"ledge in {lu}x{wu}+{el}L+{ef}F"
