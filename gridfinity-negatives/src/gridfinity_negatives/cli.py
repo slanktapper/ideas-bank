@@ -7,13 +7,21 @@ import sys
 from pathlib import Path
 
 import cv2
+from cadquery import exporters as _exp
+
+
+def cq_export(obj, path):
+    _exp.export(obj, path)
+
 
 from .calibrate import Mat, render_mat
 from .config import DEFAULT_PRINTER, DEFAULTS, PRINTERS, Tuning
 from .geometry import pocket_profile, straighten
-from .drawer import build_baseplates, build_spacers, plan as plan_drawer
+from .codes import is_valid, parse as parse_code
+from .drawer import build_baseplates, build_spacers, estimate_mass_g, plan as plan_drawer
 from .model import BedTooSmall, BinSpec, PocketTooDeep, auto_spec, build, export
 from .preview import render, render_drawer
+from .stamp import DEFAULT_DEPTH_MM, engrave_code
 from .trace import Trace, trace_photo, trace_scan
 
 
@@ -112,6 +120,13 @@ def cmd_build(a: argparse.Namespace) -> int:
     for warning in result.warnings:
         print(f"warning: {warning}")
 
+    if a.code:
+        rc = _check_code(a.code)
+        if rc:
+            return rc
+        result.body, csize = engrave_code(result.body, a.code)
+        print(f"Engraved {a.code.upper()} underneath at {csize:.1f} mm")
+
     stem = a.name or Path(a.image).stem
     paths = export(result, stem, a.out)
     for p in paths:
@@ -177,6 +192,69 @@ def cmd_drawer(a: argparse.Namespace) -> int:
     return 0
 
 
+def _check_code(code: str) -> int:
+    """Echo a code back in words so a typo is caught before printing."""
+    if code is None:
+        return 0
+    if not is_valid(code):
+        print(f"error: {code!r} is not a valid location code.", file=sys.stderr)
+        print("  Expected e.g. KWL1N1T -- room, wall, section, "
+              "column number+direction, drawer number+T/B.", file=sys.stderr)
+        return 2
+    print(f"Code     : {code.upper()} = {parse_code(code).describe()}")
+    return 0
+
+
+def cmd_bin(a: argparse.Namespace) -> int:
+    from cqgridfinity import GridfinityBox
+
+    rc = _check_code(a.code)
+    if rc:
+        return rc
+
+    try:
+        lu, wu = (int(v) for v in a.size.lower().split("x"))
+    except ValueError:
+        print(f"error: --size wants LxW, e.g. 1x2 (got {a.size!r})", file=sys.stderr)
+        return 2
+
+    printer = PRINTERS[a.printer]
+    if not printer.fits(lu, wu):
+        print(f"error: {lu}x{wu} units is past the {printer.name}'s "
+              f"{printer.max_units_x}x{printer.max_units_y}-unit bed.", file=sys.stderr)
+        return 1
+
+    box = GridfinityBox(
+        lu, wu, a.height,
+        holes=a.magnets, unsupported_holes=a.magnets,
+        labels=a.label, scoops=a.scoop,
+        length_div=a.length_div, width_div=a.width_div,
+        no_lip=a.no_lip,
+    )
+    body = box.cq_obj
+    if a.code:
+        body, size = engrave_code(body, a.code, depth=a.code_depth)
+        print(f"Engraved : {size:.1f} mm text, {a.code_depth} mm deep, "
+              "underside, mirrored to read when turned over")
+
+    grams = estimate_mass_g(body, infill=0.10)
+    print(f"Bin      : {lu}x{wu}x{a.height}U "
+          f"({lu * 42 - 0.5:.1f} x {wu * 42 - 0.5:.1f} x {a.height * 7 + 3.8:.1f} mm), "
+          f"{box.max_height:.0f} mm usable depth")
+    print(f"Filament : ~{grams:.0f} g each"
+          + (f", ~{grams * a.count:.0f} g for {a.count}" if a.count > 1 else ""))
+
+    d = Path(a.out)
+    d.mkdir(parents=True, exist_ok=True)
+    stem = a.name or (f"{a.code.upper()}-" if a.code else "") + f"bin-{lu}x{wu}x{a.height}"
+    path = d / f"{stem}.stl"
+    cq_export(body, str(path))
+    print(f"wrote {path}")
+    if a.count > 1:
+        print(f"  print {a.count} copies -- duplicate on the plate in the slicer")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         prog="gfneg",
@@ -210,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
                         default=DEFAULTS.relief_radius_mm)
         sp.add_argument("--printer", choices=sorted(PRINTERS), default="h2d",
                         help="machine whose bed limits the bin size")
+        sp.add_argument("--code", help="location code to engrave underneath")
         sp.add_argument("--min-feature", type=float,
                         default=DEFAULTS.min_feature_mm2,
                         help="ignore traced blobs smaller than this, in mm^2")
@@ -249,6 +328,24 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--name", default="drawer", help="output filename stem")
     d.add_argument("--out", default="out", help="output directory")
     d.set_defaults(func=cmd_drawer)
+
+    n = sub.add_parser("bin", help="generate a plain bin, optionally code-stamped")
+    n.add_argument("--size", default="1x1", help="bin size in units, e.g. 1x2")
+    n.add_argument("--height", type=int, default=3, help="height in units")
+    n.add_argument("--code", help="location code to engrave underneath, e.g. KWL1N1T")
+    n.add_argument("--code-depth", type=float, default=DEFAULT_DEPTH_MM)
+    n.add_argument("--count", type=int, default=1, help="how many, for the estimate")
+    n.add_argument("--magnets", action="store_true")
+    n.add_argument("--label", action="store_true",
+                   help="add the overhanging label shelf (clip-on holders avoid this)")
+    n.add_argument("--scoop", action="store_true", help="finger scoop at one end")
+    n.add_argument("--length-div", type=int, default=0, help="dividing walls along length")
+    n.add_argument("--width-div", type=int, default=0, help="dividing walls along width")
+    n.add_argument("--no-lip", action="store_true")
+    n.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")
+    n.add_argument("--name", help="output filename stem")
+    n.add_argument("--out", default="out")
+    n.set_defaults(func=cmd_bin)
 
     a = p.parse_args(argv)
     return a.func(a)

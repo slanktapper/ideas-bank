@@ -7,24 +7,78 @@ Dimensions are **internal clear** at the base of the drawer unless a row says
 otherwise. Grid figures come from `gfneg drawer --width W --depth D --height H`;
 re-run it rather than doing the arithmetic by hand.
 
-## Naming
+## The location code
 
-Locations are written coarse to fine, so the list sorts usefully as it grows:
+Every drawer has a seven-character code, and **every bin made for that drawer
+carries it engraved on the underside**. Bins stay interchangeable — the grid is
+the whole point — but a bin that leaves the drawer can be put back.
 
 ```
-<room> <wall> <section> <drawer> <column>
-kitchen west   lower     top      north
+K  W  L  1N  1T
+│  │  │  │   └── drawer:  1st from the Top
+│  │  │  └────── column:  1st North
+│  │  └───────── section: Lower
+│  └──────────── wall:    West
+└─────────────── room:    Kitchen
 ```
+
+The **digit carries the position and the letter the reference**, so the drawer
+below `KWL1N1T` is `KWL1N2T`, not `KWL1N1B`. `B` exists for counting up from
+the bottom where that is the natural way to describe a stack.
+
+| Segment | Values |
+| --- | --- |
+| Room | `K` kitchen, `G` garage, `W` workshop, `O` office |
+| Wall | `N` `S` `E` `W` |
+| Section | `L` lower, `U` upper, `M` middle |
+| Column | number + `N` `S` `E` `W` |
+| Drawer | number + `T` from top, `B` from bottom |
+
+Codes are validated before anything is generated, and `gfneg` spells each one
+back out in words — `KWL1N1T = Kitchen, west wall, lower section, 1st north
+column, 1st drawer from the top`. A wrong code is invisible until the bins are
+printed and unfixable afterwards, which is the entire reason for the check.
+
+### Known codes
+
+| Code | Location |
+| --- | --- |
+| `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top |
+| `KWL1N2T` | kitchen, west wall, lower, 1st north column, 2nd from top |
+| `KSL1W1T` | kitchen, south wall, lower, 1st west column, 1st from top |
+| `KSL2W1T` | kitchen, south wall, lower, 2nd west column, 1st from top |
+| `KEL1S1T` | kitchen, east wall, lower, 1st south column, 1st from top |
+| `KEL1S2T` | kitchen, east wall, lower, 1st south column, 2nd from top |
+| `KEL1N1T` | kitchen, east wall, lower, 1st north column, 1st from top |
+| `KEL2N1T` | kitchen, east wall, lower, 2nd north column, 1st from top |
+
+Only `KWL1N1T` is measured. The rest are named, not surveyed.
+
+### How the engraving works
+
+Recessed 0.6 mm (three layers) into the underside, mirrored so it reads when
+the bin is turned over, auto-sized to the 35.6 mm pad, in DejaVu Sans Mono.
+
+**Engraved, never embossed.** The underside is the first layer, printed against
+the build plate — raised text there would have to print in mid-air. A recess is
+simply an absence in the first few layers and needs no supports.
+
+On a multi-unit bin the underside is **one pad per grid unit**, not one
+continuous face, so the code goes on a single pad rather than being centred
+across the bin where it would fall into the gap.
 
 ## The drawers
 
-| # | Location | W × D × H (mm) | Grid | Positions | Margins | Max bin | Status |
+| Code | Location | W × D × H (mm) | Grid | Positions | Margins | Max bin | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | kitchen west wall, lower section, top drawer, north column | 533 × 328 × 63 | 12 × 7 | 84 | 14.5 / 17.0 | 8U | measured, unverified |
+| `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top | 533 × 328 × 63 | 12 × 7 | 84 | 14.5 / 17.0 | 8U | measured, unverified |
 
-### 1 — kitchen west wall, lower section, top drawer, north column
+### `KWL1N1T` — kitchen, west wall, lower section, 1st north column, 1st from top
 
 **Intended contents:** keychains and fobs.
+
+**Bins:** plain, no label shelf — clip-in removable holders instead, so nothing
+overhangs the opening. Every bin engraved `KWL1N1T` underneath.
 
 **As reported:** 533 × 328 × 63 mm, described as "the size of components", with
 "the full workable space is 101 mm".
