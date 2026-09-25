@@ -142,6 +142,7 @@ The 42 mm pitch leaves **14.5 mm at each side and 17.0 mm front and back** —
 
 | Option | What it gives |
 | --- | --- |
+| **Gap gauges (do this first)** | Printed feeler sticks at known lengths — 5 per gap, ±2 mm around nominal. Foot butts against the baseplate edge, arm reaches across the gap; the longest that drops in is the gap. Length engraved underneath so they are reusable. `gfneg gauge --gap 14.5` |
 | **Printed spacers** | cq-gridfinity generates corner, side and front/back fillers with interlocking pegs. Both margins clear the 4 mm minimum. Stops the grid sliding when the drawer is pulled. Already implemented — `gfneg drawer` writes them. |
 | **Pad the edge baseplate tiles** | Extend the outer tiles to the drawer walls, so there is no gap and no separate parts. Neatest result, but needs code cq-gridfinity does not have. |
 | **Push the grid to one corner** | Consolidates the slack into one **34 × 533 mm** back channel or a **29 × 328 mm** side channel — usable for long thin things rather than four dead strips. |
@@ -149,6 +150,24 @@ The 42 mm pitch leaves **14.5 mm at each side and 17.0 mm front and back** —
 
 Re-measuring the depth remains worth doing first: at ≥336 mm the drawer takes
 an eighth row, which both removes the front/back gap and adds 12 positions.
+
+### First print set
+
+Generated 2026-09-25 MDT. The point is to establish the real gap before
+committing to a drawer's worth of parts.
+
+| Part | Size | Mass |
+| --- | --- | --- |
+| Baseplate tile 6×7 | 252 × 294 × 4.75 mm | ~37 g |
+| Bin 1×1×8U, coded | 41.6 × 41.6 × 59.8 mm | ~13 g |
+| Bin 2×1×8U, coded | 83.6 × 41.6 × 59.8 mm | ~23 g |
+| Gauges, side, 12.5–16.5 mm | 26 × L × 3 mm | ~0.7 g each |
+| Gauges, front/back, 15–19 mm | 26 × L × 3 mm | ~0.7 g each |
+
+About 80 g all in. The baseplate is one plate on its own; the bins and all
+ten gauges fit together on a second.
+
+Both bins are engraved `KWL1N1T` underneath.
 
 ### Still unmeasured
 
