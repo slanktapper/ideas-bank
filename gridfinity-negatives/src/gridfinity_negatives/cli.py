@@ -161,7 +161,7 @@ def cmd_drawer(a: argparse.Namespace) -> int:
 
     dead = 100.0 * (1 - (p.units_x * 42.0 * p.units_y * 42.0)
                     / (p.drawer_w_mm * p.drawer_d_mm))
-    print(f"Drawer   : {p.drawer_w_mm:.0f} x {p.drawer_d_mm:.0f} mm internal")
+    print(f"Drawer   : {p.drawer_w_mm:g} x {p.drawer_d_mm:g} mm internal")
     print(f"Printer  : {printer.name} "
           f"({printer.max_units_x}x{printer.max_units_y} units per plate)")
     print(f"Grid     : {p.units_x} x {p.units_y} units "
@@ -294,7 +294,7 @@ def cmd_layout(a: argparse.Namespace) -> int:
     layout = pack(p, items, allow_rotation=not a.no_rotate, height_u=height_u)
     if a.fill:
         fill_remaining(layout, a.fill, height_u=height_u or 8)
-    print(f"Drawer   : {p.drawer_w_mm:.0f} x {p.drawer_d_mm:.0f} mm, "
+    print(f"Drawer   : {p.drawer_w_mm:g} x {p.drawer_d_mm:g} mm, "
           f"{p.units_x} x {p.units_y} units, {p.total_units} positions")
     print(f"Placed   : {len(layout.placements)} bins, "
           f"{layout.used_units} units used, {layout.free_units} free")
@@ -306,7 +306,8 @@ def cmd_layout(a: argparse.Namespace) -> int:
         f"{k} {v:.1f} mm" for k, v in gaps.items()))
 
     print()
-    print(f"{'#':>3}  {'cells':<10} {'bin':<8} {'height':<7} {'holds':<8} item")
+    print(f"{'#':>3}  {'cells':<10} {'bin':<12} {'height':<7} {'holds':<8} "
+          f"{'printed mm':<13} item")
     shortfalls = []
     seen_cap: dict[str, list] = {}
     for num, pl in numbered(layout):
@@ -318,8 +319,10 @@ def cmd_layout(a: argparse.Namespace) -> int:
             holds = str(cap)
         else:
             holds = "-"
-        print(f"{num:>3}  {ref:<10} {pl.length_u}x{pl.width_u:<6} "
-              f"{pl.item.height_units()}U{'':<4} {holds:<8} {name}")
+        ow, oh = pl.outer_size_mm()
+        print(f"{num:>3}  {ref:<10} {pl.label_size():<12} "
+              f"{pl.item.height_units()}U{'':<4} {holds:<8} "
+              f"{ow:>6.1f}x{oh:<6.1f} {name}")
 
     for nm, caps in seen_cap.items():
         want = next(i.wanted() for i in items if i.name == nm)

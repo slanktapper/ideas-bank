@@ -4,7 +4,7 @@ import pytest
 from gridfinity_negatives.drawer import plan
 from gridfinity_negatives.layout import Item, load_items, pack
 
-KWL1N1T = plan(533.0, 328.0, 63.0)   # 12 x 7 units
+KWL1N1T = plan(542.5, 328.5, 63.0)   # 12 x 7 units, measured 2026-09-25
 
 
 def test_footprint_covers_the_object_plus_clearance_and_walls():
@@ -311,7 +311,7 @@ def test_named_items_sit_where_they_were_placed():
     assert at["Bic lighter"] == ["J2:L3"], "Bic did not rotate into J2:L3"
     assert at["GPS"] == ["A4:E5"]
     assert at["Flashlight"] == ["H6:L7"]
-    assert at["BBQ lighter"] == ["A6:G7"]
+    assert at["BBQ lighter"] == ["A6:F7"], "BBQ should be 6 wide now"
     assert sorted(at["Accessories"]) == ["A2:C3", "F4:I5", "J4:L5"]
 
 
@@ -334,3 +334,59 @@ def test_the_merged_accessories_bin_clears_an_84mm_item():
         f"{merged.width_mm:.0f} mm accessory"
     )
     assert merged.capacity() >= 1
+
+
+# --- bins that reach into the drawer's gap ---------------------------------
+
+def test_capacity_counts_the_reach_into_the_gap():
+    """Regression: a 6x2 + 38.5mm bin reported holding nothing.
+
+    capacity() measured the grid footprint only, so a 272mm lighter did not
+    fit a bin with 285mm inside it.
+    """
+    extended = Item("bbq", 272, 43, 24, bin_size="6x2", bin_height_u=8,
+                    extend_left_mm=38.5)
+    plain = Item("bbq", 272, 43, 24, bin_size="6x2", bin_height_u=8)
+    assert plain.capacity() == 0, "the grid footprint alone really is too short"
+    assert extended.capacity() >= 1, "the reach into the gap was ignored"
+
+
+def test_outer_size_includes_the_extension():
+    p = pack(plan(542.5, 328.5, 63.0),
+             load_items("items-KWL1N1T.yml"), height_u=8)
+    by_name = {pl.item.name: pl for pl in p.placements}
+    w, h = by_name["BBQ lighter"].outer_size_mm()
+    assert w == pytest.approx(6 * 42 - 0.5 + 38.5)
+    assert h == pytest.approx(2 * 42 - 0.5)
+
+
+def test_extended_bins_reach_the_drawer_walls_exactly():
+    """An extension equal to the gap must land flush, not over or short."""
+    dp = plan(542.5, 328.5, 63.0)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=8)
+    gaps = dp.gaps_mm
+    for pl in layout.placements:
+        if pl.extend_left_mm:
+            assert pl.x_u == 0, "only a column-A bin can reach the left wall"
+            assert pl.extend_left_mm == pytest.approx(gaps["left"])
+        if pl.extend_front_mm:
+            assert pl.y_u == 0, "only a row-1 bin can reach the front"
+            assert pl.extend_front_mm == pytest.approx(gaps["front"])
+
+
+def test_the_whole_front_row_reaches_the_drawer_front():
+    dp = plan(542.5, 328.5, 63.0)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=8)
+    front = [p for p in layout.placements if p.y_u == 0]
+    assert front and all(p.extend_front_mm > 0 for p in front), (
+        "a front-row bin was left short of the drawer front"
+    )
+
+
+def test_the_left_gap_is_left_alone_except_for_the_bbq_bin():
+    """Only rows 6-7 close the left gap; rows 1-5 keep it, as directed."""
+    dp = plan(542.5, 328.5, 63.0)
+    layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=8)
+    reaching = [p for p in layout.placements if p.extend_left_mm > 0]
+    assert len(reaching) == 1
+    assert reaching[0].item.name == "BBQ lighter"

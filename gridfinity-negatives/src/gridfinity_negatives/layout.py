@@ -96,6 +96,14 @@ class Item:
     bins: int | None = None
     """Explicit number of bins, overriding the calculation. For items split
     across several bins by purpose rather than by capacity."""
+    extend_left_mm: float = 0.0
+    """Millimetres the bin reaches past the grid on its left, into the gap.
+
+    A drawer's leftover is never a whole unit, so a bin that should meet the
+    wall has to be an odd size. The grid stays the standard 42 mm pitch; only
+    this one bin is non-standard, and only on the side facing the wall."""
+    extend_front_mm: float = 0.0
+    """The same, towards the front of the drawer."""
     at: str | None = None
     """Explicit position, as a cell reference like "A6". Placed there before
     anything is auto-packed, so a stated layout is honoured exactly."""
@@ -197,8 +205,13 @@ class Item:
         along the depth, stacked in the height.
         """
         lu, wu = self.footprint_units(tuning)
-        iw = lu * GRID_PITCH_MM - 0.5 - 2 * tuning.wall_mm
-        idp = wu * GRID_PITCH_MM - 0.5 - 2 * tuning.wall_mm
+        # A bin reaching into the drawer's gap is genuinely longer, and that
+        # length holds things. Ignoring it reported the BBQ bin as holding
+        # nothing when it had 285 mm inside for a 272 mm lighter.
+        iw = (lu * GRID_PITCH_MM - 0.5 - 2 * tuning.wall_mm
+              + self.extend_left_mm)
+        idp = (wu * GRID_PITCH_MM - 0.5 - 2 * tuning.wall_mm
+               + self.extend_front_mm)
         ih = max(0.0, (self.height_units() - 1) * 7.0)
 
         best = 0
@@ -233,6 +246,29 @@ class Placement:
     length_u: int
     width_u: int
     rotated: bool = False
+
+    @property
+    def extend_left_mm(self) -> float:
+        return self.item.extend_left_mm
+
+    @property
+    def extend_front_mm(self) -> float:
+        return self.item.extend_front_mm
+
+    def outer_size_mm(self, pitch: float = GRID_PITCH_MM) -> tuple[float, float]:
+        """Printed size: grid footprint plus whatever reaches into the gap."""
+        return (self.length_u * pitch - 0.5 + self.extend_left_mm,
+                self.width_u * pitch - 0.5 + self.extend_front_mm)
+
+    def label_size(self) -> str:
+        """'6x2' or '6sq+38.5' when it reaches into the gap."""
+        base = f"{self.length_u}x{self.width_u}"
+        bits = []
+        if self.extend_left_mm:
+            bits.append(f"+{self.extend_left_mm:g}L")
+        if self.extend_front_mm:
+            bits.append(f"+{self.extend_front_mm:g}F")
+        return base + ("".join(bits) if bits else "")
 
 
 @dataclass
@@ -298,6 +334,8 @@ def load_items(path: str | Path) -> list[Item]:
                 bins=(int(row["bins"]) if row.get("bins") is not None else None),
                 bin_size=(str(row["bin_size"]) if row.get("bin_size") else None),
                 at=(str(row["at"]) if row.get("at") else None),
+                extend_left_mm=float(row.get("extend_left_mm", 0.0)),
+                extend_front_mm=float(row.get("extend_front_mm", 0.0)),
                 measured=bool(row.get("measured", True)),
                 note=str(row.get("note", "")),
             )

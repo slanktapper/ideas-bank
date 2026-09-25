@@ -1,5 +1,6 @@
 # KWL1N1T — kitchen, west wall, lower section, 1st north column, 1st from top
-# Drawer 533 x 328 x 63 mm internal, 12 x 7 units, grid in the BACK-RIGHT corner.
+# Drawer 542.5 x 328.5 x 63 mm internal (MEASURED 2026-09-25 from the gaps:
+# left 38.5 mm, front 34.5 mm). 12 x 7 units, grid in the BACK-RIGHT corner.
 # Columns A-L from the left, rows 1-7 with row 1 at the FRONT.
 #
 # Every bin in this drawer is ONE height. The value is provisional until the
@@ -9,8 +10,9 @@
 # Layout set explicitly 2026-09-25 MDT. Every bin has an `at`, so nothing is
 # auto-placed and the arrangement is exactly as directed.
 #
-# THE FRONT ROW (row 1) IS ALL ONE UNIT DEEP. Those five bins are the ones to
-# extend forward over the front gap once it is measured.
+# THE FRONT ROW (row 1) reaches 34.5 mm forward to meet the drawer front.
+# The BBQ bin reaches 38.5 mm left to meet the left wall. Everything else
+# stops at the grid; the left gap stands in rows 1-5.
 
 defaults:
   bin_height_u: 8
@@ -18,10 +20,10 @@ defaults:
 
 items:
   # --- row 1, the front: all 1 deep, to be extended over the front gap ---
-  - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1}
-  - {name: Spare, size: [0, 0], bin_size: 2x1, at: D1}
-  - {name: Spare, size: [0, 0], bin_size: 4x1, at: F1}   # was two 2x1s
-  - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1}
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1, extend_front_mm: 34.5}
+  - {name: Spare, size: [0, 0], bin_size: 2x1, at: D1, extend_front_mm: 34.5}
+  - {name: Spare, size: [0, 0], bin_size: 4x1, at: F1, extend_front_mm: 34.5}
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1, extend_front_mm: 34.5}
 
   # --- rows 2-3 ---
   - name: Accessories
@@ -72,11 +74,16 @@ items:
   # --- rows 6-7, the back ---
   - name: BBQ lighter
     size: [272, 43, 24]
-    bin_size: 7x2
+    bin_size: 6x2
     at: A6
+    extend_left_mm: 38.5
     qty_typical: 3
     qty_max: 4
-    note: Holds 2 — one across the 78.7 mm width, two stacked in the 49 mm depth.
+    note: >
+      Six squares plus the 38.5 mm left gap — 290.5 mm long, meeting the left
+      wall. Was 7x2; column G is freed for the filler below.
+
+  - {name: Spare, size: [0, 0], bin_size: 1x2, at: G6}   # between lighter and flashlight
 
   - name: Flashlight
     size: [195, 39, 39]

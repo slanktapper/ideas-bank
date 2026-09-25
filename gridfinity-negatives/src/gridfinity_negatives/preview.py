@@ -183,10 +183,11 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
     for p in layout.placements:
         colour = seen.setdefault(p.item.name, palette[len(seen) % len(palette)])
         num = number_of[id(p)]
-        x = mx + p.x_u * GRID_PITCH_MM + 1.2
-        y = my + p.y_u * GRID_PITCH_MM + 1.2
-        w = p.length_u * GRID_PITCH_MM - 2.4
-        h = p.width_u * GRID_PITCH_MM - 2.4
+        el, ef = p.extend_left_mm, p.extend_front_mm
+        x = mx + p.x_u * GRID_PITCH_MM + 1.2 - el
+        y = my + p.y_u * GRID_PITCH_MM + 1.2 - ef
+        w = p.length_u * GRID_PITCH_MM - 2.4 + el
+        h = p.width_u * GRID_PITCH_MM - 2.4 + ef
         ax.add_patch(Rectangle((x, y), w, h, facecolor=colour, alpha=0.20,
                                edgecolor=colour, lw=1.8, zorder=3))
         label = p.item.name if p.item.measured else f"{p.item.name} ?"
@@ -217,7 +218,7 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
                     fontsize=max(6, fs - 1.5), color=colour, zorder=4,
                     fontweight="bold", alpha=0.95)
             ax.text(x + w / 2, y + h / 2 - 15,
-                    f"{p.length_u}x{p.width_u} · {p.item.height_units()}U"
+                    f"{p.label_size()} · {p.item.height_units()}U"
                     + ("  rot" if p.rotated else ""),
                     ha="center", va="center", fontsize=6.5,
                     color=colour, alpha=0.75, zorder=4)
@@ -247,8 +248,8 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
         f"1 square = 42 × 42 mm pitch   ·   bin outside {GRID_PITCH_MM - 0.5:.1f} mm "
         f"per unit   ·   usable inside ≈ {interior:.1f} mm per unit\n"
         f"height 1U = 7 mm (usable depth = (U−1) × 7)   ·   drawer "
-        f"{W:.0f} × {D:.0f}"
-        + (f" × {plan_result.drawer_h_mm:.0f}" if plan_result.drawer_h_mm else "")
+        f"{W:g} × {D:g}"
+        + (f" × {plan_result.drawer_h_mm:g}" if plan_result.drawer_h_mm else "")
         + f" mm\naligned {plan_result.align}"
         + (f"   ·   flush against the {walls} wall(s)" if walls else "")
         + f"   ·   gaps: {live} mm (pink)"

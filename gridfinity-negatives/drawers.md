@@ -71,7 +71,7 @@ across the bin where it would fall into the gap.
 
 | Code | Location | W × D × H (mm) | Grid | Positions | Margins | Max bin | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top | 533 × 328 × 63 | 12 × 7 | 84 | 14.5 / 17.0 | 8U | measured, unverified |
+| `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top | **542.5 × 328.5 × 63** | 12 × 7 | 84 | 38.5 left / 34.5 front | 8U | **gauged 2026-09-25** |
 
 ### `KWL1N1T` — kitchen, west wall, lower section, 1st north column, 1st from top
 
@@ -234,28 +234,44 @@ load the second nozzle.
 The 2×2 test bin is **83.6 mm** and the strip is **69 mm**, so it cannot share a
 plate with a tile. It goes in the first bin session.
 
-### Width re-measure, 2026-09-25 MDT
+### Gauged, 2026-09-25 MDT
 
-The width gap measured at roughly **35 mm**, against the 14.5 mm predicted from
-a 533 mm drawer. Gauges at 34 / 34.5 / 35 / 36 mm were cut to pin it down;
-36 mm is there to bound the top, since a gauge that drops in tells you nothing
-about the ceiling.
+The gaps were measured with the printed gauges, with the grid in the
+back-right corner so each gap is the whole slack on that axis:
 
-**What 35 mm means depends on how it was taken**, and the two readings differ
-by a whole column:
+| Gap | Measured | Predicted from the recorded 533 × 328 |
+| --- | --- | --- |
+| **Left** | **38.5 mm** | 29 mm |
+| **Front** | **34.5 mm** | 34 mm |
 
-| Reading | Drawer width | Grid | Effect |
+So the drawer is **542.5 × 328.5 mm**, not 533 × 328. The depth was right to
+within half a millimetre; the width was **9.5 mm** out.
+
+**The grid stays 12 × 7.** Thirteen columns would need 546 mm and the drawer is
+542.5 — short by 3.5 mm. Frustratingly close, and worth knowing that it was
+checked rather than assumed.
+
+### Bins that reach into the gap
+
+The leftover is never a whole unit, so closing it means a few bins that are not
+standard sizes. The grid keeps the 42 mm pitch throughout; only the bins facing
+a wall are odd, and only on that one side.
+
+| Bin | Grid | Reach | Printed |
 | --- | --- | --- | --- |
-| 35 mm is the **total** leftover, grid pushed to one side | 539 mm | still 12 units | Layout unchanged. Margins become 17.5 mm a side if centred. |
-| 35 mm is **one of two** gaps | 574 mm | **13 units** would fit (546 mm) | A whole extra column, 7 more positions. Layout changes. |
+| 13 BBQ lighters, A6:F7 | 6×2 | +38.5 mm left | 290.0 × 83.5 mm |
+| 1 Spare, A1:C1 | 3×1 | +34.5 mm front | 125.5 × 76.0 mm |
+| 2 Spare, D1:E1 | 2×1 | +34.5 mm front | 83.5 × 76.0 mm |
+| 3 Spare, F1:I1 | 4×1 | +34.5 mm front | 167.5 × 76.0 mm |
+| 4 Spare, J1:L1 | 3×1 | +34.5 mm front | 125.5 × 76.0 mm |
 
-A grid of 11 units in a 533 mm drawer would also give 35.5 mm a side, which is
-suspiciously close to the recorded width — worth ruling out that only 11
-units' worth of baseplate was laid down when the measurement was taken.
+**The left gap is closed only in rows 6–7**, by the BBQ bin. Rows 1–5 keep it,
+as directed. Dropping the BBQ bin from 7 units to 6 freed column G, filled by
+a new 1×2 spare at G6:G7 between the lighters and the flashlights.
 
-**Either way the number is significant**: a grid unit is 42 mm, so a 35 mm gap
-is 7 mm short of one. 70 mm of total dead width would swallow another column
-with 28 mm to spare.
+**The extension rescued the BBQ bin.** At 6×2 on the grid alone it is 246.7 mm
+inside and a 272 mm lighter does not fit at all. With the 38.5 mm reach it is
+285.2 mm inside and holds two.
 
 ### Still unmeasured
 
