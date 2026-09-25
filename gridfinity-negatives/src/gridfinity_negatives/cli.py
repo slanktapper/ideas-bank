@@ -24,7 +24,7 @@ from .gauge import (
 )
 from .drawer import build_baseplates, build_spacers, estimate_mass_g, plan as plan_drawer
 from .model import BedTooSmall, BinSpec, PocketTooDeep, auto_spec, build, export
-from .layout import fill_remaining, load_items, pack
+from .layout import fill_remaining, load_defaults, load_items, pack
 from .preview import render, render_drawer, render_layout
 from .stamp import DEFAULT_DEPTH_MM, engrave_code
 from .trace import Trace, trace_photo, trace_scan
@@ -268,6 +268,7 @@ def cmd_layout(a: argparse.Namespace) -> int:
     try:
         p = plan_drawer(a.width, a.depth, a.height, printer)
         items = load_items(a.items)
+        defaults = load_defaults(a.items)
     except (ValueError, OSError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -276,10 +277,19 @@ def cmd_layout(a: argparse.Namespace) -> int:
         print("error: no items in the list", file=sys.stderr)
         return 1
 
-    layout = pack(p, items, allow_rotation=not a.no_rotate,
-                  height_u=a.bin_height)
+    # Command line wins, then the drawer's own declared height.
+    height_u = a.bin_height or defaults.get("bin_height_u")
+    if height_u:
+        note = "" if a.bin_height else "  (from the item file)"
+        print(f"Bin height  : {height_u}U uniform "
+              f"({height_u * 7 + 3.8:.1f} mm tall, "
+              f"{(height_u - 1) * 7} mm usable){note}")
+        if defaults.get("bin_height_provisional"):
+            print("              PROVISIONAL -- confirm against the drawer after "
+                  "the first print")
+    layout = pack(p, items, allow_rotation=not a.no_rotate, height_u=height_u)
     if a.fill:
-        fill_remaining(layout, a.fill, height_u=a.bin_height or 8)
+        fill_remaining(layout, a.fill, height_u=height_u or 8)
     print(f"Drawer   : {p.drawer_w_mm:.0f} x {p.drawer_d_mm:.0f} mm, "
           f"{p.units_x} x {p.units_y} units, {p.total_units} positions")
     print(f"Placed   : {len(layout.placements)} bins, "

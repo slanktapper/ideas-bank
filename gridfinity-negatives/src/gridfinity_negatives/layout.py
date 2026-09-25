@@ -245,6 +245,17 @@ class Layout:
         return all(p.item.measured for p in self.placements)
 
 
+def load_defaults(path: str | Path) -> dict:
+    """Drawer-wide settings from the item file's ``defaults:`` block.
+
+    ``bin_height_u`` lives here rather than on the command line so the value
+    is recorded with the drawer it belongs to, and changing it is one edit
+    that reaches every bin.
+    """
+    data = yaml.safe_load(Path(path).read_text()) or {}
+    return data.get("defaults", {}) or {}
+
+
 def load_items(path: str | Path) -> list[Item]:
     """Read an item list from YAML.
 

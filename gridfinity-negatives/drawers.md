@@ -79,8 +79,15 @@ across the bin where it would fall into the gap.
 accessories, keychains. Measured 2026-09-25 MDT; item list is
 `items-KWL1N1T.yml`.
 
-**Every bin in this drawer is 8U** — 59.8 mm tall with the lip, 49 mm usable.
-That is the tallest that clears the 63 mm drawer; 9U would be 66.8 mm and foul it.
+**Every bin in this drawer is one height.** The value is declared once, in
+`items-KWL1N1T.yml` under `defaults: bin_height_u`, and reaches every bin
+including the auto-filled spares.
+
+**Currently 8U — provisional.** 59.8 mm with the lip against a 63 mm drawer,
+and 9U at 66.8 mm would foul it. But the drawer's numbers are unconfirmed: the
+width already measured 35 mm against a predicted 14.5, so the height deserves
+the same scepticism. Confirm it against the real drawer once the first print is
+in, then change the one value.
 
 ### Layout as directed
 
@@ -90,8 +97,8 @@ Columns A–L from the left, rows 1–7 with **row 1 at the front**. Full drawer
 | Cells | Bin | Item |
 | --- | --- | --- |
 | A6:G7 | 7×2 | BBQ lighters |
-| H6:L7 | 5×2 | GPS |
-| A4:E5 | 5×2 | Flashlights |
+| H6:L7 | 5×2 | Flashlights |
+| A4:E5 | 5×2 | GPS |
 | H4:I5 | 2×2 | Accessories |
 | J4:L5 | 3×2 | Accessories |
 | H1:I3 | 2×3 | Bic lighters |
@@ -125,7 +132,7 @@ column and warns, because a stated bin size says nothing about what goes in it.
 | Bin | Holds | Have |
 | --- | --- | --- |
 | A6:G7 BBQ lighters | 2 | 3–4 |
-| A4:E5 flashlights | 2 | 4 |
+| H6:L7 flashlights | 2 | 4 |
 | H4:I5 accessories | 0 at the assumed 84 mm | — |
 
 - **Flashlights.** One 5×2 takes two: 78.7 mm across the width fits two 39 mm

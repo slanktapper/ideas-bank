@@ -2,10 +2,14 @@
 # Drawer 533 x 328 x 63 mm internal, 12 x 7 units. Columns A-L, rows 1-7 with
 # row 1 at the FRONT.
 #
-# Every bin in this drawer is 8U (59.8 mm tall, 49 mm usable) — the tallest
-# that clears the 63 mm drawer.
-#
 # at: places a bin exactly. Layout as directed 2026-09-25 MDT.
+
+# Every bin in this drawer is ONE height. The value is provisional until the
+# first print is in the drawer -- change bin_height_u here and it reaches
+# every bin, including the auto-filled spares.
+defaults:
+  bin_height_u: 8
+  bin_height_provisional: true
 
 items:
   - name: BBQ lighter
@@ -21,18 +25,18 @@ items:
   - name: GPS
     size: [167, 75, 40]
     bin_size: 5x2
-    at: H6
+    at: A4
     qty_typical: 1
     qty_max: 1
-    note: Back right, alongside the BBQ lighters.
+    note: Swapped with the flashlights 2026-09-25 MDT.
 
   - name: Flashlight
     size: [195, 39, 39]
     bin_size: 5x2
-    at: A4
+    at: H6
     qty_typical: 4
     qty_max: 4
-    note: Front-left of the BBQ lighters, left side.
+    note: Back right, alongside the BBQ lighters. Swapped with the GPS 2026-09-25 MDT.
 
   - name: Accessories
     size: [84, 75, 40]

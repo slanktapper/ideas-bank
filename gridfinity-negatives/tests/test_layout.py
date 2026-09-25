@@ -221,3 +221,51 @@ def test_capacity_accounts_for_stacking_in_the_height():
     shallow = Item("x", 60, 60, 24, bin_size="2x2", bin_height_u=3)
     deep = Item("x", 60, 60, 24, bin_size="2x2", bin_height_u=8)
     assert deep.capacity() > shallow.capacity()
+
+
+# --- drawer-wide defaults --------------------------------------------------
+
+def test_bin_height_is_declared_in_the_item_file():
+    """It belongs with the drawer, not in a flag someone has to remember."""
+    from gridfinity_negatives.layout import load_defaults
+    d = load_defaults("items-KWL1N1T.yml")
+    assert d.get("bin_height_u") == 8
+    assert d.get("bin_height_provisional") is True, (
+        "the height is not yet confirmed against the drawer; say so"
+    )
+
+
+def test_every_bin_takes_the_declared_height_including_spares():
+    """One height for the whole drawer -- auto-filled bins included."""
+    from gridfinity_negatives.layout import fill_remaining, load_defaults
+    d = load_defaults("items-KWL1N1T.yml")
+    h = d["bin_height_u"]
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=h)
+    fill_remaining(layout, ["2x2", "1x3", "1x2"], height_u=h)
+    heights = {p.item.height_units() for p in layout.placements}
+    assert heights == {h}, f"mixed heights in one drawer: {sorted(heights)}"
+
+
+def test_changing_the_declared_height_reaches_every_bin():
+    from gridfinity_negatives.layout import fill_remaining
+    for h in (3, 5, 8):
+        layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=h)
+        fill_remaining(layout, ["2x2", "1x3", "1x2"], height_u=h)
+        assert {p.item.height_units() for p in layout.placements} == {h}
+
+
+def test_missing_defaults_block_is_not_an_error(tmp_path):
+    from gridfinity_negatives.layout import load_defaults
+    f = tmp_path / "x.yml"
+    f.write_text("items: []\n")
+    assert load_defaults(f) == {}
+
+
+def test_gps_and_flashlight_are_swapped():
+    """GPS to A4:E5, flashlights to the back at H6:L7."""
+    from gridfinity_negatives.layout import cell_range
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    at = {p.item.name: cell_range(p.x_u, p.y_u, p.length_u, p.width_u)
+          for p in layout.placements if p.item.name in ("GPS", "Flashlight")}
+    assert at["GPS"] == "A4:E5"
+    assert at["Flashlight"] == "H6:L7"
