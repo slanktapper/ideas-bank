@@ -75,9 +75,38 @@ across the bin where it would fall into the gap.
 
 ### `KWL1N1T` — kitchen, west wall, lower section, 1st north column, 1st from top
 
-**Intended contents:** keychains and fobs.
+**Intended contents:** BBQ lighters, Bic lighters, flashlights, two GPS units.
+Measured 2026-09-25 MDT; the item list is `items-KWL1N1T.yml`.
 
-**Bins:** plain, no label shelf — clip-in removable holders instead, so nothing
+| Item | Size (mm) | Qty | Bin | Height |
+| --- | --- | --- | --- | --- |
+| BBQ lighter | 272 × 43 × 24 | 3–4 | 7×5, four share it | 5U |
+| Flashlight | 195 × 39 dia | 4 | 5×4, four share it | 7U |
+| GPS large | 167 × 75 × 40 | 1 | 5×2 | 7U |
+| GPS small | ~84 × 75 × 40 ? | 1 | 3×2 | 7U |
+| Bic lighter | 81 × 24 × 12 ? | 2–10 | 3×2 loose | 8U |
+
+**77 of 84 units used, 7 free.**
+
+Two sizes are assumed, not measured, and are marked `?`:
+
+- **GPS small** — "half as long" gives 84 mm. Width and height are assumed to
+  match the large unit.
+- **Bic lighter** — the commodity full-size figure, not measured from yours.
+
+**Quantities vary with bulk buying**, so bins are sized for the maximum ever
+held rather than today's count. A bin sized for one BBQ lighter fails the week
+four arrive, and reprinting a 7×5 bin is not a small job.
+
+**The BBQ lighters take 35 of 84 units** — 42% of the drawer for four objects.
+That is simply what 272 mm items cost on a 42 mm pitch, and it is worth
+deciding deliberately rather than discovering after printing.
+
+**The BBQ lighter bin is sized to a bounding box.** They are not rectangular,
+so 43 × 24 is the widest point. A traced negative (`gfneg build`) would hold
+them far more tightly if the wasted space matters.
+
+**Bin style:** plain, no label shelf — clip-in removable holders instead, so nothing
 overhangs the opening. Every bin engraved `KWL1N1T` underneath.
 
 **As reported:** 533 × 328 × 63 mm, described as "the size of components", with

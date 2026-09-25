@@ -132,3 +132,71 @@ def render_drawer(plan_result, path: str) -> str:
     fig.savefig(path, dpi=130)
     plt.close(fig)
     return path
+
+
+def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
+    """Top-down view of a packed drawer: every bin, sized and labelled."""
+    from .config import GRID_PITCH_MM
+
+    plan_result = layout.plan
+    W, D = plan_result.drawer_w_mm, plan_result.drawer_d_mm
+    mx, my = plan_result.margin_x_mm, plan_result.margin_y_mm
+
+    fig, ax = plt.subplots(figsize=(max(7, W / 42), max(6, D / 42)))
+    ax.add_patch(Rectangle((0, 0), W, D, facecolor="#fdeaea",
+                           edgecolor="#2d3748", lw=2.2, zorder=0))
+    ax.add_patch(Rectangle((mx, my), plan_result.units_x * GRID_PITCH_MM,
+                           plan_result.units_y * GRID_PITCH_MM,
+                           facecolor="#f2f4f7", edgecolor="none", zorder=1))
+
+    for i in range(plan_result.units_x + 1):
+        x = mx + i * GRID_PITCH_MM
+        ax.plot([x, x], [my, my + plan_result.units_y * GRID_PITCH_MM],
+                color="#cfd6e0", lw=0.6, zorder=2)
+    for j in range(plan_result.units_y + 1):
+        y = my + j * GRID_PITCH_MM
+        ax.plot([mx, mx + plan_result.units_x * GRID_PITCH_MM], [y, y],
+                color="#cfd6e0", lw=0.6, zorder=2)
+
+    palette = ["#1e3a5f", "#c2410c", "#166534", "#6b21a8", "#0f766e",
+               "#9a3412", "#3730a3", "#854d0e", "#9f1239", "#155e75"]
+    seen: dict[str, str] = {}
+    for p in layout.placements:
+        colour = seen.setdefault(p.item.name, palette[len(seen) % len(palette)])
+        x = mx + p.x_u * GRID_PITCH_MM + 1.2
+        y = my + p.y_u * GRID_PITCH_MM + 1.2
+        w = p.length_u * GRID_PITCH_MM - 2.4
+        h = p.width_u * GRID_PITCH_MM - 2.4
+        ax.add_patch(Rectangle((x, y), w, h, facecolor=colour, alpha=0.20,
+                               edgecolor=colour, lw=1.8, zorder=3))
+        label = p.item.name if p.item.measured else f"{p.item.name} ?"
+        fs = max(5.5, min(9, w / (0.62 * max(6, len(label)))))
+        ax.text(x + w / 2, y + h / 2 + (2.5 if h > 26 else 0), label,
+                ha="center", va="center", fontsize=fs, color=colour,
+                fontweight="bold", zorder=4)
+        if h > 26:
+            ax.text(x + w / 2, y + h / 2 - 7,
+                    f"{p.length_u}x{p.width_u}" + ("  rot" if p.rotated else ""),
+                    ha="center", va="center", fontsize=6.5,
+                    color=colour, alpha=0.8, zorder=4)
+
+    ax.set_aspect("equal")
+    ax.set_xlim(-14, W + 14)
+    ax.set_ylim(-14, D + 14)
+    ax.set_xlabel("mm")
+    head = title or (f"{code} — " if code else "")
+    ax.set_title(
+        f"{head}{W:.0f} x {D:.0f} mm, {plan_result.units_x} x {plan_result.units_y} units\n"
+        f"{len(layout.placements)} bins placed, {layout.free_units} of "
+        f"{plan_result.total_units} units free"
+        + ("" if layout.all_measured else
+           "\nCONTAINS UNMEASURED PLACEHOLDER SIZES - marked ?"),
+        fontsize=10,
+        color="#1f2933" if layout.all_measured else "#b91c1c",
+    )
+    for s in ax.spines.values():
+        s.set_visible(False)
+    fig.tight_layout()
+    fig.savefig(path, dpi=140)
+    plt.close(fig)
+    return path

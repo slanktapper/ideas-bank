@@ -1,0 +1,52 @@
+# KWL1N1T — kitchen, west wall, lower section, 1st north column, 1st from top
+# Drawer: 533 x 328 x 63 mm internal, 12 x 7 units.
+#
+# size: [width, depth, height] mm — the object, not the bin. Clearance and
+#       walls are added by gfneg.
+# qty_max: bins are sized for the MOST you ever hold, not today's count.
+#       Bulk buying is the normal case here, and a multipack that does not fit
+#       means reprinting the bin.
+# loose: true  — tipped into a bin, sized by volume, not laid out in rows.
+
+items:
+  - name: BBQ lighter
+    size: [272, 43, 24]
+    per_bin: 4
+    qty_typical: 3
+    qty_max: 4
+    note: >
+      Not a rectangular solid — 43 x 24 is the bounding box, so the bin is
+      sized for the widest point. A traced negative would fit far tighter;
+      see gfneg build.
+
+  - name: Flashlight
+    size: [195, 39, 39]
+    per_bin: 4
+    qty_typical: 4
+    qty_max: 4
+    note: Largest of the four; 39 mm is the barrel diameter. Cylindrical, so they roll — rows, not a heap.
+
+  - name: GPS large
+    size: [167, 75, 40]
+    qty_typical: 1
+    qty_max: 1
+
+  - name: GPS small
+    size: [84, 75, 40]
+    qty_typical: 1
+    qty_max: 1
+    measured: false
+    note: >
+      "Half as long" as the large one gives 84 mm. Width and height are
+      ASSUMED to match the large unit and are NOT measured.
+
+  - name: Bic lighter
+    size: [81, 24, 12]
+    loose: true
+    bin_height_u: 8
+    qty_typical: 2
+    qty_max: 10
+    measured: false
+    note: >
+      Standard full-size Bic, 81 x 24 x 12 mm. NOT measured from yours —
+      taken from the commodity size. Verify before printing.

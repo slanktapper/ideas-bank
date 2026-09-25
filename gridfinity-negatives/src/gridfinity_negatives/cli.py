@@ -20,7 +20,8 @@ from .geometry import pocket_profile, straighten
 from .codes import is_valid, parse as parse_code
 from .drawer import build_baseplates, build_spacers, estimate_mass_g, plan as plan_drawer
 from .model import BedTooSmall, BinSpec, PocketTooDeep, auto_spec, build, export
-from .preview import render, render_drawer
+from .layout import load_items, pack
+from .preview import render, render_drawer, render_layout
 from .stamp import DEFAULT_DEPTH_MM, engrave_code
 from .trace import Trace, trace_photo, trace_scan
 
@@ -255,6 +256,58 @@ def cmd_bin(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_layout(a: argparse.Namespace) -> int:
+    rc = _check_code(a.code)
+    if rc:
+        return rc
+    printer = PRINTERS[a.printer]
+    try:
+        p = plan_drawer(a.width, a.depth, a.height, printer)
+        items = load_items(a.items)
+    except (ValueError, OSError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+    if not items:
+        print("error: no items in the list", file=sys.stderr)
+        return 1
+
+    layout = pack(p, items, allow_rotation=not a.no_rotate)
+    print(f"Drawer   : {p.drawer_w_mm:.0f} x {p.drawer_d_mm:.0f} mm, "
+          f"{p.units_x} x {p.units_y} units, {p.total_units} positions")
+    print(f"Placed   : {len(layout.placements)} bins, "
+          f"{layout.used_units} units used, {layout.free_units} free")
+
+    by_size: dict = {}
+    for pl in layout.placements:
+        key = (pl.length_u, pl.width_u, pl.item.height_units(), pl.item.name)
+        by_size[key] = by_size.get(key, 0) + 1
+    print()
+    print(f"{'qty':>4}  {'bin':<10} {'height':<8} item")
+    for (lu, wu, hu, name), qty in sorted(by_size.items(), key=lambda kv: -kv[1]):
+        print(f"{qty:>4}  {lu}x{wu:<8} {hu}U{'':<5} {name}")
+
+    unmeasured = {i.name for i in items if not i.measured}
+    if unmeasured:
+        print()
+        print("warning: these sizes are PLACEHOLDERS, not measurements: "
+              + ", ".join(sorted(unmeasured)))
+        print("         do not print from this layout until they are measured.")
+    if layout.unplaced:
+        print()
+        for i in layout.unplaced:
+            lu, wu = i.footprint_units()
+            print(f"unplaced: {i.name} needs {lu}x{wu} units -- no free block that size")
+
+    d = Path(a.out)
+    d.mkdir(parents=True, exist_ok=True)
+    png = str(d / f"{(a.code or 'drawer').upper()}-layout.png")
+    render_layout(layout, png, code=(a.code or "").upper())
+    print()
+    print(f"wrote {png}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         prog="gfneg",
@@ -346,6 +399,18 @@ def main(argv: list[str] | None = None) -> int:
     n.add_argument("--name", help="output filename stem")
     n.add_argument("--out", default="out")
     n.set_defaults(func=cmd_bin)
+
+    ly = sub.add_parser("layout", help="pack measured items into a drawer and draw it")
+    ly.add_argument("--width", type=float, required=True)
+    ly.add_argument("--depth", type=float, required=True)
+    ly.add_argument("--height", type=float, default=None)
+    ly.add_argument("--items", required=True, help="YAML list of items and sizes")
+    ly.add_argument("--code", help="drawer location code, for the title")
+    ly.add_argument("--no-rotate", action="store_true",
+                    help="do not turn items 90 degrees to make them fit")
+    ly.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")
+    ly.add_argument("--out", default="out")
+    ly.set_defaults(func=cmd_layout)
 
     a = p.parse_args(argv)
     return a.func(a)

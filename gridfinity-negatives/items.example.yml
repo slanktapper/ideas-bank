@@ -1,0 +1,37 @@
+# Item list for a drawer layout.  Copy this, measure, and edit.
+#
+# size: [width, depth, height] in mm -- the object's real extents, not the bin.
+#       gfneg adds clearance and wall thickness itself.
+# measured: false marks a GUESS. Any layout containing one is stamped as
+#       unsafe to print, because a bin sized from a guess is scrap.
+#
+# ---------------------------------------------------------------------------
+# EVERY SIZE BELOW IS A PLACEHOLDER. None of these were measured. They exist
+# only so the layout renderer can be demonstrated. Replace them.
+# ---------------------------------------------------------------------------
+
+items:
+  - name: BBQ lighter
+    size: [270, 35, 22]
+    qty: 2
+    measured: false
+
+  - name: Flashlight
+    size: [150, 35, 35]
+    qty: 3
+    measured: false
+
+  - name: GPS
+    size: [160, 62, 36]
+    qty: 1
+    measured: false
+
+  - name: Keys
+    size: [70, 30, 12]
+    qty: 6
+    measured: false
+
+  - name: Fobs
+    size: [55, 38, 16]
+    qty: 8
+    measured: false
