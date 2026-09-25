@@ -85,14 +85,15 @@ That is the tallest that clears the 63 mm drawer; 9U would be 66.8 mm and foul i
 ### Layout as directed
 
 Columns A–L from the left, rows 1–7 with **row 1 at the front**. Full drawer,
-**84 of 84 units, 15 bins, nothing wasted.**
+**84 of 84 units, 16 bins, nothing wasted.**
 
 | Cells | Bin | Item |
 | --- | --- | --- |
 | A6:G7 | 7×2 | BBQ lighters |
 | H6:L7 | 5×2 | GPS |
-| A4:E5 | 5×2 | Flashlights (left) |
-| H4:L5 | 5×2 | Flashlights (right) |
+| A4:E5 | 5×2 | Flashlights |
+| H4:I5 | 2×2 | Accessories |
+| J4:L5 | 3×2 | Accessories |
 | H1:I3 | 2×3 | Bic lighters |
 | A1:C2 | 3×2 | Accessories |
 | D1:E2, F1:G2, J1:K2, F3:G4 | 2×2 | Spare |
@@ -115,6 +116,39 @@ So capacity is **2 lighters**, against the 3–4 held. A second 7×2 elsewhere, 
 a 7×3 here, would take all four — a 7×3 is 120.7 mm wide, enough for two
 abreast, and two stacked gives four. That costs 7 more units, which the drawer
 does not currently have.
+
+### Bin capacity does not follow from bin size
+
+Two bins hold less than the quantity held. `gfneg layout` now prints a `holds`
+column and warns, because a stated bin size says nothing about what goes in it.
+
+| Bin | Holds | Have |
+| --- | --- | --- |
+| A6:G7 BBQ lighters | 2 | 3–4 |
+| A4:E5 flashlights | 2 | 4 |
+| H4:I5 accessories | 0 at the assumed 84 mm | — |
+
+- **Flashlights.** One 5×2 takes two: 78.7 mm across the width fits two 39 mm
+  barrels, and 49 mm of depth is one layer. The right-hand bin became
+  accessories, so two flashlights have no home here.
+- **H4:I5 is 78.7 mm square inside**, and the small GPS is assumed to be 84 mm
+  long. It does not fit. If that unit lives in this pair, it must be J4:L5.
+  The 2×2 takes anything up to 78.7 × 78.7 × 49.
+
+### Addressing the gaps
+
+The 42 mm pitch leaves **14.5 mm at each side and 17.0 mm front and back** —
+266 cm² of the 1748 cm² floor, 15%. Four ways to deal with it:
+
+| Option | What it gives |
+| --- | --- |
+| **Printed spacers** | cq-gridfinity generates corner, side and front/back fillers with interlocking pegs. Both margins clear the 4 mm minimum. Stops the grid sliding when the drawer is pulled. Already implemented — `gfneg drawer` writes them. |
+| **Pad the edge baseplate tiles** | Extend the outer tiles to the drawer walls, so there is no gap and no separate parts. Neatest result, but needs code cq-gridfinity does not have. |
+| **Push the grid to one corner** | Consolidates the slack into one **34 × 533 mm** back channel or a **29 × 328 mm** side channel — usable for long thin things rather than four dead strips. |
+| **Leave it** | Bins shift when the drawer opens. Free. |
+
+Re-measuring the depth remains worth doing first: at ≥336 mm the drawer takes
+an eighth row, which both removes the front/back gap and adds 12 positions.
 
 ### Still unmeasured
 

@@ -34,11 +34,21 @@ items:
     qty_max: 4
     note: Front-left of the BBQ lighters, left side.
 
-  - name: Flashlight
-    size: [195, 39, 39]
-    bin_size: 5x2
+  - name: Accessories
+    size: [84, 75, 40]
+    bin_size: 2x2
     at: H4
-    note: Right side. Two bins, two flashlights each.
+    measured: false
+    note: >
+      Replaced the right-hand flashlight bin, 2026-09-25 MDT. Width and
+      height assumed to match the large GPS and NOT measured.
+
+  - name: Accessories
+    size: [84, 75, 40]
+    bin_size: 3x2
+    at: J4
+    measured: false
+    note: Second half of the former right flashlight bin.
 
   - name: Bic lighter
     size: [81, 24, 12]
@@ -52,7 +62,8 @@ items:
   - name: Accessories
     size: [84, 75, 40]
     bin_size: 3x2
+    at: A1
     measured: false
     note: >
-      Formerly "GPS small". Auto-placed. Width and height assumed to match
-      the large GPS and NOT measured.
+      Formerly "GPS small". Width and height assumed to match the large GPS
+      and NOT measured.

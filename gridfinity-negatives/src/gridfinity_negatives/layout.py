@@ -178,6 +178,32 @@ class Item:
                 best = (key, units)
         return best[1]
 
+    def capacity(self, tuning: Tuning = DEFAULTS) -> int:
+        """How many of this object actually fit in its bin.
+
+        Worth computing rather than assuming: a stated bin size says nothing
+        about how much goes in it, and the answer is routinely lower than the
+        quantity held. Counts a plain rectangular packing -- across the width,
+        along the depth, stacked in the height.
+        """
+        lu, wu = self.footprint_units(tuning)
+        iw = lu * GRID_PITCH_MM - 0.5 - 2 * tuning.wall_mm
+        idp = wu * GRID_PITCH_MM - 0.5 - 2 * tuning.wall_mm
+        ih = max(0.0, (self.height_units() - 1) * 7.0)
+
+        best = 0
+        for a, b in ((self.width_mm, self.depth_mm), (self.depth_mm, self.width_mm)):
+            if a <= 0 or b <= 0:
+                continue
+            n = int(iw // a) * int(idp // b)
+            if self.height_mm > 0:
+                n *= max(1, int(ih // self.height_mm))
+            best = max(best, n)
+        return best
+
+    def wanted(self) -> int:
+        return self.qty_max if self.qty_max is not None else self.qty
+
     def height_units(self) -> int:
         if self.bin_height_u:
             return self.bin_height_u

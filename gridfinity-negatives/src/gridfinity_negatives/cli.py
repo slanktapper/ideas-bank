@@ -284,12 +284,30 @@ def cmd_layout(a: argparse.Namespace) -> int:
     from .layout import cell_range
 
     print()
-    print(f"{'cells':<10} {'bin':<8} {'height':<7} item")
+    print(f"{'cells':<10} {'bin':<8} {'height':<7} {'holds':<8} item")
+    shortfalls = []
+    seen_cap: dict[str, list] = {}
     for pl in sorted(layout.placements, key=lambda p: (p.y_u, p.x_u)):
         ref = cell_range(pl.x_u, pl.y_u, pl.length_u, pl.width_u)
         name = pl.item.name + ("" if pl.item.measured else " ?")
+        if pl.item.width_mm > 0:
+            cap = pl.item.capacity()
+            seen_cap.setdefault(pl.item.name, []).append(cap)
+            holds = str(cap)
+        else:
+            holds = "-"
         print(f"{ref:<10} {pl.length_u}x{pl.width_u:<6} "
-              f"{pl.item.height_units()}U{'':<4} {name}")
+              f"{pl.item.height_units()}U{'':<4} {holds:<8} {name}")
+
+    for nm, caps in seen_cap.items():
+        want = next(i.wanted() for i in items if i.name == nm)
+        total = sum(caps)
+        if total < want:
+            shortfalls.append(f"{nm}: bins hold {total}, you have {want}")
+    if shortfalls:
+        print()
+        for line in shortfalls:
+            print(f"warning: {line}")
 
     unmeasured = {i.name for i in items if not i.measured}
     if unmeasured:

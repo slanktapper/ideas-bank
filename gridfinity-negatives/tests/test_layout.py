@@ -195,3 +195,29 @@ def test_an_8U_bin_clears_the_63mm_drawer():
     """8U is 59.8mm with the lip; a 9U at 66.8mm would foul the drawer."""
     assert 8 * 7 + 3.8 <= 63.0
     assert 9 * 7 + 3.8 > 63.0
+
+
+# --- capacity --------------------------------------------------------------
+
+def test_capacity_counts_what_actually_fits():
+    """A 7x2 at 8U takes two 272mm lighters: one across, two stacked."""
+    it = Item("bbq", 272, 43, 24, bin_size="7x2", bin_height_u=8)
+    assert it.capacity() == 2
+
+
+def test_capacity_is_zero_when_the_object_is_longer_than_the_bin():
+    """An 84mm object cannot go in a 2x2, whose interior is 78.7mm square."""
+    it = Item("acc", 84, 75, 40, bin_size="2x2", bin_height_u=8)
+    assert it.capacity() == 0
+    assert Item("acc", 84, 75, 40, bin_size="3x2", bin_height_u=8).capacity() >= 1
+
+
+def test_capacity_uses_the_better_of_the_two_orientations():
+    it = Item("thin", 30, 200, 10, bin_size="6x1", bin_height_u=8)
+    assert it.capacity() >= 1, "turning the object 90 degrees was not considered"
+
+
+def test_capacity_accounts_for_stacking_in_the_height():
+    shallow = Item("x", 60, 60, 24, bin_size="2x2", bin_height_u=3)
+    deep = Item("x", 60, 60, 24, bin_size="2x2", bin_height_u=8)
+    assert deep.capacity() > shallow.capacity()
