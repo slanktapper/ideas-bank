@@ -1,66 +1,58 @@
 # KWL1N1T — kitchen, west wall, lower section, 1st north column, 1st from top
-# Drawer: 533 x 328 x 63 mm internal, 12 x 7 units.
+# Drawer 533 x 328 x 63 mm internal, 12 x 7 units. Columns A-L, rows 1-7 with
+# row 1 at the FRONT.
 #
-# size: [width, depth, height] mm — the object, not the bin. Clearance and
-#       walls are added by gfneg.
-# qty_max: bins are sized for the MOST you ever hold, not today's count.
-#       Bulk buying is the normal case here, and a multipack that does not fit
-#       means reprinting the bin.
-# loose: true  — tipped into a bin, sized by volume, not laid out in rows.
+# Every bin in this drawer is 8U (59.8 mm tall, 49 mm usable) — the tallest
+# that clears the 63 mm drawer.
+#
+# at: places a bin exactly. Layout as directed 2026-09-25 MDT.
 
 items:
   - name: BBQ lighter
     size: [272, 43, 24]
-    per_bin: 4
+    bin_size: 7x2
+    at: A6
     qty_typical: 3
     qty_max: 4
     note: >
-      Not a rectangular solid — 43 x 24 is the bounding box, so the bin is
-      sized for the widest point. A traced negative would fit far tighter;
-      see gfneg build.
+      Back left. A 7x2 at 8U is 288.7 x 78.7 x 49 mm inside: one lighter
+      across the width, two stacked in the depth. CAPACITY IS 2, not 4.
+
+  - name: GPS
+    size: [167, 75, 40]
+    bin_size: 5x2
+    at: H6
+    qty_typical: 1
+    qty_max: 1
+    note: Back right, alongside the BBQ lighters.
 
   - name: Flashlight
     size: [195, 39, 39]
-    per_bin: 4
+    bin_size: 5x2
+    at: A4
     qty_typical: 4
     qty_max: 4
-    note: Largest of the four; 39 mm is the barrel diameter. Cylindrical, so they roll — rows, not a heap.
+    note: Front-left of the BBQ lighters, left side.
 
-  - name: GPS large
-    size: [167, 75, 40]
-    qty_typical: 1
-    qty_max: 1
-
-  - name: GPS small
-    size: [84, 75, 40]
-    qty_typical: 1
-    qty_max: 1
-    measured: false
-    note: >
-      "Half as long" as the large one gives 84 mm. Width and height are
-      ASSUMED to match the large unit and are NOT measured.
+  - name: Flashlight
+    size: [195, 39, 39]
+    bin_size: 5x2
+    at: H4
+    note: Right side. Two bins, two flashlights each.
 
   - name: Bic lighter
     size: [81, 24, 12]
-    loose: true
-    bin_height_u: 8
+    bin_size: 2x3
+    at: H1
     qty_typical: 2
     qty_max: 10
     measured: false
-    note: >
-      Standard full-size Bic, 81 x 24 x 12 mm. NOT measured from yours —
-      taken from the commodity size. Verify before printing.
+    note: In front of the GPS. Commodity Bic size, NOT measured from yours.
 
-  - name: Keychains
-    size: [80, 38, 14]
-    bin_size: 2x1
-    bins: 6
-    bin_height_u: 3
-    qty_typical: 15
-    qty_max: 18
+  - name: Accessories
+    size: [84, 75, 40]
+    bin_size: 3x2
     measured: false
     note: >
-      ~15 keychains split across 6 bins so they can be grouped by purpose
-      rather than heaped together. Size is ASSUMED — a couple of keys, a ring
-      and a fob. NOT measured. Measure the largest one you own, not a typical
-      one, or the biggest will not go in.
+      Formerly "GPS small". Auto-placed. Width and height assumed to match
+      the large GPS and NOT measured.

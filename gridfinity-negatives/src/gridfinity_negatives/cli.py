@@ -20,7 +20,7 @@ from .geometry import pocket_profile, straighten
 from .codes import is_valid, parse as parse_code
 from .drawer import build_baseplates, build_spacers, estimate_mass_g, plan as plan_drawer
 from .model import BedTooSmall, BinSpec, PocketTooDeep, auto_spec, build, export
-from .layout import load_items, pack
+from .layout import fill_remaining, load_items, pack
 from .preview import render, render_drawer, render_layout
 from .stamp import DEFAULT_DEPTH_MM, engrave_code
 from .trace import Trace, trace_photo, trace_scan
@@ -272,7 +272,10 @@ def cmd_layout(a: argparse.Namespace) -> int:
         print("error: no items in the list", file=sys.stderr)
         return 1
 
-    layout = pack(p, items, allow_rotation=not a.no_rotate)
+    layout = pack(p, items, allow_rotation=not a.no_rotate,
+                  height_u=a.bin_height)
+    if a.fill:
+        fill_remaining(layout, a.fill, height_u=a.bin_height or 8)
     print(f"Drawer   : {p.drawer_w_mm:.0f} x {p.drawer_d_mm:.0f} mm, "
           f"{p.units_x} x {p.units_y} units, {p.total_units} positions")
     print(f"Placed   : {len(layout.placements)} bins, "
@@ -407,6 +410,10 @@ def main(argv: list[str] | None = None) -> int:
     ly.add_argument("--height", type=float, default=None)
     ly.add_argument("--items", required=True, help="YAML list of items and sizes")
     ly.add_argument("--code", help="drawer location code, for the title")
+    ly.add_argument("--bin-height", type=int, default=None,
+                    help="force every bin to this height in units")
+    ly.add_argument("--fill", nargs="*", metavar="LxW",
+                    help="tile leftover grid with these bin sizes, e.g. 2x2 1x3 1x2")
     ly.add_argument("--no-rotate", action="store_true",
                     help="do not turn items 90 degrees to make them fit")
     ly.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")

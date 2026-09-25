@@ -11,7 +11,7 @@ an optimal one you cannot.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import yaml
@@ -86,6 +86,9 @@ class Item:
     bins: int | None = None
     """Explicit number of bins, overriding the calculation. For items split
     across several bins by purpose rather than by capacity."""
+    at: str | None = None
+    """Explicit position, as a cell reference like "A6". Placed there before
+    anything is auto-packed, so a stated layout is honoured exactly."""
     bin_size: str | None = None
     """Explicit bin footprint, "LxW", overriding all sizing.
 
@@ -102,6 +105,10 @@ class Item:
         """Bins required to hold ``qty_max`` objects at ``per_bin`` each."""
         if self.bins is not None:
             return max(1, self.bins)
+        if self.at:
+            # An explicit position names one bin. Without this, qty_max would
+            # conjure extra copies that all contend for the same cell.
+            return 1
         if self.loose:
             return 1
         total = self.qty_max if self.qty_max is not None else self.qty
@@ -195,6 +202,7 @@ class Placement:
 @dataclass
 class Layout:
     plan: DrawerPlan
+    _grid: list | None = field(default=None, repr=False, compare=False)
     placements: list[Placement] = field(default_factory=list)
     unplaced: list[Item] = field(default_factory=list)
 
@@ -242,6 +250,7 @@ def load_items(path: str | Path) -> list[Item]:
                               if row.get("bin_height_u") is not None else None),
                 bins=(int(row["bins"]) if row.get("bins") is not None else None),
                 bin_size=(str(row["bin_size"]) if row.get("bin_size") else None),
+                at=(str(row["at"]) if row.get("at") else None),
                 measured=bool(row.get("measured", True)),
                 note=str(row.get("note", "")),
             )
@@ -251,27 +260,19 @@ def load_items(path: str | Path) -> list[Item]:
 
 def pack(
     plan: DrawerPlan, items: list[Item], tuning: Tuning = DEFAULTS,
-    allow_rotation: bool = True,
+    allow_rotation: bool = True, height_u: int | None = None,
 ) -> Layout:
-    """Place items on the grid, largest first, first fit.
+    """Place items on the grid: stated positions first, then largest-first.
 
-    Largest first because a big item that cannot find a home late in the
-    process wastes far more space than a small one.
+    Anything carrying ``at`` goes exactly where it says. The rest is packed
+    largest first, because a big item that cannot find a home late wastes far
+    more space than a small one.
     """
     grid = [[False] * plan.units_x for _ in range(plan.units_y)]
-
-    expanded: list[Item] = []
-    for it in items:
-        for _ in range(it.bins_needed):
-            expanded.append(it)
-    expanded.sort(
-        key=lambda i: (i.footprint_units(tuning)[0] * i.footprint_units(tuning)[1],
-                       max(i.footprint_units(tuning))),
-        reverse=True,
-    )
+    layout = Layout(plan=plan)
 
     def free_at(x, y, lu, wu) -> bool:
-        if x + lu > plan.units_x or y + wu > plan.units_y:
+        if x < 0 or y < 0 or x + lu > plan.units_x or y + wu > plan.units_y:
             return False
         return all(not grid[y + j][x + i] for j in range(wu) for i in range(lu))
 
@@ -280,22 +281,44 @@ def pack(
             for i in range(lu):
                 grid[y + j][x + i] = True
 
-    layout = Layout(plan=plan)
+    expanded: list[Item] = []
+    for it in items:
+        if height_u:
+            it = replace(it, bin_height_u=height_u)
+        for _ in range(it.bins_needed):
+            expanded.append(it)
+
+    # Stated positions first, so an explicit layout is never displaced.
+    rest = []
     for it in expanded:
+        if not it.at:
+            rest.append(it)
+            continue
+        lu, wu = it.footprint_units(tuning)
+        x, y = parse_cell(it.at)
+        if free_at(x, y, lu, wu):
+            occupy(x, y, lu, wu)
+            layout.placements.append(Placement(it, x, y, lu, wu))
+        else:
+            layout.unplaced.append(it)
+
+    rest.sort(
+        key=lambda i: (i.footprint_units(tuning)[0] * i.footprint_units(tuning)[1],
+                       max(i.footprint_units(tuning))),
+        reverse=True,
+    )
+    for it in rest:
         lu, wu = it.footprint_units(tuning)
         options = [(lu, wu, False)]
         if allow_rotation and lu != wu:
             options.append((wu, lu, True))
-
         placed = False
         for y in range(plan.units_y):
             for x in range(plan.units_x):
                 for olu, owu, rot in options:
                     if free_at(x, y, olu, owu):
                         occupy(x, y, olu, owu)
-                        layout.placements.append(
-                            Placement(it, x, y, olu, owu, rot)
-                        )
+                        layout.placements.append(Placement(it, x, y, olu, owu, rot))
                         placed = True
                         break
                 if placed:
@@ -304,4 +327,54 @@ def pack(
                 break
         if not placed:
             layout.unplaced.append(it)
+
+    layout._grid = grid
+    return layout
+
+
+def fill_remaining(
+    layout: Layout, sizes: list[str], name: str = "Spare",
+    height_u: int = 8, tuning: Tuning = DEFAULTS,
+) -> Layout:
+    """Tile whatever grid is still empty with general-purpose bins.
+
+    Sizes are tried largest first, so the biggest bin that fits a gap wins and
+    the offcuts stay small.
+    """
+    grid = getattr(layout, "_grid", None)
+    if grid is None:
+        raise ValueError("fill_remaining needs a layout produced by pack()")
+    plan = layout.plan
+
+    parsed = []
+    for spec in sizes:
+        lu, wu = (int(v) for v in spec.lower().split("x"))
+        parsed.append((lu, wu))
+    parsed.sort(key=lambda t: t[0] * t[1], reverse=True)
+
+    def free_at(x, y, lu, wu) -> bool:
+        if x + lu > plan.units_x or y + wu > plan.units_y:
+            return False
+        return all(not grid[y + j][x + i] for j in range(wu) for i in range(lu))
+
+    changed = True
+    while changed:
+        changed = False
+        for lu, wu in parsed:
+            for orient in ({(lu, wu), (wu, lu)} if lu != wu else {(lu, wu)}):
+                olu, owu = orient
+                for y in range(plan.units_y):
+                    for x in range(plan.units_x):
+                        if free_at(x, y, olu, owu):
+                            for j in range(owu):
+                                for i in range(olu):
+                                    grid[y + j][x + i] = True
+                            layout.placements.append(
+                                Placement(
+                                    Item(name, 0, 0, 0, bin_size=f"{olu}x{owu}",
+                                         bin_height_u=height_u),
+                                    x, y, olu, owu,
+                                )
+                            )
+                            changed = True
     return layout

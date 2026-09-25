@@ -62,13 +62,10 @@ def test_packing_never_overlaps_and_stays_in_bounds():
     assert len(seen) == layout.used_units
 
 
-def test_the_drawer_is_over_capacity_with_the_keychains_added():
-    """84 units available, ~89 wanted. Recorded so the shortfall is tracked."""
-    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"))
-    shortfall = sum(i.footprint_units()[0] * i.footprint_units()[1]
-                    for i in layout.unplaced)
-    assert shortfall > 0, "expected an overflow; the item list may have changed"
-    assert layout.used_units + shortfall > KWL1N1T.total_units
+def test_the_directed_layout_places_everything():
+    """The stated arrangement fits with no overflow."""
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    assert not layout.unplaced, [i.name for i in layout.unplaced]
 
 
 def test_unmeasured_items_mark_the_whole_layout():
@@ -128,8 +125,73 @@ def test_malformed_bin_size_is_rejected():
 
 
 def test_overflow_is_reported_rather_than_quietly_dropped():
-    """The real drawer is over capacity; that must be visible, not silent."""
-    items = load_items("items-KWL1N1T.yml")
-    layout = pack(KWL1N1T, items)
-    assert layout.unplaced, "overflow vanished -- check the item list"
+    """An item with nowhere to go must surface, not vanish."""
+    layout = pack(KWL1N1T, [Item("beam", 900, 300, 20)])
+    assert layout.unplaced, "overflow vanished"
     assert layout.used_units <= KWL1N1T.total_units
+
+
+# --- stated placement and fill ---------------------------------------------
+
+def test_an_item_with_at_goes_exactly_there():
+    from gridfinity_negatives.layout import cell_range
+    it = Item("bbq", 272, 43, 24, bin_size="7x2", at="A6")
+    layout = pack(KWL1N1T, [it])
+    assert len(layout.placements) == 1
+    p = layout.placements[0]
+    assert cell_range(p.x_u, p.y_u, p.length_u, p.width_u) == "A6:G7"
+
+
+def test_at_means_one_bin_not_one_per_item():
+    """Regression: qty_max conjured extra copies that fought for the same cell."""
+    it = Item("bbq", 272, 43, 24, bin_size="7x2", at="A6", qty_max=4)
+    assert it.bins_needed == 1
+    layout = pack(KWL1N1T, [it])
+    assert not layout.unplaced, "phantom copies contended for the stated cell"
+
+
+def test_stated_positions_are_never_displaced_by_packing():
+    """A big auto-packed item must not take a cell that was asked for."""
+    stated = Item("gps", 167, 75, 40, bin_size="5x2", at="H6")
+    greedy = Item("big", 400, 250, 20)
+    layout = pack(KWL1N1T, [greedy, stated])
+    placed = {p.item.name: (p.x_u, p.y_u) for p in layout.placements}
+    assert placed.get("gps") == (7, 5), "the stated position was taken"
+
+
+def test_a_stated_position_off_the_grid_is_reported():
+    it = Item("x", 10, 10, 10, bin_size="2x2", at="L7")   # runs off the edge
+    layout = pack(KWL1N1T, [it])
+    assert layout.unplaced
+
+
+def test_fill_leaves_no_gap_it_could_have_filled():
+    from gridfinity_negatives.layout import fill_remaining
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    fill_remaining(layout, ["2x2", "1x3", "1x2"], height_u=8)
+    assert layout.free_units == 0, f"{layout.free_units} units left unfilled"
+
+
+def test_fill_never_overlaps_what_was_already_placed():
+    from gridfinity_negatives.layout import fill_remaining
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    fill_remaining(layout, ["2x2", "1x3", "1x2"], height_u=8)
+    seen = set()
+    for p in layout.placements:
+        for i in range(p.length_u):
+            for j in range(p.width_u):
+                cell = (p.x_u + i, p.y_u + j)
+                assert cell not in seen, f"overlap at {cell}"
+                seen.add(cell)
+    assert len(seen) == KWL1N1T.total_units
+
+
+def test_forcing_a_height_applies_to_every_bin():
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"), height_u=8)
+    assert {p.item.height_units() for p in layout.placements} == {8}
+
+
+def test_an_8U_bin_clears_the_63mm_drawer():
+    """8U is 59.8mm with the lip; a 9U at 66.8mm would foul the drawer."""
+    assert 8 * 7 + 3.8 <= 63.0
+    assert 9 * 7 + 3.8 > 63.0

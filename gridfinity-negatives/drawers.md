@@ -75,72 +75,51 @@ across the bin where it would fall into the gap.
 
 ### `KWL1N1T` — kitchen, west wall, lower section, 1st north column, 1st from top
 
-**Intended contents:** BBQ lighters, Bic lighters, flashlights, two GPS units.
-Measured 2026-09-25 MDT; the item list is `items-KWL1N1T.yml`.
+**Intended contents:** BBQ lighters, Bic lighters, flashlights, a GPS,
+accessories, keychains. Measured 2026-09-25 MDT; item list is
+`items-KWL1N1T.yml`.
 
-| Item | Size (mm) | Qty | Bin | Height |
-| --- | --- | --- | --- | --- |
-| BBQ lighter | 272 × 43 × 24 | 3–4 | 7×5, four share it | 5U |
-| Flashlight | 195 × 39 dia | 4 | 5×4, four share it | 7U |
-| GPS large | 167 × 75 × 40 | 1 | 5×2 | 7U |
-| GPS small | ~84 × 75 × 40 ? | 1 | 3×2 | 7U |
-| Bic lighter | 81 × 24 × 12 ? | 2–10 | 3×2 loose | 8U |
-| Keychains ? | ~80 × 38 × 14 ? | ~15 | 2×1 × 6 bins | 3U |
+**Every bin in this drawer is 8U** — 59.8 mm tall with the lip, 49 mm usable.
+That is the tallest that clears the 63 mm drawer; 9U would be 66.8 mm and foul it.
 
-**The drawer is over capacity: 84 units available, ~89 wanted.** Three keychain
-bins do not fit. Something has to give — see "Options" below.
+### Layout as directed
 
-Positions are named by grid reference — column letter from the left, row number
-from the **front** of the drawer — so a change can be asked for by name:
-"make G6:G7 taller". One square is the 42 mm pitch; a bin is 41.5 mm outside
-and about 36.7 mm usable inside, per unit.
+Columns A–L from the left, rows 1–7 with **row 1 at the front**. Full drawer,
+**84 of 84 units, 15 bins, nothing wasted.**
 
-### Options for the shortfall
+| Cells | Bin | Item |
+| --- | --- | --- |
+| A6:G7 | 7×2 | BBQ lighters |
+| H6:L7 | 5×2 | GPS |
+| A4:E5 | 5×2 | Flashlights (left) |
+| H4:L5 | 5×2 | Flashlights (right) |
+| H1:I3 | 2×3 | Bic lighters |
+| A1:C2 | 3×2 | Accessories |
+| D1:E2, F1:G2, J1:K2, F3:G4 | 2×2 | Spare |
+| A3:C3, J3:L3 | 3×1 | Spare |
+| D3:E3, F5:G5 | 2×1 | Spare |
+| L1:L2 | 1×2 | Spare |
 
-| Option | Effect |
-| --- | --- |
-| **Re-measure the depth** | 328 mm is 8 mm short of an 8th row. At ≥336 mm the drawer becomes 12 × 8 = **96 units** and everything fits with 7 spare. Cheapest fix by far, if the figure was nominal. |
-| Move the BBQ lighters out | Frees **35 units**. They are 42% of the drawer for four objects. |
-| Halve the BBQ lighters (2 not 4) | 7×3 instead of 7×5, frees **14 units**. |
-| Four keychain bins, not six | Frees **4 units** — not enough on its own. |
+Nine spare bins, 28 units, for the keychains and anything else.
 
-Nothing here is decided. The measurement is worth checking first, because it
-may make the rest moot.
+**"Accessories" is the item formerly called GPS small.**
 
-Two sizes are assumed, not measured, and are marked `?`:
+### The BBQ lighter bin holds two, not four
 
-- **GPS small** — "half as long" gives 84 mm. Width and height are assumed to
-  match the large unit.
-- **Bic lighter** — the commodity full-size figure, not measured from yours.
+A 7×2 at 8U is **288.7 × 78.7 × 49 mm** inside. A lighter is 272 × 43 × 24:
 
-**Quantities vary with bulk buying**, so bins are sized for the maximum ever
-held rather than today's count. A bin sized for one BBQ lighter fails the week
-four arrive, and reprinting a 7×5 bin is not a small job.
+- across the 78.7 mm width — **one** fits; two would need 86 mm
+- stacked in the 49 mm depth — **two** layers
 
-**The BBQ lighters take 35 of 84 units** — 42% of the drawer for four objects.
-That is simply what 272 mm items cost on a 42 mm pitch, and it is worth
-deciding deliberately rather than discovering after printing.
+So capacity is **2 lighters**, against the 3–4 held. A second 7×2 elsewhere, or
+a 7×3 here, would take all four — a 7×3 is 120.7 mm wide, enough for two
+abreast, and two stacked gives four. That costs 7 more units, which the drawer
+does not currently have.
 
-**The BBQ lighter bin is sized to a bounding box.** They are not rectangular,
-so 43 × 24 is the widest point. A traced negative (`gfneg build`) would hold
-them far more tightly if the wasted space matters.
+### Still unmeasured
 
-**Bin style:** plain, no label shelf — clip-in removable holders instead, so nothing
-overhangs the opening. Every bin engraved `KWL1N1T` underneath.
-
-**As reported:** 533 × 328 × 63 mm, described as "the size of components", with
-"the full workable space is 101 mm".
-
-Two heights are recorded because they constrain different things:
-
-- **63 mm** — the working limit. Bins up to **8U** (59.8 mm including the lip)
-  stay inside the drawer box, which is what keeps them from catching.
-- **101 mm** — the hard ceiling of the opening. Only relevant if something is
-  deliberately allowed to stand above the drawer sides.
-
-For keychains, neither matters much: **2U or 3U** is the right depth. Anything
-deeper and small fobs sink out of sight, which is the failure this drawer is
-meant to fix.
+- **Bic lighter** — commodity size, not measured from yours.
+- **Accessories** — width and height assumed to match the large GPS.
 
 **Grid: 12 × 7 units, 84 positions.** 503.5 × 293.5 mm of grid in a 533 × 328 mm
 floor, giving 14.5 mm margins at the sides and 17.0 mm front and back — 15% of
