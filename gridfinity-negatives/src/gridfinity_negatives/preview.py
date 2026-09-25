@@ -141,9 +141,10 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
     without anyone measuring anything.
     """
     from .config import GRID_PITCH_MM
-    from .layout import cell_range
+    from .layout import cell_range, numbered
 
     plan_result = layout.plan
+    number_of = {id(pl): n for n, pl in numbered(layout)}
     W, D = plan_result.drawer_w_mm, plan_result.drawer_d_mm
     mx, my = plan_result.margin_x_mm, plan_result.margin_y_mm
     ux, uy = plan_result.units_x, plan_result.units_y
@@ -181,6 +182,7 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
     seen: dict[str, str] = {}
     for p in layout.placements:
         colour = seen.setdefault(p.item.name, palette[len(seen) % len(palette)])
+        num = number_of[id(p)]
         x = mx + p.x_u * GRID_PITCH_MM + 1.2
         y = my + p.y_u * GRID_PITCH_MM + 1.2
         w = p.length_u * GRID_PITCH_MM - 2.4
@@ -201,6 +203,11 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
             ax.add_patch(Rectangle((x, y), w, h, facecolor="none",
                                    edgecolor="#b91c1c", lw=2.6, ls=(0, (4, 2)),
                                    zorder=5))
+        # Bin number, top-left of the bin, in a disc so it reads at a glance.
+        ax.text(x + 8.5, y + h - 8.5, str(num), ha="center", va="center",
+                fontsize=9.5, fontweight="bold", color="white", zorder=6,
+                bbox=dict(boxstyle="circle,pad=0.32", facecolor=colour,
+                          edgecolor="none"))
         fs = max(5.5, min(9.5, w / (0.60 * max(7, len(label)))))
         ax.text(x + w / 2, y + h / 2 + (4.5 if h > 30 else 0), label,
                 ha="center", va="center", fontsize=fs, color=colour,
@@ -232,6 +239,9 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
     ax.set_xlabel("column  ·  row 1 is the front of the drawer", fontsize=8,
                   color="#5a6678")
 
+    g = plan_result.gaps_mm
+    live = ", ".join(f"{k} {v:.1f}" for k, v in g.items() if v > 0.01)
+    walls = ", ".join(k for k, v in g.items() if v <= 0.01)
     interior = GRID_PITCH_MM - 0.5 - 2 * 2.4
     legend = (
         f"1 square = 42 × 42 mm pitch   ·   bin outside {GRID_PITCH_MM - 0.5:.1f} mm "
@@ -239,7 +249,9 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
         f"height 1U = 7 mm (usable depth = (U−1) × 7)   ·   drawer "
         f"{W:.0f} × {D:.0f}"
         + (f" × {plan_result.drawer_h_mm:.0f}" if plan_result.drawer_h_mm else "")
-        + f" mm   ·   margins {mx:.1f} mm sides / {my:.1f} mm front-back (pink)"
+        + f" mm\naligned {plan_result.align}"
+        + (f"   ·   flush against the {walls} wall(s)" if walls else "")
+        + f"   ·   gaps: {live} mm (pink)"
     )
     ax.text(0.5, -0.085, legend, transform=ax.transAxes, ha="center", va="top",
             fontsize=7.8, color="#43506b",

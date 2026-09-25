@@ -21,6 +21,16 @@ from .drawer import DrawerPlan
 from .geometry import height_units_for
 
 
+def numbered(layout) -> list[tuple[int, "Placement"]]:
+    """Assign each bin a number, front to back then left to right.
+
+    A stable number is easier to say than a cell range -- "bin 7" rather than
+    "the 2x2 at F3:G4" -- and the order matches how you scan an open drawer.
+    """
+    ordered = sorted(layout.placements, key=lambda p: (p.y_u, p.x_u))
+    return list(enumerate(ordered, start=1))
+
+
 def cell_ref(x_u: int, y_u: int) -> str:
     """Spreadsheet-style reference for a grid position: column letter, row number.
 

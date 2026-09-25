@@ -89,6 +89,21 @@ width already measured 35 mm against a predicted 14.5, so the height deserves
 the same scepticism. Confirm it against the real drawer once the first print is
 in, then change the one value.
 
+### Alignment and gaps
+
+Grid in the **back-right corner**, flush against the back and right walls — the
+standard for every drawer (see the README). All the slack collects into two
+strips:
+
+| Gap | Size | Gauge ladder |
+| --- | --- | --- |
+| **Left** (width slack) | 29 mm predicted, **~35 mm measured** | 32, 33, 34, 35, 36 — all owned |
+| **Front** (depth slack) | 34 mm predicted | 31, 32, 33, 34, 35 — all owned |
+| Right, back | 0 — against the wall | — |
+
+Bins are numbered 1–16, front to back then left to right, so a change can be
+asked for by number rather than by cell range.
+
 ### Layout as directed
 
 Columns A–L from the left, rows 1–7 with **row 1 at the front**. Full drawer,

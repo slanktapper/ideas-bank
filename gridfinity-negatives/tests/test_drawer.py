@@ -35,13 +35,39 @@ def test_unit_count_is_floor_of_the_pitch(w, d, ux, uy):
     assert (p.units_x, p.units_y) == (ux, uy)
 
 
-def test_margins_are_split_evenly_and_account_for_everything():
+def test_the_default_is_a_corner_not_the_middle():
+    """A centred grid has no datum in a drawer, so it cannot be positioned."""
+    from gridfinity_negatives.drawer import DEFAULT_ALIGN
+    assert DEFAULT_ALIGN == "back-right"
     p = plan(442.0, 390.0)
-    assert p.margin_x_mm == pytest.approx((442 - 10 * 42) / 2)
-    assert p.margin_y_mm == pytest.approx((390 - 9 * 42) / 2)
-    # Margins plus grid must reconstruct the drawer exactly.
-    assert 2 * p.margin_x_mm + p.units_x * GRID_PITCH_MM == pytest.approx(442.0)
-    assert 2 * p.margin_y_mm + p.units_y * GRID_PITCH_MM == pytest.approx(390.0)
+    assert p.align == "back-right"
+    g = p.gaps_mm
+    assert g["right"] == pytest.approx(0.0), "not flush against the right wall"
+    assert g["back"] == pytest.approx(0.0), "not flush against the back wall"
+    assert g["left"] == pytest.approx(p.slack_x_mm)
+    assert g["front"] == pytest.approx(p.slack_y_mm)
+
+
+def test_gaps_always_account_for_the_whole_drawer():
+    """However it is aligned, gaps plus grid must reconstruct the drawer."""
+    for align in ("center", "back-right", "front-left"):
+        p = plan(442.0, 390.0, align=align)
+        g = p.gaps_mm
+        assert g["left"] + g["right"] + p.units_x * GRID_PITCH_MM == \
+            pytest.approx(442.0)
+        assert g["front"] + g["back"] + p.units_y * GRID_PITCH_MM == \
+            pytest.approx(390.0)
+
+
+def test_centring_is_allowed_but_warns():
+    p = plan(442.0, 390.0, align="center")
+    assert p.gaps_mm["left"] == pytest.approx(p.slack_x_mm / 2)
+    assert any("cannot be positioned accurately" in n for n in p.notes), p.notes
+
+
+def test_an_unknown_alignment_is_refused():
+    with pytest.raises(ValueError, match="not an alignment"):
+        plan(442.0, 390.0, align="somewhere")
 
 
 def test_tiles_cover_the_grid_exactly_without_overlap():
@@ -97,11 +123,12 @@ def test_comfortable_margin_is_not_flagged():
     assert not any("short of fitting" in n for n in p.notes), p.notes
 
 
-def test_margin_can_never_exceed_half_a_pitch():
-    """Guards the invariant that made the old warning dead code."""
+def test_slack_can_never_reach_a_whole_pitch():
+    """The leftover is a floor remainder, so another unit would always fit."""
     for w in range(60, 700, 7):
         p = plan(float(w), 300.0)
-        assert 0 <= p.margin_x_mm < GRID_PITCH_MM / 2
+        assert 0 <= p.slack_x_mm < GRID_PITCH_MM
+        assert p.gaps_mm["left"] + p.gaps_mm["right"] == pytest.approx(p.slack_x_mm)
 
 
 @pytest.mark.parametrize("drawer_h,expect_u", [

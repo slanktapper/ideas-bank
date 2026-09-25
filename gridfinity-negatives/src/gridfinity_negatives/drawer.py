@@ -42,6 +42,30 @@ class Tile:
         )
 
 
+ALIGNMENTS = {
+    "center": (0.5, 0.5),
+    "front-left": (0.0, 0.0),
+    "front-right": (1.0, 0.0),
+    "back-left": (0.0, 1.0),
+    "back-right": (1.0, 1.0),
+    "top-right": (1.0, 1.0),   # alias: "top" of a plan view is the back
+    "top-left": (0.0, 1.0),
+}
+"""Where the grid sits in the drawer, as a fraction of the leftover.
+
+Corner alignment is the rule, not a preference. A centred grid has nothing
+to register against: there is no way to position it accurately in a real
+drawer, and it drifts the moment the drawer is opened. Pushed into a corner
+it has two drawer walls as datums, it cannot move, and the slack collects
+into two usable strips rather than four useless ones.
+
+``center`` remains selectable for comparison, but nothing should be printed
+against it."""
+
+DEFAULT_ALIGN = "back-right"
+"""Back wall and right wall. See ALIGNMENTS for why a corner, not the middle."""
+
+
 @dataclass
 class DrawerPlan:
     drawer_w_mm: float
@@ -54,6 +78,27 @@ class DrawerPlan:
     printer: Printer
     drawer_h_mm: float | None = None
     notes: list[str] = field(default_factory=list)
+    align: str = DEFAULT_ALIGN
+
+    @property
+    def slack_x_mm(self) -> float:
+        """Total unused width, however it is distributed."""
+        return self.drawer_w_mm - self.units_x * GRID_PITCH_MM
+
+    @property
+    def slack_y_mm(self) -> float:
+        return self.drawer_d_mm - self.units_y * GRID_PITCH_MM
+
+    @property
+    def gaps_mm(self) -> dict[str, float]:
+        """The four gaps, named. A zero gap is an edge against a wall."""
+        fx, fy = ALIGNMENTS[self.align]
+        return {
+            "left": self.slack_x_mm * fx,
+            "right": self.slack_x_mm * (1 - fx),
+            "front": self.slack_y_mm * fy,
+            "back": self.slack_y_mm * (1 - fy),
+        }
 
     @property
     def tile_counts(self) -> dict[tuple[int, int], int]:
@@ -88,6 +133,7 @@ def plan(
     drawer_d_mm: float,
     drawer_h_mm: float | None = None,
     printer: Printer = DEFAULT_PRINTER,
+    align: str = DEFAULT_ALIGN,
 ) -> DrawerPlan:
     """Work out the grid, the margins and the baseplate tiling for a drawer.
 
@@ -107,8 +153,17 @@ def plan(
             "system for a space this small."
         )
 
-    margin_x = (drawer_w_mm - units_x * GRID_PITCH_MM) / 2.0
-    margin_y = (drawer_d_mm - units_y * GRID_PITCH_MM) / 2.0
+    if align not in ALIGNMENTS:
+        raise ValueError(
+            f"{align!r} is not an alignment. Choose from "
+            f"{', '.join(sorted(ALIGNMENTS))}."
+        )
+    fx, fy = ALIGNMENTS[align]
+    if align == "center":
+        notes_center = True
+    # margin_* is the grid's offset from the drawer's front-left corner.
+    margin_x = (drawer_w_mm - units_x * GRID_PITCH_MM) * fx
+    margin_y = (drawer_d_mm - units_y * GRID_PITCH_MM) * fy
 
     xs = split_span(units_x, printer.max_units_x)
     ys = split_span(units_y, printer.max_units_y)
@@ -123,12 +178,20 @@ def plan(
         oy += wy
 
     notes: list[str] = []
+    if align == "center":
+        notes.append(
+            "Centred. There is nothing in a drawer to register a centred grid "
+            "against, so it cannot be positioned accurately and will drift. "
+            "Use a corner alignment."
+        )
     # A margin can never exceed half a pitch -- the remainder is what floor
     # left behind. What is worth saying is when it is *close* to a full unit,
     # because then a small measuring error costs a whole row of bins.
-    for axis, margin, units in (("width", margin_x, units_x),
-                                ("depth", margin_y, units_y)):
-        short_by = GRID_PITCH_MM - 2 * margin
+    for axis, slack, units in (("width", drawer_w_mm - units_x * GRID_PITCH_MM,
+                                units_x),
+                               ("depth", drawer_d_mm - units_y * GRID_PITCH_MM,
+                                units_y)):
+        short_by = GRID_PITCH_MM - slack
         if short_by < 8.0:
             notes.append(
                 f"The {axis} is only {short_by:.1f} mm short of fitting "
@@ -156,7 +219,7 @@ def plan(
             )
     return DrawerPlan(
         drawer_w_mm, drawer_d_mm, units_x, units_y,
-        margin_x, margin_y, tiles, printer, drawer_h_mm, notes,
+        margin_x, margin_y, tiles, printer, drawer_h_mm, notes, align,
     )
 
 
@@ -203,7 +266,8 @@ def build_spacers(
     about 4mm the pieces are more fragile than useful, and a strip of foam
     does the same job.
     """
-    if min(plan_result.margin_x_mm, plan_result.margin_y_mm) < 4.0:
+    live = [g for g in plan_result.gaps_mm.values() if g > 0.01]
+    if not live or min(live) < 4.0:
         return None
     sp = GridfinityDrawerSpacer(
         dr_width=plan_result.drawer_w_mm, dr_depth=plan_result.drawer_d_mm

@@ -152,7 +152,9 @@ def cmd_build(a: argparse.Namespace) -> int:
 def cmd_drawer(a: argparse.Namespace) -> int:
     printer = PRINTERS[a.printer]
     try:
-        p = plan_drawer(a.width, a.depth, a.height, printer)
+        from .drawer import DEFAULT_ALIGN
+        p = plan_drawer(a.width, a.depth, a.height, printer,
+                        align=a.align or DEFAULT_ALIGN)
     except ValueError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -266,7 +268,9 @@ def cmd_layout(a: argparse.Namespace) -> int:
         return rc
     printer = PRINTERS[a.printer]
     try:
-        p = plan_drawer(a.width, a.depth, a.height, printer)
+        from .drawer import DEFAULT_ALIGN
+        p = plan_drawer(a.width, a.depth, a.height, printer,
+                        align=a.align or DEFAULT_ALIGN)
         items = load_items(a.items)
         defaults = load_defaults(a.items)
     except (ValueError, OSError) as e:
@@ -295,13 +299,17 @@ def cmd_layout(a: argparse.Namespace) -> int:
     print(f"Placed   : {len(layout.placements)} bins, "
           f"{layout.used_units} units used, {layout.free_units} free")
 
-    from .layout import cell_range
+    from .layout import cell_range, numbered
+
+    gaps = p.gaps_mm
+    print(f"Aligned  : {p.align}  ->  " + ", ".join(
+        f"{k} {v:.1f} mm" for k, v in gaps.items()))
 
     print()
-    print(f"{'cells':<10} {'bin':<8} {'height':<7} {'holds':<8} item")
+    print(f"{'#':>3}  {'cells':<10} {'bin':<8} {'height':<7} {'holds':<8} item")
     shortfalls = []
     seen_cap: dict[str, list] = {}
-    for pl in sorted(layout.placements, key=lambda p: (p.y_u, p.x_u)):
+    for num, pl in numbered(layout):
         ref = cell_range(pl.x_u, pl.y_u, pl.length_u, pl.width_u)
         name = pl.item.name + ("" if pl.item.measured else " ?")
         if pl.item.width_mm > 0:
@@ -310,7 +318,7 @@ def cmd_layout(a: argparse.Namespace) -> int:
             holds = str(cap)
         else:
             holds = "-"
-        print(f"{ref:<10} {pl.length_u}x{pl.width_u:<6} "
+        print(f"{num:>3}  {ref:<10} {pl.length_u}x{pl.width_u:<6} "
               f"{pl.item.height_units()}U{'':<4} {holds:<8} {name}")
 
     for nm, caps in seen_cap.items():
@@ -460,6 +468,8 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--height", type=float, default=None,
                    help="internal clear height, to check bin headroom")
     d.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")
+    d.add_argument("--align", default=None,
+                   help="where the grid sits (default: back-right)")
     d.add_argument("--magnets", action="store_true",
                    help="add corner screw tabs to the baseplates")
     d.add_argument("--plan-only", action="store_true",
@@ -499,6 +509,9 @@ def main(argv: list[str] | None = None) -> int:
     ly.add_argument("--no-rotate", action="store_true",
                     help="do not turn items 90 degrees to make them fit")
     ly.add_argument("--printer", choices=sorted(PRINTERS), default="h2d")
+    ly.add_argument("--align", default=None,
+                    help="where the grid sits (default: back-right; a centred "
+                         "grid cannot be positioned accurately)")
     ly.add_argument("--out", default="out")
     ly.set_defaults(func=cmd_layout)
 

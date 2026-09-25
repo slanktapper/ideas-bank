@@ -90,6 +90,35 @@ Silent wrongness costs a print; an error costs nothing. So it errors on:
 | `--size` | auto | Force units, e.g. `2x3`. Otherwise smallest that fits. |
 | `--no-straighten` | off | Keep the trace's original rotation. |
 
+## Grid alignment — always a corner, never the middle
+
+**Every drawer's grid goes into the back-right corner.** This is a rule, not a
+preference, and `back-right` is the default.
+
+A centred grid has nothing to register against. There is no feature in a drawer
+to measure a floating grid from, no way to place it accurately, and it drifts
+the first time the drawer is opened hard. Pushed into a corner it has **two
+drawer walls as datums**: it cannot be positioned wrongly and it cannot move.
+
+It also changes what the leftover is good for. Centred, the slack splits into
+four strips too narrow to use. In a corner it collects into **two strips** —
+one down one side, one across the front — each twice as wide and each a
+candidate for a spacer or a long thin item.
+
+```
+   centred: 4 useless strips        back-right: 2 usable strips
+   ┌───────────────────┐            ┌───────────────────┐
+   │ ░░░░░░░░░░░░░░░░░ │            │ ███████████████░░ │  ← flush, back wall
+   │ ░ ███████████ ░░░ │            │ ███████████████░░ │
+   │ ░ ███████████ ░░░ │            │ ███████████████░░ │
+   │ ░░░░░░░░░░░░░░░░░ │            │ ░░░░░░░░░░░░░░░░░ │  ← all depth slack
+   └───────────────────┘            └───────────────────┘
+                                      ↑ all width slack   ↑ flush, right wall
+```
+
+`--align center` still exists for comparison, and says so in the notes, but
+nothing should be printed against it.
+
 ## Gap gauges — standard for every drawer
 
 A 42 mm pitch never divides a drawer evenly. What is left over decides whether
