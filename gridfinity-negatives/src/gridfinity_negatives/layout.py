@@ -197,12 +197,16 @@ class Item:
         return best[1]
 
     def capacity(self, tuning: Tuning = DEFAULTS) -> int:
-        """How many of this object actually fit in its bin.
+        """How many of this object fit, packed square to the bin.
 
-        Worth computing rather than assuming: a stated bin size says nothing
-        about how much goes in it, and the answer is routinely lower than the
-        quantity held. Counts a plain rectangular packing -- across the width,
-        along the depth, stacked in the height.
+        A stated bin size says nothing about how much goes in it, and the
+        answer is routinely lower than the quantity held -- worth computing.
+
+        But this is a LOWER BOUND, not the capacity. It counts a plain
+        rectangular packing: across the width, along the depth, stacked in
+        the height. It cannot see a diagonal fit, and long thin objects in
+        particular often go in at an angle when they will not go in square.
+        Treat a shortfall as "check it", not as "it will not fit".
         """
         lu, wu = self.footprint_units(tuning)
         # A bin reaching into the drawer's gap is genuinely longer, and that

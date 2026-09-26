@@ -71,7 +71,7 @@ across the bin where it would fall into the gap.
 
 | Code | Location | W × D × H (mm) | Grid | Positions | Margins | Max bin | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top | **542.5 × 328.5 × 63** | 12 × 7 | 84 | 38.5 left / 34.5 front | 8U | **gauged 2026-09-25** |
+| `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top | **533 × 328.5 × 63** | 12 × 7 | 84 | 29.0 left / 34.5 front | 5U | **measured 2026-09-26** |
 
 ### `KWL1N1T` — kitchen, west wall, lower section, 1st north column, 1st from top
 
@@ -121,19 +121,19 @@ arrangement cannot drift on a re-run. **84 of 84 units, 16 bins.**
 
 | # | Cells | Bin | Item | Holds |
 | --- | --- | --- | --- | --- |
-| 1 | A1:C1 | 3×1 **+38.5L +34.5F** | Spare — corner bin | — |
+| 1 | A1:C1 | 3×1 **+29L +34.5F** | Spare — corner bin | — |
 | 2 | D1:E1 | 2×1 +34.5F | Spare | — |
 | 3 | F1:I1 | 4×1 +34.5F | **GPS** | **0 of 1** |
 | 4 | J1:L1 | 3×1 +34.5F | Spare | — |
-| 5 | A2:B3 | 2×2 **+38.5L** | Spare | — |
+| 5 | A2:B3 | 2×2 **+29L** | Spare | — |
 | 6 | C2:E3 | 3×2 | Accessories | 1 |
 | 7 | F2:J3 | 5×2 | Flashlights | 2 of 4 |
 | 8 | K2:L3 | 2×2 | Spare | — |
-| 9 | A4:A5 | 1×2 **+38.5L** | Spare | — |
+| 9 | A4:A5 | 1×2 **+29L** | Spare | — |
 | 10 | B4:C5 | 2×2 | Spare | — |
 | 11 | D4:H5 | 5×2 | Spare | — |
 | 12 | I4:L5 | 4×2 | Accessories (right edge) | 1 |
-| 13 | A6:F7 | 6×2 **+38.5L** | BBQ lighters | 1 of 4 |
+| 13 | A6:F7 | 6×2 **+29L** | BBQ lighters | 1 of 4 |
 | 14 | G6:I7 | 3×2 | Accessories | 1 |
 | 15 | J6:L7 | 3×2 | Bic lighters | 6 of 10 |
 
@@ -143,7 +143,7 @@ All four bands close the left gap — bins **1**, **5**, **9** and **13**, each
 the leftmost of its band. All four row-1 bins close the front gap.
 
 **Bin 1 is the corner bin**, and the only one extended in two directions:
-3×1 on the grid, +38.5 mm left and +34.5 mm forward, printing at
+3×1 on the grid, +29.0 mm left and +34.5 mm forward, printing at
 **164.0 × 76.0 mm**. Nothing pink remains against a wall.
 
 ### The GPS does not fit box 3
@@ -260,17 +260,33 @@ load the second nozzle.
 The 2×2 test bin is **83.6 mm** and the strip is **69 mm**, so it cannot share a
 plate with a tile. It goes in the first bin session.
 
-### Gauged, 2026-09-25 MDT
+### Measured, corrected 2026-09-26 MDT
+
+The left gap was first taken as 38.5 mm. **It is 29.0 mm.** Bin 1 carries both
+extensions, and when it was printed its front fitted and its left did not —
+which located the error precisely, because only one of the two could be wrong.
+
+29.0 is exactly `533 − 12 × 42`, so the drawer is the **533 mm** originally
+recorded. The front measurement of 34.5 stands and was never in doubt.
+
+| Gap | First taken as | Actual |
+| --- | --- | --- |
+| Left | 38.5 mm | **29.0 mm** |
+| Front | 34.5 mm | 34.5 mm |
+
+Cost: four bins reprinted — 1, 5, 9 and 13, the ones reaching left.
+
+### Superseded: gauged, 2026-09-25 MDT
 
 The gaps were measured with the printed gauges, with the grid in the
 back-right corner so each gap is the whole slack on that axis:
 
 | Gap | Measured | Predicted from the recorded 533 × 328 |
 | --- | --- | --- |
-| **Left** | **38.5 mm** | 29 mm |
+| **Left** | **29.0 mm** | 29 mm |
 | **Front** | **34.5 mm** | 34 mm |
 
-So the drawer is **542.5 × 328.5 mm**, not 533 × 328. The depth was right to
+So the drawer is **533 × 328.5 mm**, not 533 × 328. The depth was right to
 within half a millimetre; the width was **9.5 mm** out.
 
 **The grid stays 12 × 7.** Thirteen columns would need 546 mm and the drawer is
@@ -285,7 +301,7 @@ a wall are odd, and only on that one side.
 
 | Bin | Grid | Reach | Printed |
 | --- | --- | --- | --- |
-| 13 BBQ lighters, A6:F7 | 6×2 | +38.5 mm left | 290.0 × 83.5 mm |
+| 13 BBQ lighters, A6:F7 | 6×2 | +29.0 mm left | 290.0 × 83.5 mm |
 | 1 Spare, A1:C1 | 3×1 | +34.5 mm front | 125.5 × 76.0 mm |
 | 2 Spare, D1:E1 | 2×1 | +34.5 mm front | 83.5 × 76.0 mm |
 | 3 Spare, F1:I1 | 4×1 | +34.5 mm front | 167.5 × 76.0 mm |
@@ -296,7 +312,7 @@ as directed. Dropping the BBQ bin from 7 units to 6 freed column G, filled by
 a new 1×2 spare at G6:G7 between the lighters and the flashlights.
 
 **The extension rescued the BBQ bin.** At 6×2 on the grid alone it is 246.7 mm
-inside and a 272 mm lighter does not fit at all. With the 38.5 mm reach it is
+inside and a 272 mm lighter does not fit at all. With the 29.0 mm reach it is
 285.2 mm inside and holds two.
 
 ### Still unmeasured
@@ -339,3 +355,15 @@ before printing those.
 Here, because `gfneg drawer` is what consumes it. If a drawer list turns out to
 be useful to projects beyond this one, it wants promoting rather than copying —
 see the cross-project rule in `../CLAUDE.md`.
+
+
+## Bin capacity is a lower bound
+
+`gfneg` reports capacity from **square packing only** — across the width, along
+the depth, stacked in the height. It cannot see a diagonal fit.
+
+The BBQ bin is the case in point: 275.7 × 78.7 mm inside against a 272 mm
+lighter, so square packing says one. The floor's diagonal is **286.7 mm**, and
+the lighters go in at an angle. Measured in the bin, they fit.
+
+Treat a reported shortfall as *check it*, not as *it will not fit*.

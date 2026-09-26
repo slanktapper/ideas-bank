@@ -342,7 +342,9 @@ def cmd_layout(a: argparse.Namespace) -> int:
     if shortfalls:
         print()
         for line in shortfalls:
-            print(f"warning: {line}")
+            print(f"note: {line} packed square")
+        print("      (square packing is a lower bound -- long items often go "
+              "in diagonally)")
 
     unmeasured = {i.name for i in items if not i.measured}
     if unmeasured:

@@ -14,8 +14,8 @@ from gridfinity_negatives.extended import (
 )
 from gridfinity_negatives.stamp import bottom_pads
 
-CASES = [(3, 1, 38.5, 34.5), (6, 2, 38.5, 0.0), (4, 1, 0.0, 34.5),
-         (1, 2, 38.5, 0.0), (2, 2, 38.5, 0.0)]
+CASES = [(3, 1, 29.0, 34.5), (6, 2, 29.0, 0.0), (4, 1, 0.0, 34.5),
+         (1, 2, 29.0, 0.0), (2, 2, 29.0, 0.0)]
 
 
 def _shape(body):
@@ -104,7 +104,7 @@ def test_base_pads_stay_on_the_grid_so_the_bin_still_seats(lu, wu, el, ef):
 
 def test_the_extension_is_solid_down_to_the_drawer_floor():
     """Base pads exist only under grid cells; the skirt needs its own floor."""
-    body = extended_bin(3, 1, 5, extend_left_mm=38.5)
+    body = extended_bin(3, 1, 5, extend_left_mm=29.0)
     sec = body.section(1.0)
     assert sec.faces().vals(), "nothing at z=1; the skirt would hang in the air"
     bb = cq.Shape.cast(body.vals()[0].wrapped).BoundingBox()
@@ -128,7 +128,7 @@ def test_no_extension_gives_exactly_a_stock_bin():
 
 def test_extending_adds_material():
     plain = GridfinityBox(3, 2, 5).cq_obj.vals()[0].Volume()
-    ext = extended_bin(3, 2, 5, extend_left_mm=38.5).vals()[0].Volume()
+    ext = extended_bin(3, 2, 5, extend_left_mm=29.0).vals()[0].Volume()
     assert ext > plain
 
 
@@ -164,11 +164,11 @@ def test_the_extension_lands_on_the_left_and_front_only():
         return left, right, front, back
 
     sl, sr, sf, sb = gaps(GridfinityBox(3, 2, 5).cq_obj)
-    el, er, ef, eb = gaps(extended_bin(3, 2, 5, extend_left_mm=38.5,
+    el, er, ef, eb = gaps(extended_bin(3, 2, 5, extend_left_mm=29.0,
                                        extend_front_mm=34.5))
     assert er == pytest.approx(sr, abs=0.01), "the right edge moved off the grid"
     assert eb == pytest.approx(sb, abs=0.01), "the back edge moved off the grid"
-    assert el - sl == pytest.approx(38.5, abs=0.01)
+    assert el - sl == pytest.approx(29.0, abs=0.01)
     assert ef - sf == pytest.approx(34.5, abs=0.01)
 
 

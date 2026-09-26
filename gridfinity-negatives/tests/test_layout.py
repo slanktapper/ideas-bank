@@ -4,7 +4,7 @@ import pytest
 from gridfinity_negatives.drawer import plan
 from gridfinity_negatives.layout import Item, load_items, pack
 
-KWL1N1T = plan(542.5, 328.5, 63.0)   # 12 x 7 units, measured 2026-09-25
+KWL1N1T = plan(533.0, 328.5, 63.0)   # 12 x 7 units, measured 2026-09-25
 
 
 def test_footprint_covers_the_object_plus_clearance_and_walls():
@@ -338,30 +338,30 @@ def test_the_merged_accessories_bin_clears_an_84mm_item():
 # --- bins that reach into the drawer's gap ---------------------------------
 
 def test_capacity_counts_the_reach_into_the_gap():
-    """Regression: a 6x2 + 38.5mm bin reported holding nothing.
+    """Regression: a 6x2 + gap bin reported holding nothing.
 
     capacity() measured the grid footprint only, so a 272mm lighter did not
     fit a bin with 285mm inside it.
     """
     extended = Item("bbq", 272, 43, 24, bin_size="6x2", bin_height_u=8,
-                    extend_left_mm=38.5)
+                    extend_left_mm=29.0)
     plain = Item("bbq", 272, 43, 24, bin_size="6x2", bin_height_u=8)
     assert plain.capacity() == 0, "the grid footprint alone really is too short"
     assert extended.capacity() >= 1, "the reach into the gap was ignored"
 
 
 def test_outer_size_includes_the_extension():
-    p = pack(plan(542.5, 328.5, 63.0),
+    p = pack(plan(533.0, 328.5, 63.0),
              load_items("items-KWL1N1T.yml"), height_u=5)
     by_name = {pl.item.name: pl for pl in p.placements}
     w, h = by_name["BBQ lighter"].outer_size_mm()
-    assert w == pytest.approx(6 * 42 - 0.5 + 38.5)
+    assert w == pytest.approx(6 * 42 - 0.5 + 29.0)
     assert h == pytest.approx(2 * 42 - 0.5)
 
 
 def test_extended_bins_reach_the_drawer_walls_exactly():
     """An extension equal to the gap must land flush, not over or short."""
-    dp = plan(542.5, 328.5, 63.0)
+    dp = plan(533.0, 328.5, 63.0)
     layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     gaps = dp.gaps_mm
     for pl in layout.placements:
@@ -374,7 +374,7 @@ def test_extended_bins_reach_the_drawer_walls_exactly():
 
 
 def test_the_whole_front_row_reaches_the_drawer_front():
-    dp = plan(542.5, 328.5, 63.0)
+    dp = plan(533.0, 328.5, 63.0)
     layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     front = [p for p in layout.placements if p.y_u == 0]
     assert front and all(p.extend_front_mm > 0 for p in front), (
@@ -384,7 +384,7 @@ def test_the_whole_front_row_reaches_the_drawer_front():
 
 def test_every_band_closes_the_left_gap():
     """All four bands have a leftmost bin reaching the wall, row 1 included."""
-    dp = plan(542.5, 328.5, 63.0)
+    dp = plan(533.0, 328.5, 63.0)
     layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     reaching = sorted((p.y_u for p in layout.placements if p.extend_left_mm > 0))
     assert reaching == [0, 1, 3, 5], "a band was left short of the left wall"
@@ -396,7 +396,7 @@ def test_every_band_closes_the_left_gap():
 
 def test_the_corner_bin_reaches_both_ways():
     """Bin 1 is the only bin extended on two sides; it closes the corner."""
-    dp = plan(542.5, 328.5, 63.0)
+    dp = plan(533.0, 328.5, 63.0)
     layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     both = [p for p in layout.placements
             if p.extend_left_mm > 0 and p.extend_front_mm > 0]
@@ -404,13 +404,13 @@ def test_the_corner_bin_reaches_both_ways():
     corner = both[0]
     assert (corner.x_u, corner.y_u) == (0, 0)
     w, h = corner.outer_size_mm()
-    assert w == pytest.approx(3 * 42 - 0.5 + 38.5)
+    assert w == pytest.approx(3 * 42 - 0.5 + 29.0)
     assert h == pytest.approx(1 * 42 - 0.5 + 34.5)
 
 
 def test_no_pink_is_left_anywhere_along_the_walls():
     """Every gap-facing edge of the drawer is now met by a bin."""
-    dp = plan(542.5, 328.5, 63.0)
+    dp = plan(533.0, 328.5, 63.0)
     layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     left_bands = {p.y_u for p in layout.placements if p.extend_left_mm > 0}
     front_cols = {p.x_u for p in layout.placements if p.extend_front_mm > 0}
@@ -469,7 +469,7 @@ def test_no_generated_bin_carries_a_label_shelf():
     # the control: a labelled bin really does show one
     assert len(shelf_faces(GridfinityBox(3, 1, 5, labels=True).cq_obj.vals()[0])) == 1
 
-    dp = plan(542.5, 328.5, 63.0)
+    dp = plan(533.0, 328.5, 63.0)
     layout = pack(dp, load_items("items-KWL1N1T.yml"), height_u=5)
     for pl in layout.placements:
         body = extended_bin(pl.length_u, pl.width_u, 5,

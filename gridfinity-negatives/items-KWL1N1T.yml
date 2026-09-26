@@ -1,6 +1,7 @@
 # KWL1N1T — kitchen, west wall, lower section, 1st north column, 1st from top
-# Drawer 542.5 x 328.5 x 63 mm internal (gauged 2026-09-25: left gap 38.5 mm,
-# front gap 34.5 mm). 12 x 7 units, grid in the BACK-RIGHT corner.
+# Drawer 533 x 328.5 x 63 mm internal. Gaps: left 29.0 mm, front 34.5 mm.
+# The left gap was first taken as 38.5 and corrected to 29.0 on 2026-09-26
+# after bin 1 was printed: its front fitted, its left did not. 12 x 7 units, grid in the BACK-RIGHT corner.
 # Columns A-L from the left, rows 1-7 with row 1 at the FRONT.
 #
 # BIN HEIGHT IS 5U AND LOCKED. 38.8 mm tall, 28 mm usable depth.
@@ -8,7 +9,7 @@
 # has room for.
 #
 # Row 1 reaches 34.5 mm forward to the drawer front.
-# The leftmost bin in every band reaches 38.5 mm left to the wall.
+# The leftmost bin in every band reaches 29.0 mm left to the wall.
 # Bin 1 is the corner bin: it reaches both ways, closing the front-left.
 
 defaults:
@@ -20,7 +21,7 @@ defaults:
 
 items:
   # --- row 1, the front: 1 unit deep + 34.5 mm to the drawer front ---
-  - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1, extend_front_mm: 34.5, extend_left_mm: 38.5}   # corner bin: reaches both ways
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1, extend_front_mm: 34.5, extend_left_mm: 29.0}   # corner bin: reaches both ways
   - {name: Spare, size: [0, 0], bin_size: 2x1, at: D1, extend_front_mm: 34.5}
 
   - name: GPS
@@ -37,7 +38,7 @@ items:
   - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1, extend_front_mm: 34.5}
 
   # --- rows 2-3 ---
-  - {name: Spare, size: [0, 0], bin_size: 2x2, at: A2, extend_left_mm: 38.5}
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: A2, extend_left_mm: 29.0}
 
   - name: Accessories
     size: [84, 75, 40]
@@ -55,7 +56,7 @@ items:
   - {name: Spare, size: [0, 0], bin_size: 2x2, at: K2}
 
   # --- rows 4-5 ---
-  - {name: Spare, size: [0, 0], bin_size: 1x2, at: A4, extend_left_mm: 38.5}
+  - {name: Spare, size: [0, 0], bin_size: 1x2, at: A4, extend_left_mm: 29.0}
   - {name: Spare, size: [0, 0], bin_size: 2x2, at: B4}
   - {name: Spare, size: [0, 0], bin_size: 5x2, at: D4}   # was the GPS bin
 
@@ -71,10 +72,10 @@ items:
     size: [272, 43, 24]
     bin_size: 6x2
     at: A6
-    extend_left_mm: 38.5
+    extend_left_mm: 29.0
     qty_typical: 3
     qty_max: 4
-    note: Six squares plus the 38.5 mm left gap — 290.5 mm long, meets the wall.
+    note: Six squares plus the 29.0 mm left gap — 281.0 mm long, meets the wall.
 
   - name: Accessories
     size: [84, 75, 40]
