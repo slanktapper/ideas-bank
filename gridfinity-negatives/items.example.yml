@@ -4,6 +4,8 @@
 #       gfneg adds clearance and wall thickness itself.
 # measured: false marks a GUESS. Any layout containing one is stamped as
 #       unsafe to print, because a bin sized from a guess is scrap.
+# printed: true marks a bin that physically exists. A drawer goes on the plate
+#       over several sessions, and this is what answers "what is left".
 #
 # ---------------------------------------------------------------------------
 # EVERY SIZE BELOW IS A PLACEHOLDER. None of these were measured. They exist

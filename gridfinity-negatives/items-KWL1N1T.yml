@@ -91,4 +91,5 @@ items:
     qty_typical: 2
     qty_max: 10
     measured: false
+    printed: true   # printed 2026-09-26 MDT -- first bin of this drawer in place
     note: Moved to J6:L7 as directed. Commodity Bic size, NOT measured.

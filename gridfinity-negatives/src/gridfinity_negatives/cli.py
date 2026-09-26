@@ -330,9 +330,18 @@ def cmd_layout(a: argparse.Namespace) -> int:
         else:
             holds = "-"
         ow, oh = pl.outer_size_mm()
+        # A tick means the part exists. Which bins are still outstanding is
+        # the first question at the start of every print session.
+        done = "\u2713 " if pl.item.printed else "  "
         print(f"{num:>3}  {ref:<10} {pl.label_size():<12} "
               f"{pl.item.height_units()}U{'':<4} {holds:<8} "
-              f"{ow:>6.1f}x{oh:<6.1f} {name}")
+              f"{ow:>6.1f}x{oh:<6.1f} {done}{name}")
+
+    if layout.printed_count:
+        todo = [str(n) for n, pl in numbered(layout) if not pl.item.printed]
+        print()
+        print(f"Printed  : {layout.printed_count} of {len(layout.placements)} "
+              f"bins (\u2713).  Still to print: {', '.join(todo) or 'none'}")
 
     for nm, caps in seen_cap.items():
         want = next(i.wanted() for i in items if i.name == nm)

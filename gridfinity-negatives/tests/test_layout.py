@@ -486,3 +486,38 @@ def test_a_label_shelf_costs_real_volume():
     plain = GridfinityBox(3, 1, 5, labels=False).cq_obj.vals()[0].Volume()
     lab = GridfinityBox(3, 1, 5, labels=True).cq_obj.vals()[0].Volume()
     assert lab - plain > 9000
+
+
+def test_print_progress_is_carried_by_the_item_file(tmp_path):
+    """Which bins exist is data, not prose.
+
+    A drawer is printed over several sessions, and the question at the start
+    of each one is which bins are still outstanding. Recording it beside the
+    layout means the answer cannot drift from the arrangement it describes.
+    """
+    f = tmp_path / "items.yml"
+    f.write_text(
+        "items:\n"
+        "  - {name: Done, size: [0, 0], bin_size: 2x2, at: A1, printed: true}\n"
+        "  - {name: Todo, size: [0, 0], bin_size: 2x2, at: C1}\n"
+    )
+    items = load_items(f)
+    assert [i.printed for i in items] == [True, False]
+    layout = pack(KWL1N1T, items)
+    assert layout.printed_count == 1
+
+
+def test_bin_15_is_printed():
+    """The first bin of KWL1N1T to physically exist, 2026-09-26 MDT.
+
+    Pinned by cell rather than by number: renumbering is by position, so the
+    number would follow a rearrangement while the printed part would not.
+    """
+    from gridfinity_negatives.layout import cell_range, numbered
+
+    layout = pack(KWL1N1T, load_items("items-KWL1N1T.yml"))
+    printed = {
+        cell_range(p.x_u, p.y_u, p.length_u, p.width_u)
+        for _, p in numbered(layout) if p.item.printed
+    }
+    assert printed == {"J6:L7"}

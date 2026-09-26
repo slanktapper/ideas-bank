@@ -116,6 +116,14 @@ class Item:
     several times over and asks for an absurd bin."""
     measured: bool = True
     """False marks a placeholder, so a layout built on guesses says so."""
+    printed: bool = False
+    """True once this bin physically exists.
+
+    Build progress belongs with the layout, not in prose: a drawer is printed
+    over several sessions, and the question at the start of each one is which
+    bins are still outstanding. Recorded per bin in the item file so the
+    layout render and the CLI can both answer it.
+    """
     note: str = ""
 
     @property
@@ -294,6 +302,11 @@ class Layout:
     def all_measured(self) -> bool:
         return all(p.item.measured for p in self.placements)
 
+    @property
+    def printed_count(self) -> int:
+        """Bins that physically exist. The rest are still to print."""
+        return sum(1 for p in self.placements if p.item.printed)
+
 
 def load_defaults(path: str | Path) -> dict:
     """Drawer-wide settings from the item file's ``defaults:`` block.
@@ -310,7 +323,8 @@ def load_items(path: str | Path) -> list[Item]:
     """Read an item list from YAML.
 
     Each entry: name, size [W, D, H] in mm, plus optional per_bin, qty,
-    qty_max, qty_typical, note, and ``measured: false`` to mark a guess.
+    qty_max, qty_typical, note, ``measured: false`` to mark a guess, and
+    ``printed: true`` once the bin exists.
     """
     data = yaml.safe_load(Path(path).read_text()) or {}
     items = []
@@ -341,6 +355,7 @@ def load_items(path: str | Path) -> list[Item]:
                 extend_left_mm=float(row.get("extend_left_mm", 0.0)),
                 extend_front_mm=float(row.get("extend_front_mm", 0.0)),
                 measured=bool(row.get("measured", True)),
+                printed=bool(row.get("printed", False)),
                 note=str(row.get("note", "")),
             )
         )

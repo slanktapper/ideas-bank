@@ -12,6 +12,40 @@ scan / photo ──► trace outline ──► offset by clearance ──► + f
                                       STL · STEP · preview PNG
 ```
 
+## Where this is up to
+
+One drawer is being built out: **`KWL1N1T`** — kitchen, west wall, lower
+section, 1st north column, 1st from the top. 533 × 328.5 × 63 mm, a 12 × 7
+grid in the back-right corner, 15 bins, all 5U.
+
+**Bin 15 is printed** — `J6:L7`, a plain 3×2×5U for Bic lighters, 125.5 ×
+83.5 mm, ~51 g. It is the first of the fifteen to be printed **and fit**: bin 1
+went on the plate before it, at the wrong left extension, and is scrap. That is
+what located the 9.5 mm error in the left gap.
+
+Bins 1–14 are still to print, four of them (1, 5, 9, 13) regenerated at the
+corrected 29.0 mm reach.
+
+Print progress lives in the item file, one flag per bin:
+
+```yaml
+- name: Bic lighter
+  at: J6
+  bin_size: 3x2
+  printed: true      # 2026-09-26 MDT
+```
+
+`gfneg layout` then ticks what exists and names what does not:
+
+```
+ 15  J6:L7      3x2          5U     6         125.5x83.5   ✓ Bic lighter ?
+
+Printed  : 1 of 15 bins (✓).  Still to print: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+```
+
+The top view fills a printed bin more strongly and puts a ✓ in its corner, so
+the drawer's progress reads at a glance. `drawers.md` carries the full register.
+
 ## Start with the drawer
 
 Nothing else can be sized until the drawer is measured. Use the **internal clear**
@@ -280,7 +314,7 @@ corners — add a brim if it does.
 ## Tests
 
 ```bash
-pytest -q      # 52 tests
+pytest -q      # 211 tests
 ```
 
 The `test_model.py` contract tests pin down cq-gridfinity's coordinate system

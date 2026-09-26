@@ -188,7 +188,11 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
         y = my + p.y_u * GRID_PITCH_MM + 1.2 - ef
         w = p.length_u * GRID_PITCH_MM - 2.4 + el
         h = p.width_u * GRID_PITCH_MM - 2.4 + ef
-        ax.add_patch(Rectangle((x, y), w, h, facecolor=colour, alpha=0.20,
+        # A printed bin is filled more strongly, so the drawer's progress is
+        # legible from across the room rather than read bin by bin.
+        printed = p.item.printed
+        ax.add_patch(Rectangle((x, y), w, h, facecolor=colour,
+                               alpha=0.34 if printed else 0.20,
                                edgecolor=colour, lw=1.8, zorder=3))
         label = p.item.name if p.item.measured else f"{p.item.name} ?"
         ref = cell_range(p.x_u, p.y_u, p.length_u, p.width_u)
@@ -209,6 +213,12 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
                 fontsize=9.5, fontweight="bold", color="white", zorder=6,
                 bbox=dict(boxstyle="circle,pad=0.32", facecolor=colour,
                           edgecolor="none"))
+        if printed:
+            ax.text(x + w - 8.5, y + h - 8.5, "\u2713", ha="center",
+                    va="center", fontsize=9, fontweight="bold", color="white",
+                    zorder=6,
+                    bbox=dict(boxstyle="circle,pad=0.28",
+                              facecolor="#166534", edgecolor="none"))
         fs = max(5.5, min(9.5, w / (0.60 * max(7, len(label)))))
         ax.text(x + w / 2, y + h / 2 + (4.5 if h > 30 else 0), label,
                 ha="center", va="center", fontsize=fs, color=colour,
@@ -254,6 +264,9 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
         + (f"   ·   flush against the {walls} wall(s)" if walls else "")
         + f"   ·   gaps: {live} mm (pink)"
     )
+    if layout.printed_count:
+        legend += ("\n✓ = printed and in the drawer   ·   "
+                   f"{layout.printed_count} of {len(layout.placements)} bins done")
     ax.text(0.5, -0.085, legend, transform=ax.transAxes, ha="center", va="top",
             fontsize=7.8, color="#43506b",
             bbox=dict(boxstyle="round,pad=0.5", facecolor="#f2f4f7",
@@ -282,6 +295,8 @@ def render_layout(layout, path: str, title: str = "", code: str = "") -> str:
     ax.set_title(
         f"{head}{ux} × {uy} units, {len(layout.placements)} bins, "
         f"{layout.free_units} of {plan_result.total_units} units free"
+        + (f"\n{layout.printed_count} of {len(layout.placements)} printed"
+           if layout.printed_count else "")
         + ("" if layout.all_measured else
            "\nCONTAINS UNMEASURED PLACEHOLDER SIZES — marked ?"),
         fontsize=11,
