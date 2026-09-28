@@ -21,10 +21,14 @@ Z  out of the print bed; the whole board sits on z = 0 and prints flat
 COLUMNS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 
-# Columns are bottom-aligned: every column starts on the same baseline and
-# climbs to a different height, so the silhouette is a stepped pyramid peaking
-# at 7. That is the iconic shape and it is also what makes the lattice
-# self-bracing.
+# Columns are CENTRE-aligned: every column is centred on the same midline, so
+# a column of n cells runs from k = -(n-1)/2 to +(n-1)/2. Every row count is
+# odd, so k is always a whole number and neighbouring columns share rows on
+# the same grid.
+#
+# Bottom-aligning them instead gives the stepped pyramid of the first version.
+# Centred, the lattice is a symmetric lens, which is what lets the board sit
+# inside an octagonal frame without one end of it being mostly air.
 
 PITCH_X = 22.0      # centre-to-centre spacing between columns
 PITCH_Y = 20.0      # centre-to-centre spacing between rows
@@ -32,9 +36,9 @@ PITCH_Y = 20.0      # centre-to-centre spacing between rows
 # --------------------------------------------------------------------------
 # Cell collars — the rings a playing piece drops into
 # --------------------------------------------------------------------------
-COLLAR_OD      = 13.0   # outer diameter of the ring
+COLLAR_OD      = 14.6   # outer diameter of the ring
 COLLAR_BORE    = 6.40   # through-bore; the piece's pin lives in here
-COLLAR_H       = 7.0    # how proud the ring stands off the bed
+COLLAR_H       = 5.5    # how proud the ring stands off the bed
 COLLAR_CHAMFER = 0.60   # 45 deg lead-in at the top of the bore, so a piece
                         # self-centres instead of catching on the rim
 COLLAR_SEGS    = 48     # facets around the ring (export quality)
@@ -51,37 +55,63 @@ COLLAR_SEGS    = 48     # facets around the ring (export quality)
 # collars is a 3.2 mm unsupported overhang, a flat-bottomed bar is just a
 # wide extrusion. The entire board prints support-free.
 STRUT_W = 3.20      # width of a lattice strut
-STRUT_H = 4.60      # height; deliberately shorter than COLLAR_H so the rings
+STRUT_H = 4.00      # height; deliberately shorter than COLLAR_H so the rings
                     # stand proud and the lattice reads as recessed webbing
 
-FRAME_W = 5.20      # the perimeter runs thicker — it is what you pick the
-FRAME_H = 6.20      # board up by, and it stops the pyramid racking
+FRAME_W = 5.20      # the octagon runs thicker — it is what you pick the
+FRAME_H = 4.80      # board up by, and it is the only frame-section member
 
 # Diagonal bracing between adjacent cells. "alternating" puts one diagonal in
 # each lattice quad, flipping direction like herringbone: about half the
 # plastic and print time of full X-bracing for most of the stiffness.
 DIAGONALS = "alternating"   # "none" | "alternating" | "full"
 
-BASE_RAIL_DY = -14.0    # y of the full-width rail under row 0
-BASE_RAIL_W  = 6.0
-BASE_RAIL_H  = 6.20
+# --------------------------------------------------------------------------
+# The octagonal frame
+# --------------------------------------------------------------------------
+# A true octagon: a rectangle around everything with its four corners cut at
+# 45 degrees. The lattice is a lens and does not reach the corners, so the
+# cut-off triangles are where the number shields and the bracing spokes live.
+OCTAGON_MARGIN  = 6.0    # clear air between the content and the frame
+OCTAGON_CHAMFER = 0.55   # corner cut, as a fraction of the shorter half-span.
+                         # 0.586 would give a regular octagon when the span is
+                         # square; the board is taller than it is wide, so
+                         # slightly under that reads best.
+OCTAGON_SPOKE_W = 3.20   # bracing struts from the lattice out to the frame
+OCTAGON_SPOKE_H = 4.00
 
 # --------------------------------------------------------------------------
-# Column number plaques
+# Column number shields — at the TOP of each column, and playable
 # --------------------------------------------------------------------------
-PLAQUE_W       = 17.0
-PLAQUE_H       = 13.0   # in Y
-PLAQUE_T       = 3.0    # plaque thickness in Z
-PLAQUE_DY      = -26.0  # y centre, hanging below the base rail
-PLAQUE_DROP_DX = 7.5    # the two drop struts that hang each plaque off the
-PLAQUE_DROP_Y  = -24.0  # base rail sit either side of the digit, not over it.
-                        # One central drop reads fine in plan and then prints
-                        # a bar straight across the numeral -- caught in
-                        # renders/03-lattice-detail.png.
+# Each column's topmost cell is its numbered summit. The ring is a normal
+# cell, so a piece drops into it like any other; the number sits on a shield
+# fused to the ring from above. Climbing a column and landing on its number
+# is therefore the same move as any other, which is the point.
+PLAQUE_W       = 20.0
+PLAQUE_H       = 18.0
+PLAQUE_T       = 4.5    # shield thickness in Z. Thicker than it needs to be
+                        # for strength: it lifts the digit, which is what
+                        # decides the viewing angle below.
 PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
-NUMERAL_SIZE   = 9.0    # cap height of the digits (single digits;
-                        # 10-12 scale down to fit between the drops)
-NUMERAL_EMBOSS = 1.20   # how far the digits stand proud of the plaque
+
+# The shield stands off its summit ring on a short neck, and it leans OUTWARD
+# -- radially away from the middle of the lattice -- rather than straight up.
+#
+# Both of those exist for one reason. A piece sitting on a summit is 12.6 mm
+# tall and the digit is 5.7 mm off the bed, so a shield tucked in behind the
+# ring is hidden by the very piece that claims the column: in the first
+# octagon build you had to be looking down from nearly 70 degrees to read a
+# claimed number. Leaning the shield outward moves the digit sideways out of
+# the piece's shadow, and the stand-off buys the rest of the angle back.
+SHIELD_OFFSET   = 26.0   # ring centre to shield centre
+SHIELD_MAX_TILT = 55.0   # degrees off vertical; past this the outer columns
+                         # push the board wider than it is tall
+NUMERAL_SIZE   = 9.0    # cap height of the digits (10-12 scale down to fit)
+NUMERAL_MAX_W  = 12.0   # widest a number may be. The shield is sized so that
+                        # the digit keeps 1.2 mm from the ring below it and
+                        # 2.0 mm from every edge the bracing spoke leaves by --
+                        # at 18 mm wide the spoke passed 0.19 mm off the "2".
+NUMERAL_EMBOSS = 1.20   # how far the digits stand proud of the shield
 NUMERAL_FONT_WEIGHT = "bold"
 
 # --------------------------------------------------------------------------
@@ -94,11 +124,14 @@ NUMERAL_FONT_WEIGHT = "bold"
 # One interface, used three ways, and it is the only tolerance in the design
 # that actually matters.
 PEG_PIN_D        = 5.90   # nominal 6.0 less 0.10 for FDM swell
-PEG_PIN_H        = 5.20
+PEG_PIN_H        = 3.20   # short. With a body this wide the SHOULDER does the
+                          # work of keeping a piece upright -- it seats on a
+                          # 3.2-to-6.6 mm contact ring -- so the stub only has
+                          # to locate, not stabilise.
 PEG_PIN_CHAMFER  = 0.60   # lead-in at the very bottom of the pin
 
 PEG_SOCKET_D     = 6.35   # holes print undersize, so the socket is cut over
-PEG_SOCKET_DEPTH = 5.70   # deeper than the pin is long: the pin never bottoms
+PEG_SOCKET_DEPTH = 3.80   # deeper than the pin is long: the pin never bottoms
                           # out, the shoulder seats instead. Consistent stack
                           # height regardless of how hard you press.
 PEG_SOCKET_CHAMFER = 0.50
@@ -107,18 +140,19 @@ PEG_SOCKET_CHAMFER = 0.50
 # so it can be picked up with fingertips rather than fingernails.
 PEG_BODY_H = 9.40         # this is also the stack pitch: each piece stacked
                           # adds exactly this much height
-# The waist radius is bounded from below by the socket: at the narrowest
-# point the wall between the outside of the piece and the socket bore is
-# 4.65 - 3.175 = 1.48 mm, which is about 3.5 perimeters at a 0.42 mm line
-# width. Take the waist in any further and the socket starts showing through.
+# Widened from the first version: shoulder radius 5.70 -> 6.60, so the piece
+# is 13.2 mm across rather than 11.4 mm. The extra width buys two things --
+# something to actually grip, and a much wider seating ring, which is what
+# lets the stub be short. It also thickens the wall around the socket at the
+# waist to 5.38 - 3.175 = 2.21 mm, about five perimeters.
 PEG_BODY_PROFILE = [
-    (5.70, 0.00),
-    (5.70, 1.10),
-    (4.95, 3.30),
-    (4.65, 5.40),
-    (4.95, 7.60),
-    (5.10, 8.70),
-    (5.10, 9.40),
+    (6.60, 0.00),
+    (6.60, 1.10),
+    (5.73, 3.30),
+    (5.38, 5.40),
+    (5.73, 7.60),
+    (5.90, 8.70),
+    (5.90, 9.40),
 ]
 PEG_SEGS = 64
 
@@ -128,19 +162,19 @@ PEG_SEGS = 64
 # the table.
 RUNNER_BODY_H = 12.40
 RUNNER_BODY_PROFILE = [
-    (5.70,  0.00),
-    (5.70,  1.10),
-    (4.95,  2.60),
-    (5.60,  3.20),   # lower band
-    (5.60,  4.30),
-    (4.95,  4.90),
-    (4.70,  6.20),
-    (4.95,  7.50),
-    (5.60,  8.10),   # upper band
-    (5.60,  9.20),
-    (4.95,  9.80),
-    (5.10, 11.30),
-    (5.10, 12.40),
+    (6.60,  0.00),
+    (6.60,  1.10),
+    (5.73,  2.60),
+    (6.48,  3.20),   # lower band
+    (6.48,  4.30),
+    (5.73,  4.90),
+    (5.44,  6.20),
+    (5.73,  7.50),
+    (6.48,  8.10),   # upper band
+    (6.48,  9.20),
+    (5.73,  9.80),
+    (5.90, 11.30),
+    (5.90, 12.40),
 ]
 
 # --------------------------------------------------------------------------
@@ -157,8 +191,8 @@ RUNNERS            = 3    # shared, neutral colour
 # before they are built. That matters: a strut run all the way to the centre
 # would plough straight through the bore and plug the hole. At 5.5 mm the
 # strut still bites 1.0 mm into the collar wall for a solid weld, while
-# leaving 2.3 mm of ring between it and the 3.2 mm bore.
-WELD_R = 5.50
+# leaving 3.0 mm of ring between it and the 3.2 mm bore.
+WELD_R = 6.20
 
 # --------------------------------------------------------------------------
 # Fit-test coupon
@@ -168,6 +202,8 @@ WELD_R = 5.50
 # the piece upside down is your number; set COLLAR_BORE to it and rebuild
 # before you commit ten hours to the board.
 FIT_TEST_BORES = [6.20, 6.30, 6.40, 6.50, 6.60]
+FIT_COUPON_T   = 3.0    # backing bar only; it does not want the shields'
+                        # extra thickness, which is there to lift the digits
 
 # --------------------------------------------------------------------------
 # Printer envelope (Bambu Lab H2D, single nozzle) — see ../available-tools.md

@@ -43,6 +43,12 @@ def main():
     check("row count rises strictly towards the middle",
           all(P.ROWS[i] < P.ROWS[i + 1] for i in range(5)),
           f"{P.ROWS[:6]}")
+    check("every column has an odd row count, so centring lands on the grid",
+          all(n % 2 for n in P.ROWS), f"{P.ROWS}")
+    check("columns are centred on a shared midline",
+          all(abs(B.cell_xy(i, 0)[1] + B.summit(i)[1]) < 1e-9
+              for i in range(len(P.ROWS))),
+          "bottom and top of each column are equal and opposite")
 
     print("\nthe pin/socket interface")
     bore_clear = P.COLLAR_BORE - P.PEG_PIN_D
@@ -163,24 +169,108 @@ def main():
           pin_bottom > socket_floor + 0.2,
           f"{pin_bottom - socket_floor:.2f} mm of air under the pin")
 
-    print("\ncolumn numbers are legible")
-    drops = [s for s in B.final_struts() if s[4] == "drop"]
-    half_digit = (2 * P.PLAQUE_DROP_DX - 4.0) / 2
-    over = []
+    print("\ncolumn numbers are at the top, legible, and playable")
+    nx_half = P.NUMERAL_MAX_W / 2
+    ny_half = P.NUMERAL_SIZE / 2
+    gx = np.linspace(-nx_half, nx_half, 9)
+    gy = np.linspace(-ny_half, ny_half, 7)
+
+    crossed, closest = [], np.inf
     for i in range(len(P.ROWS)):
-        cx, _ = B.cell_xy(i, 0)
-        for p0, p1, w, _h, _k in drops:
-            # does this drop pass over the digit's footprint on the plaque?
-            xs = (p0[0], p1[0])
-            ys = (p0[1], p1[1])
-            if min(ys) - w / 2 < P.PLAQUE_DY + P.NUMERAL_SIZE / 2 and \
-               max(ys) + w / 2 > P.PLAQUE_DY - P.NUMERAL_SIZE / 2 and \
-               min(xs) - w / 2 < cx + half_digit and \
-               max(xs) + w / 2 > cx - half_digit:
-                over.append(P.COLUMNS[i])
-    check("no strut is printed across a column number", not over,
-          f"{len(drops)} drop struts clear all 11 plaques"
-          if not over else f"crosses {sorted(set(over))}")
+        nx, ny = B.shield_xy(i)
+        for dx in gx:
+            for dy in gy:
+                for p0, p1, w, _h, _k in struts:
+                    d = B.strut_distance_to((nx + dx, ny + dy), p0, p1, w)
+                    closest = min(closest, d)
+                    if d < 0.3:
+                        crossed.append(P.COLUMNS[i])
+    check("no strut is printed across a column number", not crossed,
+          f"nearest strut is {closest:.2f} mm off a digit"
+          if not crossed else f"crosses {sorted(set(crossed))}")
+
+    check("each number belongs to the column's TOP cell, so landing on the "
+          "number is an ordinary move",
+          all(np.linalg.norm(np.asarray(B.shield_xy(i))
+                             - np.asarray(B.summit(i))) < P.SHIELD_OFFSET + 0.01
+              for i in range(len(P.ROWS))),
+          f"shields stand {P.SHIELD_OFFSET:.0f} mm off their summit ring")
+
+    # THE ONE THE RENDER CAUGHT. A piece claiming a summit must not hide that
+    # column's number. Work out, for every point on every digit, the lowest
+    # eye elevation from which it clears the piece in front of it.
+    body_r = max(r for r, _ in P.PEG_BODY_PROFILE)
+    piece_top = P.COLLAR_H + max(P.PEG_BODY_H, P.RUNNER_BODY_H)
+    digit_z = P.PLAQUE_T + P.NUMERAL_EMBOSS
+    rise = piece_top - digit_z
+
+    worst_angle, worst_col = 0.0, None
+    for i in range(len(P.ROWS)):
+        sx, sy = B.summit(i)
+        nx, ny = B.shield_xy(i)
+        for dx in gx:
+            for dy in gy:
+                px, py = nx + dx, ny + dy
+                off = abs(px - sx)
+                if off >= body_r or py <= sy:
+                    continue                      # not behind the piece at all
+                back = sy + np.sqrt(body_r ** 2 - off ** 2)
+                gap = py - back
+                ang = 90.0 if gap <= 0 else np.degrees(np.arctan2(rise, gap))
+                if ang > worst_angle:
+                    worst_angle, worst_col = ang, P.COLUMNS[i]
+    check("a piece on a summit does not hide that column's number",
+          worst_angle <= 46.0,
+          f"readable from {worst_angle:.0f} deg and above "
+          f"(worst: column {worst_col})")
+    check("the number shields lean outward, out of their pieces' shadow",
+          any(abs(B.shield_dir(i)[0]) > 0.3 for i in range(len(P.ROWS))),
+          f"tilts up to {P.SHIELD_MAX_TILT:.0f} deg off vertical")
+
+    necks = [s for s in struts if s[4] == "neck"]
+    check("every shield is tied back to its ring by a neck",
+          len(necks) == len(P.ROWS), f"{len(necks)} necks")
+
+    print("\nthe octagonal frame")
+    poly = np.asarray(B.octagon(), dtype=float)
+    ctr = B.octagon_centre()
+
+    def _inside(pt):
+        # convex polygon: the point is inside if it is on the same side of
+        # every edge as the centre
+        for j in range(len(poly)):
+            a, bb = poly[j], poly[(j + 1) % len(poly)]
+            e = bb - a
+            side = e[0] * (pt[1] - a[1]) - e[1] * (pt[0] - a[0])
+            ref = e[0] * (ctr[1] - a[1]) - e[1] * (ctr[0] - a[0])
+            if np.sign(side) != np.sign(ref):
+                return False
+        return True
+
+    outside = []
+    rr = P.COLLAR_OD / 2
+    for i, r in B.all_cells():
+        cx, cy = B.cell_xy(i, r)
+        for a in np.linspace(0, 2 * np.pi, 8, endpoint=False):
+            if not _inside(np.array([cx + rr * np.cos(a), cy + rr * np.sin(a)])):
+                outside.append(("cell", P.COLUMNS[i], r))
+    for i in range(len(P.ROWS)):
+        sx, sy = B.shield_xy(i)
+        for dx in (-1, 1):
+            for dy in (-1, 1):
+                pt = np.array([sx + dx * P.PLAQUE_W / 2, sy + dy * P.PLAQUE_H / 2])
+                if not _inside(pt):
+                    outside.append(("shield", P.COLUMNS[i], None))
+    check("the frame encloses every ring and every number shield",
+          not outside, f"8 edges, {len(poly)} vertices"
+          if not outside else f"{sorted(set(outside))} pokes out")
+    check("the frame really is an octagon (8 distinct vertices)",
+          len(poly) == 8 and len(set(map(tuple, np.round(poly, 3)))) == 8)
+
+    spokes = [s for s in struts if s[4] == "spoke"]
+    check("the lens is braced out to the frame on every edge",
+          len(spokes) >= 2 * len(P.ROWS),
+          f"{len(spokes)} spokes")
 
     print("\nbores are actually open in the finished mesh")
     # The checks above reason about struts. This one asks the finished, fused

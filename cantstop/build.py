@@ -144,11 +144,17 @@ def export_renders(board_body, numerals, marker, runner, fast=False, verbose=Tru
                    margin=0.82, ortho=True),
          key_dir=(-0.3, -0.5, 1.0), edges=0.40)
 
-    # 3 -- close on the foot of columns 6/7/8: collars, struts, diagonals,
-    #      plaques, and how the lattice welds into the rings
-    shot("03-lattice-detail.png", board_all,
-         eye=R.orbit_eye((88, 4, 4), 145, -72, 30), target=(88, 4, 2),
-         fov_deg=30, edges=0.6)
+    # 3 -- close on the summits of 6 / 7 / 8: the numbered shields, the rings
+    #      they carry, and how the lattice and the bracing spokes weld in
+    sx, sy = B.summit(4)
+    detail = list(board_all) + [
+        {"mesh": place(marker, 7, P.ROWS[5] - 1), "color": C_PLAYERS[0]},
+        {"mesh": place(marker, 6, P.ROWS[4] - 1), "color": C_PLAYERS[3]},
+        {"mesh": place(marker, 5, P.ROWS[3] - 2), "color": C_PLAYERS[1]},
+    ]
+    shot("03-lattice-detail.png", detail,
+         eye=R.orbit_eye((sx + 14, sy + 14, 3), 205, -74, 34),
+         target=(sx + 14, sy + 12, 4), fov_deg=32, edges=0.6)
 
     # 4 -- the two piece types, and a marker cut in half
     half_body, half_cap = R.section(marker, (0, 1, 0), (0, 0, 0))
@@ -181,7 +187,7 @@ def export_renders(board_body, numerals, marker, runner, fast=False, verbose=Tru
     #      here and it costs nothing to find out.
     collar = S.tube(0, 0, P.COLLAR_OD / 2, P.COLLAR_BORE / 2, 0, P.COLLAR_H,
                     segs=P.COLLAR_SEGS, top_chamfer=P.COLLAR_CHAMFER)
-    rail = S.strut((-17, 0), (17, 0), P.STRUT_W, P.STRUT_H)
+    rail = S.strut((-19, 0), (19, 0), P.STRUT_W, P.STRUT_H)
     # Fuse before cutting. Sectioned separately they leave two cut faces on
     # the same plane, which z-fights into speckle exactly where the render
     # needs to be clearest.
@@ -227,6 +233,9 @@ def export_renders(board_body, numerals, marker, runner, fast=False, verbose=Tru
     scene.append({"mesh": place(runner, 5, 3), "color": C_RUNNER})
     scene.append({"mesh": place(runner, 8, 2, 1, (P.PEG_BODY_H,)),
                   "color": C_RUNNER})
+    # two columns claimed outright: a piece sitting on the number itself
+    scene.append({"mesh": place(marker, 2, P.ROWS[0] - 1), "color": C_PLAYERS[1]})
+    scene.append({"mesh": place(marker, 11, P.ROWS[9] - 1), "color": C_PLAYERS[3]})
     shot("06-assembly.png", scene,
          **R.frame([board_body], azimuth_deg=-84, elevation_deg=38, margin=0.73))
 
@@ -249,13 +258,13 @@ def _annotate_stack(img, cam, W, H):
         dict(at=(0.0, 0, z0 + P.PEG_PIN_H * 0.55),
              to=(Rg, 0.87 * H), align="left",
              text=f"pin \u00d8{P.PEG_PIN_D:.2f} \u00d7 {P.PEG_PIN_H:.2f} long"),
-        dict(at=(5.2, 0, P.COLLAR_H),
+        dict(at=(P.COLLAR_OD / 2 - 1.0, 0, P.COLLAR_H),
              to=(Rg, 0.72 * H), align="left",
              text="shoulder seats on the rim"),
         dict(at=(2.0, 0, z_top1 - P.PEG_SOCKET_DEPTH * 0.5),
              to=(L, 0.46 * H), align="right",
              text=f"socket \u00d8{P.PEG_SOCKET_D:.2f} \u00d7 {P.PEG_SOCKET_DEPTH:.2f} deep"),
-        dict(at=(5.6, 0, z_top1),
+        dict(at=(P.PEG_BODY_PROFILE[0][0], 0, z_top1),
              to=(Rg, 0.50 * H), align="left",
              text=f"stack pitch {P.PEG_BODY_H:.2f} mm"),
         dict(at=(0.0, 0, z0 + P.PEG_PIN_H + 2 * P.PEG_BODY_H + 6.0),
@@ -272,14 +281,14 @@ def _annotate_stack(img, cam, W, H):
 def _bed_fit_diagram(board_full):
     """Plan schematic of the board on the bed.
 
-    Drawn from the strut and cell lists rather than from the mesh: a dot
-    scatter of 50k vertices looks like noise, whereas the lattice drawn as
-    lines and rings is something you can actually read a dimension off.
+    Drawn from the strut, cell and shield lists rather than from the mesh: a
+    dot scatter of 50k vertices looks like noise, whereas the lattice drawn as
+    lines and rings is something you can read a dimension off.
     """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.patches import Rectangle, Circle
+    from matplotlib.patches import Rectangle, Circle, Polygon
     from matplotlib.collections import LineCollection
 
     lo, hi = board_full.bounds
@@ -289,33 +298,37 @@ def _bed_fit_diagram(board_full):
     fig, ax = plt.subplots(figsize=(8.2, 8.2), dpi=170)
     ax.add_patch(Rectangle((0, 0), P.BED_X, P.BED_Y, facecolor="#eceff4",
                            edgecolor="#4c566a", lw=1.6, zorder=0))
+    ax.add_patch(Polygon([(x + ox, y + oy) for x, y in B.octagon()],
+                         closed=True, facecolor="#e5e9f0", edgecolor="#4c566a",
+                         lw=1.0, zorder=1))
 
     segs, widths = [], []
     for p0, p1, sw, _sh, _kind in B.final_struts():
         segs.append([(p0[0] + ox, p0[1] + oy), (p1[0] + ox, p1[1] + oy)])
-        widths.append(sw * 1.5)
+        widths.append(sw * 1.4)
     ax.add_collection(LineCollection(segs, linewidths=widths,
                                      colors="#3b4252", zorder=2))
+
+    for i in range(len(P.ROWS)):
+        sx, sy = B.shield_xy(i)
+        ax.add_patch(Rectangle((sx + ox - P.PLAQUE_W / 2,
+                                sy + oy - P.PLAQUE_H / 2),
+                               P.PLAQUE_W, P.PLAQUE_H, facecolor="#3b4252",
+                               edgecolor="none", zorder=3))
+        ax.text(sx + ox, sy + oy, str(P.COLUMNS[i]),
+                color="#d08770", ha="center", va="center", fontsize=7,
+                weight="bold", zorder=6)
 
     for i, r in B.all_cells():
         cx, cy = B.cell_xy(i, r)
         ax.add_patch(Circle((cx + ox, cy + oy), P.COLLAR_OD / 2,
-                            facecolor="#3b4252", edgecolor="none", zorder=3))
+                            facecolor="#3b4252", edgecolor="none", zorder=4))
         ax.add_patch(Circle((cx + ox, cy + oy), P.COLLAR_BORE / 2,
-                            facecolor="#eceff4", edgecolor="none", zorder=4))
-
-    for i, num in enumerate(P.COLUMNS):
-        cx, _ = B.cell_xy(i, 0)
-        ax.add_patch(Rectangle((cx + ox - P.PLAQUE_W / 2,
-                                P.PLAQUE_DY + oy - P.PLAQUE_H / 2),
-                               P.PLAQUE_W, P.PLAQUE_H, facecolor="#3b4252",
-                               edgecolor="none", zorder=3))
-        ax.text(cx + ox, P.PLAQUE_DY + oy, str(num), color="#d08770",
-                ha="center", va="center", fontsize=8, weight="bold", zorder=5)
+                            facecolor="#eceff4", edgecolor="none", zorder=5))
 
     bx, by = lo[0] + ox, lo[1] + oy
     ax.add_patch(Rectangle((bx, by), w, h, facecolor="none",
-                           edgecolor="#5e81ac", lw=1.2, ls="--", zorder=6))
+                           edgecolor="#5e81ac", lw=1.2, ls="--", zorder=7))
     ax.annotate("", (bx, by - 13), (bx + w, by - 13),
                 arrowprops=dict(arrowstyle="<->", color="#bf616a", lw=1.4))
     ax.text(bx + w / 2, by - 22, f"{w:.0f} mm", ha="center", color="#bf616a",

@@ -54,8 +54,10 @@ Add part → Load, then assign the numerals to a different filament). They are
 modelled in the same coordinate system and the numerals overlap the plaques by
 0.2 mm, so they land in the right place with no manual positioning.
 
-A full set is roughly **237 g** at 100% infill: ~152 g board, ~39 g of markers
-(44), ~4 g of runners (3).
+A full set is roughly **296 g** at 100% infill: ~179 g board, ~53 g of markers
+(44), ~5 g of runners (3). The board is 300 × 300 × 5.5 mm and sits on the
+H2D bed with 25 mm spare in X and 20 mm in Y — comfortable, but not enough to
+be casual about a skirt.
 
 ---
 
@@ -75,7 +77,7 @@ constraint, not a happy accident:
 flat and every reason to stand it on edge.
 
 **Pieces print pin-down.** The first layer is then a ~5.9 mm disc, which is a
-small footprint for a 14.6 mm part — use a **brim of 4–5 mm**. Printing them
+small footprint for a 12.6 mm part — use a **brim of 4–5 mm**. Printing them
 the other way up would put the socket bore face-down and need a bridge.
 
 ---
@@ -92,7 +94,7 @@ Nothing exotic. Starting points:
 | Brim | none needed — large footprint | 4–5 mm |
 | Supports | **none** | **none** |
 
-The board is 7 mm tall and mostly wall, so infill barely moves the number;
+The board is 5.5 mm tall and mostly wall, so infill barely moves the number;
 don't bother pushing it up for strength.
 
 On the **numerals**: at 1.2 mm emboss they are six layers at 0.20 mm. If the
@@ -122,10 +124,14 @@ pieces in the *pieces'* material, or the coupon tests the wrong pair.
 
 ## 6. After printing
 
-- Check a piece seats in a ring at each corner and at the peak. FDM parts are
-  not dimensionally uniform across 279 mm; if the corners differ from the
-  middle, that is bed levelling or warp, not the model.
-- Check three pieces stack without wobble.
+- Check a piece seats in a ring at the middle, at the ends of the lens, and on
+  a summit. FDM parts are not dimensionally uniform across 300 mm; if the
+  edges differ from the middle, that is bed levelling or warp, not the model.
+- Check three pieces stack without wobble. The stub is deliberately short
+  (3.2 mm), so if a stack rocks, look at the shoulder seating on the ring rim
+  rather than at the pin.
+- Sit down at the table and check you can read a column number with a piece
+  on that column's summit. The model says 40 degrees; the table decides.
 - Pick the board up by the perimeter frame. If it flexes more than you like,
   see the rigidity note in `direction.md` — the fix is a parameter, not a
   redesign.
@@ -135,15 +141,18 @@ pieces in the *pieces'* material, or the coupon tests the wrong pair.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 35 checks, ~4 s
+python3 test_fit.py    # 44 checks, ~5 s
 python3 build.py       # regenerate STLs and renders, ~25 s
 ```
 
 `test_fit.py` is there because most ways of getting this wrong are silent: a
 bore that swallows the pin, a strut that ploughs through a hole or across a
 numeral, a socket thinned to nothing by the waist, a board that has quietly
-grown past the bed, a lattice that has become two detached bodies. Each one
-costs a print to discover and nothing to check.
+grown past the bed, a lattice that has become two detached bodies, a number
+you cannot read once a piece is sitting on it. Each one costs a print to
+discover and nothing to check.
 
-Look at `renders/03-lattice-detail.png` and `renders/05-stacking-section.png`
-after any change. Those two catch the things the tests do not.
+Look at `renders/03-lattice-detail.png`, `renders/05-stacking-section.png` and
+`renders/06-assembly.png` after any change. Those three catch the things the
+tests do not — the hidden-number defect was found in the assembly render, and
+only then written into the test suite.
