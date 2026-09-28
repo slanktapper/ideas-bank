@@ -22,7 +22,12 @@ The board is a **6 mm solid octagonal slab, printed at 10% infill**, with a
 raised lip 8 mm wide around the edge. Every cell is a post standing on that
 plate; the plate itself is the seat. Around the outside the lip stands 1.2 mm
 proud — the same relief the numbers are sunk by, so the board has one depth
-step and not two.
+step and not two — and its **top 0.6 mm prints in the numbers' colour**, so
+the board is framed in white as well as numbered in it. The lip is split
+rather than handed over whole, which puts a white cap on a red edge instead of
+a white wall standing on red. `RIM_CAP_H` has to be a whole number of layers
+or the slicer rounds the border a layer thicker or thinner than asked; that is
+the one parameter here tied to a slicer setting, and `test_fit.py` checks it.
 
 **This started as a wireframe and stopped being one on the numbers.** The
 original brief asked for an open truss, and that is built and still selectable
@@ -141,7 +146,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 64 design checks — run this after editing params.py
+python3 test_fit.py      # 69 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~6 s)
 python3 build.py --fast  # quarter-res renders  (~12 s total)
@@ -160,7 +165,7 @@ is 284.9 × 284.9 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 40 mm
 spare in X and 35 mm in Y. A full set is about **216 g** — 158 g of board at
 10% infill plus 58 g of solid pieces.
 
-`test_fit.py` passes 64 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 69 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

@@ -43,7 +43,7 @@ C_PLAYERS = [
 C_RUNNER  = (0.970, 0.800, 0.100)   # PETG Basic, yellow
 
 DENSITY = {"PLA": 1.24, "PETG": 1.27}   # g/cm^3
-LAYER, LINE, WALLS, SKINS = 0.20, 0.42, 3, 3
+LAYER, LINE, WALLS, SKINS = P.LAYER_H, 0.42, 3, 3
 
 
 def _slab_filament(area: float, peri: float, n_posts: int) -> float:

@@ -65,6 +65,19 @@ RIM_H = 1.20        # matched to NUMERAL_DEPTH, so the lip and the numbers
                     # share one relief dimension
 RIM_CLEAR = 4.0     # air between the inside of the lip and the nearest pad
 
+# The top of the lip prints in the NUMBERS' colour, so the board carries a
+# white border as well as white numerals. Only the top few layers change: the
+# rest of the lip stays with the body, so there is a red edge under a white
+# cap rather than a white wall standing on red.
+#
+# This must be a whole number of layers. Land it mid-layer and the slicer has
+# to give that layer to one colour or the other, and the border comes out a
+# layer thicker or thinner than asked for -- on a 3-layer cap that is a third
+# of it. test_fit.py checks the division.
+LAYER_H   = 0.20    # what the board will be sliced at; see print-guide.md
+RIM_CAP_H = 0.60    # 3 layers. 0 puts the whole lip in the body colour;
+                    # RIM_H puts the whole lip in the numbers' colour
+
 # --------------------------------------------------------------------------
 # Cells — a pad with a post standing on it
 # --------------------------------------------------------------------------

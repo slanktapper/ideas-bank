@@ -93,6 +93,44 @@ def slab_checks(brd, poly, ctr, skirt_r):
           abs(P.RIM_H - P.NUMERAL_DEPTH) < 1e-9,
           f"lip {P.RIM_H:.2f} mm up, numerals {P.NUMERAL_DEPTH:.2f} mm down")
 
+    # THE WHITE BORDER. The top of the lip ships with the numerals, so the
+    # board has a white edge as well as white numbers. The height of that cap
+    # has to fall on a layer boundary: land it mid-layer and the slicer gives
+    # the layer to one colour or the other, and a 3-layer cap comes out 2 or
+    # 4. Nothing downstream would notice -- the mesh is perfectly valid either
+    # way -- so it is checked here.
+    layers = P.RIM_CAP_H / P.LAYER_H
+    check("the lip's white cap is a whole number of layers",
+          abs(layers - round(layers)) < 1e-9 and 0 <= P.RIM_CAP_H <= P.RIM_H,
+          f"{P.RIM_CAP_H:.2f} mm = {round(layers):g} layers at "
+          f"{P.LAYER_H:.2f}, on a {P.RIM_H:.2f} mm lip")
+
+    body_lip = P.RIM_H - P.RIM_CAP_H
+    check("the two colours divide the lip and neither loses its share",
+          abs(B.build_board(with_numerals=False).bounds[1][2]
+              - (SEAT_Z + P.POST_H)) < 1e-6
+          and abs(B.rim_cap().bounds[0][2] - (P.SLAB_T + body_lip)) < 1e-6
+          and abs(B.rim_cap().bounds[1][2] - (P.SLAB_T + P.RIM_H)) < 1e-6,
+          f"{body_lip:.2f} mm of lip in the body colour, then "
+          f"{P.RIM_CAP_H:.2f} mm in the numbers'")
+
+    # 0.01 mm, not 1e-6: the plate comes back through a boolean engine that
+    # rounds its coordinates, so an exact comparison here fails on float noise
+    # rather than on anything about the geometry.
+    cap = B.rim_cap()
+    over = max(abs(cap.bounds[0][:2] - plate.bounds[0][:2]).max(),
+               abs(cap.bounds[1][:2] - plate.bounds[1][:2]).max())
+    check("the cap sits on the lip, not over the edge of it",
+          over < 0.01,
+          f"same footprint as the lip below it, to {over*1000:.0f} um")
+
+    check("the single-colour board still gets a whole lip",
+          abs(B.slab_plate(cap=True).bounds[1][2]
+              - (P.SLAB_T + P.RIM_H)) < 1e-6
+          and abs(B.slab_plate(cap=False).bounds[1][2]
+                  - (P.SLAB_T + body_lip)) < 1e-6,
+          "board.stl keeps the cap; board-body.stl hands it to the numerals")
+
     # the same inset slab_plate() uses, rebuilt here so the check is on the
     # construction and not on a number copied out of it
     apothem = max(abs(np.asarray(poly) - ctr).max(axis=1))
@@ -419,6 +457,11 @@ def main():
     # number is whole. A post in one flat colour loses a sixth of an 8 and
     # takes its waist with it.
     accent = B.build_board(numerals_only=True)
+    check("the accent part carries the cap on the lip as well as the digits",
+          (not SLAB) or P.RIM_CAP_H <= 1e-9
+          or accent.body_count == len(P.COLUMNS) + 5,
+          f"{accent.body_count} bodies: 11 digits, 4 of them split by the "
+          f"gap in a two-digit number, and the ring")
     check("the accent part reaches the tops of the posts",
           abs(accent.bounds[1][2] - (SEAT_Z + P.POST_H)) < 1e-6,
           f"z={accent.bounds[1][2]:.2f}; the digit is carried up through "

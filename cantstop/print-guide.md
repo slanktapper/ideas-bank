@@ -54,7 +54,8 @@ seating faces are all bit-for-bit what the 285 mm board would print.
 
 It is the corner over columns 6, 7 and 8 — the densest part of the board, so
 it carries three numbers, six posts at the real 22 mm column pitch, and the
-run of raised lip that comes closest to a pad anywhere on the board. Three of
+run of raised lip that comes closest to a pad anywhere on the board — with
+its white cap on. Three of
 its four edges are raw cuts through open plate; the fourth is the board's own
 outline.
 
@@ -72,6 +73,10 @@ Print it in the two colours you mean to use, then check:
    has not crept in far enough to foul a piece on the top row of posts.
 6. **The engraved pockets.** Six layers at 0.20 mm. If the colour smears,
    raise `NUMERAL_DEPTH` (and `RIM_H` with it) rather than fighting the purge.
+7. **The white cap on the lip.** Three layers. Check the colour boundary
+   partway up the lip is clean and lands where it should — it is the longest
+   two-colour boundary on the board, and the only one you can measure with a
+   caliper.
 
 `stub-board.stl` is the same thing in one colour, if you only want to look at
 the lip and the seating. `renders/07-test-print.png` is what it should come
@@ -95,7 +100,7 @@ and, for the test print above:
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 66 x 61 mm corner of the real board |
+| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 66 x 61 mm corner of the real board, lip cap included |
 | `stub-board.stl` | 1 | PLA red | the same corner, single colour |
 | `stub-pieces-x2.stl` | 1 | PLA | two markers, to seat one and stack the other |
 
@@ -108,8 +113,23 @@ Add part → Load, then assign the numerals to a different filament). They are
 modelled in the same coordinate system, so they land in the right place with
 no manual positioning.
 
-`board-numerals.stl` is the digits **plus the slice of each summit post the
-digit passes through**. That is what makes the numbers readable: a post stands
+`board-numerals.stl` carries three things: the digits, **the slice of each
+summit post the digit passes through**, and **the top 0.60 mm of the raised
+lip**, so the board gets a white border as well as white numbers.
+
+The lip is split rather than handed over whole: the bottom 0.60 mm stays with
+the body, so the edge of the board is a red wall with a white cap on it, not a
+white wall standing on red. `RIM_CAP_H` in `params.py` sets how much of it
+goes white — 0 for none, `RIM_H` for all of it.
+
+**`RIM_CAP_H` must be a whole number of layers**, and `params.py` assumes you
+will slice the board at `LAYER_H` = 0.20 mm. Slice it at 0.16 or 0.28 and
+0.60 mm no longer lands on a layer boundary: the slicer gives that layer to
+one colour or the other, and a 3-layer cap comes out 2 or 4. If you change the
+layer height, change `LAYER_H` to match, pick a `RIM_CAP_H` that divides by
+it, and rerun `test_fit.py` — it checks the division.
+
+On the split post: That is what makes the numbers readable: a post stands
 in the middle of each digit, and rather than pick one flat colour for it, the
 post is split by the glyph. Where the digit passes, the post prints in the
 number's colour; the rest prints with the body. Seen from above the post is
@@ -235,7 +255,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 64 checks, ~30 s
+python3 test_fit.py    # 69 checks, ~30 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

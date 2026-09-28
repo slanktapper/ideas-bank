@@ -445,26 +445,50 @@ def seat_z() -> float:
     return P.SLAB_T if P.BOARD_STYLE == "slab" else P.PAD_H
 
 
-def slab_plate() -> trimesh.Trimesh:
-    """The solid octagonal plate, with its raised lip around the edge.
+def rim_rings() -> tuple[list, list]:
+    """(outer, inner) plan polygons of the raised lip.
 
-    The lip is the outline inset by RIM_W. A regular octagon has the same
-    apothem to every edge, so insetting is a plain scale about the centre --
-    (a - RIM_W) / a -- and the lip comes out an even width the whole way
-    round.
+    The inner ring is the outline inset by RIM_W. A regular octagon has the
+    same apothem to every edge, so insetting is a plain scale about the
+    centre -- (a - RIM_W) / a -- and the lip comes out an even width the whole
+    way round.
     """
-    from shapely.geometry import Polygon
-
     outer = [tuple(p) for p in octagon()]
-    plate = trimesh.creation.extrude_polygon(Polygon(outer), P.SLAB_T)
-
     ctr = octagon_centre()
     apothem = max(abs(np.asarray(outer) - ctr).max(axis=1))
     k = (apothem - P.RIM_W) / apothem
-    inner = [tuple(ctr + (np.asarray(p) - ctr) * k) for p in outer]
-    rim = trimesh.creation.extrude_polygon(Polygon(outer, [inner]), P.RIM_H)
-    rim.apply_translation((0, 0, P.SLAB_T))
-    return S.union_all([plate, rim])
+    return outer, [tuple(ctr + (np.asarray(p) - ctr) * k) for p in outer]
+
+
+def _rim(z0: float, h: float) -> trimesh.Trimesh:
+    from shapely.geometry import Polygon
+
+    outer, inner = rim_rings()
+    m = trimesh.creation.extrude_polygon(Polygon(outer, [inner]), h)
+    m.apply_translation((0, 0, z0))
+    return m
+
+
+def rim_cap() -> trimesh.Trimesh:
+    """The top RIM_CAP_H of the lip, which prints in the numbers' colour."""
+    return _rim(P.SLAB_T + P.RIM_H - P.RIM_CAP_H, P.RIM_CAP_H)
+
+
+def slab_plate(cap: bool = True) -> trimesh.Trimesh:
+    """The solid octagonal plate, with its raised lip around the edge.
+
+    cap=False leaves the top RIM_CAP_H of the lip off, because that part
+    ships with the numerals and prints in their colour. The plate itself and
+    the lip below the cap are unaffected either way.
+    """
+    from shapely.geometry import Polygon
+
+    outer, _ = rim_rings()
+    parts = [trimesh.creation.extrude_polygon(Polygon(outer), P.SLAB_T)]
+    h = P.RIM_H if cap else P.RIM_H - P.RIM_CAP_H
+    if h > 1e-9:
+        parts.append(_rim(P.SLAB_T, h))
+    return S.union_all(parts)
 
 
 def build_summit_box(cx: float, cy: float) -> trimesh.Trimesh:
@@ -546,20 +570,26 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
                 segs: int | None = None, verbose: bool = False) -> trimesh.Trimesh:
     """Construct the board.
 
-    numerals_only=True   the accent parts: the digit fills and the slice of
-                         each post the digit passes through
+    numerals_only=True   the accent parts: the digit fills, the slice of each
+                         post the digit passes through, and the cap on the lip
     with_numerals=True   the board with the pockets cut -- single colour, the
-                         numbers read as engraved
-    with_numerals=False  the body with pockets too, to pair with numerals_only
+                         numbers read as engraved, the lip whole
+    with_numerals=False  the body with pockets too, and with the top of the
+                         lip left off, to pair with numerals_only
     """
     segs = segs or P.CELL_SEGS
+    slab = P.BOARD_STYLE == "slab"
     cutters, accents, body_posts = _summit_parts(segs)
     if numerals_only:
+        if slab and P.RIM_CAP_H > 1e-9:
+            accents = accents + [rim_cap()]
         return S.union_all(accents)
 
     parts: list[trimesh.Trimesh] = []
-    if P.BOARD_STYLE == "slab":
-        parts.append(slab_plate())
+    if slab:
+        # with_numerals is the single-colour board, so it keeps the whole lip;
+        # the two-colour body hands the cap over to the numerals part
+        parts.append(slab_plate(cap=with_numerals))
 
     summit_n = 0
     for i, r in all_cells():
