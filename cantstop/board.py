@@ -40,7 +40,10 @@ def cell_xy(col_index: int, row: int) -> tuple[float, float]:
     centred, so row 0 of a short column is not level with row 0 of a long one.
 
     """
-    return col_index * P.PITCH_X, (row - k_max(col_index)) * P.PITCH_Y
+    y = (row - k_max(col_index)) * P.PITCH_Y
+    if row == P.ROWS[col_index] - 1:
+        y += P.SUMMIT_STEP          # the top cell steps out, opening the gap
+    return col_index * P.PITCH_X, y
 
 
 def summit(col_index: int) -> tuple[float, float]:
@@ -59,11 +62,12 @@ def lattice_centre() -> np.ndarray:
 
 
 def shield_xy(col_index: int) -> tuple[float, float]:
-    """Centre of a column's number box, which is its summit cell."""
-    return summit(col_index)
+    """Centre of a column's number tab: below its post, on the centreline."""
+    x, y = summit(col_index)
+    return x, y - P.TAB_DROP
 
 
-# the digit, the box and the post all share one centre
+# the tab and the digit share a centre; the post does not, deliberately
 numeral_xy = shield_xy
 
 
@@ -105,10 +109,12 @@ def content_bounds() -> tuple[np.ndarray, np.ndarray]:
     xs, ys = [], []
     for i, row in all_cells():
         x, y = cell_xy(i, row)
-        hx, hy = ((P.PLAQUE_W / 2, P.PLAQUE_H / 2) if is_summit(i, row)
-                  else (r, r))
-        xs += [x - hx, x + hx]
-        ys += [y - hy, y + hy]
+        xs += [x - r, x + r]
+        ys += [y - r, y + r]
+    for i in range(len(P.ROWS)):
+        x, y = shield_xy(i)
+        xs += [x - P.PLAQUE_W / 2, x + P.PLAQUE_W / 2]
+        ys += [y - P.PLAQUE_H / 2, y + P.PLAQUE_H / 2]
     return np.array([min(xs), min(ys)]), np.array([max(xs), max(ys)])
 
 
@@ -288,6 +294,11 @@ def final_struts() -> list[tuple[tuple, tuple, float, float, str]]:
         w, h = (P.FRAME_W, P.FRAME_H) if is_frame else (P.STRUT_W, P.STRUT_H)
         out.append((tuple(t[0]), tuple(t[1]), w, h, "lattice"))
 
+    for i in range(len(P.ROWS)):
+        x, sy = summit(i)
+        out.append(((x, sy - P.WELD_R), (x, shield_xy(i)[1]),
+                    P.STRUT_W, P.STRUT_H, "neck"))
+
     poly = octagon()
     for j in range(len(poly)):
         out.append((poly[j], poly[(j + 1) % len(poly)],
@@ -344,116 +355,52 @@ def build_cell(cx: float, cy: float, segs: int | None = None,
     return m
 
 
-def build_summit_box(cx: float, cy: float) -> trimesh.Trimesh:
-    """A column's number box, which is also its summit pad.
-
-    Same thickness as the round pads, so every seating face on the board is at
-    one height and a piece sits the same whatever cell it is in.
-    """
-    return S.rounded_plate(cx, cy, P.PLAQUE_W, P.PLAQUE_H,
-                           P.PLAQUE_T, P.PLAQUE_FILLET)
-
-
-def _post(cx: float, cy: float, z0: float, segs: int | None = None
-          ) -> trimesh.Trimesh:
-    rq = P.POST_D * 0.5
-    c = P.POST_CHAMFER
-    top = z0 + P.POST_H
-    m = S.lathe([(0.0, z0), (rq, z0), (rq, top - c), (rq - c, top), (0.0, top)],
-                segs=segs or P.CELL_SEGS)
-    m.apply_translation((cx, cy, 0.0))
-    return m
+def _numeral(num: int, x: float, y: float) -> trimesh.Trimesh:
+    t = S.text_solid(str(num), P.NUMERAL_SIZE, P.NUMERAL_EMBOSS,
+                     weight=P.NUMERAL_FONT_WEIGHT)
+    w = t.bounds[1][0] - t.bounds[0][0]
+    if w > P.NUMERAL_MAX_W:              # 10, 11 and 12 are wider than a tab
+        k = P.NUMERAL_MAX_W / w
+        t.apply_scale((k, k, 1.0))
+    # overlap the tab by 0.2 mm so the union welds them
+    t.apply_translation((x, y, P.PLAQUE_T - 0.2))
+    return t
 
 
-def summit_posts(segs: int | None = None) -> list[trimesh.Trimesh]:
-    """The eleven posts that stand in the middle of the numbers.
-
-    These belong to the NUMBER, not to the board: they are exported with the
-    digits so they print in the accent colour, and a post then reads as part
-    of the number it stands on rather than as another anonymous peg.
-    """
-    return [_post(*shield_xy(i), P.PLAQUE_T, segs=segs)
-            for i in range(len(P.ROWS))]
-
-
-def _numeral_shapes(segs: int | None = None):
-    """(cutters, fills) for the inlaid digits.
-
-    The digit is cut INTO the box rather than raised off it, because a piece
-    seats on that box: a digit standing proud would be what the skirt rests on
-    and the piece would rock. The fill is exactly the pocket, so in two
-    colours it comes out flush; in one colour the pocket is simply left empty
-    and reads as engraving.
-
-    The post's footprint is kept out of both, so the post stands on solid
-    plate instead of bridging over the engraving.
-    """
-    cutters, fills = [], []
-    for i, num in enumerate(P.COLUMNS):
-        x, y = shield_xy(i)
-        keep_out = S.tube(x, y, P.POST_D * 0.5 + P.NUMERAL_POST_CLEAR, 0.0,
-                          P.PLAQUE_T - P.NUMERAL_DEPTH - 1.0, P.PLAQUE_T + 2.0,
-                          segs=segs or P.CELL_SEGS)
-
-        def _digit(z0, thickness):
-            t = S.text_solid(str(num), P.NUMERAL_SIZE, thickness,
-                             weight=P.NUMERAL_FONT_WEIGHT)
-            w = t.bounds[1][0] - t.bounds[0][0]
-            if w > P.NUMERAL_MAX_W:
-                k = P.NUMERAL_MAX_W / w
-                t.apply_scale((k, k, 1.0))
-            t.apply_translation((x, y, z0))
-            return t
-
-        # the cutter runs proud of the plate so its top face is not coplanar
-        # with the plate's, which is where boolean engines get fussy
-        cut = _digit(P.PLAQUE_T - P.NUMERAL_DEPTH, P.NUMERAL_DEPTH + 1.0)
-        fill = _digit(P.PLAQUE_T - P.NUMERAL_DEPTH, P.NUMERAL_DEPTH)
-        cutters.append(trimesh.boolean.difference([cut, keep_out],
-                                                  engine="manifold"))
-        fills.append(trimesh.boolean.difference([fill, keep_out],
-                                                engine="manifold"))
-    return cutters, fills
+def _build_numerals() -> list[trimesh.Trimesh]:
+    return [_numeral(num, *numeral_xy(i)) for i, num in enumerate(P.COLUMNS)]
 
 
 def build_board(with_numerals: bool = True, numerals_only: bool = False,
                 segs: int | None = None, verbose: bool = False) -> trimesh.Trimesh:
     """Construct the board.
 
-    numerals_only=True   the accent parts on their own: the digit fills and
-                         the eleven summit posts, for a second filament
-    with_numerals=True   the single-colour board -- pockets left empty, so the
-                         numbers read as engraved -- with the posts fused in
+    numerals_only=True   just the digits, for a second filament
+    with_numerals=True   the single-colour board, digits fused in
     with_numerals=False  the body alone, to be paired with numerals_only
     """
     segs = segs or P.CELL_SEGS
-    cutters, fills = _numeral_shapes(segs)
-
+    numerals = _build_numerals()
     if numerals_only:
-        return S.union_all(fills + summit_posts(segs))
+        return S.union_all(numerals)
 
     parts: list[trimesh.Trimesh] = []
     for i, r in all_cells():
-        x, y = cell_xy(i, r)
-        if is_summit(i, r):
-            parts.append(build_summit_box(x, y))
-        else:
-            parts.append(build_cell(x, y, segs=segs))
+        parts.append(build_cell(*cell_xy(i, r), segs=segs))
 
     for p0, p1, w, h, _kind in final_struts():
         parts.append(S.strut(p0, p1, w, h))
 
+    for i in range(len(P.ROWS)):
+        parts.append(S.rounded_plate(*shield_xy(i), P.PLAQUE_W, P.PLAQUE_H,
+                                     P.PLAQUE_T, P.PLAQUE_FILLET))
+
     if with_numerals:
-        parts.extend(summit_posts(segs))
+        parts.extend(numerals)
 
     if verbose:
         print(f"    fusing {len(parts)} solids ...", flush=True)
-    body = S.union_all(parts)
-
-    if verbose:
-        print("    cutting 11 number pockets ...", flush=True)
-    return trimesh.boolean.difference([body, S.union_all(cutters)],
-                                      engine="manifold")
+    return S.union_all(parts)
 
 
 # ---------------------------------------------------------------------------

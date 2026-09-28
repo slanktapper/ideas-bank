@@ -14,7 +14,7 @@ Columns are **centre-aligned** on a shared midline, so the cell field is a
 symmetric lens rather than a pyramid, and the whole thing sits inside a
 **regular octagonal frame** — all eight edges the same 116.7 mm. The lens does
 not reach the corners of its own bounding box, which is exactly the point: the
-cut-off triangles are where the number boxes and the bracing spokes live.
+cut-off triangles are where the number tabs and the bracing spokes live.
 
 The board is not a plate with holes in it. It is a **wireframe truss**: every
 cell is a pad with a post standing on it, the pads are tied to each other by
@@ -35,21 +35,19 @@ stay below the pad tops. And the seat becomes a 3.0-to-6.6 mm annulus rather
 than the rim of a ring, which is a far steadier thing for a 13.2 mm piece to
 stand on — which in turn is why the posts can be only 3.2 mm long.
 
-**The number is the top of the column, and you land on it.** Each column's
-topmost cell *is* its number box: a rounded plate standing in for the usual
-round pad, with the number inlaid into its face and the post rising through
-the middle of the digit. So the summit is an ordinary cell — you land on it
-exactly as you land on any other — and the thing you land on is the number.
-The eleven summit posts are exported with the digits rather than with the
-board, so they print in the accent colour and each post reads as part of the
-number it stands on.
+**The numbers sit at the top of each column, on their own tabs.** Every
+column's top cell steps 22 mm further out than the ladder pitch, and the
+number rides on a small tab below that post, in line with the column, with a
+4 mm gap between the two. Nothing ever stands on a tab, so seen from above a
+number is always just an orange digit on black.
 
-The digit is **inlaid flush, not embossed**, and that is structural rather
-than decorative: a piece seats on this plate, so a digit standing 1.2 mm proud
-of it would be what the skirt rests on, and the piece would rock. Cut into the
-plate instead and the seating face stays flat. In two colours the fill comes
-out flush; in one colour the pocket is simply left empty and reads as
-engraving.
+That gap is the whole point, and it took three arrangements to land on. A post
+standing in the middle of a glyph cannot leave the glyph readable: centring
+the post on the digit and colouring it to match gave a black moat and an
+orange dot punched through every number, and 6, 8 and 9 became
+indistinguishable. The post has to be off the number. The digits are embossed
+rather than inlaid for the same reason — nothing seats on a tab, so there is
+no reason to give up the crispness of raised lettering.
 
 This is Sid Sackson's *Can't Stop* (1980). The rules are not ours; the physical
 design is.
@@ -110,7 +108,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 48 design checks — run this after editing params.py
+python3 test_fit.py      # 46 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~3 s)
 python3 build.py --fast  # quarter-res renders  (~9 s total)
@@ -125,10 +123,10 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 ## Where it stands
 
 Designed and verified in software; **nothing has been printed yet.** The board
-is 274 × 274 × 7.2 mm, which fits the H2D's 325 × 320 mm bed with 51 mm spare
-in X and 46 mm in Y. A full set is about 260 g at 100% infill.
+is 293 × 293 × 7.2 mm, which fits the H2D's 325 × 320 mm bed with 32 mm spare
+in X and 27 mm in Y. A full set is about 273 g at 100% infill.
 
-`test_fit.py` passes 48 checks, including a probe of every cell's seating
+`test_fit.py` passes 46 checks, including a probe of every cell's seating
 annulus against the fused mesh — the male-up analogue of the old bore probe,
 and the thing that would catch a strut, spoke, shield or digit standing where
 a piece has to sit.
@@ -171,24 +169,19 @@ bores**, because the board is male: you try a real piece over each one.
   coupon settles it; the guess may be off by a tenth either way. Note the
   socket is in the PLA piece and the post is in the PETG board, so the fit
   spans two materials — print the coupon accordingly.
-- **Board rigidity.** 274 × 274 mm of 7.2 mm lattice has not been picked up
+- **Board rigidity.** 293 × 293 mm of 7.2 mm lattice has not been picked up
   yet, and the collars are shorter than they were. If it flexes, the fixes in
   order of preference are `FRAME_H`, then `DIAGONALS = "full"`, then
   `STRUT_H`. The octagon and its twenty-four spokes should carry most of it.
-- **Digit legibility with a post through it.** A Ø5.9 post standing in the
-  middle of a 14 mm digit takes out the part of the glyph that distinguishes
-  one round number from another: **6, 8 and 9 read alike from overhead.** A
-  1.0 mm moat of body colour between post and digit helps and is already in,
-  but it does not fix it. The cheap levers are a bigger box and digit, or
-  nudging the digit a few mm off the post's centre so the post clips the top
-  of the glyph rather than its middle. Worth judging on a print.
-- **A piece on a summit covers that column's number.** Unavoidable once the
-  post is on the digit, and accepted. The post being in the number's colour is
-  what keeps the pairing clear while the cell is empty.
+- **Seated-angle legibility.** From above a number is always clear. At a
+  seated angle the only thing that can shadow a tab is a piece two cells down
+  the same column, which needs a 38 degree view to see past. `SUMMIT_STEP`
+  buys that back a degree or so per millimetre of board if it matters on a
+  real table.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
   octagon is lattice and spokes only. It looks deliberate in plan; whether it
   looks unbalanced on a table is a question for a print.
-- **Print time.** Not yet measured. ~116 cm³ of thin-walled lattice is
+- **Print time.** Not yet measured. ~126 cm³ of thin-walled lattice is
   perimeter-dominated, so the estimate wants a real slice, not arithmetic.
 - **Material.** PETG for the board (tough, does not creep), PLA for the
   pieces (crisper small features). Untested assumption.
@@ -197,6 +190,7 @@ bores**, because the board is male: you try a real piece over each one.
   print per colour or AMS swaps is a slicer decision, not a model one.
 - **A tray or box.** Forty-seven loose pieces need somewhere to live.
   Deliberately out of scope for now.
-- **Vinyl instead of inlaid numbers?** The cutter could do column labels as
-  decals. Inlay was chosen because it needs no second operation and keeps the
-  seating face flat — and a decal on a face a piece stands on would not last.
+- **Vinyl instead of printed numbers?** The cutter could do column labels as
+  decals. A raised emboss was chosen because it needs no second operation, but
+  decals would allow colour without a filament change, and a tab is a face
+  nothing ever stands on, so one would survive.

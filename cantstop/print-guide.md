@@ -45,7 +45,7 @@ Only then print the board.
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| `board.stl` | 1 | PETG | single colour, numbers engraved |
+| `board.stl` | 1 | PETG | single colour, digits fused in |
 | `board-body.stl` + `board-numerals.stl` | 1 | PETG ×2 | two-colour pair — see below |
 | `plate-markers-x11.stl` | 4 | PLA | one per player colour |
 | `plate-runners-x3.stl` | 1 | PLA | the shared neutral runners |
@@ -58,19 +58,14 @@ Add part → Load, then assign the numerals to a different filament). They are
 modelled in the same coordinate system, so they land in the right place with
 no manual positioning.
 
-`board-numerals.stl` is **the digits plus the eleven summit posts**. That is
-deliberate: each summit post stands in the middle of its number, so putting it
-in the accent colour makes it read as part of that number rather than as
-another anonymous peg. It is 30 separate solids — the posts, the digits and
-the islands inside 10, 11 and 12 — which is normal for a multi-material part.
+`board-numerals.stl` is the digits and nothing else — the posts are ordinary
+board parts and print in the body colour. The digits are **raised 1.2 mm off
+their tabs**: nothing ever stands on a tab, so there is no reason to give up
+the crispness of raised lettering.
 
-The digits are **pockets in the plate, filled flush**, not raised lettering.
-Printed single-colour from `board.stl` the pockets are left empty and the
-numbers read as engraved.
-
-A full set is roughly **260 g** at 100% infill: ~147 g board, ~52 g of markers
-(44), ~5 g of runners (3). The board is 274 × 274 × 7.2 mm and sits on the
-H2D bed with 51 mm spare in X and 46 mm in Y.
+A full set is roughly **273 g** at 100% infill: ~160 g board, ~52 g of markers
+(44), ~5 g of runners (3). The board is 293 × 293 × 7.2 mm and sits on the
+H2D bed with 32 mm spare in X and 27 mm in Y.
 
 ---
 
@@ -84,8 +79,8 @@ constraint, not a happy accident:
   a flat-bottomed bar is just a wide extrusion.
 - Every cell is a pad with a **post** on it — solid, upward, nothing to bridge.
   The board has no through-holes at all.
-- The number boxes are flat plates with the digits cut 1.2 mm INTO them, so
-  nothing stands proud of a face a piece has to sit on.
+- The number tabs are flat plates with a 1.2 mm emboss on top. Nothing seats
+  on a tab, so raised lettering costs nothing here.
 
 **Do not let the slicer auto-orient the board.** It has no reason to keep it
 flat and every reason to stand it on edge.
@@ -118,8 +113,8 @@ Nothing exotic. Starting points:
 The board is 7.2 mm tall and mostly wall, so infill barely moves the number;
 don't bother pushing it up for strength.
 
-On the **numerals**: at 1.2 mm deep they are six layers at 0.20 mm. If the
-colour change smears, raise `NUMERAL_DEPTH` rather than fighting the purge.
+On the **numerals**: at 1.2 mm proud they are six layers at 0.20 mm. If the
+colour change smears, raise `NUMERAL_EMBOSS` rather than fighting the purge.
 
 ---
 
@@ -145,20 +140,16 @@ pieces in the *pieces'* material, or the coupon tests the wrong pair.
 
 ## 6. After printing
 
-- Look at the board from a seat and see whether you can tell 6, 8 and 9 apart.
-  The post stands in the middle of the glyph, which is exactly where those
-  three differ.
 - Check a piece seats on a post at the middle, at the ends of the lens, and on
-  a summit. The summit seats on a flat plate with the digit cut into it, so if
-  a piece rocks there, suspect an over-filled pocket rather than the post.
-  FDM parts are not dimensionally uniform across 274 mm; if the edges differ
+  a summit.
+  FDM parts are not dimensionally uniform across 293 mm; if the edges differ
   from the middle, that is bed levelling or warp, not the model.
 - Check three pieces stack without wobble. The posts are deliberately short
   (3.2 mm), so if a stack rocks, look at the skirt seating on the face below
   rather than at the post.
-- A piece on a summit sits on top of that column's number and covers it. That
-  is expected — the post being in the number's colour is what keeps the
-  pairing clear while the cell is empty.
+- Sit at the table and check every number still reads with pieces on the
+  board. From above they always will; the model says 38 degrees is the
+  shallowest angle that still clears a piece two cells down.
 - Pick the board up by the perimeter frame. If it flexes more than you like,
   see the rigidity note in `direction.md` — the fix is a parameter, not a
   redesign.
@@ -168,7 +159,7 @@ pieces in the *pieces'* material, or the coupon tests the wrong pair.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 48 checks, ~8 s
+python3 test_fit.py    # 46 checks, ~8 s
 python3 build.py       # regenerate STLs and renders, ~25 s
 ```
 

@@ -96,11 +96,11 @@ OCTAGON_SPOKE_H = 3.40
 # cell, so a piece drops into it like any other; the number sits on a shield
 # fused to the ring from above. Climbing a column and landing on its number
 # is therefore the same move as any other, which is the point.
-# The number box doubles as the summit's pad, so it has to be big enough for
-# a piece to stand on and thick enough to match the round pads exactly.
 PLAQUE_W       = 18.0
-PLAQUE_H       = 20.0
-PLAQUE_T       = 4.00   # same as PAD_H, so every seating face is at one height
+PLAQUE_H       = 16.0
+PLAQUE_T       = 4.00   # same as PAD_H. Struts stand 3.4 mm, so anything
+                        # running under a tab is buried inside it and can
+                        # never be printed across a digit.
 PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 
 # The shield stands off its summit ring on a short neck, and it leans OUTWARD
@@ -112,25 +112,29 @@ PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 # octagon build you had to be looking down from nearly 70 degrees to read a
 # claimed number. Leaning the shield outward moves the digit sideways out of
 # the piece's shadow, and the stand-off buys the rest of the angle back.
-# Each column's topmost cell IS its number box: a rounded plate standing in
-# for the usual round pad, with the number inlaid into its face and the post
-# rising through the middle of the digit. So the summit is an ordinary cell --
-# you land on it the same way you land on any other -- and the thing you land
-# on is the number itself.
+# The number sits on its own tab, below its column's post and in line with the
+# column, with a clear gap between the two. Nothing ever stands on a tab, so
+# from above a number is always just an orange digit on black.
 #
-# The number is INLAID FLUSH, not embossed, and that is not decoration. A
-# piece seats on this plate, so a digit standing 1.2 mm proud of it would be
-# what the skirt rests on, and the piece would rock. Cut into the plate, the
-# seating face stays flat and the digit still comes out in the second colour.
-# Printed in one colour it simply reads as engraved.
-NUMERAL_SIZE   = 14.0   # cap height of the digits
-NUMERAL_MAX_W  = 15.0   # widest a number may be; 10, 11 and 12 scale to fit
-NUMERAL_DEPTH  = 1.20   # how deep the digit is cut into the plate
-NUMERAL_POST_CLEAR = 1.00  # the post stands on solid plate, so its footprint
-                           # plus this is kept out of the pocket. Wide enough
-                           # to read as a moat: post and digit are the same
-                           # colour and touching, so without a band of body
-                           # colour between them they merge into one blob.
+# This is the third arrangement tried and the constraint that decided it is
+# blunt: a post standing in the middle of a glyph cannot leave that glyph
+# readable. Centring the post on the digit and colouring it to match gave a
+# black moat and an orange dot punched through the middle of every number --
+# 6, 8 and 9 became indistinguishable. The post has to be off the number.
+SUMMIT_STEP  = 22.0   # extra rise of the top cell above the ladder pitch,
+                      # opening the gap the number tab sits in. Also what
+                      # keeps a piece two cells down from shadowing the tab
+                      # at a seated angle: 18 needed a 50 degree view, 22
+                      # needs 38.
+TAB_DROP     = 19.0   # post centre to tab centre. Set so the tab clears the
+                      # summit pad by about 4 mm: touching, it reads as a box
+                      # with a post stuck on its edge rather than as a label.
+
+NUMERAL_SIZE   = 11.0   # cap height of the digits
+NUMERAL_MAX_W  = 14.0   # widest a number may be; 10, 11 and 12 scale to fit
+NUMERAL_EMBOSS = 1.20   # raised off the tab. Embossed, not inlaid: nothing
+                        # seats on a tab, so there is no reason to give up the
+                        # crispness of raised lettering.
 NUMERAL_FONT_WEIGHT = "bold"
 
 # --------------------------------------------------------------------------
