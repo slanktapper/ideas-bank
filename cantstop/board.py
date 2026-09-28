@@ -38,8 +38,14 @@ def cell_xy(col_index: int, row: int) -> tuple[float, float]:
 
     Rows are numbered from the bottom for the game's sake; the geometry is
     centred, so row 0 of a short column is not level with row 0 of a long one.
+
+    Under NUMBER_PLACEMENT == "pad_below" the top row of every column steps a
+    further SUMMIT_STEP outward, opening the gap the number sits in.
     """
-    return col_index * P.PITCH_X, (row - k_max(col_index)) * P.PITCH_Y
+    y = (row - k_max(col_index)) * P.PITCH_Y
+    if P.NUMBER_PLACEMENT == "pad_below" and row == P.ROWS[col_index] - 1:
+        y += P.SUMMIT_STEP
+    return col_index * P.PITCH_X, y
 
 
 def summit(col_index: int) -> tuple[float, float]:
@@ -57,29 +63,27 @@ def lattice_centre() -> np.ndarray:
     return pts.mean(axis=0)
 
 
-def shield_dir(col_index: int) -> np.ndarray:
-    """Unit direction a column's number shield leans, out from the middle.
-
-    Clamped to SHIELD_MAX_TILT off vertical. Unclamped, columns 2 and 12 lean
-    almost flat sideways and stretch the board wider than it is tall, which
-    spoils the octagon for no gain in legibility.
-    """
-    d = np.asarray(summit(col_index), dtype=float) - lattice_centre()
-    n = np.linalg.norm(d)
-    if n < 1e-9:
-        return np.array([0.0, 1.0])
-    d = d / n
-    tilt = np.arctan2(abs(d[0]), max(d[1], 1e-9))
-    limit = np.radians(P.SHIELD_MAX_TILT)
-    if tilt > limit:
-        d = np.array([np.sign(d[0]) * np.sin(limit), np.cos(limit)])
-    return d
-
-
 def shield_xy(col_index: int) -> tuple[float, float]:
-    p = np.asarray(summit(col_index), dtype=float) \
-        + shield_dir(col_index) * P.SHIELD_OFFSET
-    return float(p[0]), float(p[1])
+    """Centre of a column's number SHIELD, always on the column's centreline."""
+    x, y = summit(col_index)
+    if P.NUMBER_PLACEMENT == "above":
+        return x, y + P.SHIELD_OFFSET
+    if P.NUMBER_PLACEMENT == "pad_below":
+        return x, y - P.SHIELD_DROP
+    return x, y - P.NUMBER_DROP
+
+
+def numeral_xy(col_index: int) -> tuple[float, float]:
+    """Centre of the DIGIT itself, which need not be the shield's centre.
+
+    Under "pad_below" the shield reaches further up than the digit does, so it
+    can fuse straight onto the summit pad while the digit sits low enough to
+    stay out of the top chain.
+    """
+    x, y = summit(col_index)
+    if P.NUMBER_PLACEMENT == "above":
+        return shield_xy(col_index)
+    return x, y - P.NUMBER_DROP
 
 
 def all_cells() -> list[tuple[int, int]]:
@@ -112,7 +116,7 @@ def _trim(p0, p1, r0: float, r1: float):
 
 def content_bounds() -> tuple[np.ndarray, np.ndarray]:
     """Bounding box of everything the frame has to enclose."""
-    r = P.COLLAR_OD * 0.5
+    r = P.PAD_OD * 0.5
     xs, ys = [], []
     for i, row in all_cells():
         x, y = cell_xy(i, row)
@@ -131,7 +135,13 @@ def octagon() -> list[tuple[float, float]]:
     cx, cy = (lo + hi) * 0.5
     a = (hi[0] - lo[0]) * 0.5 + P.OCTAGON_MARGIN
     b = (hi[1] - lo[1]) * 0.5 + P.OCTAGON_MARGIN
-    c = P.OCTAGON_CHAMFER * min(a, b)
+    if P.OCTAGON_REGULAR:
+        # equal edges need a square bounding box and a chamfer of exactly
+        # 2/(2+sqrt2) of the half-span: then flat and cut come out the same
+        a = b = max(a, b)
+        c = a * 2.0 / (2.0 + np.sqrt(2.0))
+    else:
+        c = 0.55 * min(a, b)
     return [
         (cx + a - c, cy + b), (cx + a, cy + b - c),
         (cx + a, cy - b + c), (cx + a - c, cy - b),
@@ -193,8 +203,16 @@ def _lattice_struts() -> list[tuple[tuple, tuple, bool]]:
     # verticals, within a column. Nothing inside the lens runs at frame
     # section: the octagon is the frame now, and a 5.2 mm chain strut leaving
     # a summit at 42 degrees clips the bottom corner of that column's digit.
+    #
+    # The top vertical is skipped when the number lives below the summit,
+    # because it would run straight down the column's centreline and print a
+    # bar across the digit. _necks() reconnects the summit instead.
+    skip_top = P.NUMBER_PLACEMENT in ("pad_below", "around")
     for i in range(ncol):
+        last = P.ROWS[i] - 2
         for r in range(P.ROWS[i] - 1):
+            if skip_top and r == last:
+                continue
             out.append((cell_xy(i, r), cell_xy(i, r + 1), False))
 
     # horizontals and diagonals, wherever neighbouring columns share a row.
@@ -226,14 +244,45 @@ def _lattice_struts() -> list[tuple[tuple, tuple, bool]]:
     return out
 
 
+def numeral_half_width() -> float:
+    """Half the widest a digit may be, given what has to pass beside it."""
+    if P.NUMBER_PLACEMENT == "around":
+        # legs flank the digit, so it has to fit between them
+        return min(P.NUMERAL_MAX_W,
+                   2 * (P.NECK_LEG_DX - P.STRUT_W / 2 - 0.5)) / 2
+    return P.NUMERAL_MAX_W / 2
+
+
 def _necks() -> list[tuple[tuple, tuple]]:
-    """The short stand-off from each summit ring out to its number shield."""
+    """Whatever reconnects a summit pad to the column below it.
+
+    "above"      the summit is part of the lattice already; the neck runs the
+                 other way, on up to the shield beyond it.
+    "pad_below"  the shield sits in the gap the summit step opens, so one
+                 strut comes up the centreline and stops in the band of
+                 shield BELOW the digit.
+    "around"     there is no band to stop in, so two legs flank the digit
+                 instead, and the digit is narrowed to fit between them.
+    """
     out = []
+    up = np.array([0.0, 1.0])
+
+    if P.NUMBER_PLACEMENT == "above":
+        for i in range(len(P.ROWS)):
+            start = np.asarray(summit(i), dtype=float) + up * P.WELD_R
+            end = _rect_exit(shield_xy(i), P.PLAQUE_W, P.PLAQUE_H, -up, inset=2.0)
+            out.append((tuple(start), tuple(end)))
+        return out
+
     for i in range(len(P.ROWS)):
-        d = shield_dir(i)
-        start = np.asarray(summit(i), dtype=float) + d * P.WELD_R
-        end = _rect_exit(shield_xy(i), P.PLAQUE_W, P.PLAQUE_H, -d, inset=2.0)
-        out.append((tuple(start), tuple(end)))
+        x, y_below = cell_xy(i, P.ROWS[i] - 2)
+        _, sy = shield_xy(i)
+        shield_bottom = sy - P.PLAQUE_H / 2
+        if P.NUMBER_PLACEMENT == "pad_below":
+            out.append(((x, y_below + P.WELD_R), (x, shield_bottom + 2.5)))
+        else:
+            for dx in (-P.NECK_LEG_DX, P.NECK_LEG_DX):
+                out.append(((x + dx, y_below), (x + dx, sy + P.PLAQUE_H / 2)))
     return out
 
 
@@ -249,10 +298,16 @@ def _spokes(poly) -> list[tuple[tuple, tuple]]:
     out = []
 
     for i in range(len(P.ROWS)):
-        # out from the number shield, carrying on the way the shield leans
-        sc = np.asarray(shield_xy(i), dtype=float)
-        d = shield_dir(i)
-        start = _rect_exit(sc, P.PLAQUE_W, P.PLAQUE_H, d, inset=2.0)
+        # up and out, from whatever is topmost in this column
+        sp = np.asarray(summit(i), dtype=float)
+        d = sp - c
+        if np.linalg.norm(d) < 1e-9:
+            d = np.array([0.0, 1.0])
+        d = d / np.linalg.norm(d)
+        if P.NUMBER_PLACEMENT == "above":
+            start = _rect_exit(shield_xy(i), P.PLAQUE_W, P.PLAQUE_H, d, inset=2.0)
+        else:
+            start = sp + d * P.WELD_R
         hit = _ray_hit(start, d, poly)
         if hit is not None:
             out.append((tuple(start), tuple(hit)))
@@ -336,6 +391,30 @@ def strut_distance_to(point, p0, p1, width) -> float:
 # board
 # ---------------------------------------------------------------------------
 
+def build_cell(cx: float, cy: float, segs: int | None = None) -> trimesh.Trimesh:
+    """One board cell: a pad with a post standing on it.
+
+    A solid of revolution, so there is no boolean and no hole to protect. The
+    pad's top face is the seat; the post only locates.
+    """
+    rp = P.PAD_OD * 0.5
+    rq = P.POST_D * 0.5
+    c = P.POST_CHAMFER
+    top = P.PAD_H + P.POST_H
+    prof = [
+        (0.0, 0.0),
+        (rp, 0.0),            # underside, out to the rim
+        (rp, P.PAD_H),        # up the pad
+        (rq, P.PAD_H),        # in across the seating face
+        (rq, top - c),        # up the post
+        (rq - c, top),        # 45 deg lead-in so a socket finds it
+        (0.0, top),
+    ]
+    m = S.lathe(prof, segs=segs or P.CELL_SEGS)
+    m.apply_translation((cx, cy, 0.0))
+    return m
+
+
 def build_board(with_numerals: bool = True, numerals_only: bool = False,
                 segs: int | None = None, verbose: bool = False) -> trimesh.Trimesh:
     """Construct the board.
@@ -343,7 +422,7 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
     with_numerals=True   the single-colour board, digits fused in
     numerals_only=True   just the digits, for loading as a second material
     """
-    segs = segs or P.COLLAR_SEGS
+    segs = segs or P.CELL_SEGS
     numerals = _build_numerals()
     if numerals_only:
         return S.union_all(numerals)
@@ -351,13 +430,7 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
     parts: list[trimesh.Trimesh] = []
 
     for i, r in all_cells():
-        x, y = cell_xy(i, r)
-        parts.append(S.tube(
-            x, y,
-            P.COLLAR_OD * 0.5, P.COLLAR_BORE * 0.5,
-            0.0, P.COLLAR_H,
-            segs=segs, top_chamfer=P.COLLAR_CHAMFER,
-        ))
+        parts.append(build_cell(*cell_xy(i, r), segs=segs))
 
     for p0, p1, w, h, _kind in final_struts():
         parts.append(S.strut(p0, p1, w, h))
@@ -379,12 +452,13 @@ def _build_numerals() -> list[trimesh.Trimesh]:
     """The embossed column numbers, as separate solids sitting on the shields."""
     out = []
     for i, num in enumerate(P.COLUMNS):
-        x, y = shield_xy(i)
+        x, y = numeral_xy(i)
         t = S.text_solid(str(num), P.NUMERAL_SIZE, P.NUMERAL_EMBOSS,
                          weight=P.NUMERAL_FONT_WEIGHT)
+        max_w = 2 * numeral_half_width()
         w = t.bounds[1][0] - t.bounds[0][0]
-        if w > P.NUMERAL_MAX_W:          # 10, 11 and 12 are wider than a shield
-            k = P.NUMERAL_MAX_W / w
+        if w > max_w:                    # 10, 11 and 12 are wider than a shield
+            k = max_w / w
             t.apply_scale((k, k, 1.0))
         # overlap the shield by 0.2 mm so the union welds them
         t.apply_translation((x, y, P.PLAQUE_T - 0.2))
@@ -397,32 +471,35 @@ def _build_numerals() -> list[trimesh.Trimesh]:
 # ---------------------------------------------------------------------------
 
 def _piece_profile(body_profile, body_h: float) -> list[tuple[float, float]]:
-    """Closed (r, z) profile for a piece: pin, body, blind socket.
+    """Closed (r, z) profile for a piece: open socket below, post on top.
 
-    Wound counter-clockwise, starting on the axis at the bottom:
-    out along the underside, up the outside, in across the top face, down
-    into the socket, and back to the axis.
+    Wound counter-clockwise, starting at the socket mouth on the underside:
+    out across the bottom face, up the outside, in across the top, up the
+    post, back to the axis, down the solid core, then out and down the
+    cone-roofed socket to close.
     """
-    rp = P.PEG_PIN_D * 0.5
+    rq = P.PEG_POST_D * 0.5
     rs = P.PEG_SOCKET_D * 0.5
-    c = P.PEG_PIN_CHAMFER
+    c = P.PEG_POST_CHAMFER
     sc = P.PEG_SOCKET_CHAMFER
-    z_shoulder = P.PEG_PIN_H
-    z_top = z_shoulder + body_h
-    z_socket_floor = z_top - P.PEG_SOCKET_DEPTH
+    z_top = body_h
+    z_post = z_top + P.PEG_POST_H
+    # a 45 degree cone closes the socket, so it needs no bridging
+    z_apex = P.PEG_SOCKET_DEPTH + rs
 
     prof = [
-        (0.0, 0.0),
-        (rp - c, 0.0),          # underside, less the lead-in chamfer
-        (rp, c),                # 45 deg chamfer so the pin finds the hole
-        (rp, z_shoulder),       # up the pin
+        (rs + sc, 0.0),         # socket mouth, flared to find the post
+        (body_profile[0][0], 0.0),   # out across the underside to the skirt
     ]
-    prof += [(r, z_shoulder + dz) for r, dz in body_profile]
+    prof += [(r, dz) for r, dz in body_profile[1:]]
     prof += [
-        (rs + sc, z_top),       # in across the top rim
-        (rs, z_top - sc),       # chamfered socket mouth
-        (rs, z_socket_floor),   # down the socket
-        (0.0, z_socket_floor),  # socket floor
+        (rq, z_top),            # in across the top face to the post
+        (rq, z_post - c),       # up the post
+        (rq - c, z_post),       # lead-in for the socket above
+        (0.0, z_post),
+        (0.0, z_apex),          # down the solid core
+        (rs, P.PEG_SOCKET_DEPTH),   # cone roof, opening out and down
+        (rs, sc),               # down the socket wall
     ]
     return prof
 
@@ -454,32 +531,40 @@ def build_plate(mesh: trimesh.Trimesh, count: int, spacing: float | None = None,
 # ---------------------------------------------------------------------------
 
 def build_fit_coupon(segs: int | None = None) -> trimesh.Trimesh:
-    """Five collars at bores either side of nominal, on one small bar.
+    """Five posts at diameters either side of nominal, on one small bar.
 
-    Same collar height, same wall thickness and same bore geometry as the real
-    board, because a fit test only transfers if the part around the hole
-    cools the same way. Each collar is labelled with the second decimal of its
-    bore: the one marked 4 is 6.40 mm.
+    The board is male now, so the coupon carries POSTS and you try a real
+    piece over each one. Same pad height, same post height and the same
+    chamfered lead-in as the board, because a fit test only transfers if the
+    part is shaped and cooled the same way. Each post is labelled with the
+    second decimal of its diameter: the one marked 9 is 5.90 mm.
     """
-    segs = segs or P.COLLAR_SEGS
-    pitch = P.COLLAR_OD + 5.0
+    segs = segs or P.CELL_SEGS
+    pitch = P.PAD_OD + 5.0
     parts = []
-    n = len(P.FIT_TEST_BORES)
+    n = len(P.FIT_TEST_POSTS)
     x0 = -(n - 1) * pitch * 0.5
 
-    for k, bore in enumerate(P.FIT_TEST_BORES):
+    for k, dia in enumerate(P.FIT_TEST_POSTS):
         x = x0 + k * pitch
-        parts.append(S.tube(x, 0.0, P.COLLAR_OD * 0.5, bore * 0.5,
-                            0.0, P.COLLAR_H, segs=segs,
-                            top_chamfer=P.COLLAR_CHAMFER))
-        digit = str(int(round(bore * 100)) % 10)     # 6.40 -> "4"
+        rq = dia * 0.5
+        c = P.POST_CHAMFER
+        top = P.PAD_H + P.POST_H
+        m = S.lathe([
+            (0.0, 0.0), (P.PAD_OD * 0.5, 0.0), (P.PAD_OD * 0.5, P.PAD_H),
+            (rq, P.PAD_H), (rq, top - c), (rq - c, top), (0.0, top),
+        ], segs=segs)
+        m.apply_translation((x, 0.0, 0.0))
+        parts.append(m)
+
+        digit = str(int(round(dia * 100)) % 10)      # 5.90 -> "9"
         t = S.text_solid(digit, 5.0, 1.0, weight="bold")
-        t.apply_translation((x, -P.COLLAR_OD * 0.5 - 5.0, P.FIT_COUPON_T - 0.2))
+        t.apply_translation((x, -P.PAD_OD * 0.5 - 5.0, P.FIT_COUPON_T - 0.2))
         parts.append(t)
 
-    bar_y0 = -P.COLLAR_OD * 0.5 - 9.5
-    bar_y1 = P.COLLAR_OD * 0.5
+    bar_y0 = -P.PAD_OD * 0.5 - 9.5
+    bar_y1 = P.PAD_OD * 0.5
     parts.append(S.rounded_plate(0.0, (bar_y0 + bar_y1) * 0.5,
-                                 (n - 1) * pitch + P.COLLAR_OD,
+                                 (n - 1) * pitch + P.PAD_OD,
                                  bar_y1 - bar_y0, P.FIT_COUPON_T, 2.0))
     return S.union_all(parts)

@@ -12,31 +12,36 @@ is thirteen — eighty-three cells in all.
 
 Columns are **centre-aligned** on a shared midline, so the cell field is a
 symmetric lens rather than a pyramid, and the whole thing sits inside a
-**true octagonal frame**: a 300 mm square with its corners cut at 45 degrees.
-The lens does not reach those corners, which is exactly the point — the cut-off
-triangles are where the number shields and the bracing spokes live.
+**regular octagonal frame** — all eight edges the same 116.7 mm. The lens does
+not reach the corners of its own bounding box, which is exactly the point: the
+cut-off triangles are where the number shields and the bracing spokes live.
 
 The board is not a plate with holes in it. It is a **wireframe truss**: every
-cell is a standing ring, and the rings are tied to each other by flat-bottomed
-struts with one diagonal brace per bay, then tied out to the octagon by
-twenty-four radial spokes. Most of the footprint is open air.
+cell is a pad with a post standing on it, the pads are tied to each other by
+flat-bottomed struts with one diagonal brace per bay, then tied out to the
+octagon by twenty-four radial spokes. Most of the footprint is open air.
 
-**The number is the top of the column.** Each column's topmost cell is its
-summit, and the summit carries that column's number on a shield standing off
-it on a short neck. The summit is an ordinary ring, so climbing a column and
-landing on its number is an ordinary move — reaching the number *is* claiming
-it. The shields lean outward rather than sitting straight above their rings,
-so that the piece claiming a column does not hide the number it just claimed.
+**The interface runs male-up throughout.** The board offers a post; a piece has
+a socket underneath and a post of its own on top; so a piece drops onto the
+board, and the next piece drops onto that one, with one geometry doing both
+jobs. A piece seats when its **skirt** lands on the face below — the pad top,
+or the top face of the piece beneath it — never when a post bottoms out, so
+stack height is exactly 9.40 mm per piece, every time.
 
-The playing pieces **stack**. Each piece has a pin on the bottom and a socket
-on the top, same size, on the same axis. One interface does three jobs: the
-pin drops into a board ring, or into the socket of a piece already there, so
-player A simply sits on top of player B in a contested cell. The socket is cut
-deeper than the pin is long, so a piece always seats on its shoulder rather
-than bottoming out — stack height is exactly 9.40 mm per piece, every time.
-The pieces are 13.2 mm across and the stub is only 3.2 mm: with a body that
-wide the shoulder seats on a 3.2-to-6.6 mm ring and does the work of keeping a
-piece upright, so the stub only has to locate it.
+Two things follow from male-up that were not obvious going in. The board has
+**no through-holes at all**, which retires a whole class of defect: a strut
+cannot plug a hole that does not exist, and the only rule left is that struts
+stay below the pad tops. And the seat becomes a 3.0-to-6.6 mm annulus rather
+than the rim of a ring, which is a far steadier thing for a 13.2 mm piece to
+stand on — which in turn is why the posts can be only 3.2 mm long.
+
+**The number is the top of the column.** Each column's topmost cell steps
+18 mm further out than the rest of the ladder, and the number is embossed on a
+shield in the gap that opens up, directly **under** that column's post and in
+line with the column. So the number sits in *front* of whatever piece claims
+the column: it cannot be covered, at any viewing angle. The summit is an
+ordinary cell, so climbing a column and landing on its number is an ordinary
+move — reaching the number *is* claiming it.
 
 This is Sid Sackson's *Can't Stop* (1980). The rules are not ours; the physical
 design is.
@@ -97,7 +102,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 44 design checks — run this after editing params.py
+python3 test_fit.py      # 42 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~3 s)
 python3 build.py --fast  # quarter-res renders  (~9 s total)
@@ -112,47 +117,60 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 ## Where it stands
 
 Designed and verified in software; **nothing has been printed yet.** The board
-is 300 × 300 × 5.5 mm, which fits the H2D's 325 × 320 mm bed with 25 mm spare
-in X and 20 mm in Y. A full set is about 296 g at 100% infill.
+is 289 × 289 × 7.2 mm, which fits the H2D's 325 × 320 mm bed with 36 mm spare
+in X and 31 mm in Y. A full set is about 272 g at 100% infill.
 
-`test_fit.py` passes 44 checks, including a probe of all 83 bores against the
-fused mesh. Four real defects have been caught by this loop rather than by a
-print:
+`test_fit.py` passes 42 checks, including a probe of every cell's seating
+annulus against the fused mesh — the male-up analogue of the old bore probe,
+and the thing that would catch a strut, spoke, shield or digit standing where
+a piece has to sit.
+
+Six real defects have been caught by this loop rather than by a print:
 
 - a drop strut printed straight across every column numeral;
 - in fixing that, a board that quietly became two detached bodies;
 - a top-chain strut at frame section clipping the bottom corner of each digit
   by 0.19 mm — the octagon is the frame now, so nothing inside the lens runs
   at frame section;
-- **a piece claiming a summit hiding that column's number.** This one the
-  tests did not catch and `renders/06-assembly.png` did: the white marker
-  sitting on "2" covered it completely. A claimed number needed a viewing
-  angle of about 70 degrees to read. Leaning the shields outward and standing
-  them off 26 mm brings that to 40 degrees, and `test_fit.py` now computes
-  that angle from the geometry so it cannot regress.
+- **a piece claiming a summit hiding that column's number.** The tests did not
+  catch that one and `renders/06-assembly.png` did: a marker sitting on "2"
+  covered it completely, and a claimed number needed about a 70 degree view to
+  read. `test_fit.py` now computes that angle from the geometry;
+- the first version of that sightline test said *every* number was hidden,
+  which the renders plainly contradicted. It was modelling a piece as one fat
+  cylinder; the body is 13.2 mm across but only 13.4 mm tall, and the post
+  above it is 5.9 mm. Model both and the answer matches what you can see;
+- with the number moved under the summit, the column's own vertical strut ran
+  straight down the centreline through it, and the top chain grazed the digit's
+  upper corners by 0.28 mm. The vertical is gone — the shield fuses to the
+  summit pad and a neck reconnects it below the digit — and the digit sits
+  15 mm down, clear of the chain.
 
 What software cannot tell us is the fit. That is what `fit-test-coupon.stl`
-is for, and it is the first thing to print.
+is for, and it is the first thing to print. **It now carries posts, not
+bores**, because the board is male: you try a real piece over each one.
 
 ## Open questions
 
-- **Bore fit.** `COLLAR_BORE` is 6.40 mm against a 5.90 mm pin. That is a
+- **Post fit.** `PEG_SOCKET_D` is 6.35 mm against a 5.90 mm post. That is a
   guess at PETG shrinkage on a machine that has not been commissioned. The
-  coupon settles it; the guess may be off by a tenth either way.
-- **Board rigidity.** 300 × 300 mm of 5.5 mm lattice has not been picked up
+  coupon settles it; the guess may be off by a tenth either way. Note the
+  socket is in the PLA piece and the post is in the PETG board, so the fit
+  spans two materials — print the coupon accordingly.
+- **Board rigidity.** 289 × 289 mm of 7.2 mm lattice has not been picked up
   yet, and the collars are shorter than they were. If it flexes, the fixes in
   order of preference are `FRAME_H`, then `DIAGONALS = "full"`, then
   `STRUT_H`. The octagon and its twenty-four spokes should carry most of it.
-- **Number legibility at a low angle.** 40 degrees is a seated player looking
-  at the middle of the board, not the far edge. It is a geometric limit: a
-  12.6 mm piece casts a shadow, and the only levers are standing the shields
-  off further (which grows a board already at 300 mm), thickening them to lift
-  the digits, or making the pieces shorter. Worth judging on a real print
-  before spending board size on it.
+- **Number placement.** Three were modelled and rendered side by side: the
+  number under the post on a stepped summit (this one, 289 mm, all 11
+  readable), a shield beyond the summit with the number above the post
+  (299 mm, all 11 readable), and the number squeezed under the post with no
+  summit step (271 mm, and every occupied column's number hidden). They are
+  one parameter apart — `NUMBER_PLACEMENT` — so switching is cheap.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
   octagon is lattice and spokes only. It looks deliberate in plan; whether it
   looks unbalanced on a table is a question for a print.
-- **Print time.** Not yet measured. ~141 cm³ of thin-walled lattice is
+- **Print time.** Not yet measured. ~125 cm³ of thin-walled lattice is
   perimeter-dominated, so the estimate wants a real slice, not arithmetic.
 - **Material.** PETG for the board (tough, does not creep), PLA for the
   pieces (crisper small features). Untested assumption.

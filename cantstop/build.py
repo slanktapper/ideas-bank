@@ -52,7 +52,7 @@ DENSITY = {"PLA": 1.24, "PETG": 1.27}   # g/cm^3
 # A piece seats when its shoulder lands on the collar rim, not when its pin
 # bottoms out -- the socket is cut deeper than the pin is long precisely so
 # that this is true. Stack height is therefore exact and repeatable.
-SEAT_Z = P.COLLAR_H - P.PEG_PIN_H
+SEAT_Z = P.PAD_H
 
 
 def place(mesh, col: int, row: int, level: int = 0, below=()):
@@ -183,10 +183,9 @@ def export_renders(board_body, numerals, marker, runner, fast=False, verbose=Tru
         print("  04-piece-anatomy.png")
 
     # 5 -- THE ONE THAT MATTERS: a collar, sectioned, with three pieces
-    #      stacked in it. If the pin/socket interface is wrong, it is wrong
+    #      stacked on it. If the post/socket interface is wrong, it is wrong
     #      here and it costs nothing to find out.
-    collar = S.tube(0, 0, P.COLLAR_OD / 2, P.COLLAR_BORE / 2, 0, P.COLLAR_H,
-                    segs=P.COLLAR_SEGS, top_chamfer=P.COLLAR_CHAMFER)
+    collar = B.build_cell(0.0, 0.0)
     rail = S.strut((-19, 0), (19, 0), P.STRUT_W, P.STRUT_H)
     # Fuse before cutting. Sectioned separately they leave two cut faces on
     # the same plane, which z-fights into speckle exactly where the render
@@ -247,27 +246,31 @@ def export_renders(board_body, numerals, marker, runner, fast=False, verbose=Tru
 
 def _annotate_stack(img, cam, W, H):
     """Label the one interface the whole design hangs on."""
-    z0 = SEAT_Z                                   # base piece origin
-    z_top1 = z0 + P.PEG_PIN_H + P.PEG_BODY_H      # top face of the base piece
+    z0 = SEAT_Z                                    # base piece sits on the pad
+    z_top1 = z0 + P.PEG_BODY_H                     # top face of the base piece
     L, Rg = 0.30 * W, 0.70 * W
 
     items = [
-        dict(at=(P.COLLAR_BORE / 2, 0, P.COLLAR_H * 0.30),
-             to=(L, 0.93 * H), align="right",
-             text=f"collar bore \u00d8{P.COLLAR_BORE:.2f}, through"),
-        dict(at=(0.0, 0, z0 + P.PEG_PIN_H * 0.55),
-             to=(Rg, 0.87 * H), align="left",
-             text=f"pin \u00d8{P.PEG_PIN_D:.2f} \u00d7 {P.PEG_PIN_H:.2f} long"),
-        dict(at=(P.COLLAR_OD / 2 - 1.0, 0, P.COLLAR_H),
-             to=(Rg, 0.72 * H), align="left",
-             text="shoulder seats on the rim"),
-        dict(at=(2.0, 0, z_top1 - P.PEG_SOCKET_DEPTH * 0.5),
-             to=(L, 0.46 * H), align="right",
-             text=f"socket \u00d8{P.PEG_SOCKET_D:.2f} \u00d7 {P.PEG_SOCKET_DEPTH:.2f} deep"),
+        dict(at=(0.0, 0, P.PAD_H + P.POST_H * 0.5),
+             to=(L, 0.90 * H), align="right",
+             text=f"board post \u00d8{P.POST_D:.2f} \u00d7 {P.POST_H:.2f}"),
+        dict(at=(P.PAD_OD / 2 - 2.0, 0, P.PAD_H),
+             to=(Rg, 0.90 * H), align="left",
+             text="skirt seats on the pad face"),
+        dict(at=(P.PEG_SOCKET_D / 2 - 0.4, 0, z0 + P.PEG_SOCKET_DEPTH * 0.45),
+             to=(L, 0.66 * H), align="right",
+             text=f"socket \u00d8{P.PEG_SOCKET_D:.2f} \u00d7 "
+                  f"{P.PEG_SOCKET_DEPTH:.2f} deep"),
+        dict(at=(0.8, 0, z0 + P.PEG_SOCKET_DEPTH + P.PEG_SOCKET_D * 0.35),
+             to=(L, 0.44 * H), align="right",
+             text="45\u00b0 cone roof \u2014 no bridging"),
         dict(at=(P.PEG_BODY_PROFILE[0][0], 0, z_top1),
-             to=(Rg, 0.50 * H), align="left",
+             to=(Rg, 0.62 * H), align="left",
              text=f"stack pitch {P.PEG_BODY_H:.2f} mm"),
-        dict(at=(0.0, 0, z0 + P.PEG_PIN_H + 2 * P.PEG_BODY_H + 6.0),
+        dict(at=(0.0, 0, z_top1 + P.PEG_BODY_H + P.PEG_POST_H * 0.5),
+             to=(Rg, 0.40 * H), align="left",
+             text=f"piece post \u00d8{P.PEG_POST_D:.2f}, same as below"),
+        dict(at=(0.0, 0, z0 + 2 * P.PEG_BODY_H + P.RUNNER_BODY_H * 0.6),
              to=(L, 0.14 * H), align="right",
              text="runner rides on top"),
     ]
@@ -321,9 +324,9 @@ def _bed_fit_diagram(board_full):
 
     for i, r in B.all_cells():
         cx, cy = B.cell_xy(i, r)
-        ax.add_patch(Circle((cx + ox, cy + oy), P.COLLAR_OD / 2,
+        ax.add_patch(Circle((cx + ox, cy + oy), P.PAD_OD / 2,
                             facecolor="#3b4252", edgecolor="none", zorder=4))
-        ax.add_patch(Circle((cx + ox, cy + oy), P.COLLAR_BORE / 2,
+        ax.add_patch(Circle((cx + ox, cy + oy), P.POST_D / 2,
                             facecolor="#eceff4", edgecolor="none", zorder=5))
 
     bx, by = lo[0] + ox, lo[1] + oy
