@@ -115,9 +115,11 @@ Add part → Load, then assign the numerals to a different filament). They are
 modelled in the same coordinate system, so they land in the right place with
 no manual positioning.
 
-`board-numerals.stl` carries three things: the digits, **the slice of each
-summit post the digit passes through**, and **the top 0.60 mm of the raised
-lip**, so the board gets a white border as well as white numbers.
+`board-numerals.stl` carries four things: the digits and the title letters,
+**the slice of each summit post the digit passes through**, **the top 0.60 mm
+of the raised lip**, and **the top 0.60 mm of every post in an even-numbered
+column**, so neighbouring columns alternate white and red and each one reads
+as its own line.
 
 The lip is split rather than handed over whole: the bottom 0.60 mm stays with
 the body, so the edge of the board is a red wall with a white cap on it, not a
@@ -266,7 +268,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 76 checks, ~40 s
+python3 test_fit.py    # 83 checks, ~60 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

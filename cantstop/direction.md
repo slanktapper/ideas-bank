@@ -118,6 +118,25 @@ bottoms 16 and 21 mm fills it and evens the spacing (7 goes 20.3 → 21.8 mm,
 of the board is the letters either side of that gap and not the dots. The
 lowest pad now reaches −147.9 mm against a title bottom of −148.0.
 
+**Alternate columns have white post tops.** Eighty-three identical red dots
+on a red plate give the eye nothing to follow, and the columns are what a
+player has to read. `POST_CAP = "even-columns"` prints the top 0.60 mm of
+every post in 2, 4, 6, 8, 10 and 12 in the numbers' colour, so neighbouring
+columns alternate and each one reads as its own line.
+
+The cut lands exactly on the post's chamfer, which is the whole point: what
+you see from directly above is all accent, and the straight sides stay in the
+board's colour, so it is a white dot rather than a white peg. It costs no
+extra colour changes either — the accent filament is already on those layers
+for the digits and the split summit posts.
+
+Alternating by ROW instead (`"even-rows"`) was rendered and rejected. The
+columns run at six different row pitches, so the pattern does not line up
+between them and the board reads as speckle. `"all"` and `"none"` are there
+too; every summit post is excluded whatever the setting, because its top is
+already split by its digit and flooding it with the number's colour is the
+exact failure that split exists to prevent.
+
 **Every number is the same size, one digit or two.** A two-digit number is
 about 26 mm wide at this 16 mm cap height and a one-digit one is 12, and the
 first version dealt with that by scaling 10, 11 and 12 down to fit — which

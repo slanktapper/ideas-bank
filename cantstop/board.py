@@ -457,18 +457,22 @@ def strut_distance_to(point, p0, p1, width) -> float:
 # ---------------------------------------------------------------------------
 
 def build_cell(cx: float, cy: float, segs: int | None = None,
-               with_post: bool = True) -> trimesh.Trimesh:
+               with_post: bool = True, part: str = "all") -> trimesh.Trimesh:
     """An ordinary board cell: a round pad with a post standing on it.
 
     A solid of revolution, so there is no boolean and no hole to protect. The
-    pad's top face is the seat; the post only locates.
+    pad's top face is the seat; the post only locates. `part="stem"` stops
+    the post short of its accent cap, exactly as _post() does.
     """
     rp = P.PAD_OD * 0.5
     rq = P.POST_D * 0.5
     c = P.POST_CHAMFER
     top = P.PAD_H + P.POST_H
     prof = [(0.0, 0.0), (rp, 0.0), (rp, P.PAD_H)]
-    if with_post:
+    if with_post and part == "stem":
+        prof += [(rq, P.PAD_H), (rq, top - P.POST_CAP_H),
+                 (0.0, top - P.POST_CAP_H)]
+    elif with_post:
         prof += [(rq, P.PAD_H), (rq, top - c), (rq - c, top), (0.0, top)]
     else:
         prof += [(0.0, P.PAD_H)]
@@ -543,15 +547,57 @@ def build_summit_box(cx: float, cy: float) -> trimesh.Trimesh:
                            P.PLAQUE_T, P.PLAQUE_FILLET)
 
 
-def _post(cx: float, cy: float, z0: float, segs: int | None = None
-          ) -> trimesh.Trimesh:
+def post_capped(col_index: int, row: int) -> bool:
+    """Does this cell's post get its top in the numbers' colour?"""
+    if is_summit(col_index, row):
+        return False           # a summit post is split by its digit instead
+    mode = P.POST_CAP
+    if mode == "all":
+        return True
+    if mode == "even-rows":
+        return row % 2 == 0
+    if mode == "odd-rows":
+        return row % 2 == 1
+    if mode == "even-columns":
+        return P.COLUMNS[col_index] % 2 == 0
+    return False
+
+
+def _post(cx: float, cy: float, z0: float, segs: int | None = None,
+          part: str = "all") -> trimesh.Trimesh:
+    """A cell's post. `part` splits it for two-colour printing.
+
+    "stem" is everything below the cap and "cap" is the rest, and the split
+    is put at POST_CAP_H below the top. With that set to the chamfer height
+    the cut lands exactly where the post starts bevelling in, so the cap is
+    the whole of what you see from directly above and the straight sides stay
+    in the board's colour.
+    """
     rq = P.POST_D * 0.5
     c = P.POST_CHAMFER
     top = z0 + P.POST_H
-    m = S.lathe([(0.0, z0), (rq, z0), (rq, top - c), (rq - c, top), (0.0, top)],
-                segs=segs or P.CELL_SEGS)
+    zc = top - P.POST_CAP_H
+    full = [(0.0, z0), (rq, z0), (rq, top - c), (rq - c, top), (0.0, top)]
+    if part == "all":
+        prof = full
+    elif part == "stem":
+        prof = [(0.0, z0), (rq, z0)] + [(r, z) for r, z in full[2:] if z <= zc]
+        prof += [(prof[-1][0], zc), (0.0, zc)] if prof[-1][1] < zc else [(0.0, zc)]
+    elif part == "cap":
+        prof = [(0.0, zc)] + [(r, z) for r, z in full[1:] if z >= zc]
+        if prof[1][1] > zc:
+            prof.insert(1, (rq, zc))
+    else:
+        raise ValueError(part)
+    m = S.lathe(prof, segs=segs or P.CELL_SEGS)
     m.apply_translation((cx, cy, 0.0))
     return m
+
+
+def post_caps(segs: int | None = None) -> list[trimesh.Trimesh]:
+    """The accent-coloured tops, for whichever cells POST_CAP selects."""
+    return [_post(*cell_xy(i, r), seat_z(), segs=segs, part="cap")
+            for i, r in all_cells() if post_capped(i, r)]
 
 
 def _glyph_solid(text: str, size: float, max_w: float, x: float, y: float,
@@ -694,9 +740,16 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
     segs = segs or P.CELL_SEGS
     slab = P.BOARD_STYLE == "slab"
     cutters, accents, body_posts = _summit_parts(segs)
+
+    def _post_part(i, r, single_colour):
+        # with_numerals=True is the SINGLE-COLOUR board and keeps whole posts;
+        # only the two-colour body hands its tops to the accent part, exactly
+        # as it hands over the cap on the lip
+        return "stem" if post_capped(i, r) and not single_colour else "all"
     if numerals_only:
         if slab and P.RIM_CAP_H > 1e-9:
             accents = accents + [rim_cap()]
+        accents = accents + post_caps(segs)
         return S.union_all(accents)
 
     parts: list[trimesh.Trimesh] = []
@@ -711,7 +764,8 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
         if P.BOARD_STYLE == "slab":
             # the plate is the pad; only the post stands on it
             parts.append(body_posts[summit_n] if is_summit(i, r)
-                         else _post(x, y, seat_z(), segs=segs))
+                         else _post(x, y, seat_z(), segs=segs,
+                                    part=_post_part(i, r, with_numerals)))
             summit_n += is_summit(i, r)
             continue
         if is_summit(i, r):
@@ -722,7 +776,8 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
             parts.append(body_posts[summit_n])
             summit_n += 1
         else:
-            parts.append(build_cell(x, y, segs=segs))
+            parts.append(build_cell(x, y, segs=segs,
+                                    part=_post_part(i, r, with_numerals)))
 
     if P.BOARD_STYLE != "slab":
         for p0, p1, w, h, _kind in final_struts():

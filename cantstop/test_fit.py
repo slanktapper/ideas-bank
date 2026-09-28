@@ -398,6 +398,29 @@ def main():
           f"{P.PEG_SOCKET_ROOF:.2f} mm = "
           f"{P.PEG_SOCKET_ROOF/P.LAYER_H:g} layers")
 
+    if P.POST_CAP != "none":
+        print("\nthe accent tops on the posts")
+        capped = [(i, r) for i, r in B.all_cells() if B.post_capped(i, r)]
+        layers = P.POST_CAP_H / P.LAYER_H
+        check("the cap is a whole number of layers and fits on the post",
+              abs(layers - round(layers)) < 1e-9
+              and 0 < P.POST_CAP_H <= P.POST_H - 1.0,
+              f"{P.POST_CAP_H:.2f} mm = {round(layers):g} layers on a "
+              f"{P.POST_H:.2f} mm post")
+        # The cut is meant to land where the post starts bevelling in, so what
+        # you see from straight above is all accent and the straight sides
+        # stay in the board's colour. Off that line it is either a red rim
+        # round every dot or a white band down its side.
+        check("the cap starts exactly where the post's chamfer does",
+              abs(P.POST_CAP_H - P.POST_CHAMFER) < 1e-9,
+              f"cap {P.POST_CAP_H:.2f} against a {P.POST_CHAMFER:.2f} mm "
+              f"chamfer")
+        check("no summit post is capped",
+              not any(B.is_summit(i, r) for i, r in capped),
+              f"{len(capped)} of {sum(P.ROWS)} cells capped, none of them a "
+              f"summit -- a summit post is split by its digit instead, and "
+              f"flooding it with the number's colour is what that split "
+              f"exists to avoid")
     print("\nwall thickness")
     rs = P.PEG_SOCKET_D / 2
     for name, prof in [("marker", P.PEG_BODY_PROFILE),
@@ -617,6 +640,28 @@ def main():
           abs(accent.bounds[1][2] - (SEAT_Z + P.POST_H)) < 1e-6,
           f"z={accent.bounds[1][2]:.2f}; the digit is carried up through "
           f"each post, not stopped at the plate")
+    if P.POST_CAP != "none":
+        # Body and accent have to meet at the cut with nothing missing and
+        # nothing doubled, which is only true if both halves were built off
+        # the same profile. Probed on the finished meshes, a fifth of a
+        # millimetre either side of the join.
+        i0, r0 = next((i, r) for i, r in B.all_cells() if B.post_capped(i, r))
+        cx, cy = B.cell_xy(i0, r0)
+        zc = SEAT_Z + P.POST_H - P.POST_CAP_H
+        pr = np.array([[cx, cy, zc - 0.2], [cx, cy, zc + 0.2]])
+        # the TWO-COLOUR body, not the single-colour board: board.stl keeps
+        # whole posts, the same way it keeps the whole lip
+        two_col = B.build_board(with_numerals=False)
+        stem, cap_m = two_col.contains(pr), accent.contains(pr)
+        check("body and cap meet at the cut with no gap and no overlap",
+              bool(stem[0] and not stem[1] and cap_m[1] and not cap_m[0]),
+              f"the two-colour body is solid below z={zc:.2f} and the accent "
+              f"above it, on column {P.COLUMNS[i0]}")
+        check("the single-colour board keeps whole posts",
+              bool(brd.contains(pr).all()),
+              "board.stl is solid either side of the cut, as it is across "
+              "the lip's cap")
+
     check("the board body still carries the rest of every post",
           abs(B.build_board(with_numerals=False).bounds[1][2]
               - (SEAT_Z + P.POST_H)) < 1e-6,

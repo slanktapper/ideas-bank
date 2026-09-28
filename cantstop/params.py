@@ -126,6 +126,26 @@ POST_H    = 3.20    # how far the post stands proud of its pad
 POST_CHAMFER = 0.60 # 45 deg lead-in at the top, so a piece self-centres
 CELL_SEGS = 48      # facets around a pad (export quality)
 
+# The top of a post can print in the NUMBERS' colour instead of the board's,
+# which turns a field of 83 identical red dots into something with a rhythm
+# you can follow up a column.
+#
+#   "none"          every post in the board's colour
+#   "even-rows"     every other cell up a column, counting from the bottom
+#   "odd-rows"      the other half
+#   "even-columns"  all of 2, 4, 6, 8, 10, 12
+#   "all"           every post
+#
+# SUMMIT posts are never capped whatever this says. The top of a summit post
+# is already split by its digit so the number reads whole from above, and
+# flooding it with the number's colour is exactly the failure that split was
+# built to avoid -- the post merges into the glyph and the number turns to
+# mush.
+POST_CAP   = "even-columns"
+POST_CAP_H = 0.60   # 3 layers at 0.20, same as the cap on the lip. It lands
+                    # on the chamfer, so the whole of what you see from above
+                    # is the accent colour and the sides stay board-coloured.
+
 # Nothing needs a through-bore any more, which removes a whole class of
 # problem: struts cannot plug a hole that does not exist. The only rule left
 # is that struts stay BELOW the pad tops, so they never foul a seating face
