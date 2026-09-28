@@ -35,8 +35,14 @@ def k_max(col_index: int) -> float:
     return (P.ROWS[col_index] - 1) / 2.0
 
 
+def steps_out(col_index: int) -> int:
+    """How many columns this one is from the middle of the board."""
+    tallest = max(k_max(i) for i in range(len(P.ROWS)))
+    return int(round(tallest - k_max(col_index)))
+
+
 def half_height(col_index: int) -> float:
-    """How far a column reaches above (and below) the midline, in mm.
+    """How far a column reaches above the midline, in mm.
 
     The longest column keeps the nominal row pitch. Every other column gives
     up the height COLUMN_SHORTFALL allows it and spreads its own cells over
@@ -44,19 +50,32 @@ def half_height(col_index: int) -> float:
     while the column can still be made to reach further towards the frame.
     """
     tallest = max(k_max(i) for i in range(len(P.ROWS)))
-    steps_out = int(round(tallest - k_max(col_index)))
-    return tallest * P.PITCH_Y - P.COLUMN_SHORTFALL[steps_out]
+    return tallest * P.PITCH_Y - P.COLUMN_SHORTFALL[steps_out(col_index)]
+
+
+def column_drop(col_index: int) -> float:
+    """Extra span this column is given at the bottom only."""
+    return P.COLUMN_DROP[steps_out(col_index)]
+
+
+def top_y(col_index: int) -> float:
+    """The grid position of a column's top row, before the summit steps out."""
+    return half_height(col_index)
+
+
+def bottom_y(col_index: int) -> float:
+    return -half_height(col_index) - column_drop(col_index)
 
 
 def row_pitch(col_index: int) -> float:
     """That column's own spacing between cells."""
-    k = k_max(col_index)
-    return half_height(col_index) / k if k else 0.0
+    n = P.ROWS[col_index] - 1
+    return (top_y(col_index) - bottom_y(col_index)) / n if n else 0.0
 
 
 def grid_y(col_index: int, row: int) -> float:
-    """Row position on the plain centred grid, before the summit steps out."""
-    return (row - k_max(col_index)) * row_pitch(col_index)
+    """Row position on the plain grid, before the summit steps out."""
+    return bottom_y(col_index) + row * row_pitch(col_index)
 
 
 def cell_xy(col_index: int, row: int) -> tuple[float, float]:

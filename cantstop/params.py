@@ -54,6 +54,17 @@ ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 # needs 310.
 COLUMN_SHORTFALL = [0.0, 0.0, 0.0, 25.0, 50.0, 75.0]
 
+# Extra span given to a column at the BOTTOM only, same indexing. Shortfall
+# moves both ends of a column because the grid is centred; this moves one.
+#
+# It exists because 5 through 9 being level leaves them all the same span with
+# 9, 11 and 13 cells in it -- so column 7's dots are packed at 20 mm while
+# column 5's are strung out at 30. Columns 6, 7 and 8 carry no title letter,
+# so the plate directly below them is empty: dropping their bottoms fills that
+# and evens the spacing out, and costs nothing, because what sets the bottom
+# of the board is the letters either side of that gap, not the dots.
+COLUMN_DROP = [21.0, 16.0, 0.0, 0.0, 0.0, 0.0]
+
 PITCH_X = 24.0      # centre-to-centre spacing between columns. Widened from
                     # 22 along with the title: a regular octagon is square, so
                     # a lens that is much taller than it is wide leaves the

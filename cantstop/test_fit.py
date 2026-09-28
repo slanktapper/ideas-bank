@@ -303,10 +303,29 @@ def main():
           f"widest is {max(B.row_pitch(i) for i in range(len(P.ROWS))):.0f} mm "
           f"in column {P.COLUMNS[max(range(len(P.ROWS)), key=B.row_pitch)]}")
 
-    check("columns are centred on a shared midline",
-          all(abs(B.cell_xy(i, 0)[1] + B.summit(i)[1] - P.SUMMIT_STEP) < 1e-9
+    # A column's TOP is where COLUMN_SHORTFALL puts it and nothing else moves
+    # it; COLUMN_DROP only ever lengthens the bottom. Get those two mixed up
+    # and a column quietly climbs above its neighbour, which is the one thing
+    # the ladder must never do.
+    check("a column's top is set by its shortfall alone",
+          all(abs(B.summit(i)[1] - P.SUMMIT_STEP - B.half_height(i)) < 1e-9
               for i in range(len(P.ROWS))),
-          "bottom and summit equal and opposite, plus the summit step")
+          "the drop lengthens a column downward, never upward")
+    check("columns hang from a shared midline, dropping only where told to",
+          all(abs(B.cell_xy(i, 0)[1] + B.half_height(i)
+                  + B.column_drop(i)) < 1e-9
+              for i in range(len(P.ROWS))),
+          f"drops of {[round(v) for v in P.COLUMN_DROP]} mm counting out "
+          f"from column 7")
+    check("no column's drop takes it below the title",
+          min(B.cell_xy(i, 0)[1] - P.PAD_OD / 2 for i in range(len(P.ROWS)))
+          >= min(y0 for _x0, y0, _x1, _y1 in B.title_extents())
+          if P.TITLE_TEXT else True,
+          f"lowest cell reaches "
+          f"{min(B.cell_xy(i, 0)[1] - P.PAD_OD/2 for i in range(len(P.ROWS))):.1f}"
+          f" against a title bottom of "
+          f"{min(y0 for _x0, y0, _x1, _y1 in B.title_extents()):.1f} mm"
+          if P.TITLE_TEXT else "no title")
 
     print("\nthe post/socket interface  (male-up: board, then every piece)")
     # The floor is 0.15, not 0.25. 0.25 was set when nothing had been printed

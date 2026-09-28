@@ -24,7 +24,15 @@ outer corner of one of those is the single point that binds the frame, since
 it sits far out in x and well up in y, exactly where the corner cut is.
 Lowering it also lowers the letter hanging under the same column, so it pays
 twice: 326 mm of frame becomes 310, and the content fills 86% of the board
-across and 91% up. The columns do not all share one row pitch: the middle five step down by
+across and 91% up.
+
+At that point the frame is about as small as this content allows. The eleven
+summits now sit on a staircase that runs very nearly parallel to the corner
+cut, so they all bind it at once rather than one of them binding it alone,
+and the three constraints have converged: X wants a half-span of 133 mm, Y
+wants 141, the diagonal wants 142.8. Dropping the outer columns further buys
+nothing now, and shrinking the numbers and letters buys 1 mm per millimetre
+of cap height, which is a poor trade. The columns do not all share one row pitch: the middle five step down by
 only a quarter of a box and the rest follow by the same amount, which flattens
 the top of the lens and pulls its shoulders out towards the frame instead of
 leaving it a narrow spike in a wide octagon.
@@ -97,10 +105,18 @@ far down is the most expensive content that can be put on one: levelling the
 title takes the board from 310 mm across to 395, which is off the bed by
 70 mm. `TITLE_FOLLOW` blends between the two if it is ever worth revisiting.
 
-**The middle five columns are level.** 5 through 9 give up nothing, so the
-top of the lens runs flat across five columns instead of coming to a point —
-and, because the columns are centred on a shared midline, the bottom does
-too, which is the straight edge the title hangs from.
+**The middle five columns are level at the top, and 6, 7 and 8 hang lower.**
+5 through 9 give up nothing, so the top of the lens runs flat across five
+columns instead of coming to a point. Their bottoms used to be level too, and
+that was the problem: the same span with 9, 11 and 13 cells in it means
+column 7's dots are packed at 20 mm while column 5's are strung out at 30.
+
+`COLUMN_DROP` lengthens a column at the bottom only. Columns 6, 7 and 8 carry
+no title letter, so the plate directly below them is empty — dropping their
+bottoms 16 and 21 mm fills it and evens the spacing (7 goes 20.3 → 21.8 mm,
+6 goes 24.4 → 25.6), and costs nothing at all, because what sets the bottom
+of the board is the letters either side of that gap and not the dots. The
+lowest pad now reaches −147.9 mm against a title bottom of −148.0.
 
 **Every number is the same size, one digit or two.** A two-digit number is
 about 26 mm wide at this 16 mm cap height and a one-digit one is 12, and the
