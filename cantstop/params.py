@@ -409,6 +409,91 @@ PEG_BODY_PROFILE = [
 ]
 PEG_SEGS = 64
 
+# --------------------------------------------------------------------------
+# Four pieces, one interface
+# --------------------------------------------------------------------------
+# Each player gets a different SHAPE. What none of them may change is the
+# interface: the socket underneath, the post on top, the skirt that seats,
+# and PEG_BODY_H. Player A stacks on player B, so every piece has to accept
+# every other piece and add exactly the same height doing it.
+#
+# What that leaves free is the silhouette between the skirt and the top face,
+# and it is less than it looks:
+#
+#   - the top face is what the NEXT piece stands on, so it cannot taper away
+#     to a point. It has to keep a seating annulus 3 mm wide, which puts a
+#     floor of about 6 mm on the top radius. No cones, no spires.
+#   - nothing may exceed PEG_MAX_R, or pieces touch in adjacent cells.
+#   - printed flat with no supports, so no surface may overhang more than 45
+#     degrees: a profile may widen going up by at most one millimetre of
+#     radius per millimetre of height. test_fit.py measures this on all four.
+#
+# Anything added on top of the lathe is cut, never added: a vertical cylinder
+# taken out of the side leaves a scallop, and scallops are self-supporting
+# whatever their depth.
+PLAYER_STYLES = ["counter", "crown", "saucer", "cog"]
+PEG_MAX_R = 8.25          # half of 16.5; the skirt, and nothing wider
+
+# crown -- a cup that flares to a straight rim, with V notches taken out of it
+CROWN_BODY_PROFILE = [
+    (8.25, 0.00),
+    (8.25, 0.80),
+    (6.90, 1.80),
+    (6.90, 2.60),
+    (8.10, 4.00),   # flares out at 41 degrees, and is done flaring before
+    (8.10, 6.30),   # the notches start, so they cut a vertical wall
+]
+CROWN_POINTS = 6          # V notches, leaving 6 points
+CROWN_CUT_AT = 8.40       # how far out each notch's axis sits: at the top
+                          # face it has cut in to r6.10, which still leaves a
+                          # 3.15 mm seating ring for whatever stacks on it
+CROWN_CUT_Z  = 4.00       # the apex of the V, level with the top of the
+                          # flare, so the notches bite exactly where the rim
+                          # goes vertical and nothing is removed below it
+                          #
+                          # The notch is a CONE, apex down, opening upward at
+                          # 45 degrees -- so the points taper to a tip rather
+                          # than standing square like castle merlons, and the
+                          # piece narrows all the way up, which is what makes
+                          # it printable without support. At the top face it
+                          # has cut in to about r6.4, which still leaves a
+                          # 3.4 mm seating ring for whatever stacks on it.
+
+# saucer -- a narrow base, a brim that overhangs it, a shallow dome on top.
+# The base is 6.60 where every other piece is 8.25: the brim has to stand
+# PROUD of what it sits on or the thing reads as a bell. It still seats on a
+# 3.65 mm annulus, which is what the rule actually asks for -- the rule is
+# about the width of the CONTACT, not about matching the others.
+#
+# The dome is shallow and there is no helping it. A saucer wants to taper to
+# a point and the top face is what the next piece stands on, so it cannot go
+# below about r6 without losing the 3 mm seating ring. 8.25 down to 6.10 is
+# the whole budget.
+SAUCER_BODY_PROFILE = [
+    (6.60, 0.00),
+    (6.60, 0.50),
+    (5.80, 1.00),
+    (5.80, 1.30),
+    (8.25, 3.75),   # the underside of the brim, at 45 degrees exactly
+    (8.25, 4.05),   # the brim edge, 0.30 thick and 1.65 proud of the base
+    (6.60, 4.60),
+    (6.10, 6.30),   # the dome, such as there is room for
+]
+
+# cog -- a barrel with vertical flutes cut round it
+COG_BODY_PROFILE = [
+    (8.25, 0.00),
+    (8.25, 1.20),   # the skirt stays a whole ring; the flutes start above it
+    (7.80, 1.90),
+    (7.80, 5.40),
+    (8.10, 6.00),
+    (8.10, 6.30),
+]
+COG_FLUTES = 10
+COG_CUT_R  = 1.70
+COG_CUT_AT = 8.90         # cuts in to r7.20
+COG_CUT_Z  = 1.40
+
 # The runner (the shared neutral marker you advance during a turn, before you
 # decide to bank) uses the identical pin/socket interface so it still stacks,
 # but carries two raised bands and stands taller so it is unmistakable across

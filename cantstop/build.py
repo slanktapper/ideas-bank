@@ -140,12 +140,16 @@ def export_stls(verbose=True):
 
     if verbose:
         print("building pieces ...")
-    marker = B.build_marker()
+    pieces = [B.build_player_piece(s) for s in P.PLAYER_STYLES]
+    marker = pieces[0]
     runner = B.build_runner()
-    save(marker, "piece-marker.stl", "PLA", "one player marker")
+    for k, (style, m) in enumerate(zip(P.PLAYER_STYLES, pieces), start=1):
+        save(m, f"piece-{style}.stl", "PLA", f"player {k}: one {style}")
     save(runner, "piece-runner.stl", "PLA", "one neutral runner")
-    save(B.build_plate(marker, P.MARKERS_PER_PLAYER), "plate-markers-x11.stl",
-         "PLA", f"one player's set ({P.MARKERS_PER_PLAYER})")
+    for k, (style, m) in enumerate(zip(P.PLAYER_STYLES, pieces), start=1):
+        save(B.build_plate(m, P.MARKERS_PER_PLAYER),
+             f"plate-{style}-x{P.MARKERS_PER_PLAYER}.stl", "PLA",
+             f"player {k}'s set ({P.MARKERS_PER_PLAYER} {style}s)")
     save(B.build_plate(runner, P.RUNNERS), "plate-runners-x3.stl",
          "PLA", f"the shared runners ({P.RUNNERS})")
 
@@ -165,18 +169,27 @@ def export_stls(verbose=True):
          cm3=stub_filament() - stub_nums.volume / 1000.0 if slab else None)
     save(stub_nums, "stub-board-numerals.stl", "PLA",
          "TEST PRINT -- the digits and their slice of each post")
-    save(B.build_plate(marker, P.STUB_PIECES), "stub-pieces-x2.stl", "PLA",
-         f"TEST PRINT -- {P.STUB_PIECES} full markers, to seat and to stack")
+    # one of each of the first STUB_PIECES shapes, so the test print checks
+    # that a piece of one shape stacks on a piece of another
+    spacing = 2 * P.PEG_MAX_R + 4.0
+    save(trimesh.util.concatenate(
+             [R.placed(m, (k * spacing, 0, 0))
+              for k, m in enumerate(pieces[:P.STUB_PIECES])]),
+         "stub-pieces-x2.stl", "PLA",
+         "TEST PRINT -- a "
+         + " and a ".join(P.PLAYER_STYLES[:P.STUB_PIECES])
+         + ", to seat and to stack")
 
-    return (board_body, numerals, marker, runner, stub_body, stub_nums, rows)
+    return (board_body, numerals, pieces, runner, stub_body, stub_nums, rows)
 
 
 # ---------------------------------------------------------------------------
 # renders
 # ---------------------------------------------------------------------------
 
-def export_renders(board_body, numerals, marker, runner, stub_body,
+def export_renders(board_body, numerals, pieces, runner, stub_body,
                    stub_nums, fast=False, verbose=True):
+    marker = pieces[0]
     RENDER_DIR.mkdir(exist_ok=True)
     W, H = (760, 560) if fast else (1520, 1120)
     ss = 1 if fast else 2
@@ -294,10 +307,11 @@ def export_renders(board_body, numerals, marker, runner, stub_body,
               (7, 6, 3), (8, 2, 0), (9, 5, 3), (10, 1, 2), (11, 2, 1),
               (12, 1, 3), (3, 2, 2), (6, 8, 0), (5, 6, 3)]
     for col, row, pl in banked:
-        scene.append({"mesh": place(marker, col, row), "color": C_PLAYERS[pl]})
+        scene.append({"mesh": place(pieces[pl], col, row),
+                      "color": C_PLAYERS[pl]})
     # contested cells: player A stacked on player B
     for col, row, a, b in [(6, 5, 3, 2), (7, 4, 0, 1)]:
-        scene.append({"mesh": place(marker, col, row, 1, (P.PEG_BODY_H,)),
+        scene.append({"mesh": place(pieces[a], col, row, 1, (P.PEG_BODY_H,)),
                       "color": C_PLAYERS[a]})
     # the three runners, mid-turn, one of them riding on a banked marker
     scene.append({"mesh": place(runner, 7, 7), "color": C_RUNNER})
@@ -305,8 +319,10 @@ def export_renders(board_body, numerals, marker, runner, stub_body,
     scene.append({"mesh": place(runner, 8, 2, 1, (P.PEG_BODY_H,)),
                   "color": C_RUNNER})
     # two columns claimed outright: a piece sitting on the number itself
-    scene.append({"mesh": place(marker, 2, P.ROWS[0] - 1), "color": C_PLAYERS[1]})
-    scene.append({"mesh": place(marker, 11, P.ROWS[9] - 1), "color": C_PLAYERS[3]})
+    scene.append({"mesh": place(pieces[1], 2, P.ROWS[0] - 1),
+                  "color": C_PLAYERS[1]})
+    scene.append({"mesh": place(pieces[3], 11, P.ROWS[9] - 1),
+                  "color": C_PLAYERS[3]})
     shot("06-assembly.png", scene,
          **R.frame([board_body], azimuth_deg=-84, elevation_deg=38, margin=0.73))
 
@@ -484,13 +500,14 @@ def print_report(rows, board_body):
     # added it started billing the set for 44 runners and 3 marker plates.
     g = {name: grams for name, _wt, _nf, _cm3, grams, _note in rows}
     total = (g["board-body.stl"] + g["board-numerals.stl"]
-             + g["piece-marker.stl"] * P.PLAYERS * P.MARKERS_PER_PLAYER
+             + sum(g[f"piece-{s}.stl"] for s in P.PLAYER_STYLES)
+               * P.MARKERS_PER_PLAYER
              + g["piece-runner.stl"] * P.RUNNERS)
     how = (f"board at {100*P.SLAB_INFILL:.0f}% infill, pieces solid"
            if P.BOARD_STYLE == "slab" else "100% infill")
     print(f"full set, {how}: ~{total:.0f} g "
-          f"(1 board + {P.PLAYERS}x{P.MARKERS_PER_PLAYER} markers "
-          f"+ {P.RUNNERS} runners)")
+          f"(1 board + {P.MARKERS_PER_PLAYER} each of "
+          f"{'/'.join(P.PLAYER_STYLES)} + {P.RUNNERS} runners)")
     print(f"board envelope: {hi[0]-lo[0]:.1f} x {hi[1]-lo[1]:.1f} x {hi[2]-lo[2]:.1f} mm "
           f"(bed {P.BED_X:.0f} x {P.BED_Y:.0f} x {P.BED_Z:.0f})")
     print(f"cells: {sum(P.ROWS)}   columns: {len(P.COLUMNS)}   ladder: {P.ROWS}")
@@ -506,11 +523,11 @@ def main(argv=None):
     do_ren = a.renders or not a.stl
 
     t0 = time.time()
-    (board_body, numerals, marker, runner,
+    (board_body, numerals, pieces, runner,
      stub_body, stub_nums, rows) = export_stls(verbose=do_stl)
     if do_ren:
         print("rendering ...")
-        export_renders(board_body, numerals, marker, runner, stub_body,
+        export_renders(board_body, numerals, pieces, runner, stub_body,
                        stub_nums, fast=a.fast)
     if do_stl:
         print_report(rows, board_body)

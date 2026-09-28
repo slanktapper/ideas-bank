@@ -890,6 +890,76 @@ def socket_bridge() -> float:
     return 2.0 * max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
 
 
+def _scallops(n: int, at_r: float, r: float, z0: float, z1: float,
+              segs: int | None = None) -> list[trimesh.Trimesh]:
+    """n vertical cylinders spaced round the axis, to be cut away.
+
+    A scallop is the one decoration that costs nothing to print: the cut face
+    is vertical however deep it goes, so there is no overhang to support and
+    no bridge to span.
+    """
+    return [S.tube(at_r * np.cos(a), at_r * np.sin(a), r, 0.0, z0, z1,
+                   segs=segs or P.PEG_SEGS)
+            for a in np.linspace(0, 2 * np.pi, n, endpoint=False)]
+
+
+def _v_notches(n: int, at_r: float, z_apex: float, z_top: float,
+               segs: int | None = None) -> list[trimesh.Trimesh]:
+    """n cones, apex down, opening upward at 45 degrees.
+
+    Cut away, they leave points that taper to a tip. The piece narrows the
+    whole way up as a result, which is exactly the condition for printing
+    without support -- a square-topped merlon would need none either, but it
+    would be a castle and not a crown.
+    """
+    h = z_top - z_apex
+    out = []
+    for a in np.linspace(0, 2 * np.pi, n, endpoint=False):
+        m = S.lathe([(0.0, z_apex), (h, z_top), (0.0, z_top)],
+                    segs=segs or P.PEG_SEGS)
+        m.apply_translation((at_r * np.cos(a), at_r * np.sin(a), 0.0))
+        out.append(m)
+    return out
+
+
+def piece_seat_r(style: str) -> float:
+    """Radius of the face a piece stands on -- its profile at z = 0."""
+    return piece_profile_of(style)[0][0]
+
+
+def piece_max_r(style: str) -> float:
+    return max(r for r, _ in piece_profile_of(style))
+
+
+def build_player_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
+    """One player's marker. Same interface as every other; different shape."""
+    top = P.PEG_BODY_H + P.PEG_POST_H
+    if style == "counter":
+        return build_marker(segs)
+    if style == "saucer":
+        return S.lathe(_piece_profile(P.SAUCER_BODY_PROFILE, P.PEG_BODY_H),
+                       segs=segs or P.PEG_SEGS)
+    if style == "crown":
+        body = S.lathe(_piece_profile(P.CROWN_BODY_PROFILE, P.PEG_BODY_H),
+                       segs=segs or P.PEG_SEGS)
+        cut = _v_notches(P.CROWN_POINTS, P.CROWN_CUT_AT, P.CROWN_CUT_Z,
+                         top + 1.0, segs)
+        return trimesh.boolean.difference([body] + cut, engine="manifold")
+    if style == "cog":
+        body = S.lathe(_piece_profile(P.COG_BODY_PROFILE, P.PEG_BODY_H),
+                       segs=segs or P.PEG_SEGS)
+        cut = _scallops(P.COG_FLUTES, P.COG_CUT_AT, P.COG_CUT_R,
+                        P.COG_CUT_Z, top + 1.0, segs)
+        return trimesh.boolean.difference([body] + cut, engine="manifold")
+    raise ValueError(style)
+
+
+def piece_profile_of(style: str):
+    """The lathe profile behind a style, for the printability checks."""
+    return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
+            "saucer": P.SAUCER_BODY_PROFILE, "cog": P.COG_BODY_PROFILE}[style]
+
+
 def build_marker(segs: int | None = None) -> trimesh.Trimesh:
     return S.lathe(_piece_profile(P.PEG_BODY_PROFILE, P.PEG_BODY_H),
                    segs=segs or P.PEG_SEGS)

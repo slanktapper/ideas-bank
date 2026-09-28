@@ -37,6 +37,12 @@ SLAB = P.BOARD_STYLE == "slab"
 SEAT_Z = B.seat_z()          # height of every seating face, whichever style
 
 
+def R_placed(mesh, dz):
+    m = mesh.copy()
+    m.apply_translation((0.0, 0.0, dz))
+    return m
+
+
 def check(label, ok, detail=""):
     global CHECKS
     CHECKS += 1
@@ -355,11 +361,18 @@ def main():
     # of it as the pad is wide on a lattice. The rule is that the CONTACT is
     # wide, not that the skirt is wholly supported -- a skirt that overhangs
     # its pad a little still sits on a generous annulus.
-    skirt_r = max(r for r, _ in P.PEG_BODY_PROFILE)
-    seat_r = skirt_r if SLAB else min(skirt_r, P.PAD_OD / 2)
+    # Four shapes now, so every one of these is the worst of the four. The
+    # widest is what has to clear a neighbour; the narrowest BASE is what has
+    # to seat, and they are not the same piece -- the saucer's brim overhangs
+    # a base 1.65 mm narrower than it.
+    skirt_r = max(B.piece_max_r(s) for s in P.PLAYER_STYLES)
+    worst = min(P.PLAYER_STYLES, key=B.piece_seat_r)
+    base_r = B.piece_seat_r(worst)
+    seat_r = base_r if SLAB else min(base_r, P.PAD_OD / 2)
     check("the seat is a wide annulus, not a rim",
           seat_r - P.POST_D / 2 >= 3.0,
-          f"{P.POST_D/2:.2f} to {seat_r:.2f} mm contact ring")
+          f"{P.POST_D/2:.2f} to {seat_r:.2f} mm contact ring on the {worst}, "
+          f"which is the narrowest based of the four")
     if not SLAB:
         check("a piece does not overhang its pad far enough to teeter",
               skirt_r - P.PAD_OD / 2 <= 2.0,
@@ -428,15 +441,90 @@ def main():
               f"exists to avoid")
     print("\nwall thickness")
     rs = P.PEG_SOCKET_D / 2
-    for name, prof in [("marker", P.PEG_BODY_PROFILE),
-                       ("runner", P.RUNNER_BODY_PROFILE)]:
+    for name, prof in ([(s, B.piece_profile_of(s)) for s in P.PLAYER_STYLES]
+                       + [("runner", P.RUNNER_BODY_PROFILE)]):
         walls = [r - rs for r, dz in prof if dz <= P.PEG_SOCKET_DEPTH]
         check(f"{name}: wall between socket and outside stays printable",
               min(walls) >= 1.20,
               f"min {min(walls):.2f} mm (~{min(walls)/0.42:.1f} perimeters)")
 
+    # FOUR SHAPES, ONE INTERFACE. Player A stacks on player B, so every piece
+    # has to accept every other and add exactly the same height doing it. The
+    # silhouette is the only thing a style may change.
+    print(f"\n{len(P.PLAYER_STYLES)} shapes, one interface")
+    built = {s: B.build_player_piece(s) for s in P.PLAYER_STYLES}
+    tall = {s: m.bounds[1][2] - m.bounds[0][2] for s, m in built.items()}
+    check("every piece is the same height, to the micron",
+          max(tall.values()) - min(tall.values()) < 1e-6
+          and abs(min(tall.values()) - (P.PEG_BODY_H + P.PEG_POST_H)) < 1e-6,
+          f"{min(tall.values()):.2f} mm each: {P.PEG_BODY_H:.2f} of body and "
+          f"{P.PEG_POST_H:.2f} of post")
+    for s, m in built.items():
+        check(f"{s}: one watertight solid, flat on the bed",
+              m.is_watertight and m.is_winding_consistent
+              and m.body_count == 1 and abs(m.bounds[0][2]) < 1e-6,
+              f"{len(m.faces)} triangles, {m.body_count} body")
+    wide = {s: max(m.bounds[1][0] - m.bounds[0][0],
+                   m.bounds[1][1] - m.bounds[0][1]) for s, m in built.items()}
+    check("no shape is wider than the cell pitch allows",
+          max(wide.values()) <= 2 * P.PEG_MAX_R + 1e-6,
+          f"widest is the {max(wide, key=wide.get)} at "
+          f"{max(wide.values()):.2f} mm against a {2*P.PEG_MAX_R:.2f} limit")
+    # Measured on the mesh, not on the profile: the crown's notches are cut
+    # into its top face after the lathe, so the profile says r8.10 and the
+    # UNBROKEN ring is a good deal less than that. What the next piece stands
+    # on is the ring that goes all the way round.
+    rings = {}
+    for s, m in built.items():
+        z = P.PEG_BODY_H - 0.05
+        rr = np.linspace(P.PEG_POST_D / 2 + 0.05, B.piece_max_r(s), 60)
+        worst_r = np.inf
+        for a in np.linspace(0, 2 * np.pi, 36, endpoint=False):
+            pts = np.column_stack([rr * np.cos(a), rr * np.sin(a),
+                                   np.full_like(rr, z)])
+            solid = m.contains(pts)
+            k = int(np.argmin(solid)) if not solid.all() else len(rr)
+            worst_r = min(worst_r, rr[k - 1] if k else 0.0)
+        rings[s] = float(worst_r)
+    thin = min(rings, key=rings.get)
+    check("every shape keeps an unbroken seating ring for what stacks on it",
+          rings[thin] - P.PEG_POST_D / 2 >= 3.0,
+          "rings out to "
+          + ", ".join(f"{s} r{rings[s]:.2f}" for s in P.PLAYER_STYLES)
+          + f"; tightest is the {thin} at "
+          f"{rings[thin] - P.PEG_POST_D/2:.2f} mm wide")
+
+    # PRINTED FLAT, NO SUPPORTS. A profile that widens going up is an
+    # overhang, and the angle from vertical is atan(dr/dz) -- so a
+    # millimetre of radius per millimetre of height is 45 degrees and the
+    # limit. Measured on the profiles, because it is the one rule a new
+    # silhouette will break without anything else noticing.
+    worst_over, who = 0.0, None
+    for s in P.PLAYER_STYLES:
+        prof = B.piece_profile_of(s)
+        for (r0, z0), (r1, z1) in zip(prof, prof[1:]):
+            if r1 > r0 and z1 > z0 and (r1 - r0) / (z1 - z0) > worst_over:
+                worst_over, who = (r1 - r0) / (z1 - z0), (s, z0, z1)
+    check("nothing overhangs more than 45 degrees, so nothing needs support",
+          worst_over <= 1.0 + 1e-9,
+          f"steepest is the {who[0]} between z{who[1]:.2f} and z{who[2]:.2f}, "
+          f"at {np.degrees(np.arctan(worst_over)):.0f} degrees from vertical")
+
+    # and the thing all of that is for: any of them on any of them
+    heights = []
+    for a in P.PLAYER_STYLES:
+        for b in P.PLAYER_STYLES:
+            lower = built[a].copy()
+            upper = R_placed(built[b], P.PEG_BODY_H)
+            heights.append(upper.bounds[1][2] - lower.bounds[1][2])
+    check("any shape stacks on any other and adds the same height",
+          max(heights) - min(heights) < 1e-6
+          and abs(heights[0] - P.PEG_BODY_H) < 1e-6,
+          f"{len(heights)} pairings, every one adding {P.PEG_BODY_H:.2f} mm")
+
     print("\nneighbours do not touch")
-    for axis, pitch in [("along a row", P.PITCH_X), ("up a column", P.PITCH_Y)]:
+    narrow = min(B.row_pitch(i) for i in range(len(P.ROWS)))
+    for axis, pitch in [("along a row", P.PITCH_X), ("up a column", narrow)]:
         check(f"pieces clear each other {axis}", pitch - 2 * skirt_r >= 3.0,
               f"{pitch - 2*skirt_r:.2f} mm gap")
     if SLAB:

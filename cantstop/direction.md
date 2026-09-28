@@ -75,6 +75,31 @@ seat is a 3.0-to-8.3 mm annulus rather than the rim of a ring, which is a far
 steadier thing for a 16.5 mm piece to stand on — which in turn is why the posts
 can be only 2 to 3 mm long.
 
+**Four shapes, one interface.** Each player gets a different piece: a
+counter, a crown, a saucer and a cog. What none of them may change is the
+socket underneath, the post on top, the skirt that seats and the 6.30 mm
+body — player A stacks on player B, so every piece has to accept every other
+one and add exactly the same height doing it. `test_fit.py` builds all
+sixteen pairings and measures the rise.
+
+What that leaves free is the silhouette, and it is less than it looks:
+
+- the top face is what the **next** piece stands on, so it cannot taper away
+  to a point. It has to keep an unbroken seating ring 3 mm wide, which puts a
+  floor of about 6 mm on the top radius. No cones, no spires — the saucer's
+  dome is shallow because 8.25 down to 6.10 is the whole budget;
+- nothing may exceed 8.25 mm of radius, or pieces touch in adjacent cells;
+- printed flat with no supports, so no surface may overhang more than 45
+  degrees. A profile may widen going up by at most a millimetre of radius per
+  millimetre of height, and the saucer's brim sits exactly on that line.
+
+Anything beyond the lathe is **cut, never added**. The crown's points are six
+45-degree cones taken out of its rim, and the cog's flutes are ten vertical
+cylinders taken out of its side: both leave a part that narrows all the way
+up, which is the condition for printing without support. The saucer's base is
+6.60 where the others are 8.25, because a brim has to stand proud of what it
+sits on or the thing reads as a bell.
+
 **The pieces are counters, not pegs.** 16.5 mm across and 8.45 mm tall: a
 squat disc you pick up with two fingers and can see past. The first version
 was 13.2 x 12.6 — taller than it was wide — and read as a peg standing on the
@@ -247,7 +272,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 84 design checks — run this after editing params.py
+python3 test_fit.py      # 96 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~6 s)
 python3 build.py --fast  # quarter-res renders  (~12 s total)
@@ -269,7 +294,7 @@ spare in X and 10 mm in Y — about 5 mm of clearance to the bed edge on the
 short side, which is the tightest thing about the design now. A full set is
 about **243 g** — 184 g of board at 10% infill plus 59 g of solid pieces.
 
-`test_fit.py` passes 84 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 96 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

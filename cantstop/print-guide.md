@@ -92,7 +92,10 @@ What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
 | `board-body.stl` + `board-numerals.stl` | 1 | PLA red + jade white | the board; two files, one object |
-| `plate-markers-x11.stl` | 4 | PLA | one per player colour |
+| `plate-counter-x11.stl` | 1 | PLA | player 1 |
+| `plate-crown-x11.stl` | 1 | PLA | player 2 |
+| `plate-saucer-x11.stl` | 1 | PLA | player 3 |
+| `plate-cog-x11.stl` | 1 | PLA | player 4 |
 | `plate-runners-x3.stl` | 1 | PLA or PETG | the shared neutral runners |
 
 and, for the test print above:
@@ -148,7 +151,7 @@ empty and the numbers read as engraved.
 
 A full set is roughly **243 g**: ~184 g board, body and numerals together
 (6 mm slab at 10% infill),
-~53 g of markers (44), ~5 g of runners (3). A marker is 16.5 mm across and
+~54 g of markers (11 each of four shapes), ~5 g of runners (3). A marker is 16.5 mm across and
 8.45 mm tall, a runner 16.5 x 10.45, and every stacked piece adds exactly
 6.30 mm. The board is
 309.7 × 309.7 × 9.2 mm and sits on the H2D bed with 15 mm spare in X and
@@ -171,6 +174,11 @@ constraint, not a happy accident:
 
 **Do not let the slicer auto-orient the board.** It has no reason to keep it
 flat and every reason to stand it on edge.
+
+**Each player gets a different shape**, so a glance across the table tells
+you whose piece is whose without having to judge a colour. They are
+interchangeable in every way that matters: any one stacks on any other and
+adds the same 6.30 mm.
 
 **Pieces print the right way up — skirt down, post up.** The first layer is
 the full 16.5 mm skirt, which is a generous footprint, so no brim is needed.
@@ -267,7 +275,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 84 checks, ~70 s
+python3 test_fit.py    # 96 checks, ~90 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 
