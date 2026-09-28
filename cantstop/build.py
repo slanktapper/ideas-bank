@@ -127,19 +127,16 @@ def export_stls(verbose=True):
 
     if verbose:
         print("building board ...")
-    board_full = B.build_board(with_numerals=True, verbose=verbose)
-    board_body = B.build_board(with_numerals=False)
+    board_body = B.build_board(verbose=verbose)
     numerals = B.build_board(numerals_only=True)
 
     slab = P.BOARD_STYLE == "slab"
-    note = (f"{P.SLAB_T:.0f} mm slab at {P.SLAB_INFILL:.0%} infill" if slab
-            else "single colour, numbers engraved")
-    save(board_full, "board.stl", "PLA", note,
-         cm3=slab_filament() if slab else None)
-    save(board_body, "board-body.stl", "PLA", "two-colour: load with numerals",
+    note = (f"{P.SLAB_T:.0f} mm slab at {P.SLAB_INFILL:.0%} infill; "
+            f"load with numerals" if slab else "two-colour: load with numerals")
+    save(board_body, "board-body.stl", "PLA", note,
          cm3=slab_filament() - numerals.volume / 1000.0 if slab else None)
     save(numerals, "board-numerals.stl", "PLA",
-         "two-colour: digits + the slice of each post they pass through")
+         "two-colour: numbers, title, lip cap and the alternate post tops")
 
     if verbose:
         print("building pieces ...")
@@ -159,23 +156,19 @@ def export_stls(verbose=True):
     # one and stack another on it.
     if verbose:
         print("cutting the board stub ...")
-    stub_full = B.build_board_stub(board_full)
     stub_body = B.build_board_stub(board_body)
     stub_nums = B.build_board_stub(numerals)
     cols = "/".join(str(c) for c in P.STUB_COLUMNS)
-    save(stub_full, "stub-board.stl", "PLA",
-         f"TEST PRINT -- real board corner, columns {cols}, single colour",
-         cm3=stub_filament() if slab else None)
     save(stub_body, "stub-board-body.stl", "PLA",
-         "TEST PRINT -- two-colour: load with stub-board-numerals",
+         f"TEST PRINT -- real board corner, columns {cols}; load with "
+         f"stub-board-numerals",
          cm3=stub_filament() - stub_nums.volume / 1000.0 if slab else None)
     save(stub_nums, "stub-board-numerals.stl", "PLA",
          "TEST PRINT -- the digits and their slice of each post")
     save(B.build_plate(marker, P.STUB_PIECES), "stub-pieces-x2.stl", "PLA",
          f"TEST PRINT -- {P.STUB_PIECES} full markers, to seat and to stack")
 
-    return (board_full, board_body, numerals, marker, runner,
-            stub_body, stub_nums, rows)
+    return (board_body, numerals, marker, runner, stub_body, stub_nums, rows)
 
 
 # ---------------------------------------------------------------------------
@@ -476,8 +469,8 @@ def _bed_fit_diagram(board_full):
 
 # ---------------------------------------------------------------------------
 
-def print_report(rows, board_full):
-    lo, hi = board_full.bounds
+def print_report(rows, board_body):
+    lo, hi = board_body.bounds
     print()
     print(f"{'file':<26}{'solid':>6}{'tris':>8}{'cm3':>9}{'grams':>8}  note")
     print("-" * 96)
@@ -488,7 +481,7 @@ def print_report(rows, board_full):
     # order export_stls() happened to save things in -- and when a file was
     # added it started billing the set for 44 runners and 3 marker plates.
     g = {name: grams for name, _wt, _nf, _cm3, grams, _note in rows}
-    total = (g["board.stl"]
+    total = (g["board-body.stl"] + g["board-numerals.stl"]
              + g["piece-marker.stl"] * P.PLAYERS * P.MARKERS_PER_PLAYER
              + g["piece-runner.stl"] * P.RUNNERS)
     how = (f"board at {100*P.SLAB_INFILL:.0f}% infill, pieces solid"
@@ -511,14 +504,14 @@ def main(argv=None):
     do_ren = a.renders or not a.stl
 
     t0 = time.time()
-    (board_full, board_body, numerals, marker, runner,
+    (board_body, numerals, marker, runner,
      stub_body, stub_nums, rows) = export_stls(verbose=do_stl)
     if do_ren:
         print("rendering ...")
         export_renders(board_body, numerals, marker, runner, stub_body,
                        stub_nums, fast=a.fast)
     if do_stl:
-        print_report(rows, board_full)
+        print_report(rows, board_body)
     print(f"\ndone in {time.time() - t0:.1f}s")
     return 0
 

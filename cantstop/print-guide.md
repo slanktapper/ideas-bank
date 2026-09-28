@@ -80,9 +80,7 @@ Print it in the two colours you mean to use, then check:
    two-colour boundary on the board, and the only one you can measure with a
    caliper.
 
-`stub-board.stl` is the same thing in one colour, if you only want to look at
-the lip and the seating. `renders/07-test-print.png` is what it should come
-out like.
+`renders/07-test-print.png` is what it should come out like.
 
 What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 66 mm across will.
@@ -93,8 +91,7 @@ What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| `board.stl` | 1 | PLA red | single colour, numbers engraved |
-| `board-body.stl` + `board-numerals.stl` | 1 | PLA red + jade white | two-colour pair — see below |
+| `board-body.stl` + `board-numerals.stl` | 1 | PLA red + jade white | the board; two files, one object |
 | `plate-markers-x11.stl` | 4 | PLA | one per player colour |
 | `plate-runners-x3.stl` | 1 | PLA or PETG | the shared neutral runners |
 
@@ -102,17 +99,13 @@ and, for the test print above:
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 72 x 115 mm corner of the real board, lip cap included |
-| `stub-board.stl` | 1 | PLA red | the same corner, single colour |
+| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 72 x 115 mm corner of the real board |
 | `stub-pieces-x2.stl` | 1 | PLA | two markers, to seat one and stack the other |
 
-Print **either** `board.stl` **or** the body/numerals pair, not both. The same
-goes for the stub.
-
-`board.stl` is the one-colour fallback and it is a lesser board: the numbers,
-the title and the lip are all still there as relief, but the alternating
-white post tops are the whole reason the columns read at a glance, and in one
-colour they are invisible. Print the pair unless you have a reason not to.
+**The board is two files and needs both.** There is no single-colour version
+any more: the numbers, the title, the border and the alternating post tops
+are all carried by the second filament, and without it the board is a plate
+of identical dots. Load both, always.
 
 For two colours: load `board-body.stl`, then add `board-numerals.stl` to the
 *same object* as a second part (in Bambu Studio: right-click the object →
@@ -153,7 +146,8 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **243 g**: ~184 g board (6 mm slab at 10% infill),
+A full set is roughly **243 g**: ~184 g board, body and numerals together
+(6 mm slab at 10% infill),
 ~53 g of markers (44), ~5 g of runners (3). A marker is 16.5 mm across and
 8.45 mm tall, a runner 16.5 x 10.45, and every stacked piece adds exactly
 6.30 mm. The board is
@@ -273,7 +267,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 84 checks, ~60 s
+python3 test_fit.py    # 84 checks, ~70 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

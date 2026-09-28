@@ -198,7 +198,13 @@ large one — exactly the shape of problem where a printer beats buying.
 
 ## Scope
 
-**Does:** the board, the playing pieces, and the files to print them. Everything
+**Does:** the board, the playing pieces, and the files to print them. The
+board is **two files and needs both** — `board-body.stl` in the board's
+colour and `board-numerals.stl` in the numbers'. A single-colour variant
+existed and was dropped: it was a second definition of the same object that
+nothing downstream read, it diverged twice without anyone noticing, and by
+then the numbers, title, border and column stripes were all in the second
+filament anyway. Everything
 is parametric, so the ladder, cell pitch, column spacing, board style, slab
 thickness, lip, frame shape, piece profile and fits are all one edit in
 `params.py` away from a different board. Ships STLs, test renders, and a design

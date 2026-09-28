@@ -83,9 +83,12 @@ def slab_checks(brd, poly, ctr, skirt_r):
     check("the plate is the thickness asked for and the lip stands on top "
           "of it",
           abs(plate.bounds[0][2]) < 1e-6
-          and abs(plate.bounds[1][2] - (P.SLAB_T + P.RIM_H)) < 1e-6,
-          f"{P.SLAB_T:.1f} mm plate + {P.RIM_H:.2f} mm lip = "
-          f"{plate.bounds[1][2]:.2f} mm")
+          and abs(plate.bounds[1][2]
+                  - (P.SLAB_T + P.RIM_H - P.RIM_CAP_H)) < 1e-6
+          and abs(B.rim_cap().bounds[1][2] - (P.SLAB_T + P.RIM_H)) < 1e-6,
+          f"{P.SLAB_T:.1f} mm plate + {P.RIM_H - P.RIM_CAP_H:.2f} mm of lip "
+          f"in the body colour + {P.RIM_CAP_H:.2f} mm of cap = "
+          f"{P.SLAB_T + P.RIM_H:.2f} mm")
     check("pieces seat on the top of the plate",
           abs(SEAT_Z - P.SLAB_T) < 1e-9,
           f"seat at z={SEAT_Z:.2f}, posts to z={SEAT_Z + P.POST_H:.2f}")
@@ -107,7 +110,7 @@ def slab_checks(brd, poly, ctr, skirt_r):
 
     body_lip = P.RIM_H - P.RIM_CAP_H
     check("the two colours divide the lip and neither loses its share",
-          abs(B.build_board(with_numerals=False).bounds[1][2]
+          abs(B.build_board().bounds[1][2]
               - (SEAT_Z + P.POST_H)) < 1e-6
           and abs(B.rim_cap().bounds[0][2] - (P.SLAB_T + body_lip)) < 1e-6
           and abs(B.rim_cap().bounds[1][2] - (P.SLAB_T + P.RIM_H)) < 1e-6,
@@ -124,12 +127,9 @@ def slab_checks(brd, poly, ctr, skirt_r):
           over < 0.01,
           f"same footprint as the lip below it, to {over*1000:.0f} um")
 
-    check("the single-colour board still gets a whole lip",
-          abs(B.slab_plate(cap=True).bounds[1][2]
-              - (P.SLAB_T + P.RIM_H)) < 1e-6
-          and abs(B.slab_plate(cap=False).bounds[1][2]
-                  - (P.SLAB_T + body_lip)) < 1e-6,
-          "board.stl keeps the cap; board-body.stl hands it to the numerals")
+    check("the plate the body prints stops below the cap",
+          abs(B.slab_plate().bounds[1][2] - (P.SLAB_T + body_lip)) < 1e-6,
+          f"body lip to z={P.SLAB_T + body_lip:.2f}, then the accent's cap")
 
     # Measured against the rings the plate is actually built from, at the
     # midpoint of every outer edge. Not recomputed from the parameters: the
@@ -184,7 +184,7 @@ def slab_checks(brd, poly, ctr, skirt_r):
           f"{int(miss.sum())}/8 wrongly solid just inside it")
 
 
-def stub_checks(brd, accent):
+def stub_checks(brd, body_only, accent):
     """The test-print stub: a corner of the real board, cut out of it.
 
     The stub is an intersection with the finished board, so almost everything
@@ -225,18 +225,23 @@ def stub_checks(brd, accent):
           room >= skirt,
           f"tightest is {room:.2f} mm of plate against a {skirt:.2f} mm skirt")
 
+    # the assembled stub for anything about the finished part, and the body
+    # alone for the one thing that has to print as a single object
     stub = B.build_board_stub(brd)
+    stub_body = B.build_board_stub(body_only)
     stub_n = B.build_board_stub(accent)
     lo, hi = stub.bounds
     if not SLAB:
         check("the stub is a solid piece of board",
-              stub.is_watertight and stub.is_winding_consistent,
-              f"{len(stub.faces)} triangles, {stub.body_count} bodies")
+              stub_body.is_watertight and stub_body.is_winding_consistent,
+              f"{len(stub_body.faces)} triangles, "
+              f"{stub_body.body_count} bodies")
     else:
-        check("the stub is a watertight single solid",
-              stub.is_watertight and stub.is_winding_consistent
-              and stub.body_count == 1,
-              f"{len(stub.faces)} triangles, {stub.body_count} body")
+        check("the stub's body is a watertight single solid",
+              stub_body.is_watertight and stub_body.is_winding_consistent
+              and stub_body.body_count == 1,
+              f"{len(stub_body.faces)} triangles, {stub_body.body_count} body;"
+              f" the assembled stub is {stub.body_count} touching bodies")
     check("the stub is the real board's full thickness, not a thin sample",
           abs((hi[2] - lo[2]) - (SEAT_Z + P.POST_H)) < 1e-6,
           f"{hi[0]-lo[0]:.0f} x {hi[1]-lo[1]:.0f} x {hi[2]-lo[2]:.1f} mm")
@@ -445,10 +450,17 @@ def main():
     print("\ngeometry (building meshes)")
     marker = B.build_marker()
     runner = B.build_runner()
-    brd = B.build_board()
+    # Both filaments, fused: what a piece actually sits on. There is no
+    # single-colour board any more, so "the board" means the assembly.
+    brd = B.build_board_assembled()
+    body_only = B.build_board()
     coupon = B.build_fit_coupon()
 
-    for name, m in [("board", brd), ("marker", marker),
+    # body_only, not brd: what has to come off the bed as ONE object is the
+    # file the board's colour prints from. The assembly is the body plus 16
+    # fills and caps sitting in and on it, touching but not merged, and that
+    # is what it should be.
+    for name, m in [("board body", body_only), ("marker", marker),
                     ("runner", runner), ("fit coupon", coupon)]:
         check(f"{name} is a watertight single solid",
               m.is_watertight and m.is_winding_consistent and m.body_count == 1,
@@ -649,22 +661,14 @@ def main():
         cx, cy = B.cell_xy(i0, r0)
         zc = SEAT_Z + P.POST_H - P.POST_CAP_H
         pr = np.array([[cx, cy, zc - 0.2], [cx, cy, zc + 0.2]])
-        # the TWO-COLOUR body, not the single-colour board: board.stl keeps
-        # whole posts, the same way it keeps the whole lip
-        two_col = B.build_board(with_numerals=False)
-        stem, cap_m = two_col.contains(pr), accent.contains(pr)
+        stem, cap_m = body_only.contains(pr), accent.contains(pr)
         check("body and cap meet at the cut with no gap and no overlap",
               bool(stem[0] and not stem[1] and cap_m[1] and not cap_m[0]),
-              f"the two-colour body is solid below z={zc:.2f} and the accent "
-              f"above it, on column {P.COLUMNS[i0]}")
-        check("the single-colour board keeps whole posts",
-              bool(brd.contains(pr).all()),
-              "board.stl is solid either side of the cut, as it is across "
-              "the lip's cap")
+              f"the body is solid below z={zc:.2f} and the accent above it, "
+              f"on column {P.COLUMNS[i0]}")
 
     check("the board body still carries the rest of every post",
-          abs(B.build_board(with_numerals=False).bounds[1][2]
-              - (SEAT_Z + P.POST_H)) < 1e-6,
+          abs(body_only.bounds[1][2] - (SEAT_Z + P.POST_H)) < 1e-6,
           "body and accent split each post between them")
 
     def _vol(m):
@@ -734,28 +738,27 @@ def main():
               have == mirrored,
               f"{len(have)} struts, {len(have ^ mirrored)} unmatched")
 
-    # THE TWO BOARDS, TIED TOGETHER. board.stl is printed in one colour with
-    # the pockets left empty; board-body.stl plus board-numerals.stl is the
-    # same board split between two filaments. Everything except those pocket
-    # fills has to appear in BOTH, and it is the single-colour one that keeps
-    # getting forgotten, because nothing downstream looks at it:
+    # THE TWO HALVES. The board is two files now and only two, so the thing
+    # to check is that they partition it: every cubic millimetre belongs to
+    # exactly one filament. An OVERLAP means both claim the same space and
+    # the slicer picks; a GAP means a void nobody fills.
     #
-    #   - it lost the top 0.6 mm of every capped post, leaving them short
-    #     and flat;
-    #   - it shipped every summit post with a digit-shaped slot milled
-    #     through it, because it was using the post the ACCENT part completes.
-    #
-    # Neither was visible in a render. This one identity catches both, and
-    # anything else that is added to one board and not the other.
-    print("\nthe single-colour board and the two-colour pair agree")
-    body_only = B.build_board(with_numerals=False)
-    fills = sum(m.volume for m in B.pocket_fills())
-    gap = (body_only.volume + accent.volume - brd.volume - fills) / 1000.0
-    check("the two colours add up to the one colour, plus the pocket fills",
-          abs(gap) < 0.02,
-          f"body {body_only.volume/1000:.2f} + accent {accent.volume/1000:.2f}"
-          f" - board {brd.volume/1000:.2f} = {fills/1000:.2f} cm3 of filled "
-          f"pocket, to within {abs(gap)*1000:.0f} mm3")
+    # The old single-colour board.stl was a third definition of the same
+    # object that nothing downstream read, and it diverged twice before it
+    # was dropped -- once losing the top of every capped post, once shipping
+    # every summit post with a digit-shaped slot through it.
+    print("\nthe two colours partition the board")
+    overlap = (body_only.volume + accent.volume - brd.volume) / 1000.0
+    check("body and accent claim no space twice and leave none unclaimed",
+          abs(overlap) < 0.002,
+          f"{body_only.volume/1000:.2f} + {accent.volume/1000:.2f} = "
+          f"{brd.volume/1000:.2f} cm3 fused, to within "
+          f"{abs(overlap)*1000:.2f} mm3")
+    check("the two of them fuse into one watertight solid",
+          brd.is_watertight and brd.is_winding_consistent,
+          f"{len(brd.faces)} triangles in {brd.body_count} touching bodies -- "
+          f"the fills and caps sit in and on the body rather than merge "
+          f"with it")
 
     print("\nthe lens fills the frame evenly")
     lo_, hi_ = B.content_bounds()
@@ -823,7 +826,7 @@ def main():
     if SLAB:
         slab_checks(brd, poly, ctr, skirt_r)
 
-    stub_checks(brd, accent)
+    stub_checks(brd, body_only, accent)
 
     print("\ncounts")
     check("83 cells", sum(P.ROWS) == 83, f"{sum(P.ROWS)}")

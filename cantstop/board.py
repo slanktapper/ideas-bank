@@ -520,18 +520,17 @@ def rim_cap() -> trimesh.Trimesh:
     return _rim(P.SLAB_T + P.RIM_H - P.RIM_CAP_H, P.RIM_CAP_H)
 
 
-def slab_plate(cap: bool = True) -> trimesh.Trimesh:
+def slab_plate() -> trimesh.Trimesh:
     """The solid octagonal plate, with its raised lip around the edge.
 
-    cap=False leaves the top RIM_CAP_H of the lip off, because that part
-    ships with the numerals and prints in their colour. The plate itself and
-    the lip below the cap are unaffected either way.
+    The top RIM_CAP_H of the lip is NOT here: that part ships with the
+    numerals and prints in their colour. rim_cap() builds it.
     """
     from shapely.geometry import Polygon
 
     outer, _ = rim_rings()
     parts = [trimesh.creation.extrude_polygon(Polygon(outer), P.SLAB_T)]
-    h = P.RIM_H if cap else P.RIM_H - P.RIM_CAP_H
+    h = P.RIM_H - P.RIM_CAP_H
     if h > 1e-9:
         parts.append(_rim(P.SLAB_T, h))
     return S.union_all(parts)
@@ -748,36 +747,37 @@ def _summit_parts(segs: int | None = None):
     return cutters, accents, body_posts
 
 
-def build_board(with_numerals: bool = True, numerals_only: bool = False,
-                segs: int | None = None, verbose: bool = False) -> trimesh.Trimesh:
-    """Construct the board.
+def build_board(numerals_only: bool = False, segs: int | None = None,
+                verbose: bool = False) -> trimesh.Trimesh:
+    """One half of the board; the two together are the whole of it.
 
-    numerals_only=True   the accent parts: the digit fills, the slice of each
-                         post the digit passes through, and the cap on the lip
-    with_numerals=True   the board with the pockets cut -- single colour, the
-                         numbers read as engraved, the lip whole
-    with_numerals=False  the body with pockets too, and with the top of the
-                         lip left off, to pair with numerals_only
+    numerals_only=False  the BODY: the plate, the lip below its cap, and the
+                         posts less whatever the accent part carries. Prints
+                         in the board's colour.
+    numerals_only=True   the ACCENT: the digit and letter fills, the slice of
+                         each summit post its digit passes through, the cap on
+                         the lip, and the top of every capped post. Prints in
+                         the numbers' colour.
+
+    There used to be a third: a single-colour board with the pockets left
+    empty, which is what board.stl was. It was a second definition of the
+    same object that nothing downstream read, and it diverged twice without
+    anyone noticing -- once losing the top of every capped post, once
+    shipping every summit post with a digit-shaped slot through it. The
+    design has wanted two filaments since the numbers went in, so it is gone.
+    build_board_assembled() is what to reach for when the whole object is
+    what you mean.
     """
     segs = segs or P.CELL_SEGS
     slab = P.BOARD_STYLE == "slab"
     cutters, accents, body_posts = _summit_parts(segs)
 
-    def _post_part(i, r, single_colour):
-        # with_numerals=True is the SINGLE-COLOUR board and keeps whole posts;
-        # only the two-colour body hands its tops to the accent part, exactly
-        # as it hands over the cap on the lip
-        return "stem" if post_capped(i, r) and not single_colour else "all"
+    def _post_part(i, r):
+        # a capped post hands its top to the accent part, exactly as the lip
+        # hands over its cap
+        return "stem" if post_capped(i, r) else "all"
 
-    def _summit_post(x, y, n):
-        # Likewise at a summit. body_posts[n] is the post with the digit's
-        # prism cut out of it, which is right only when the accent part is
-        # there to fill the slot back in. On the single-colour board nothing
-        # fills it, so it has to be a whole post -- otherwise every summit
-        # ships with a digit-shaped slot milled through it, which is what it
-        # did until the two boards were tied together by a test.
-        return _post(x, y, seat_z(), segs=segs) if with_numerals \
-            else body_posts[n]
+
     if numerals_only:
         if slab and P.RIM_CAP_H > 1e-9:
             accents = accents + [rim_cap()]
@@ -788,16 +788,16 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
     if slab:
         # with_numerals is the single-colour board, so it keeps the whole lip;
         # the two-colour body hands the cap over to the numerals part
-        parts.append(slab_plate(cap=with_numerals))
+        parts.append(slab_plate())
 
     summit_n = 0
     for i, r in all_cells():
         x, y = cell_xy(i, r)
         if P.BOARD_STYLE == "slab":
             # the plate is the pad; only the post stands on it
-            parts.append(_summit_post(x, y, summit_n) if is_summit(i, r)
+            parts.append(body_posts[summit_n] if is_summit(i, r)
                          else _post(x, y, seat_z(), segs=segs,
-                                    part=_post_part(i, r, with_numerals)))
+                                    part=_post_part(i, r)))
             summit_n += is_summit(i, r)
             continue
         if is_summit(i, r):
@@ -805,11 +805,10 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
             # part the digit does not pass through -- the rest ships with the
             # numbers so it prints in their colour
             parts.append(build_summit_box(x, y))
-            parts.append(_summit_post(x, y, summit_n))
+            parts.append(body_posts[summit_n])
             summit_n += 1
         else:
-            parts.append(build_cell(x, y, segs=segs,
-                                    part=_post_part(i, r, with_numerals)))
+            parts.append(build_cell(x, y, segs=segs, part=_post_part(i, r)))
 
     if P.BOARD_STYLE != "slab":
         for p0, p1, w, h, _kind in final_struts():
@@ -818,14 +817,21 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
     if verbose:
         print(f"    fusing {len(parts)} solids ...", flush=True)
     body = S.union_all(parts)
-
-    if not with_numerals:
-        return trimesh.boolean.difference([body, S.union_all(cutters)],
-                                          engine="manifold")
     if verbose:
-        print("    cutting 11 number pockets ...", flush=True)
+        print(f"    cutting {len(cutters)} pockets ...", flush=True)
     return trimesh.boolean.difference([body, S.union_all(cutters)],
                                       engine="manifold")
+
+
+def build_board_assembled(segs: int | None = None,
+                          verbose: bool = False) -> trimesh.Trimesh:
+    """The board as it exists once both filaments have been through it.
+
+    What a piece actually sits on, and what to measure when the question is
+    about the finished object rather than about one of the two files.
+    """
+    return S.union_all([build_board(segs=segs, verbose=verbose),
+                        build_board(numerals_only=True, segs=segs)])
 
 
 # ---------------------------------------------------------------------------
