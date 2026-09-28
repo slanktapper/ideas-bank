@@ -30,12 +30,13 @@ ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 # A whole box (20 mm) per step is the plain version, where every column shares
 # one row pitch and the lens comes to a sharp point at the top.
 #
-# Here the first TWO steps are half a box -- 7 to 6 and 6 to 5 -- which pulls
-# the shoulders of the lens out towards the frame, and every column beyond
-# them follows by the same amount rather than staying put; otherwise the next
-# step down would be a box and a half and the silhouette would kink.
-# So: half a box twice, then whole boxes all the way out.
-COLUMN_SHORTFALL = [0.0, 10.0, 20.0, 40.0, 60.0, 80.0]
+# Here the middle five columns -- 5 through 9 -- step by only a QUARTER of a
+# box, which flattens the top of the lens and pulls its shoulders right out
+# towards the frame. Every column beyond them follows by the same amount
+# rather than staying put; otherwise the next step down would be an awkward
+# box and three quarters and the silhouette would kink.
+# So: a quarter box twice, then whole boxes all the way out.
+COLUMN_SHORTFALL = [0.0, 5.0, 10.0, 30.0, 50.0, 70.0]
 
 PITCH_X = 22.0      # centre-to-centre spacing between columns
 PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
