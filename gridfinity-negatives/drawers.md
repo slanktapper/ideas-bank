@@ -72,8 +72,11 @@ across the bin where it would fall into the gap.
 | Code | Location | W × D × H (mm) | Grid | Positions | Margins | Bin height | Bins printed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top | **533 × 328.5 × 63** | 12 × 7 | 84 | 29.0 left / 34.5 front | 5U | **1 of 15** |
+| `KSL1W1T` | kitchen, south wall, lower, 1st west column, 1st from top | **533 × 444 × ?** | 12 × 10 | 120 | 29.0 left / 24.0 front | — | 0 of — |
 
-Measured 2026-09-25 MDT; the left gap corrected 2026-09-26 — see below.
+`KWL1N1T` measured 2026-09-25 MDT; its left gap corrected 2026-09-26.
+`KSL1W1T` measured 2026-09-28 MDT — **height not yet taken**, so no bin
+height can be set for it.
 
 ### `KWL1N1T` — kitchen, west wall, lower section, 1st north column, 1st from top
 
@@ -368,6 +371,57 @@ floor, all of it now inside a bin rather than left over.
 
 **Settled:** 533 × 328.5 is internal clear, measured at the base with the
 printed gauges rather than taken from a catalogue.
+
+### `KSL1W1T` — kitchen, south wall, lower section, 1st west column, 1st from top
+
+**533 × 444 mm internal, height not yet measured.** The second drawer taken,
+2026-09-28 MDT, and the largest so far: **12 × 10 units, 120 positions**,
+against `KWL1N1T`'s 84.
+
+| | Span | Units | Grid | Left over | One more row? |
+| --- | --- | --- | --- | --- | --- |
+| Width | 533 mm | **12** | 504 mm | **29.0 mm** | 13 needs 546 — short by 13 mm |
+| Depth | 444 mm | **10** | 420 mm | **24.0 mm** | 11 needs 462 — short by 18 mm |
+
+Grid in the **back-right corner** as standard, so the slack is one 29.0 mm
+strip down the left and one 24.0 mm strip across the front.
+
+**The 533 mm span is identical to `KWL1N1T`**, and so is its 29.0 mm
+remainder. Anything built to reach that wall — the `+29L` bins, the gauges —
+is the same part in both drawers. The front gap differs: 24.0 mm here against
+34.5 mm there.
+
+**Which axis is which is assumed, not confirmed.** 533 is taken as the
+left-right span, because that is what it was for `KWL1N1T`. If the drawer is
+actually 444 wide and 533 deep the grid is unchanged at 12 × 10, but the gaps
+swap: 24.0 mm left, 29.0 mm front, and the extended bins would be built the
+other way round. Confirm before generating any bin.
+
+#### Baseplate: 3 plates, not 4
+
+The full baseplate is 504 × 420 mm = **211,680 mm²** against a single-nozzle
+bed of 104,000 mm². Two plates cannot hold it whatever the split, so **three
+is the floor** — and three is reachable, but not by cutting the grid evenly.
+
+| Split | Tiles | Plates | Why |
+| --- | --- | --- | --- |
+| 6+6 × 5+5 (even, what `gfneg drawer` does today) | 4 × 6×5, 252 × 210 mm | **4** | Two tiles need 504 mm side by side or 425 mm stacked. Neither fits, so each tile gets a plate to itself and wastes half of it. |
+| **6+6 × 7+3** | 2 × 6×7 (252 × 294 mm), 2 × 6×3 (252 × 126 mm) | **3** | Each 6×7 fills a plate; the two 6×3 tiles stack in 257 mm and share the third. |
+
+Found by enumerating every guillotine split into tiles of at most 7 × 7 units
+and packing each one. 6+6 × 7+3 is the best available: 3 plates, 4 tiles, two
+distinct sizes.
+
+`gfneg drawer` splits evenly and would ask for four sessions here. Making it
+choose the split by plate count rather than by symmetry is a change worth
+making before this baseplate is printed.
+
+#### Open
+
+- **Internal height**, measured at the base. Nothing about bin height can be
+  decided without it.
+- **Contents.** No item list yet.
+- **Which axis is 533** — see above.
 
 ## Notes on measuring
 
