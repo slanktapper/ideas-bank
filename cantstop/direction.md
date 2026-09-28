@@ -12,56 +12,74 @@ is thirteen — eighty-three cells in all.
 
 Columns are **centre-aligned** on a shared midline, so the cell field is a
 symmetric lens rather than a pyramid, and the whole thing sits inside a
-**regular octagonal frame** — all eight edges the same 116.7 mm. The lens does
-not reach the corners of its own bounding box, which is exactly the point: the
-cut-off triangles are where the number boxes and the bracing spokes live.
+**regular octagon** — all eight edges the same 118.0 mm, 284.9 mm across the
+flats. The columns do not all share one row pitch: the middle five step down by
+only a quarter of a box and the rest follow by the same amount, which flattens
+the top of the lens and pulls its shoulders out towards the frame instead of
+leaving it a narrow spike in a wide octagon.
 
-The board is not a plate with holes in it. It is a **wireframe truss**: every
-cell is a pad with a post standing on it, the pads are tied to each other by
-flat-bottomed struts with one diagonal brace per bay, then tied out to the
-octagon by twenty-four radial spokes. Most of the footprint is open air.
+The board is a **6 mm solid octagonal slab, printed at 10% infill**, with a
+raised lip 8 mm wide around the edge. Every cell is a post standing on that
+plate; the plate itself is the seat. Around the outside the lip stands 1.2 mm
+proud — the same relief the numbers are sunk by, so the board has one depth
+step and not two.
+
+**This started as a wireframe and stopped being one on the numbers.** The
+original brief asked for an open truss, and that is built and still selectable
+(`BOARD_STYLE = "lattice"`): rings tied by flat-bottomed struts with a diagonal
+per bay, braced out to the octagon by twenty-four spokes. The catch is that a
+lattice is nearly all perimeter — infill can reach 11% of a strut and 49% of a
+pad — so it cannot be lightened, and at 128 cm³ it came out at about 140 g and
+was still the floppiest option on the table. A slab's cost is its **skins**,
+which are a fixed 94 g over this octagon however thick it is, and everything
+between them is whatever the infill is set to. So 6 mm at 10% weighs 158 g —
+13% more than the lattice — and is roughly **twenty-three times** as stiff in
+bending (sandwich model: two 0.6 mm skins 5.4 mm apart plus a 10% core; 4 mm
+would be nine times, 10 mm seventy-six). That is the trade, and it is why the
+wireframe lost.
 
 **The interface runs male-up throughout.** The board offers a post; a piece has
 a socket underneath and a post of its own on top; so a piece drops onto the
 board, and the next piece drops onto that one, with one geometry doing both
-jobs. A piece seats when its **skirt** lands on the face below — the pad top,
-or the top face of the piece beneath it — never when a post bottoms out, so
-stack height is exactly 9.40 mm per piece, every time.
+jobs. A piece seats when its **skirt** lands on the face below — the plate, or
+the top face of the piece beneath it — never when a post bottoms out, so stack
+height is exactly 9.40 mm per piece, every time.
 
 Two things follow from male-up that were not obvious going in. The board has
-**no through-holes at all**, which retires a whole class of defect: a strut
-cannot plug a hole that does not exist, and the only rule left is that struts
-stay below the pad tops. And the seat becomes a 3.0-to-6.6 mm annulus rather
-than the rim of a ring, which is a far steadier thing for a 13.2 mm piece to
-stand on — which in turn is why the posts can be only 3.2 mm long.
+**no through-holes at all**, which retires a whole class of defect. And the
+seat is a 3.0-to-6.6 mm annulus rather than the rim of a ring, which is a far
+steadier thing for a 13.2 mm piece to stand on — which in turn is why the posts
+can be only 3.2 mm long.
 
 **The number is the top of the column, and you land on it.** Each column's
-topmost cell *is* its number box: a rounded plate standing in for the usual
-round pad, with the digit and the post sharing the box's centre. The summit is
-an ordinary cell — you land on it exactly as you land on any other — and the
-thing you land on is the number.
+topmost cell carries its number: the digit and the post share one centre. The
+summit is an ordinary cell — you land on it exactly as you land on any other —
+and the thing you land on is the number. On the slab there is no separate
+number box; the digit is cut straight into the plate. `PLAQUE_W`/`PLAQUE_H`
+still define the footprint the number reserves, which is what keeps the summits
+from crowding each other and what the octagon is sized against.
 
 **The post is split by the digit, and that is the whole trick.** It has to
 stand in the middle of the glyph, so the only question is what colour it
-should be — and the answer is neither black nor orange but both. The post is
-cut by the digit extruded vertically through it: where the glyph passes, the
-post goes in the number's colour; the rest goes in the board's. Seen from
-directly above, the post is coloured by exactly what it covers, so the number
-is whole.
+should be — and the answer is neither the board's nor the number's but both.
+The post is cut by the digit extruded vertically through it: where the glyph
+passes, the post goes in the number's colour; the rest goes in the board's.
+Seen from directly above, the post is coloured by exactly what it covers, so
+the number is whole.
 
-Both flat colours were tried first and both failed. In the number's colour
-the post merged with the glyph into one orange mass. In the board's colour it
-punched a black hole through the middle. Rendered head-on at the same camera
-and counted in pixels: a solid post loses **16% of an 8** and takes its waist
-with it; split this way, **100% of the glyph survives** — 14 pixels out of
-74,000, which is antialiasing on the chamfer. `test_fit.py` checks that every
-square millimetre the post covers is handed back in the number's colour.
+Both flat colours were tried first and both failed. In the number's colour the
+post merged with the glyph into one mass. In the board's colour it punched a
+hole through the middle. Rendered head-on at the same camera and counted in
+pixels: a solid post loses **16% of an 8** and takes its waist with it; split
+this way, **100% of the glyph survives** — 14 pixels out of 74,000, which is
+antialiasing on the chamfer. `test_fit.py` checks that every square millimetre
+the post covers is handed back in the number's colour.
 
-The digit is **inlaid flush, not embossed**, and that is structural rather
-than decorative: a piece seats on this plate, so a digit standing 1.2 mm proud
-of it would be what the skirt rests on, and the piece would rock. Cut into the
-plate instead and the seating face stays flat. In two colours the fill comes
-out flush; in one colour the pocket is left empty and reads as engraving.
+The digit is **inlaid flush, not embossed**, and that is structural rather than
+decorative: a piece seats on the plate, so a digit standing 1.2 mm proud of it
+would be what the skirt rests on, and the piece would rock. Cut into the plate
+instead and the seating face stays flat. In two colours the fill comes out
+flush; in one colour the pocket is left empty and reads as engraving.
 
 This is Sid Sackson's *Can't Stop* (1980). The rules are not ours; the physical
 design is.
@@ -81,9 +99,10 @@ large one — exactly the shape of problem where a printer beats buying.
 ## Scope
 
 **Does:** the board, the playing pieces, and the files to print them. Everything
-is parametric, so the ladder, cell pitch, ring size, lattice density, frame
-shape, shield stand-off, piece profile and fits are all one edit in `params.py`
-away from a different board. Ships STLs, test renders, and a design test suite.
+is parametric, so the ladder, cell pitch, column spacing, board style, slab
+thickness, lip, frame shape, piece profile and fits are all one edit in
+`params.py` away from a different board. Ships STLs, test renders, and a design
+test suite.
 
 **Deliberately does not:**
 
@@ -122,13 +141,13 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 48 design checks — run this after editing params.py
+python3 test_fit.py      # 56 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
-python3 build.py --stl   # STLs only            (~3 s)
-python3 build.py --fast  # quarter-res renders  (~9 s total)
+python3 build.py --stl   # STLs only            (~6 s)
+python3 build.py --fast  # quarter-res renders  (~12 s total)
 ```
 
-Full build is about 25 seconds. `stl/` and `renders/` are regenerated from
+Full build is about 50 seconds. `stl/` and `renders/` are regenerated from
 scratch and safe to delete.
 
 Everything dimensioned lives in `params.py`. Change a number there, run
@@ -137,75 +156,82 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 ## Where it stands
 
 Designed and verified in software; **nothing has been printed yet.** The board
-is 279 × 279 × 7.2 mm, which fits the H2D's 325 × 320 mm bed with 46 mm spare
-in X and 41 mm in Y. A full set is about 264 g at 100% infill.
+is 284.9 × 284.9 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 40 mm
+spare in X and 35 mm in Y. A full set is about **216 g** — 158 g of board at
+10% infill plus 58 g of solid pieces.
 
-`test_fit.py` passes 48 checks, including a probe of every cell's seating
-annulus against the fused mesh — the male-up analogue of the old bore probe,
-and the thing that would catch a strut, spoke, shield or digit standing where
-a piece has to sit.
+`test_fit.py` passes 56 checks. The ones that earn their keep are the ones that
+touch the fused mesh rather than the parameters: a probe of every cell's
+seating annulus, a check that every square millimetre the post covers comes
+back in the number's colour, and — for the slab — that the lip is the same
+width on all eight edges, clears the outermost pads by 4 mm, and is genuinely a
+lip rather than a plate that came out 7.2 mm thick everywhere.
 
-Six real defects have been caught by this loop rather than by a print:
+Defects this loop has caught rather than a print:
 
 - a drop strut printed straight across every column numeral;
 - in fixing that, a board that quietly became two detached bodies;
-- a top-chain strut at frame section clipping the bottom corner of each digit
-  by 0.19 mm — the octagon is the frame now, so nothing inside the lens runs
-  at frame section;
 - **a piece claiming a summit hiding that column's number.** The tests did not
   catch that one and `renders/06-assembly.png` did: a marker sitting on "2"
-  covered it completely, and a claimed number needed about a 70 degree view to
-  read. `test_fit.py` now computes that angle from the geometry;
+  covered it completely. Accepted now, because by then the column is claimed;
 - the first version of that sightline test said *every* number was hidden,
   which the renders plainly contradicted. It was modelling a piece as one fat
   cylinder; the body is 13.2 mm across but only 13.4 mm tall, and the post
-  above it is 5.9 mm. Model both and the answer matches what you can see;
-- with the number moved under the summit, the column's own vertical strut ran
-  straight down the centreline through it, and the top chain grazed the digit's
-  upper corners by 0.28 mm — **and neither was real.** That check measured plan
-  distance only. Struts stand 3.4 mm tall and a number plate is 4.0 mm thick,
-  so a strut crossing a digit in plan is buried inside the plate, not printed
-  across the number. The rule that actually matters is that nothing standing
-  *proud* of a plate goes near one, and that the digit lies wholly within its
-  plate. Measured that way the only members taller than a box are the eight
-  octagon edges, and the nearest passes 3.4 mm clear — which let the summit
-  step, the shield drop, the separate digit centre, the reconnecting necks and
-  the whole placement branch all come back out again.
+  above it is 5.9 mm;
+- a lattice that was not mirror-symmetric, because the herringbone parity keyed
+  on a row *index* and a gap and its mirror number their rows differently. No
+  one reported it; it was visible in a render as a denser right-hand side;
+- **a "defect" that was not real.** A check said the column's vertical strut
+  ran down the centreline through its digit. It measured *plan* distance only,
+  and struts are 3.4 mm tall where a number plate is 4.0 mm thick — a strut
+  crossing a digit in plan is buried inside the plate. Four separate "fixes"
+  built on it came back out again;
+- the build report billing the set for 44 runners and 3 marker plates. It
+  totalled the parts by row index, and when a file was added to the export the
+  indices moved under it. Quoted 271 g; the answer is 216;
+- the renderer interpolating depth linearly in screen space. That is only
+  correct under orthographic projection, and the error grows with the triangle,
+  so nothing in the lattice ever showed it. The slab's top face is one
+  57,000 mm² sheet and it showed at once, as wedges of z-fighting radiating
+  from its vertices. `render.py` now interpolates 1/z, which is exact.
 
 What software cannot tell us is the fit. That is what `fit-test-coupon.stl`
-is for, and it is the first thing to print. **It now carries posts, not
-bores**, because the board is male: you try a real piece over each one.
+is for, and it is the first thing to print. **It carries posts, not bores**,
+because the board is male: you try a real piece over each one.
 
 ## Open questions
 
-- **Post fit.** `PEG_SOCKET_D` is 6.35 mm against a 5.90 mm post. That is a
-  guess at PETG shrinkage on a machine that has not been commissioned. The
-  coupon settles it; the guess may be off by a tenth either way. Note the
-  socket is in the PLA piece and the post is in the PETG board, so the fit
-  spans two materials — print the coupon accordingly.
-- **Board rigidity.** 279 × 279 mm of 7.2 mm lattice has not been picked up
-  yet, and the collars are shorter than they were. If it flexes, the fixes in
-  order of preference are `FRAME_H`, then `DIAGONALS = "full"`, then
-  `STRUT_H`. The octagon and its twenty-four spokes should carry most of it.
-- **A piece on a summit covers that column's number.** Unavoidable once the
-  post is on the digit, and accepted: by then the column is claimed. Every
-  unclaimed number reads from any angle.
-- **The split post on a real print.** Geometrically the number is whole. What
-  a two-material boundary running up the side of a 5.9 mm post actually looks
-  like off the printer — colour bleed, a seam, purge staining — is a thing
-  only a print will tell us.
+- **Red means PLA.** There is no red PETG on the shelf — `available-tools.md`
+  lists PETG in yellow, reflex blue, orange, white and black, and red exists
+  only as PLA Basic. So a red board is a PLA board, giving up PETG's toughness
+  for a part that softens around 60 °C and creeps under load. For a board that
+  lives flat on a table that is probably fine; a car in July would not be. The
+  alternatives are an orange or black PETG board, or dyeing the plan.
+- **Post fit.** `PEG_SOCKET_D` is 6.35 mm against a 5.90 mm post — a guess at
+  shrinkage on a machine that has not been commissioned. The coupon settles it;
+  the guess may be off by a tenth either way. With the board now in PLA, both
+  halves of the fit are the same material, which removes one variable.
+- **Warp.** 285 mm of solid 6 mm PLA is a much bigger flat area than the
+  lattice ever was, and flat PLA that size is exactly what lifts at the
+  corners. The heated chamber is on our side here; a brim may still be wanted.
+- **The lip on a slicer.** 8 mm wide and 1.2 mm tall is six layers of a narrow
+  ring right at the outline. Worth looking at in preview for a seam artefact
+  before committing three hours.
+- **The split post on a real print.** Geometrically the number is whole. What a
+  two-material boundary running up the side of a 5.9 mm post actually looks
+  like off the printer — colour bleed, a seam, purge staining — is a thing only
+  a print will tell us.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
-  octagon is lattice and spokes only. It looks deliberate in plan; whether it
-  looks unbalanced on a table is a question for a print.
-- **Print time.** Not yet measured. ~118 cm³ of thin-walled lattice is
-  perimeter-dominated, so the estimate wants a real slice, not arithmetic.
-- **Material.** PETG for the board (tough, does not creep), PLA for the
-  pieces (crisper small features). Untested assumption.
-- **Colour count.** The two-colour split is body plus numerals. Four player
-  colours plus the runners means five more filaments; whether that is one
-  print per colour or AMS swaps is a slicer decision, not a model one.
+  octagon is bare plate. It looks deliberate in plan; whether it looks
+  unbalanced on a table is a question for a print. The lip helps.
+- **Print time.** Not yet measured. A 10%-infill slab is skin-dominated, so the
+  estimate wants a real slice, not arithmetic.
+- **Colour count.** The board is two colours, body plus numerals. Four player
+  colours plus the runners means five more filaments; whether that is one print
+  per colour or AMS swaps is a slicer decision, not a model one.
 - **A tray or box.** Forty-seven loose pieces need somewhere to live.
   Deliberately out of scope for now.
 - **Vinyl instead of inlaid numbers?** The cutter could do column labels as
-  decals. Inlay was chosen because it needs no second operation and keeps the
-  seating face flat — a decal on a face a piece stands on would not last.
+  decals, and it has red vinyl in stock. Inlay was chosen because it needs no
+  second operation and keeps the seating face flat — a decal on a face a piece
+  stands on would not last.

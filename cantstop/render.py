@@ -107,6 +107,16 @@ def render(parts, eye, target, width=1500, height=1100, up=(0, 0, 1),
     idx = np.nonzero(keep)[0]
     s, d, area = s[idx], d[idx], area[idx]
 
+    # Depth is interpolated as 1/z, not z. Under perspective, distance is NOT
+    # linear in screen space -- 1/distance is -- so interpolating z directly
+    # puts a triangle's interior at the wrong depth, by an amount that grows
+    # with the triangle. Two coplanar neighbours of different sizes then
+    # disagree about where the surface they share actually is, and the
+    # z-buffer flickers between them in wedges radiating from their vertices.
+    # The lattice never showed it: nothing in it was bigger than a strut. A
+    # slab's top face is one 57,000 mm2 sheet and it showed immediately.
+    di = 1.0 / d
+
     # --- shading (flat, per face, in world space) -------------------------
     p0, p1, p2 = V[F[idx, 0]], V[F[idx, 1]], V[F[idx, 2]]
     nrm = np.cross(p1 - p0, p2 - p0)
@@ -160,7 +170,7 @@ def render(parts, eye, target, width=1500, height=1100, up=(0, 0, 1),
         inside = (l0 >= 0) & (l1 >= 0) & (l2 >= 0)
         if not inside.any():
             continue
-        z = l0 * d[k, 0] + l1 * d[k, 1] + l2 * d[k, 2]
+        z = 1.0 / (l0 * di[k, 0] + l1 * di[k, 1] + l2 * di[k, 2])
         sub = zbuf[y0:y1 + 1, x0:x1 + 1]
         hit = inside & (z < sub)
         if not hit.any():

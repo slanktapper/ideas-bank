@@ -43,6 +43,29 @@ PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
                     # pitch of their own, set by COLUMN_SHORTFALL above.
 
 # --------------------------------------------------------------------------
+# Board style
+# --------------------------------------------------------------------------
+# "lattice"  the open wireframe truss: rings tied by flat-bottomed struts and
+#            braced out to the octagon. Light, but floppy.
+# "slab"     a solid octagonal plate with the posts standing on it. Nine to
+#            twenty times stiffer, and -- because a lattice is nearly all
+#            perimeter and cannot be hollowed -- no heavier, so long as the
+#            infill stays low.
+BOARD_STYLE = "slab"
+
+SLAB_T = 6.0        # plate thickness
+SLAB_INFILL = 0.10  # what the slicer should be set to; the geometry does not
+                    # care, but every mass figure in the build report assumes
+                    # it. Skins cost 94 g over this octagon before any infill
+                    # at all, so the infill number matters far less than it
+                    # looks: 5% and 29% are 131 g and 221 g respectively.
+
+RIM_W = 8.0         # a raised lip around the edge of the slab
+RIM_H = 1.20        # matched to NUMERAL_DEPTH, so the lip and the numbers
+                    # share one relief dimension
+RIM_CLEAR = 4.0     # air between the inside of the lip and the nearest pad
+
+# --------------------------------------------------------------------------
 # Cells — a pad with a post standing on it
 # --------------------------------------------------------------------------
 # The interface runs MALE-UP throughout: the board offers a post, a piece has

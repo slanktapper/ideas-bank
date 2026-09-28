@@ -7,9 +7,15 @@ These are not unit tests of the code so much as design rules. Editing
 params.py is the whole point of this project, and most of the ways to get it
 wrong are silent: a socket that swallows its post, a strut standing proud of a
 seating face, a wall thinned to nothing, a board that has quietly grown past
-the bed, a lattice that has become two detached bodies, a number you cannot
-read once a piece is sitting on it. Each one costs a print to discover and
-nothing to check.
+the bed, a lattice that has become two detached bodies, a raised lip that has
+crept in far enough to land on a pad, a number you cannot read once a piece is
+sitting on it. Each one costs a print to discover and nothing to check.
+
+The board has two styles and the checks follow whichever params.py selects.
+Some rules only exist for one of them -- there are no struts to keep clear of
+a number box on a slab, and no lip to measure on a lattice -- so those are
+gated rather than deleted. Everything about the ladder, the post/socket
+interface, the pieces and the octagon is common to both and always runs.
 """
 
 from __future__ import annotations
@@ -27,6 +33,9 @@ import solids as S
 FAILS: list[str] = []
 CHECKS = 0
 
+SLAB = P.BOARD_STYLE == "slab"
+SEAT_Z = B.seat_z()          # height of every seating face, whichever style
+
 
 def check(label, ok, detail=""):
     global CHECKS
@@ -35,6 +44,105 @@ def check(label, ok, detail=""):
     print(f"  [{mark}] {label}{('  — ' + detail) if detail else ''}")
     if not ok:
         FAILS.append(label)
+
+
+def _apothems(poly, ctr) -> list[float]:
+    """Perpendicular distance from the centre to each edge of a polygon."""
+    out = []
+    for j in range(len(poly)):
+        a, b = poly[j], poly[(j + 1) % len(poly)]
+        e = b - a
+        v = ctr - a
+        out.append(abs(e[0] * v[1] - e[1] * v[0])
+                   / float(np.linalg.norm(e)))
+    return out
+
+
+def slab_checks(brd, poly, ctr, skirt_r):
+    """The solid plate and its raised lip.
+
+    The lip is made by scaling the outline about its centre, which is only an
+    even inset because the octagon is regular -- every edge shares one
+    apothem. If OCTAGON_REGULAR is ever turned off, or the sizing loses its
+    equal edges, the scale quietly becomes a wider lip on the long sides than
+    the short ones, and nothing else in the build would notice.
+
+    The other thing worth checking is what the lip is standing on. It grows
+    INWARD from the outline, so the outline has to have been pushed out to
+    make room for it; get that wrong and the lip lands on the outermost pads
+    of columns 2 and 12 and a piece cannot seat.
+    """
+    from shapely.geometry import Point, Polygon as Poly2D
+
+    print("\nthe slab and its raised lip")
+    plate = B.slab_plate()
+    check("the plate is one watertight solid",
+          plate.is_watertight and plate.is_winding_consistent
+          and plate.body_count == 1,
+          f"{len(plate.faces)} triangles, {plate.body_count} body")
+    check("the plate is the thickness asked for and the lip stands on top "
+          "of it",
+          abs(plate.bounds[0][2]) < 1e-6
+          and abs(plate.bounds[1][2] - (P.SLAB_T + P.RIM_H)) < 1e-6,
+          f"{P.SLAB_T:.1f} mm plate + {P.RIM_H:.2f} mm lip = "
+          f"{plate.bounds[1][2]:.2f} mm")
+    check("pieces seat on the top of the plate",
+          abs(SEAT_Z - P.SLAB_T) < 1e-9,
+          f"seat at z={SEAT_Z:.2f}, posts to z={SEAT_Z + P.POST_H:.2f}")
+    check("the lip is raised by exactly as much as the numbers are sunk",
+          abs(P.RIM_H - P.NUMERAL_DEPTH) < 1e-9,
+          f"lip {P.RIM_H:.2f} mm up, numerals {P.NUMERAL_DEPTH:.2f} mm down")
+
+    # the same inset slab_plate() uses, rebuilt here so the check is on the
+    # construction and not on a number copied out of it
+    apothem = max(abs(np.asarray(poly) - ctr).max(axis=1))
+    k = (apothem - P.RIM_W) / apothem
+    inner = (np.asarray(poly) - ctr) * k + ctr
+    widths = [o - i for o, i in zip(_apothems(poly, ctr),
+                                    _apothems(inner, ctr))]
+    check("the lip is the same width the whole way round",
+          max(widths) - min(widths) < 0.05 and abs(min(widths) - P.RIM_W) < 0.05,
+          f"{min(widths):.2f}-{max(widths):.2f} mm against a {P.RIM_W:.0f} mm "
+          f"target, on all eight edges")
+
+    ring = Poly2D([tuple(q) for q in inner]).exterior
+    pad_gap = min(ring.distance(Point(*q)) for q in B.content_points())
+    check("the lip clears every pad and every number box",
+          Poly2D([tuple(q) for q in inner]).contains(
+              Poly2D([tuple(q) for q in B.content_points()]).convex_hull)
+          and pad_gap >= P.RIM_CLEAR - 0.05,
+          f"{pad_gap:.1f} mm of flat between the lip and the nearest content, "
+          f"against a {P.RIM_CLEAR:.0f} mm target")
+
+    face = Poly2D([tuple(q) for q in inner])
+    off = []
+    for i, r in B.all_cells():
+        cx, cy = B.cell_xy(i, r)
+        for a in np.linspace(0, 2 * np.pi, 16, endpoint=False):
+            if not face.contains(Point(cx + skirt_r * np.cos(a),
+                                       cy + skirt_r * np.sin(a))):
+                off.append((P.COLUMNS[i], r))
+    check(f"all {sum(P.ROWS)} skirts land on flat plate, none on the lip",
+          not off, "16 points round every skirt" if not off
+          else f"{sorted(set(off))} overhang")
+
+    # And the lip has to actually BE a lip in the finished mesh: solid in its
+    # own band, open air immediately inside it. A plate that came out
+    # uniformly SLAB_T + RIM_H thick would pass every measurement above.
+    z = P.SLAB_T + P.RIM_H / 2
+    on_lip, in_field = [], []
+    pts = np.asarray(poly, dtype=float)
+    for j in range(len(pts)):
+        mid = (pts[j] + pts[(j + 1) % len(pts)]) / 2
+        nrm = (ctr - mid) / np.linalg.norm(ctr - mid)
+        on_lip.append(np.append(mid + nrm * (P.RIM_W / 2), z))
+        in_field.append(np.append(mid + nrm * (P.RIM_W + P.RIM_CLEAR / 2), z))
+    hit = brd.contains(np.asarray(on_lip))
+    miss = brd.contains(np.asarray(in_field))
+    check("the lip is solid where it should be and absent where it should not",
+          hit.all() and not miss.any(),
+          f"{int(hit.sum())}/8 points inside the lip band, "
+          f"{int(miss.sum())}/8 wrongly solid just inside it")
 
 
 def main():
@@ -87,22 +195,24 @@ def main():
           f"{P.POST_H:.2f}/{P.PEG_POST_H:.2f}")
 
     skirt_r = max(r for r, _ in P.PEG_BODY_PROFILE)
-    check("the skirt lands on the pad, not off the edge of it",
-          skirt_r < P.PAD_OD / 2,
-          f"skirt r{skirt_r:.2f} inside pad r{P.PAD_OD/2:.2f}")
+    if not SLAB:
+        check("the skirt lands on the pad, not off the edge of it",
+              skirt_r < P.PAD_OD / 2,
+              f"skirt r{skirt_r:.2f} inside pad r{P.PAD_OD/2:.2f}")
     check("the seat is a wide annulus, not a rim",
           skirt_r - P.POST_D / 2 >= 3.0,
           f"{P.POST_D/2:.2f} to {skirt_r:.2f} mm contact ring")
 
     print("\nprintability")
-    check("struts stay below every seating face, so nothing fouls a piece "
-          "and no strut can touch a post",
-          max(P.STRUT_H, P.OCTAGON_SPOKE_H) < P.PAD_H,
-          f"struts {max(P.STRUT_H, P.OCTAGON_SPOKE_H):.2f} vs pad "
-          f"{P.PAD_H:.2f}")
-    check("number shields sit flush with the pads",
-          P.PLAQUE_T <= P.PAD_H,
-          f"shield {P.PLAQUE_T:.2f} vs pad {P.PAD_H:.2f}")
+    if not SLAB:
+        check("struts stay below every seating face, so nothing fouls a piece "
+              "and no strut can touch a post",
+              max(P.STRUT_H, P.OCTAGON_SPOKE_H) < P.PAD_H,
+              f"struts {max(P.STRUT_H, P.OCTAGON_SPOKE_H):.2f} vs pad "
+              f"{P.PAD_H:.2f}")
+        check("number shields sit flush with the pads",
+              P.PLAQUE_T <= P.PAD_H,
+              f"shield {P.PLAQUE_T:.2f} vs pad {P.PAD_H:.2f}")
     apex_rise = P.PEG_SOCKET_D / 2
     check("the socket roof is a self-supporting cone, not a bridge",
           apex_rise >= P.PEG_SOCKET_D / 2 - 1e-9,
@@ -121,8 +231,13 @@ def main():
     for axis, pitch in [("along a row", P.PITCH_X), ("up a column", P.PITCH_Y)]:
         check(f"pieces clear each other {axis}", pitch - 2 * skirt_r >= 3.0,
               f"{pitch - 2*skirt_r:.2f} mm gap")
-    check("pads clear each other up a column", P.PITCH_Y - P.PAD_OD >= 3.0,
-          f"{P.PITCH_Y - P.PAD_OD:.2f} mm gap")
+    if SLAB:
+        check("posts clear each other up a column", P.PITCH_Y - P.POST_D >= 3.0,
+              f"{P.PITCH_Y - P.POST_D:.2f} mm gap; on a slab the plate is the "
+              f"pad, so only the posts stand apart")
+    else:
+        check("pads clear each other up a column", P.PITCH_Y - P.PAD_OD >= 3.0,
+              f"{P.PITCH_Y - P.PAD_OD:.2f} mm gap")
 
     print("\ngeometry (building meshes)")
     marker = B.build_marker()
@@ -152,7 +267,7 @@ def main():
     heights = []
     for lvl in range(3):
         m = marker.copy()
-        m.apply_translation((0, 0, P.PAD_H + lvl * P.PEG_BODY_H))
+        m.apply_translation((0, 0, SEAT_Z + lvl * P.PEG_BODY_H))
         heights.append(m.bounds[1][2])
     steps = np.diff(heights)
     check("every stacked piece adds the same height",
@@ -169,7 +284,7 @@ def main():
     # every pad, out where the skirt sits, and confirm nothing -- strut, spoke,
     # shield or digit -- is in the way.
     probes = []
-    zs = [P.PAD_H + 0.4, P.PAD_H + 1.5]
+    zs = [SEAT_Z + 0.4, SEAT_Z + 1.5]
     rr = np.linspace(P.POST_D / 2 + 0.4, skirt_r - 0.2, 3)
     for i, r in B.all_cells():
         cx, cy = B.cell_xy(i, r)
@@ -183,7 +298,7 @@ def main():
           f"{len(probes)} probe points, {int(inside.sum())} obstructed")
 
     print("\ncolumn numbers")
-    struts = B.final_struts()
+    struts = [] if SLAB else B.final_struts()
     check("every number is in line with its column, not off to the side",
           all(abs(B.numeral_xy(i)[0] - B.summit(i)[0]) < 1e-9
               for i in range(len(P.ROWS))),
@@ -206,15 +321,16 @@ def main():
             sep = min(sep, d.max())
     check("neighbouring summit boxes stand apart",
           sep >= 3.0,
-          f"{sep:.1f} mm; the columns step down in half boxes now, so the "
-          f"summits run in a shallow staircase and crowd easily")
+          f"{sep:.1f} mm; the middle columns step down by a quarter of a box, "
+          f"so the summits run in a shallow staircase and crowd easily")
     check("a piece fits on the box it has to stand on",
           2 * skirt <= min(P.PLAQUE_W, P.PLAQUE_H),
           f"piece {2*skirt:.1f} mm on a {P.PLAQUE_W:.0f} x "
           f"{P.PLAQUE_H:.0f} mm box")
+    plate_t = P.SLAB_T if SLAB else P.PLAQUE_T
     check("the digit is inlaid, not embossed, so a piece cannot rock on it",
-          0 < P.NUMERAL_DEPTH < P.PLAQUE_T - 1.0,
-          f"{P.NUMERAL_DEPTH:.2f} mm deep in a {P.PLAQUE_T:.2f} mm plate")
+          0 < P.NUMERAL_DEPTH < plate_t - 1.0,
+          f"{P.NUMERAL_DEPTH:.2f} mm deep in a {plate_t:.2f} mm plate")
 
     # THE LEGIBILITY MECHANISM. The post stands in the middle of the digit,
     # so the only question is its colour -- and the answer is both, split by
@@ -224,12 +340,12 @@ def main():
     # takes its waist with it.
     accent = B.build_board(numerals_only=True)
     check("the accent part reaches the tops of the posts",
-          abs(accent.bounds[1][2] - (P.PLAQUE_T + P.POST_H)) < 1e-6,
+          abs(accent.bounds[1][2] - (SEAT_Z + P.POST_H)) < 1e-6,
           f"z={accent.bounds[1][2]:.2f}; the digit is carried up through "
           f"each post, not stopped at the plate")
     check("the board body still carries the rest of every post",
           abs(B.build_board(with_numerals=False).bounds[1][2]
-              - (P.PLAQUE_T + P.POST_H)) < 1e-6,
+              - (SEAT_Z + P.POST_H)) < 1e-6,
           "body and accent split each post between them")
 
     def _vol(m):
@@ -262,39 +378,42 @@ def main():
 
     # Only members taller than a box matter: a strut is 3.4 mm and a box is
     # 4.0 mm thick, so anything running under one is buried inside it.
-    tall = [s for s in struts if s[3] > P.PLAQUE_T]
-    bx = np.linspace(-P.PLAQUE_W / 2, P.PLAQUE_W / 2, 13)
-    by = np.linspace(-P.PLAQUE_H / 2, P.PLAQUE_H / 2, 15)
-    clear, clear_col = np.inf, None
-    for i in range(len(P.ROWS)):
-        sx, sy = B.numeral_xy(i)
-        d = min(B.strut_distance_to((sx + dx, sy + dy), p0, p1, w_)
-                for dx in bx for dy in by
-                for p0, p1, w_, _h, _k in tall)
-        if d < clear:
-            clear, clear_col = d, P.COLUMNS[i]
-    check("nothing standing proud of a box goes anywhere near one",
-          clear > 1.0,
-          f"{len(tall)} struts taller than {P.PLAQUE_T:.1f} mm (the octagon); "
-          f"nearest is {clear:.1f} mm off column {clear_col}'s box")
+    tall = [s for s in struts if s[3] > P.PLAQUE_T] if not SLAB else []
+    if tall:
+        bx = np.linspace(-P.PLAQUE_W / 2, P.PLAQUE_W / 2, 13)
+        by = np.linspace(-P.PLAQUE_H / 2, P.PLAQUE_H / 2, 15)
+        clear, clear_col = np.inf, None
+        for i in range(len(P.ROWS)):
+            sx, sy = B.numeral_xy(i)
+            dd = min(B.strut_distance_to((sx + dx, sy + dy), p0, p1, w_)
+                     for dx in bx for dy in by
+                     for p0, p1, w_, _h, _k in tall)
+            if dd < clear:
+                clear, clear_col = dd, P.COLUMNS[i]
+        check("nothing standing proud of a box goes anywhere near one",
+              clear > 1.0,
+              f"{len(tall)} struts taller than {P.PLAQUE_T:.1f} mm (the "
+              f"octagon); nearest is {clear:.1f} mm off column "
+              f"{clear_col}'s box")
 
-    print("\nthe board is symmetric")
-    cx = (len(P.ROWS) - 1) * P.PITCH_X / 2
+    if struts:
+        print("\nthe board is symmetric")
+        cx = (len(P.ROWS) - 1) * P.PITCH_X / 2
 
-    def _key(a, b_):
-        return tuple(sorted([(round(a[0], 3), round(a[1], 3)),
-                             (round(b_[0], 3), round(b_[1], 3))]))
+        def _key(a, b_):
+            return tuple(sorted([(round(a[0], 3), round(a[1], 3)),
+                                 (round(b_[0], 3), round(b_[1], 3))]))
 
-    have = {_key(s[0], s[1]) for s in struts}
-    mirrored = {_key((2 * cx - s[0][0], s[0][1]),
-                     (2 * cx - s[1][0], s[1][1])) for s in struts}
-    # Easy to break and hard to see: the herringbone diagonals are chosen by
-    # a parity, and keying that on a row INDEX rather than its position makes
-    # a gap and its mirror disagree, because the two number their rows
-    # differently. The board then comes out visibly handed.
-    check("every strut has a mirror twin across the centreline",
-          have == mirrored,
-          f"{len(have)} struts, {len(have ^ mirrored)} unmatched")
+        have = {_key(s[0], s[1]) for s in struts}
+        mirrored = {_key((2 * cx - s[0][0], s[0][1]),
+                         (2 * cx - s[1][0], s[1][1])) for s in struts}
+        # Easy to break and hard to see: the herringbone diagonals are chosen
+        # by a parity, and keying that on a row INDEX rather than its position
+        # makes a gap and its mirror disagree, because the two number their
+        # rows differently. The board then comes out visibly handed.
+        check("every strut has a mirror twin across the centreline",
+              have == mirrored,
+              f"{len(have)} struts, {len(have ^ mirrored)} unmatched")
 
     print("\nthe lens fills the frame evenly")
     lo_, hi_ = B.content_bounds()
@@ -346,9 +465,13 @@ def main():
           not outside,
           "72 pads + 11 boxes" if not outside
           else f"{sorted(set(outside))} pokes out")
-    check("the lens is braced out to the frame on every edge",
-          len([s for s in struts if s[4] == "spoke"]) >= 2 * len(P.ROWS),
-          f"{len([s for s in struts if s[4] == 'spoke'])} spokes")
+    if not SLAB:
+        check("the lens is braced out to the frame on every edge",
+              len([s for s in struts if s[4] == "spoke"]) >= 2 * len(P.ROWS),
+              f"{len([s for s in struts if s[4] == 'spoke'])} spokes")
+
+    if SLAB:
+        slab_checks(brd, poly, ctr, skirt_r)
 
     print("\ncounts")
     check("83 cells", sum(P.ROWS) == 83, f"{sum(P.ROWS)}")

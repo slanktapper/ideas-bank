@@ -168,7 +168,12 @@ def octagon() -> list[tuple[float, float]]:
         # cuts slice through the ends of the lens.
         need = max(d[:, 0].max(), d[:, 1].max(),
                    (d[:, 0] + d[:, 1]).max() / np.sqrt(2.0))
-        a = b = need + P.OCTAGON_MARGIN
+        margin = P.OCTAGON_MARGIN
+        if P.BOARD_STYLE == "slab":
+            # the raised lip sits inside the outline, so the outline has to
+            # stand off far enough that the lip never lands on a pad
+            margin = max(margin, P.RIM_W + P.RIM_CLEAR)
+        a = b = need + margin
         c = a * 2.0 / (2.0 + np.sqrt(2.0))
     else:
         a = (hi[0] - lo[0]) * 0.5 + P.OCTAGON_MARGIN
@@ -435,6 +440,33 @@ def build_cell(cx: float, cy: float, segs: int | None = None,
     return m
 
 
+def seat_z() -> float:
+    """Height of every seating face -- what a piece's skirt lands on."""
+    return P.SLAB_T if P.BOARD_STYLE == "slab" else P.PAD_H
+
+
+def slab_plate() -> trimesh.Trimesh:
+    """The solid octagonal plate, with its raised lip around the edge.
+
+    The lip is the outline inset by RIM_W. A regular octagon has the same
+    apothem to every edge, so insetting is a plain scale about the centre --
+    (a - RIM_W) / a -- and the lip comes out an even width the whole way
+    round.
+    """
+    from shapely.geometry import Polygon
+
+    outer = [tuple(p) for p in octagon()]
+    plate = trimesh.creation.extrude_polygon(Polygon(outer), P.SLAB_T)
+
+    ctr = octagon_centre()
+    apothem = max(abs(np.asarray(outer) - ctr).max(axis=1))
+    k = (apothem - P.RIM_W) / apothem
+    inner = [tuple(ctr + (np.asarray(p) - ctr) * k) for p in outer]
+    rim = trimesh.creation.extrude_polygon(Polygon(outer, [inner]), P.RIM_H)
+    rim.apply_translation((0, 0, P.SLAB_T))
+    return S.union_all([plate, rim])
+
+
 def build_summit_box(cx: float, cy: float) -> trimesh.Trimesh:
     """A column's number box, which is also its summit pad.
 
@@ -484,24 +516,25 @@ def _summit_parts(segs: int | None = None):
     segs = segs or P.CELL_SEGS
     cutters, accents, body_posts = [], [], []
     depth, t_post = P.NUMERAL_DEPTH, P.POST_H
+    top = seat_z()
 
     for i, num in enumerate(P.COLUMNS):
         x, y = numeral_xy(i)
 
         # the pocket stops at the post's edge, so the two oranges meet flush
         column = S.tube(x, y, P.POST_D * 0.5 + P.NUMERAL_POST_CLEAR, 0.0,
-                        P.PLAQUE_T - depth - 1.0, P.PLAQUE_T + 2.0, segs=segs)
+                        top - depth - 1.0, top + 2.0, segs=segs)
         # the cutter runs proud of the plate so its top face is not coplanar
         # with the plate's, which is where boolean engines get fussy
         cutters.append(trimesh.boolean.difference(
-            [_digit_solid(num, x, y, P.PLAQUE_T - depth, depth + 1.0), column],
+            [_digit_solid(num, x, y, top - depth, depth + 1.0), column],
             engine="manifold"))
         accents.append(trimesh.boolean.difference(
-            [_digit_solid(num, x, y, P.PLAQUE_T - depth, depth), column],
+            [_digit_solid(num, x, y, top - depth, depth), column],
             engine="manifold"))
 
-        post = _post(x, y, P.PLAQUE_T, segs=segs)
-        prism = _digit_solid(num, x, y, P.PLAQUE_T, t_post + 1.0)
+        post = _post(x, y, top, segs=segs)
+        prism = _digit_solid(num, x, y, top, t_post + 1.0)
         accents.append(trimesh.boolean.intersection([post, prism],
                                                     engine="manifold"))
         body_posts.append(trimesh.boolean.difference([post, prism],
@@ -525,9 +558,18 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
         return S.union_all(accents)
 
     parts: list[trimesh.Trimesh] = []
+    if P.BOARD_STYLE == "slab":
+        parts.append(slab_plate())
+
     summit_n = 0
     for i, r in all_cells():
         x, y = cell_xy(i, r)
+        if P.BOARD_STYLE == "slab":
+            # the plate is the pad; only the post stands on it
+            parts.append(body_posts[summit_n] if is_summit(i, r)
+                         else _post(x, y, seat_z(), segs=segs))
+            summit_n += is_summit(i, r)
+            continue
         if is_summit(i, r):
             # the box replaces the round pad, and the post on it is only the
             # part the digit does not pass through -- the rest ships with the
@@ -538,8 +580,9 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
         else:
             parts.append(build_cell(x, y, segs=segs))
 
-    for p0, p1, w, h, _kind in final_struts():
-        parts.append(S.strut(p0, p1, w, h))
+    if P.BOARD_STYLE != "slab":
+        for p0, p1, w, h, _kind in final_struts():
+            parts.append(S.strut(p0, p1, w, h))
 
     if verbose:
         print(f"    fusing {len(parts)} solids ...", flush=True)
