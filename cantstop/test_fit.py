@@ -302,12 +302,18 @@ def main():
           "bottom and summit equal and opposite, plus the summit step")
 
     print("\nthe post/socket interface  (male-up: board, then every piece)")
+    # The floor is 0.15, not 0.25. 0.25 was set when nothing had been printed
+    # and the fit was a guess; the stub came off at size, so the socket has
+    # been taken in to half of what it was. Below 0.15 diametral the joint
+    # stops being a fit and becomes an interference the plastic has to absorb,
+    # and a piece that has to be forced on will split a socket coming off.
     board_clear = P.PEG_SOCKET_D - P.POST_D
     piece_clear = P.PEG_SOCKET_D - P.PEG_POST_D
-    check("socket clears the board's post", 0.25 <= board_clear <= 0.75,
-          f"{board_clear:.2f} mm diametral")
+    check("socket clears the board's post", 0.15 <= board_clear <= 0.75,
+          f"{board_clear:.2f} mm diametral, {board_clear/2:.3f} radial "
+          f"(~{board_clear/2/0.42:.1f} line widths)")
     check("socket clears the post of a piece below it",
-          0.25 <= piece_clear <= 0.75, f"{piece_clear:.2f} mm diametral")
+          0.15 <= piece_clear <= 0.75, f"{piece_clear:.2f} mm diametral")
     check("socket is deeper than a post is long, so the SKIRT seats and "
           "stack height is exact",
           P.PEG_SOCKET_DEPTH > max(P.POST_H, P.PEG_POST_H) + 0.2,

@@ -253,10 +253,16 @@ coming off a printer. There are two test prints for that, in order:
   for a part that softens around 60 °C and creeps under load. For a board that
   lives flat on a table that is probably fine; a car in July would not be. The
   alternatives are an orange or black PETG board, or dyeing the plan.
-- **Post fit.** `PEG_SOCKET_D` is 6.35 mm against a 5.90 mm post — a guess at
-  shrinkage on a machine that has not been commissioned. The coupon settles it;
-  the guess may be off by a tenth either way. With the board now in PLA, both
-  halves of the fit are the same material, which removes one variable.
+- **Post fit, second value.** `PEG_SOCKET_D` started at 6.35 mm against a
+  5.90 mm post — 0.45 mm diametral, deliberately loose because nothing had
+  been printed and the machine had not been commissioned. The stub came off
+  at size, so that slack was insurance against a problem that did not
+  materialise, and the socket is now **6.13 mm: 0.23 mm diametral, half what
+  it was**, which is 0.115 of a radius or about a quarter of a line width.
+  The board's post is untouched at 5.90, so the stub already printed is still
+  the fixture to try new pieces on. Below roughly 0.15 diametral this stops
+  being a fit and becomes an interference the plastic has to absorb, so there
+  is no third halving; if 0.23 is tight, the next move is up, not down.
 - **Warp.** 285 mm of solid 6 mm PLA is a much bigger flat area than the
   lattice ever was, and flat PLA that size is exactly what lifts at the
   corners. The heated chamber is on our side here; a brim may still be wanted.

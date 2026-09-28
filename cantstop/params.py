@@ -234,7 +234,28 @@ PEG_POST_H       = 2.15   # scaled with the rest of the piece. Shorter than
                           # locates it, and it does that in 2 mm as well as 3.
 PEG_POST_CHAMFER = 0.40   # lead-in at the top of the post
 
-PEG_SOCKET_D     = 6.35   # holes print undersize, so the socket is cut over
+PEG_SOCKET_D     = 6.13   # Holes print undersize, so the socket is cut over
+                          # the 5.90 post it has to swallow. This is the one
+                          # number in the project that only a print can
+                          # settle, and it is on its second value.
+                          #
+                          # 6.35 was the first guess: 0.45 mm diametral, a
+                          # deliberately loose slip fit for a machine that had
+                          # not been commissioned. HALVED to 0.23 here, on the
+                          # evidence of the stub -- which came off the printer
+                          # at size, so the 0.45 was insurance against a
+                          # problem that did not materialise and was only
+                          # buying slop.
+                          #
+                          # 0.23 diametral is 0.115 of a radius, half a line
+                          # width. Below about 0.15 diametral it stops being a
+                          # fit and becomes an interference the plastic has to
+                          # absorb, so there is not another halving after this
+                          # one.
+                          #
+                          # THE BOARD'S POST IS UNCHANGED at 5.90, so the stub
+                          # that is already printed is still the right fixture
+                          # to try new pieces on.
 PEG_SOCKET_DEPTH = 3.60   # deeper than the BOARD's post is long: the post
                           # never bottoms out, the SKIRT seats on the face
                           # below instead. Stack height is exact regardless

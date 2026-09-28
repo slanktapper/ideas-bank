@@ -17,7 +17,9 @@ The board is male: every cell is a post, and the socket is in the piece. So
 the coupon carries **posts**, and you try a real piece over each one.
 
 The coupon carries five posts at 5.70, 5.80, 5.90, 6.00 and 6.10 mm,
-ascending left to right. Each is labelled with the **second decimal** of its
+ascending left to right. Against the current 6.13 mm socket those are
+clearances of 0.43, 0.33, **0.23 (nominal)**, 0.13 and 0.03 mm diametral, so
+the coupon brackets the design value with two looser and two tighter. Each is labelled with the **second decimal** of its
 diameter: the post marked `9` is 5.90 mm. Seat height, post height and the
 chamfered lead-in all match the real board, because a fit test only transfers
 if the plastic is shaped and cooled the same way.
@@ -172,12 +174,12 @@ flat and every reason to stand it on edge.
 the full 16.5 mm skirt, which is a generous footprint, so no brim is needed.
 
 The socket faces downward and is closed by a **45° cone**, not a flat ceiling.
-That is deliberate: a flat roof would be a 6.35 mm bridge over thin air part
+That is deliberate: a flat roof would be a 6.13 mm bridge over thin air part
 way up the print, whereas a 45° cone self-supports. Nothing ever touches that
 surface, so its finish does not matter.
 
 The piece is short enough now that the cone cannot reach a point — it needs
-3.18 mm of height and has 1.90 — so it is truncated and **2.55 mm of the roof
+3.07 mm of height and has 1.90 — so it is truncated and **2.33 mm of the roof
 is bridged**. That is short enough that no slicer will complain and no
 support is wanted. If you ever make the pieces shorter still, watch that
 number: `test_fit.py` prints it and fails it past 4 mm.
