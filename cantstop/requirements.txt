@@ -1,0 +1,11 @@
+# cantstop — parametric CAD-as-code toolchain
+# Python 3.10+.  Install with:  python3 -m pip install -r requirements.txt
+numpy>=1.26
+trimesh>=4.0
+manifold3d>=2.3        # fast, robust boolean engine used by trimesh
+shapely>=2.0           # polygon algebra for the embossed numerals
+mapbox_earcut>=1.0     # polygon triangulation backend for trimesh
+matplotlib>=3.8        # glyph outlines (TextPath) + the bed-fit diagram
+pillow>=10.0           # PNG output / supersample downscaling
+networkx>=3.0          # trimesh needs these two to cap section cuts
+rtree>=1.0             #   (used only by the renders, not by STL export)
