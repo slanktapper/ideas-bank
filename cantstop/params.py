@@ -373,10 +373,19 @@ PEG_POST_H       = 2.15   # scaled with the rest of the piece. Shorter than
                           # locates it, and it does that in 2 mm as well as 3.
 PEG_POST_CHAMFER = 0.40   # lead-in at the top of the post
 
-PEG_SOCKET_D     = 6.13   # Holes print undersize, so the socket is cut over
+PEG_SOCKET_D     = 6.24   # Holes print undersize, so the socket is cut over
                           # the 5.90 post it has to swallow. This is the one
                           # number in the project that only a print can
-                          # settle, and it is on its second value.
+                          # settle, and it is on its THIRD value -- both of
+                          # the others were printed and judged by hand:
+                          #
+                          #   6.35   0.45 diametral   printed, too loose
+                          #   6.13   0.23 diametral   printed, a little tight
+                          #   6.24   0.34 diametral   <- exactly between them
+                          #
+                          # The halving overshot. 0.34 is the midpoint of a
+                          # bracket with a print at each end, which is as good
+                          # as this number gets without a third data point.
                           #
                           # 6.35 was the first guess: 0.45 mm diametral, a
                           # deliberately loose slip fit for a machine that had
@@ -389,8 +398,8 @@ PEG_SOCKET_D     = 6.13   # Holes print undersize, so the socket is cut over
                           # 0.23 diametral is 0.115 of a radius, half a line
                           # width. Below about 0.15 diametral it stops being a
                           # fit and becomes an interference the plastic has to
-                          # absorb, so there is not another halving after this
-                          # one.
+                          # absorb -- and in the hand it was already short of
+                          # that, so the next move was upward, not down.
                           #
                           # THE BOARD'S POST IS UNCHANGED at 5.90, so the stub
                           # that is already printed is still the right fixture
@@ -588,14 +597,18 @@ FIT_COUPON_T   = 3.0    # backing bar only; it does not want the shields'
 # outline edges meet, the engraved digits, the split posts and the seating
 # faces are all exactly what the 285 mm board would print.
 #
-# The corner chosen is the one columns 2 and 3 sit in: the shortest columns,
-# so their summits (and therefore two numbers, one of them single-digit and
-# one not) come with the fewest cells attached, and the octagon's top-left
-# vertex and both of its neighbouring edges land inside the same small box.
-STUB_COLUMNS = (6, 7)     # which columns the stub keeps. 6 and 7 are the
-                          # pair worth printing: 6 is even so its posts get
-                          # white tops and 7 is odd so its do not, which puts
-                          # the column striping on a 48 mm part.
+# The stub always takes the TOP of whichever columns it keeps, because that is
+# where the numbers are and where the lip comes closest to a pad.
+#
+# It is on COLUMN 7 ALONE now. The 6/7 pair was cut to put the white/red post
+# striping on one part; that has been printed and it works. What is being
+# settled this time is only the socket fit, so the part wants to be as small
+# and as quick as it can be while still standing a piece on a real board post
+# under a real lip. One column does that in a 22 mm wide strip.
+STUB_COLUMNS = (7,)       # which columns the stub keeps. 7 is the middle
+                          # column: the tightest row pitch on the board, an
+                          # odd column so its posts are plain red, and a
+                          # single-digit number under the top post.
 STUB_ROWS    = 2          # how many ROW HEIGHTS down from the top of the
                           # board it reaches, AT LEAST. Not cells: neighbouring
                           # columns have different row pitches and stagger past
@@ -607,6 +620,11 @@ STUB_PIECES  = 4          # full pieces printed alongside the stub: ONE OF
                           # EACH shape, so the test print checks that every
                           # shape seats and that any of them stacks on any
                           # other. Lower it to 2 for a quicker fit check.
+STUB_RUNNER  = True       # add one neutral runner to that plate. It carries
+                          # the same socket as a marker, so a fit judged on
+                          # the markers alone would be assumed rather than
+                          # checked on the one piece that gets pushed on and
+                          # pulled off most in a game.
 
 # --------------------------------------------------------------------------
 # Printer envelope (Bambu Lab H2D, single nozzle) — see ../available-tools.md

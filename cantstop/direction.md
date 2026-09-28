@@ -358,14 +358,20 @@ coming off a printer. There are two test prints for that, in order:
 - `fit-test-coupon.stl` — five posts either side of nominal, ~12 minutes. It
   carries **posts, not bores**, because the board is male: you try a real
   piece over each one.
-- `stub-board-*.stl` plus `stub-pieces-x4.stl` — about half an hour. The stub is a
-  72 x 115 mm corner of the **real board**, cut from the finished mesh rather
-  than built to resemble it, so the slab, the lip, the engraved digits and the
-  split posts are all exactly what the full board would print. It takes
-  the corner over columns 6, 7 and 8: three numbers, six posts at the real
-  pitch, and the stretch of lip that comes closest to a pad anywhere on the
-  board. One of each of the four shapes comes with it, so every shape gets seated and
-  every pairing gets stacked.
+- `stub-board-*.stl` plus `stub-pieces-x5.stl` — about three quarters of an
+  hour. The stub is a 22 x 55 mm strip of the **real board**, cut from the
+  finished mesh rather than built to resemble it, so the slab, the lip, the
+  engraved digits and the split posts are all exactly what the full board
+  would print. It takes the top of column 7: the number, two posts at the
+  board's tightest row pitch, and the stretch of lip that comes closest to a
+  pad. One of every piece comes with it — the four markers and a runner — so
+  every shape gets seated and every pairing gets stacked.
+
+  It used to take columns 6 and 7 together, to get a red post and a
+  white-capped one onto one part. That has been printed and it works, so the
+  strip is down to one column: what is being settled now is the socket fit,
+  and that wants the smallest part that still has a real post under a real
+  lip.
 
 ## Open questions
 
@@ -375,16 +381,26 @@ coming off a printer. There are two test prints for that, in order:
   for a part that softens around 60 °C and creeps under load. For a board that
   lives flat on a table that is probably fine; a car in July would not be. The
   alternatives are an orange or black PETG board, or dyeing the plan.
-- **Post fit, second value.** `PEG_SOCKET_D` started at 6.35 mm against a
-  5.90 mm post — 0.45 mm diametral, deliberately loose because nothing had
-  been printed and the machine had not been commissioned. The stub came off
-  at size, so that slack was insurance against a problem that did not
-  materialise, and the socket is now **6.13 mm: 0.23 mm diametral, half what
-  it was**, which is 0.115 of a radius or about a quarter of a line width.
-  The board's post is untouched at 5.90, so the stub already printed is still
-  the fixture to try new pieces on. Below roughly 0.15 diametral this stops
-  being a fit and becomes an interference the plastic has to absorb, so there
-  is no third halving; if 0.23 is tight, the next move is up, not down.
+- **Post fit, third value — and now bracketed.** `PEG_SOCKET_D` is the one
+  number here that only a print can settle, and there is a print at each end
+  of it now:
+
+  | socket | diametral | verdict |
+  | --- | --- | --- |
+  | 6.35 | 0.45 | printed — too loose |
+  | 6.13 | 0.23 | printed — a little tight |
+  | **6.24** | **0.34** | the midpoint, awaiting a print |
+
+  6.35 was a guess made before anything had come off the machine. The stub
+  printed at size, so that slack was insurance against a problem that did not
+  materialise — but halving it overshot, and every shape came out tight in
+  the hand. 6.24 splits the bracket, which is as good as this number gets
+  without a third data point. Below roughly 0.15 diametral a fit stops being
+  a fit and becomes an interference the plastic has to absorb, so 0.23 was
+  already near the floor and the move had to be upward.
+
+  The board's post is untouched at 5.90 throughout, so every stub printed so
+  far is still the right fixture to try new pieces on.
 - **Warp.** 300 mm of solid 6 mm PLA is a much bigger flat area than the
   lattice ever was, and flat PLA that size is exactly what lifts at the
   corners. The heated chamber is on our side here; a brim may still be wanted.

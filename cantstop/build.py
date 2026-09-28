@@ -163,19 +163,25 @@ def export_stls(verbose=True):
     stub_body = B.build_board_stub(board_body)
     stub_nums = B.build_board_stub(numerals)
     cols = "/".join(str(c) for c in P.STUB_COLUMNS)
+    which = f"column {cols}" if len(P.STUB_COLUMNS) == 1 else f"columns {cols}"
     save(stub_body, "stub-board-body.stl", "PLA",
-         f"TEST PRINT -- real board corner, columns {cols}; load with "
+         f"TEST PRINT -- real board corner, {which}; load with "
          f"stub-board-numerals",
          cm3=stub_filament() - stub_nums.volume / 1000.0 if slab else None)
     save(stub_nums, "stub-board-numerals.stl", "PLA",
          "TEST PRINT -- the digits and their slice of each post")
     # one of each of the first STUB_PIECES shapes, so the test print checks
-    # that a piece of one shape stacks on a piece of another
-    spacing = 2 * P.PEG_MAX_R + 4.0
-    want = P.PLAYER_STYLES[:P.STUB_PIECES]
+    # that a piece of one shape stacks on a piece of another; plus a runner,
+    # which carries the same socket and is the piece handled most in a game
+    want = list(P.PLAYER_STYLES[:P.STUB_PIECES])
+    plate = list(pieces[:P.STUB_PIECES])
+    if P.STUB_RUNNER:
+        want.append("runner")
+        plate.append(runner)
+    spacing = max(m.extents[0] for m in plate) + 4.0   # widest piece, 4 mm gap
     save(trimesh.util.concatenate(
              [R.placed(m, (k * spacing, 0, 0))
-              for k, m in enumerate(pieces[:P.STUB_PIECES])]),
+              for k, m in enumerate(plate)]),
          f"stub-pieces-x{len(want)}.stl", "PLA",
          "TEST PRINT -- one of each: " + ", ".join(want)
          + " -- to seat and to stack")
@@ -340,9 +346,14 @@ def export_renders(board_body, numerals, pieces, runner, stub_body,
             {"mesh": R.placed(stub_nums, (0, 0, 0.01)), "color": C_NUMERAL},
             {"mesh": place(marker, col, row), "color": C_PLAYERS[1]},
             {"mesh": stack, "color": C_PLAYERS[0]}]
+    # The stub's proportions follow STUB_COLUMNS -- 44 x 59 for a pair of
+    # columns, 22 x 55 for one -- and frame() works off the bounding sphere,
+    # so a fixed margin that suited a squarish part clips a narrow strip.
+    # Give back what the aspect ratio takes.
+    sx, sy = (stub_body.extents[0], stub_body.extents[1])
     shot("07-test-print.png", stub,
-         **R.frame([stub_body, stack], azimuth_deg=-95, elevation_deg=30,
-                   margin=0.72))
+         **R.frame([stub_body, stack], azimuth_deg=-95, elevation_deg=46,
+                   margin=0.72 * max(1.0, max(sx, sy) / min(sx, sy) / 1.35)))
 
     # 8 -- bed fit, drawn rather than rendered
     _bed_fit_diagram(board_body)

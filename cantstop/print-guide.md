@@ -17,8 +17,8 @@ The board is male: every cell is a post, and the socket is in the piece. So
 the coupon carries **posts**, and you try a real piece over each one.
 
 The coupon carries five posts at 5.70, 5.80, 5.90, 6.00 and 6.10 mm,
-ascending left to right. Against the current 6.13 mm socket those are
-clearances of 0.43, 0.33, **0.23 (nominal)**, 0.13 and 0.03 mm diametral, so
+ascending left to right. Against the current 6.24 mm socket those are
+clearances of 0.54, 0.44, **0.34 (nominal)**, 0.24 and 0.14 mm diametral, so
 the coupon brackets the design value with two looser and two tighter. Each is labelled with the **second decimal** of its
 diameter: the post marked `9` is 5.90 mm. Seat height, post height and the
 chamfered lead-in all match the real board, because a fit test only transfers
@@ -43,13 +43,13 @@ Only then print the board.
 ## 1a. Then print the stub
 
 ```
-stub-board-body.stl + stub-board-numerals.stl   ~22 g, ~1 h     two colours
-stub-pieces-x4.stl                              ~5 g,  ~20 min   one of each shape
+stub-board-body.stl + stub-board-numerals.stl   ~4 g,  ~20 min   two colours
+stub-pieces-x5.stl                              ~6 g,  ~25 min   one of every piece
 ```
 
 The coupon answers one question. The stub answers the rest of them, and it
 answers them about the real board, because **it is the real board**: the
-finished mesh intersected with a 72 x 115 mm box, not a small part built to
+finished mesh intersected with a 22 x 55 mm box, not a small part built to
 look similar. The slab thickness, the raised lip, the engraved digits, the
 split posts, the clearance between the lip and the topmost pads and the
 seating faces are all bit-for-bit what the full board would print.
@@ -102,8 +102,8 @@ and, for the test print above:
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 72 x 115 mm corner of the real board |
-| `stub-pieces-x4.stl` | 1 | PLA | one of each shape, to seat and to stack |
+| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 22 x 55 mm strip of the real board, top of column 7 |
+| `stub-pieces-x5.stl` | 1 | PLA | one of every piece — four markers and a runner — to seat and to stack |
 
 **The board is two files and needs both.** There is no single-colour version
 any more: the numbers, the title, the border and the alternating post tops
@@ -182,10 +182,11 @@ interchangeable in every way that matters: any one stacks on any other and
 adds the same 6.30 mm.
 
 **Pieces print the right way up — skirt down, post up.** The first layer is
-the full 16.5 mm skirt, which is a generous footprint, so no brim is needed.
+the full 14.5 mm skirt (16.5 on a runner), which is a generous footprint, so
+no brim is needed.
 
 The socket faces downward and is closed by a **45° cone**, not a flat ceiling.
-That is deliberate: a flat roof would be a 6.13 mm bridge over thin air part
+That is deliberate: a flat roof would be a 6.24 mm bridge over thin air part
 way up the print, whereas a 45° cone self-supports. Nothing ever touches that
 surface, so its finish does not matter.
 
