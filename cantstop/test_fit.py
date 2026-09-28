@@ -556,15 +556,20 @@ def main():
         check(f"{name} sits on the bed at z=0 and needs no raft",
               abs(m.bounds[0][2]) < 1e-6, f"min z = {m.bounds[0][2]:.4f}")
 
+    # THE DUAL-NOZZLE BED, not the single-nozzle one. The board is two
+    # filaments and always has been since the numbers went in, so the figure
+    # that applies is the smaller one -- 25 mm less in X. Checking it against
+    # the single-nozzle bed is how a 309.7 mm board came to be declared a fit.
     lo, hi = brd.bounds
     w, h, t = hi - lo
-    check("board fits the print bed",
-          w <= P.BED_X and h <= P.BED_Y and t <= P.BED_Z,
+    check("board fits the DUAL-nozzle bed",
+          w <= P.BED_X_DUAL and h <= P.BED_Y_DUAL and t <= P.BED_Z,
           f"{w:.1f} x {h:.1f} x {t:.1f} mm in "
-          f"{P.BED_X:.0f} x {P.BED_Y:.0f} x {P.BED_Z:.0f}")
+          f"{P.BED_X_DUAL:.0f} x {P.BED_Y_DUAL:.0f} x {P.BED_Z:.0f}")
     check("board keeps a margin off the bed edge",
-          P.BED_X - w >= 10 and P.BED_Y - h >= 10,
-          f"{P.BED_X - w:.0f} mm spare in X, {P.BED_Y - h:.0f} mm in Y")
+          P.BED_X_DUAL - w >= 10 and P.BED_Y_DUAL - h >= 10,
+          f"{P.BED_X_DUAL - w:.0f} mm spare in X, "
+          f"{P.BED_Y_DUAL - h:.0f} mm in Y")
 
     print("\nstacking, measured on the real meshes")
     heights = []

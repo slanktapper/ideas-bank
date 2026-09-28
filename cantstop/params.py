@@ -181,15 +181,21 @@ OCTAGON_MARGIN  = 6.0    # clear air between the content and the frame
 # chamfer of exactly 2/(2+sqrt2) = 0.5858 of it, at which point the four flats
 # and the four corner cuts come out identical.
 #
-# TRUE: all eight edges the same length. Letting the frame hug the content
-# instead was tried and it works, but it is not an octagon any more so much
-# as a rectangle with its corners off -- 293 x 306 mm, with the left and
-# right flats running 172 mm against 159 on the top and bottom.
+# FALSE, and not for looks: a regular octagon is SQUARE, and the dual-nozzle
+# bed is not. 300 x 320 mm has 20 mm more in Y than in X, and the content --
+# thirteen cells tall, eleven columns wide, with the title below -- is 266 x
+# 282. Forcing a square frame around that spends the board's width on empty
+# plate at the left and right and puts it 10 mm over the bed in exactly the
+# axis that is short.
 #
-# Keeping it regular means the content has to be roughly square, and that is
-# what COLUMN_SHORTFALL and PITCH_X above are set for: 266 x 282 mm of
-# content in a 309.5 mm frame, 86% of it filled across and 91% up.
-OCTAGON_REGULAR = True
+# Sizing each axis to its own content gives 290.0 x 306.0 and fits with 10 mm
+# to spare in X and 14 in Y. Nothing else moves: same pitches, same drops,
+# same numbers, same lip, same pieces.
+#
+# It was regular for one revision and it did look better. Equal edges cost
+# 20 mm of X and the bed has not got it. True is one line away if the board
+# is ever printed in one colour, or on something bigger.
+OCTAGON_REGULAR = False
 OCTAGON_SPOKE_W = 3.20   # bracing struts from the lattice out to the frame
 OCTAGON_SPOKE_H = 3.40
 
@@ -582,6 +588,16 @@ STUB_PIECES  = 4          # full pieces printed alongside the stub: ONE OF
 # --------------------------------------------------------------------------
 # Printer envelope (Bambu Lab H2D, single nozzle) — see ../available-tools.md
 # --------------------------------------------------------------------------
-BED_X = 325.0
+BED_X = 325.0        # single nozzle
 BED_Y = 320.0
 BED_Z = 325.0
+
+# TWO NOZZLES ON ONE TOOLHEAD, so the second one has to be able to reach
+# everywhere the first one does and the usable bed shrinks by 25 mm in X.
+# The BOARD is a two-filament part and has to fit inside THIS, not the figure
+# above; everything else -- the pieces, the coupon -- is one colour and gets
+# the full bed. available-tools.md has had both numbers all along and
+# params.py only ever carried the larger one, which is how a 309.7 mm board
+# came to be declared a fit.
+BED_X_DUAL = 300.0
+BED_Y_DUAL = 320.0

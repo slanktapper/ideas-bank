@@ -12,19 +12,26 @@ is thirteen — eighty-three cells in all.
 
 Columns are **centre-aligned** on a shared midline, so the cell field is a
 symmetric lens rather than a pyramid, and the whole thing sits inside a
-**regular octagon** — all eight edges the same 128.3 mm, 309.7 mm across.
+**octagon that hugs its content** — 290 × 306 mm, four flats and four corner
+cuts but not a regular one, because the bed it has to print on is not square
+either.
 
-Keeping it regular means keeping the content roughly square, and the title
-made that hard: a lens 13 cells tall and 11 columns wide is much taller than
-it is wide, and a square frame around it leaves the left and right flats
-empty. Two things fix it. The columns are spaced 24 mm rather than 22, which
-widens the content. And the four outer steps are a box and a quarter rather
-than a whole box, which lowers the number boxes at columns 2 and 12 — the top
-outer corner of one of those is the single point that binds the frame, since
-it sits far out in x and well up in y, exactly where the corner cut is.
-Lowering it also lowers the letter hanging under the same column, so it pays
-twice: 326 mm of frame becomes 310, and the content fills 86% of the board
-across and 91% up.
+It was regular for one revision and it did look better. What settled it is
+that the board is a **two-filament** part, and two nozzles on one toolhead
+cost 25 mm of X: the usable bed is 300 × 320, not 325 × 320. A regular
+octagon is square by definition, so wrapping content that is 266 wide and 282
+tall in one spends the board's width on empty plate at the left and right and
+lands it 10 mm over the bed in exactly the axis that is short. Sizing each
+axis to its own content gives 290 × 306 and fits with 10 mm to spare in X and
+14 in Y, with nothing else moved — same pitches, same drops, same numbers,
+same lip, same pieces.
+
+The columns are spaced 24 mm rather than 22, and the four outer steps are a
+box and a quarter rather than a whole box. Both were done for the regular
+octagon, which was bound by its DIAGONAL: the corner cuts have to clear the
+number boxes at columns 2 and 12, which sit far out in x and well up in y,
+exactly where the cut is. They still earn their place — the content fills
+92% of the board across and 92% up.
 
 At that point the frame is about as small as this content allows. The eleven
 summits now sit on a staircase that runs very nearly parallel to the corner
@@ -289,10 +296,9 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 The **test stub has been printed and came out right** — the engraved numbers,
 the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
-309.7 × 309.7 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 15 mm
-spare in X and 10 mm in Y — about 5 mm of clearance to the bed edge on the
-short side, which is the tightest thing about the design now. A full set is
-about **243 g** — 184 g of board at 10% infill plus 59 g of solid pieces.
+290.0 × 306.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
+300 × 320 mm with 10 mm spare in X and 14 mm in Y. A full set is about
+**237 g** — 177 g of board at 10% infill plus 60 g of solid pieces.
 
 `test_fit.py` passes 98 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's

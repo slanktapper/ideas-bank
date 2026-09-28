@@ -408,11 +408,14 @@ def _bed_fit_diagram(board_full):
 
     lo, hi = board_full.bounds
     w, h = hi[0] - lo[0], hi[1] - lo[1]
-    ox, oy = (P.BED_X - w) / 2 - lo[0], (P.BED_Y - h) / 2 - lo[1]
+    ox, oy = (P.BED_X_DUAL - w) / 2 - lo[0], (P.BED_Y_DUAL - h) / 2 - lo[1]
 
     fig, ax = plt.subplots(figsize=(8.2, 8.2), dpi=170)
-    ax.add_patch(Rectangle((0, 0), P.BED_X, P.BED_Y, facecolor="#eceff4",
-                           edgecolor="#4c566a", lw=1.6, zorder=0))
+    ax.add_patch(Rectangle((0, 0), P.BED_X, P.BED_Y, facecolor="#e5e9f0",
+                           edgecolor="#d8dee9", lw=1.0, zorder=0))
+    ax.add_patch(Rectangle((0, 0), P.BED_X_DUAL, P.BED_Y_DUAL,
+                           facecolor="#eceff4", edgecolor="#4c566a", lw=1.6,
+                           zorder=0))
     ax.add_patch(Polygon([(x + ox, y + oy) for x, y in B.octagon()],
                          closed=True, facecolor="#e5e9f0", edgecolor="#4c566a",
                          lw=1.0, zorder=1))
@@ -476,9 +479,10 @@ def _bed_fit_diagram(board_full):
     ax.set_aspect("equal")
     ax.axis("off")
     ax.set_title(
-        f"Board on the H2D bed (single nozzle)\n"
-        f"{w:.0f} x {h:.0f} mm in a {P.BED_X:.0f} x {P.BED_Y:.0f} mm envelope"
-        f"  —  {P.BED_X - w:.0f} mm spare in X, {P.BED_Y - h:.0f} mm in Y",
+        f"Board on the H2D bed (DUAL nozzle — the board is two filaments)\n"
+        f"{w:.0f} x {h:.0f} mm in a {P.BED_X_DUAL:.0f} x {P.BED_Y_DUAL:.0f} mm"
+        f" envelope  —  {P.BED_X_DUAL - w:.0f} mm spare in X, "
+        f"{P.BED_Y_DUAL - h:.0f} mm in Y",
         fontsize=12, color="#2e3440", pad=14)
     fig.tight_layout()
     fig.savefig(RENDER_DIR / "08-bed-fit.png", facecolor="white")
@@ -509,7 +513,9 @@ def print_report(rows, board_body):
           f"(1 board + {P.MARKERS_PER_PLAYER} each of "
           f"{'/'.join(P.PLAYER_STYLES)} + {P.RUNNERS} runners)")
     print(f"board envelope: {hi[0]-lo[0]:.1f} x {hi[1]-lo[1]:.1f} x {hi[2]-lo[2]:.1f} mm "
-          f"(bed {P.BED_X:.0f} x {P.BED_Y:.0f} x {P.BED_Z:.0f})")
+          f"(dual-nozzle bed {P.BED_X_DUAL:.0f} x {P.BED_Y_DUAL:.0f} x "
+          f"{P.BED_Z:.0f}; {P.BED_X_DUAL-(hi[0]-lo[0]):.0f} spare in X, "
+          f"{P.BED_Y_DUAL-(hi[1]-lo[1]):.0f} in Y)")
     print(f"cells: {sum(P.ROWS)}   columns: {len(P.COLUMNS)}   ladder: {P.ROWS}")
 
 
