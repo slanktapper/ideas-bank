@@ -263,7 +263,7 @@ spare in X and 10 mm in Y — about 5 mm of clearance to the bed edge on the
 short side, which is the tightest thing about the design now. A full set is
 about **243 g** — 184 g of board at 10% infill plus 59 g of solid pieces.
 
-`test_fit.py` passes 76 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 83 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same
