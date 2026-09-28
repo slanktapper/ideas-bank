@@ -368,66 +368,85 @@ def _post(cx: float, cy: float, z0: float, segs: int | None = None
     return m
 
 
-def _numeral_shapes(segs: int | None = None):
-    """(cutters, fills) for the inlaid digits.
+def _digit_solid(num: int, x: float, y: float, z0: float,
+                 thickness: float) -> trimesh.Trimesh:
+    t = S.text_solid(str(num), P.NUMERAL_SIZE, thickness,
+                     weight=P.NUMERAL_FONT_WEIGHT)
+    w = t.bounds[1][0] - t.bounds[0][0]
+    if w > P.NUMERAL_MAX_W:              # 10, 11 and 12 are wider than a box
+        k = P.NUMERAL_MAX_W / w
+        t.apply_scale((k, k, 1.0))
+    t.apply_translation((x, y, z0))
+    return t
+
+
+def _summit_parts(segs: int | None = None):
+    """(pocket cutters, accent solids, body posts) for the eleven summits.
 
     The digit is cut INTO the box rather than raised off it, because a piece
     seats on that box: a digit standing proud would be what the skirt rests on
-    and the piece would rock. The fill is exactly the pocket, so in two
-    colours it comes out flush; in one colour the pocket is left empty and
-    reads as engraving.
+    and the piece would rock.
 
-    The post's footprint is kept out of both, so it stands on solid plate
-    instead of bridging over the engraving.
+    The post is then split by the same glyph, extruded vertically through it.
+    Where the digit passes under the post, the post is accent-coloured; the
+    rest of it is board-coloured. Seen from directly above the number is
+    therefore whole -- the post is coloured by exactly what it covers. A post
+    in one flat colour loses a sixth of an 8 and takes its waist with it.
     """
-    cutters, fills = [], []
+    segs = segs or P.CELL_SEGS
+    cutters, accents, body_posts = [], [], []
+    depth, t_post = P.NUMERAL_DEPTH, P.POST_H
+
     for i, num in enumerate(P.COLUMNS):
         x, y = numeral_xy(i)
-        keep_out = S.tube(x, y, P.POST_D * 0.5 + P.NUMERAL_POST_CLEAR, 0.0,
-                          P.PLAQUE_T - P.NUMERAL_DEPTH - 1.0, P.PLAQUE_T + 2.0,
-                          segs=segs or P.CELL_SEGS)
 
-        def _digit(thickness):
-            t = S.text_solid(str(num), P.NUMERAL_SIZE, thickness,
-                             weight=P.NUMERAL_FONT_WEIGHT)
-            w = t.bounds[1][0] - t.bounds[0][0]
-            if w > P.NUMERAL_MAX_W:
-                k = P.NUMERAL_MAX_W / w
-                t.apply_scale((k, k, 1.0))
-            t.apply_translation((x, y, P.PLAQUE_T - P.NUMERAL_DEPTH))
-            return t
-
+        # the pocket stops at the post's edge, so the two oranges meet flush
+        column = S.tube(x, y, P.POST_D * 0.5 + P.NUMERAL_POST_CLEAR, 0.0,
+                        P.PLAQUE_T - depth - 1.0, P.PLAQUE_T + 2.0, segs=segs)
         # the cutter runs proud of the plate so its top face is not coplanar
         # with the plate's, which is where boolean engines get fussy
         cutters.append(trimesh.boolean.difference(
-            [_digit(P.NUMERAL_DEPTH + 1.0), keep_out], engine="manifold"))
-        fills.append(trimesh.boolean.difference(
-            [_digit(P.NUMERAL_DEPTH), keep_out], engine="manifold"))
-    return cutters, fills
+            [_digit_solid(num, x, y, P.PLAQUE_T - depth, depth + 1.0), column],
+            engine="manifold"))
+        accents.append(trimesh.boolean.difference(
+            [_digit_solid(num, x, y, P.PLAQUE_T - depth, depth), column],
+            engine="manifold"))
+
+        post = _post(x, y, P.PLAQUE_T, segs=segs)
+        prism = _digit_solid(num, x, y, P.PLAQUE_T, t_post + 1.0)
+        accents.append(trimesh.boolean.intersection([post, prism],
+                                                    engine="manifold"))
+        body_posts.append(trimesh.boolean.difference([post, prism],
+                                                     engine="manifold"))
+    return cutters, accents, body_posts
 
 
 def build_board(with_numerals: bool = True, numerals_only: bool = False,
                 segs: int | None = None, verbose: bool = False) -> trimesh.Trimesh:
     """Construct the board.
 
-    numerals_only=True   just the digit fills, for a second filament
+    numerals_only=True   the accent parts: the digit fills and the slice of
+                         each post the digit passes through
     with_numerals=True   the board with the pockets cut -- single colour, the
                          numbers read as engraved
     with_numerals=False  the body with pockets too, to pair with numerals_only
     """
     segs = segs or P.CELL_SEGS
-    cutters, fills = _numeral_shapes(segs)
+    cutters, accents, body_posts = _summit_parts(segs)
     if numerals_only:
-        return S.union_all(fills)
+        return S.union_all(accents)
 
     parts: list[trimesh.Trimesh] = []
+    summit_n = 0
     for i, r in all_cells():
         x, y = cell_xy(i, r)
         if is_summit(i, r):
-            # the box replaces the round pad; the post on it is an ordinary
-            # body part, printed in the board's colour
+            # the box replaces the round pad, and the post on it is only the
+            # part the digit does not pass through -- the rest ships with the
+            # numbers so it prints in their colour
             parts.append(build_summit_box(x, y))
-            parts.append(_post(x, y, P.PLAQUE_T, segs=segs))
+            parts.append(body_posts[summit_n])
+            summit_n += 1
         else:
             parts.append(build_cell(x, y, segs=segs))
 
@@ -439,7 +458,8 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
     body = S.union_all(parts)
 
     if not with_numerals:
-        return body
+        return trimesh.boolean.difference([body, S.union_all(cutters)],
+                                          engine="manifold")
     if verbose:
         print("    cutting 11 number pockets ...", flush=True)
     return trimesh.boolean.difference([body, S.union_all(cutters)],

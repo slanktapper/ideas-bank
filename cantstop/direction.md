@@ -41,16 +41,21 @@ round pad, with the digit and the post sharing the box's centre. The summit is
 an ordinary cell — you land on it exactly as you land on any other — and the
 thing you land on is the number.
 
-**The post is body-coloured, and that is the whole trick.** It has to stand in
-the middle of the digit, so the only free variable is its colour. Painted to
-match the number, post and glyph merged into a single orange mass and 6, 8 and
-9 became indistinguishable. In the board's own colour the post recedes into
-the background instead, and the number reads as a **stencil glyph** — a black
-disc punched through orange, which the eye completes. That only works if the
-digit is large next to the post, hence a 20 × 22 mm box carrying a 16 mm cap
-height over a 5.9 mm post. Measured on the meshes, the post takes at most 22%
-of a glyph (the 7); on 11 and 12 it falls in the gap between the digits and
-costs nothing at all.
+**The post is split by the digit, and that is the whole trick.** It has to
+stand in the middle of the glyph, so the only question is what colour it
+should be — and the answer is neither black nor orange but both. The post is
+cut by the digit extruded vertically through it: where the glyph passes, the
+post goes in the number's colour; the rest goes in the board's. Seen from
+directly above, the post is coloured by exactly what it covers, so the number
+is whole.
+
+Both flat colours were tried first and both failed. In the number's colour
+the post merged with the glyph into one orange mass. In the board's colour it
+punched a black hole through the middle. Rendered head-on at the same camera
+and counted in pixels: a solid post loses **16% of an 8** and takes its waist
+with it; split this way, **100% of the glyph survives** — 14 pixels out of
+74,000, which is antialiasing on the chamfer. `test_fit.py` checks that every
+square millimetre the post covers is handed back in the number's colour.
 
 The digit is **inlaid flush, not embossed**, and that is structural rather
 than decorative: a piece seats on this plate, so a digit standing 1.2 mm proud
@@ -185,10 +190,10 @@ bores**, because the board is male: you try a real piece over each one.
 - **A piece on a summit covers that column's number.** Unavoidable once the
   post is on the digit, and accepted: by then the column is claimed. Every
   unclaimed number reads from any angle.
-- **Stencil legibility on a real print.** The renders say the digits survive
-  the post. A 1.2 mm deep pocket in a dark filament, seen across a table, is
-  another matter — `NUMERAL_SIZE`, `PLAQUE_W`/`PLAQUE_H` and `NUMERAL_DEPTH`
-  are the levers if it disappoints.
+- **The split post on a real print.** Geometrically the number is whole. What
+  a two-material boundary running up the side of a 5.9 mm post actually looks
+  like off the printer — colour bleed, a seam, purge staining — is a thing
+  only a print will tell us.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
   octagon is lattice and spokes only. It looks deliberate in plan; whether it
   looks unbalanced on a table is a question for a print.

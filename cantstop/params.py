@@ -115,13 +115,15 @@ PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 # Each column's topmost cell IS its number box: a rounded plate standing in
 # for the usual round pad. The digit and the post share the box's centre.
 #
-# The post is BODY-COLOURED, and that is the whole trick. It has to stand in
-# the middle of the digit, so the only question is which colour lets the digit
-# survive it. Painting it to match the number was tried and failed -- post and
-# glyph merged into one orange mass and 6, 8 and 9 became indistinguishable.
-# In the board's own colour the post recedes into the background instead, and
-# the number reads as a stencil glyph: a black disc punched through orange,
-# which the eye completes.
+# The post stands in the middle of the digit, so the only question is what
+# colour it should be -- and the answer is neither black nor orange but BOTH,
+# split by the digit itself. The post is cut by the glyph extruded vertically
+# through it: the part of the post where the digit passes goes in the number's
+# colour, the rest in the board's. Seen from directly above the number is
+# therefore complete -- the post is coloured by exactly what it covers.
+#
+# Rendered head on and counted in pixels: a solid black post loses 16% of an
+# 8 and destroys its waist; split this way, 100% of the glyph survives.
 #
 # That only works if the digit is large next to the post, hence a box big
 # enough to carry a 16 mm cap height over a 5.9 mm post.
@@ -133,8 +135,10 @@ NUMERAL_MAX_W  = 17.0   # widest a number may be; 10, 11 and 12 scale to fit,
                         # and on those the post falls in the gap BETWEEN the
                         # two digits, where it costs nothing
 NUMERAL_DEPTH  = 1.20   # how deep the digit is cut into the box
-NUMERAL_POST_CLEAR = 0.30  # the post stands on solid plate, so its footprint
-                           # plus this is kept out of the pocket
+NUMERAL_POST_CLEAR = 0.00  # the pocket stops exactly at the post's edge, so
+                           # the orange in the pocket and the orange on the
+                           # post meet with no black seam between them. The
+                           # post still stands on solid plate.
 NUMERAL_FONT_WEIGHT = "bold"
 
 # --------------------------------------------------------------------------

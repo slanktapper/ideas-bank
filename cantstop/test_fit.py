@@ -187,42 +187,49 @@ def main():
           0 < P.NUMERAL_DEPTH < P.PLAQUE_T - 1.0,
           f"{P.NUMERAL_DEPTH:.2f} mm deep in a {P.PLAQUE_T:.2f} mm plate")
 
-    # THE LEGIBILITY MECHANISM. The post has to stand in the middle of the
-    # digit, so the only free variable is its colour. Body-coloured, it
-    # recedes into the background and the number reads as a stencil glyph;
-    # painted to match the number it merged with the glyph into one orange
-    # mass and 6, 8 and 9 became indistinguishable.
+    # THE LEGIBILITY MECHANISM. The post stands in the middle of the digit,
+    # so the only question is its colour -- and the answer is both, split by
+    # the glyph itself. Whatever orange the pocket gives up under the post,
+    # the post gives back on its own top face, so from directly above the
+    # number is whole. A post in one flat colour loses a sixth of an 8 and
+    # takes its waist with it.
     accent = B.build_board(numerals_only=True)
-    check("the posts are BODY parts, so they recede instead of joining the "
-          "digit's colour",
-          accent.bounds[1][2] <= P.PLAQUE_T + 1e-6,
-          f"accent part tops out at z={accent.bounds[1][2]:.2f}, flush with "
-          f"the box at {P.PLAQUE_T:.2f} -- no post in it")
-    check("the board body carries every post itself",
+    check("the accent part reaches the tops of the posts",
+          abs(accent.bounds[1][2] - (P.PLAQUE_T + P.POST_H)) < 1e-6,
+          f"z={accent.bounds[1][2]:.2f}; the digit is carried up through "
+          f"each post, not stopped at the plate")
+    check("the board body still carries the rest of every post",
           abs(B.build_board(with_numerals=False).bounds[1][2]
-              - (P.PLAQUE_T + P.POST_H)) < 0.01,
-          "body reaches the summit post tops")
+              - (P.PLAQUE_T + P.POST_H)) < 1e-6,
+          "body and accent split each post between them")
 
-    # and a stencil only works if the glyph is large next to the hole
-    lost = []
+    def _vol(m):
+        # an empty boolean result has no volume, and trimesh reports NaN
+        return float(m.volume) if len(m.faces) else 0.0
+
+    worst_gap, worst_num, untouched = 0.0, None, []
     for i, num in enumerate(P.COLUMNS):
         x, y = B.numeral_xy(i)
-        g = S.text_solid(str(num), P.NUMERAL_SIZE, P.NUMERAL_DEPTH,
-                         weight=P.NUMERAL_FONT_WEIGHT)
-        w_ = g.bounds[1][0] - g.bounds[0][0]
-        if w_ > P.NUMERAL_MAX_W:
-            k = P.NUMERAL_MAX_W / w_
-            g.apply_scale((k, k, 1.0))
-        g.apply_translation((x, y, 0.0))
-        ko = S.tube(x, y, P.POST_D / 2 + P.NUMERAL_POST_CLEAR, 0.0,
-                    -1.0, 2.0, segs=64)
-        cut = trimesh.boolean.difference([g, ko], engine="manifold")
-        lost.append((100 * (g.volume - cut.volume) / g.volume, num))
-    worst_pct, worst_num = max(lost)
-    check("the post takes only a corner out of each glyph",
-          worst_pct <= 25.0,
-          f"worst is {worst_pct:.0f}% of the {worst_num}; on 11 and 12 the "
-          f"post falls between the digits and costs nothing")
+        glyph = B._digit_solid(num, x, y, 0.0, 1.0)
+        column = S.tube(x, y, P.POST_D / 2 + P.NUMERAL_POST_CLEAR, 0.0,
+                        -1.0, 2.0, segs=96)
+        # orange the pocket gives up because the post's footprint is cut out
+        given_up = _vol(glyph) - _vol(trimesh.boolean.difference(
+            [glyph, column], engine="manifold"))
+        # orange the post hands back on its own face
+        handed_back = _vol(trimesh.boolean.intersection(
+            [column, B._digit_solid(num, x, y, 0.0, 1.0)], engine="manifold"))
+        if given_up < 0.05:
+            untouched.append(num)          # the post misses this glyph entirely
+            continue
+        gap = abs(given_up - handed_back) / given_up
+        if gap > worst_gap:
+            worst_gap, worst_num = gap, num
+    check("every square millimetre the post covers, it hands back in the "
+          "number's colour",
+          worst_gap < 0.01,
+          f"worst mismatch {100*worst_gap:.3f}% (the {worst_num}); "
+          f"{sorted(untouched)} are missed by their post entirely")
 
     # Only members taller than a box matter: a strut is 3.4 mm and a box is
     # 4.0 mm thick, so anything running under one is buried inside it.

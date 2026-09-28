@@ -58,11 +58,16 @@ Add part → Load, then assign the numerals to a different filament). They are
 modelled in the same coordinate system, so they land in the right place with
 no manual positioning.
 
-`board-numerals.stl` is the digits and nothing else. **The posts are ordinary
-board parts and must print in the body colour** — that is what makes the
-numbers readable. A post stands in the middle of each digit, so in the
-number's own colour the two merge into one blob; in the board's colour the
-post recedes and the digit reads as a stencil.
+`board-numerals.stl` is the digits **plus the slice of each summit post the
+digit passes through**. That is what makes the numbers readable: a post stands
+in the middle of each digit, and rather than pick one flat colour for it, the
+post is split by the glyph. Where the digit passes, the post prints in the
+number's colour; the rest prints with the body. Seen from above the post is
+coloured by exactly what it covers and the number is whole.
+
+So the two files interlock more tightly than usual — each summit post is
+shared between them. Load both, assign `board-numerals.stl` to the accent
+filament, and do not try to print either alone and expect a complete post.
 
 The digits are **pockets in the plate, filled flush**, not raised lettering: a
 piece seats on the number box, and a raised digit is what it would rest on.
