@@ -43,13 +43,22 @@ ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 # lens move out into the octagon's cut corners, and the board goes 284.9 ->
 # 297.6 mm. On its own that still fits the bed. Together with the title
 # below it does not; see TITLE_TEXT.
-COLUMN_SHORTFALL = [0.0, 0.0, 0.0, 20.0, 40.0, 60.0]
+#
+# The four outer steps are 25 mm -- a box and a quarter each -- rather than a
+# whole box. That is not a silhouette decision, it is what buys back a REGULAR
+# octagon. The frame is bound by its DIAGONAL, and the point that binds it is
+# the top outer corner of column 2's number box: far out in x and well up in
+# y, which is exactly where the corner cut is. Dropping the outer columns
+# lowers that corner, and lowers the letter hanging under the same column
+# too, so it pays twice. [0, 0, 0, 20, 40, 60] needs a 326 mm frame; this
+# needs 310.
+COLUMN_SHORTFALL = [0.0, 0.0, 0.0, 25.0, 50.0, 75.0]
 
 PITCH_X = 24.0      # centre-to-centre spacing between columns. Widened from
-                    # 22 along with the title: the frame hugs the content now,
-                    # so a wider grid fills a shape that is otherwise much
-                    # taller than it is wide. It also buys the two-digit
-                    # numbers enough room to print at natural width.
+                    # 22 along with the title: a regular octagon is square, so
+                    # a lens that is much taller than it is wide leaves the
+                    # left and right flats empty. 24 brings the content to
+                    # 266 x 282, which is close enough to square to fill it.
 PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
                     # pitch of their own, set by COLUMN_SHORTFALL above.
 
@@ -141,16 +150,15 @@ OCTAGON_MARGIN  = 6.0    # clear air between the content and the frame
 # chamfer of exactly 2/(2+sqrt2) = 0.5858 of it, at which point the four flats
 # and the four corner cuts come out identical.
 #
-# FALSE here, because the lens is not square any more. With the title below
-# it the content is 266 x 306, and wrapping that in a square octagon costs
-# 30 mm of frame and spends it on empty plate at the left and right. What
-# binds a regular one is the DIAGONAL: the corner cuts have to clear the
-# number boxes at columns 2 and 12, which sit at the extreme of x and well up
-# in y. Sizing each axis to its own content hugs the board instead, and the
-# corner cuts are then taken back to whatever clears the content.
+# TRUE: all eight edges the same length. Letting the frame hug the content
+# instead was tried and it works, but it is not an octagon any more so much
+# as a rectangle with its corners off -- 293 x 306 mm, with the left and
+# right flats running 172 mm against 159 on the top and bottom.
 #
-# True still works and is one line away.
-OCTAGON_REGULAR = False
+# Keeping it regular means the content has to be roughly square, and that is
+# what COLUMN_SHORTFALL and PITCH_X above are set for: 266 x 282 mm of
+# content in a 309.5 mm frame, 86% of it filled across and 91% up.
+OCTAGON_REGULAR = True
 OCTAGON_SPOKE_W = 3.20   # bracing struts from the lattice out to the frame
 OCTAGON_SPOKE_H = 3.40
 
@@ -198,11 +206,16 @@ SUMMIT_STEP  = 4.0    # small step out for the top cell, so its box clears the
                       # pad below it
 
 NUMERAL_SIZE   = 16.0   # cap height of EVERY number, one and two digit alike
-NUMERAL_MAX_W  = 27.0   # widest a number may be. At PITCH_X 24 a two-digit
-                        # number fits at its natural 26 mm, so nothing is
-                        # condensed any more -- but the clamp stays, because
-                        # narrowing the pitch would need it again. Squeezing
-                        # is X ONLY, never a uniform scale.
+NUMERAL_MAX_W  = 24.0   # widest a number may be. A two-digit number is 26 mm
+                        # at this cap height, so 10, 11 and 12 are condensed
+                        # by 8% -- X ONLY, never a uniform scale, which would
+                        # take their cap height down with their width and make
+                        # them read as a smaller set of labels. Every number
+                        # on the board is 16 mm tall.
+                        #
+                        # The 2 mm matters: this box's outer corner is what
+                        # binds the octagon's diagonal, so every millimetre
+                        # off it is two off the frame.
                         #
                         # Scaling them uniformly was the first version and it
                         # was wrong: clamped to 14 mm, "12" came out at 0.54
@@ -216,7 +229,7 @@ NUMERAL_MAX_W  = 27.0   # widest a number may be. At PITCH_X 24 a two-digit
                         # this column's centre, so a number wider than 27.5 mm
                         # would have its ends stood on by the column next door.
                         # 24 leaves 1.75 mm.
-NUMERAL_BOX_W  = 29.0   # footprint a number reserves on the plate: the widest
+NUMERAL_BOX_W  = 26.0   # footprint a number reserves on the plate: the widest
                         # number plus a margin, and the SAME for every column
                         # so the octagon stays symmetric about the lens rather
                         # than growing only on the two-digit side

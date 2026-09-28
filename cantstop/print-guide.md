@@ -84,7 +84,7 @@ Print it in the two colours you mean to use, then check:
 the lip and the seating. `renders/07-test-print.png` is what it should come
 out like.
 
-What the stub cannot tell you is whether 300 mm of flat PLA warps. Nothing
+What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 66 mm across will.
 
 ---
@@ -146,12 +146,13 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **246 g**: ~187 g board (6 mm slab at 10% infill),
+A full set is roughly **243 g**: ~184 g board (6 mm slab at 10% infill),
 ~53 g of markers (44), ~5 g of runners (3). A marker is 16.5 mm across and
 8.45 mm tall, a runner 16.5 x 10.45, and every stacked piece adds exactly
 6.30 mm. The board is
-293.0 × 306.0 × 9.2 mm and sits on the H2D bed with 32 mm spare in X and
-14 mm in Y.
+309.7 × 309.7 × 9.2 mm and sits on the H2D bed with 15 mm spare in X and
+10 mm in Y — roughly 5 mm to the bed edge on the short side, so centre it
+carefully and keep the brim modest.
 
 ---
 
@@ -208,7 +209,7 @@ moving it does far less than it looks: at 5% the board is 131 g, at 10% it is
 as stiff in bending as the old lattice was, for 13% more plastic. Turning the
 infill up buys very little more.
 
-**Brim.** 300 mm of flat 6 mm PLA is a large area and the corners of the
+**Brim.** 310 mm of flat 6 mm PLA is a large area and the corners of the
 octagon are exactly where a plate lifts. The H2D's heated chamber helps; a
 brim is cheap insurance on the first attempt.
 
@@ -247,10 +248,10 @@ the board will be.
 
 ## 6. After printing
 
-- Check the board is flat. Sight down it. 300 mm of solid PLA is the most
+- Check the board is flat. Sight down it. 310 mm of solid PLA is the most
   warp-prone thing in this project.
 - Check a piece seats on a post at the middle, at the ends of the lens, and on
-  a summit. FDM parts are not dimensionally uniform across 300 mm; if the
+  a summit. FDM parts are not dimensionally uniform across 310 mm; if the
   edges differ from the middle, that is bed levelling or warp, not the model.
 - Check three pieces stack without wobble. The posts are deliberately short
   (3.2 mm), so if a stack rocks, look at the skirt seating on the face below
