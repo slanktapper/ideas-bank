@@ -41,13 +41,13 @@ Only then print the board.
 ## 1a. Then print the stub
 
 ```
-stub-board-body.stl + stub-board-numerals.stl   ~11 g, ~40 min   two colours
+stub-board-body.stl + stub-board-numerals.stl   ~17 g, ~1 h     two colours
 stub-pieces-x2.stl                              ~2 g,  ~10 min   2 markers
 ```
 
 The coupon answers one question. The stub answers the rest of them, and it
 answers them about the real board, because **it is the real board**: the
-finished mesh intersected with a 66 x 61 mm box, not a small part built to
+finished mesh intersected with a 66 x 95 mm box, not a small part built to
 look similar. The slab thickness, the raised lip, the engraved digits, the
 split posts, the clearance between the lip and the topmost pads and the
 seating faces are all bit-for-bit what the 285 mm board would print.
@@ -100,7 +100,7 @@ and, for the test print above:
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 66 x 61 mm corner of the real board, lip cap included |
+| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 66 x 95 mm corner of the real board, lip cap included |
 | `stub-board.stl` | 1 | PLA red | the same corner, single colour |
 | `stub-pieces-x2.stl` | 1 | PLA | two markers, to seat one and stack the other |
 
@@ -144,8 +144,10 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **216 g**: ~158 g board (6 mm slab at 10% infill),
-~53 g of markers (44), ~5 g of runners (3). The board is
+A full set is roughly **217 g**: ~158 g board (6 mm slab at 10% infill),
+~53 g of markers (44), ~5 g of runners (3). A marker is 16.5 mm across and
+8.45 mm tall, a runner 16.5 x 10.45, and every stacked piece adds exactly
+6.30 mm. The board is
 284.9 × 284.9 × 9.2 mm and sits on the H2D bed with 40 mm spare in X and
 35 mm in Y.
 
@@ -167,12 +169,18 @@ constraint, not a happy accident:
 flat and every reason to stand it on edge.
 
 **Pieces print the right way up — skirt down, post up.** The first layer is
-the full 13.2 mm skirt, which is a generous footprint, so no brim is needed.
+the full 16.5 mm skirt, which is a generous footprint, so no brim is needed.
 
 The socket faces downward and is closed by a **45° cone**, not a flat ceiling.
 That is deliberate: a flat roof would be a 6.35 mm bridge over thin air part
 way up the print, whereas a 45° cone self-supports. Nothing ever touches that
 surface, so its finish does not matter.
+
+The piece is short enough now that the cone cannot reach a point — it needs
+3.18 mm of height and has 1.90 — so it is truncated and **2.55 mm of the roof
+is bridged**. That is short enough that no slicer will complain and no
+support is wanted. If you ever make the pieces shorter still, watch that
+number: `test_fit.py` prints it and fails it past 4 mm.
 
 Do **not** print pieces upside down to "avoid" the socket. Inverted, the step
 from post to skirt becomes a flat overhang ring and genuinely needs support.
@@ -187,7 +195,7 @@ from post to skirt becomes a flat overhang ring and genuinely needs support.
 | Walls | 3 | 3 |
 | Top/bottom layers | 3 | 3 |
 | Infill | **10%** | 20% |
-| Brim | see below | none needed — 13.2 mm skirt |
+| Brim | see below | none needed — 16.5 mm skirt |
 | Supports | **none** | **none** |
 
 **The 10% is the design, not a suggestion.** A solid plate's cost is its
@@ -255,7 +263,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 69 checks, ~30 s
+python3 test_fit.py    # 72 checks, ~40 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

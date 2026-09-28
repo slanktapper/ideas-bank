@@ -176,10 +176,27 @@ PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 SUMMIT_STEP  = 4.0    # small step out for the top cell, so its box clears the
                       # pad below it
 
-NUMERAL_SIZE   = 16.0   # cap height of the digits
-NUMERAL_MAX_W  = 14.0   # widest a number may be; 10, 11 and 12 scale to fit,
-                        # and on those the post falls in the gap BETWEEN the
-                        # two digits, where it costs nothing
+NUMERAL_SIZE   = 16.0   # cap height of EVERY number, one and two digit alike
+NUMERAL_MAX_W  = 24.0   # widest a number may be. A two-digit number is about
+                        # 26 mm wide at this cap height, so 10, 11 and 12 are
+                        # condensed by 8% -- squeezed in X ONLY, never scaled.
+                        #
+                        # Scaling them uniformly was the first version and it
+                        # was wrong: clamped to 14 mm, "12" came out at 0.54
+                        # scale and so 8.6 mm tall against everyone else's 16,
+                        # and the three of them read as a different, smaller
+                        # set of labels. Cap height is what the eye reads as
+                        # SIZE; 8% of width is not visible next to it.
+                        #
+                        # The ceiling is not typographic. A piece seated on a
+                        # neighbouring column reaches to within 13.75 mm of
+                        # this column's centre, so a number wider than 27.5 mm
+                        # would have its ends stood on by the column next door.
+                        # 24 leaves 1.75 mm.
+NUMERAL_BOX_W  = 26.0   # footprint a number reserves on the plate: the widest
+                        # number plus a margin, and the SAME for every column
+                        # so the octagon stays symmetric about the lens rather
+                        # than growing only on the two-digit side
 NUMERAL_DEPTH  = 1.20   # how deep the digit is cut into the box
 NUMERAL_POST_CLEAR = 0.00  # the pocket stops exactly at the post's edge, so
                            # the orange in the pocket and the orange on the
@@ -200,35 +217,60 @@ NUMERAL_FONT_WEIGHT = "bold"
 # in the board. Male-up means the board carries no through-holes at all, so a
 # strut can never plug one; it also means the piece seats on a wide annular
 # face rather than on the rim of a ring.
+# THE BOARD IS PRINTED. Everything it carries -- POST_D, POST_H, the pitches,
+# the octagon, the numbers -- is frozen from here on, and these numbers have
+# to work against a board that already exists. What a piece may change is its
+# own proportions.
+#
+# Second pass: a THIRD shorter and a QUARTER wider than the first. The first
+# pieces were taller than they were wide (12.60 x 13.20) and read as pegs
+# standing on the board rather than counters sitting in it; 8.45 x 16.50 is
+# a squat disc you can pick up with two fingers and see past.
 PEG_POST_D       = 5.90   # the post on top of a piece; matches the board's
-PEG_POST_H       = 3.20
-PEG_POST_CHAMFER = 0.60   # lead-in at the top of the post
+PEG_POST_H       = 2.15   # scaled with the rest of the piece. Shorter than
+                          # the board's 3.20 post, which is fine: the socket
+                          # is sized for the BOARD's post, and the skirt is
+                          # what keeps a piece upright -- the post only
+                          # locates it, and it does that in 2 mm as well as 3.
+PEG_POST_CHAMFER = 0.40   # lead-in at the top of the post
 
 PEG_SOCKET_D     = 6.35   # holes print undersize, so the socket is cut over
-PEG_SOCKET_DEPTH = 3.80   # deeper than a post is long: the post never bottoms
-                          # out, the SKIRT seats on the face below instead.
-                          # Stack height is exact regardless of how hard you
-                          # press.
+PEG_SOCKET_DEPTH = 3.60   # deeper than the BOARD's post is long: the post
+                          # never bottoms out, the SKIRT seats on the face
+                          # below instead. Stack height is exact regardless
+                          # of how hard you press.
 PEG_SOCKET_CHAMFER = 0.50
 
 # The socket roof is a 45 degree cone rather than a flat ceiling. Printed the
 # right way up -- post uppermost -- a flat roof would be a 6.35 mm bridge over
 # thin air; a cone self-supports and nothing ever touches it.
+#
+# A FULL cone needs the socket radius in height -- 3.18 mm on top of the 3.60
+# the socket itself takes -- and the body is only 6.30 mm tall now, so there
+# is no room for one. The cone is truncated instead: it climbs at 45 degrees
+# until PEG_SOCKET_ROOF of solid is left above it, and the small flat left at
+# the top is bridged. The span comes out around 2.5 mm, which is nothing; the
+# rule that matters is that it stays small, and test_fit.py checks it.
+PEG_SOCKET_ROOF  = 0.80   # solid above the socket roof; 4 layers at 0.20
 
-PEG_BODY_H = 9.40         # skirt to top face. This is also the stack pitch:
+PEG_BODY_H = 6.30         # skirt to top face. This is also the stack pitch:
                           # each piece stacked adds exactly this much height.
 
-# 13.2 mm across. The width buys two things -- something to actually grip,
+# 16.5 mm across. The width buys two things -- something to actually grip,
 # and a wide skirt, which is what lets the post be short: the skirt does the
-# work of keeping a piece upright, so the post only has to locate it.
+# work of keeping a piece upright, so the post only has to locate it. At this
+# width the skirt is wider than the lattice board's 13.8 mm pads, so a piece
+# overhangs one by 1.35 mm; the seat is still a 4 mm annulus and that is what
+# matters. On the slab -- which is what is printed -- the plate is the pad and
+# the question does not arise.
 PEG_BODY_PROFILE = [
-    (6.60, 0.00),
-    (6.60, 1.10),
-    (5.73, 3.30),
-    (5.38, 5.40),
-    (5.73, 7.60),
-    (5.90, 8.70),
-    (5.90, 9.40),
+    (8.25, 0.00),
+    (8.25, 0.75),
+    (7.16, 2.20),
+    (6.72, 3.60),
+    (7.16, 5.10),
+    (7.38, 5.85),
+    (7.38, 6.30),
 ]
 PEG_SEGS = 64
 
@@ -236,21 +278,21 @@ PEG_SEGS = 64
 # decide to bank) uses the identical pin/socket interface so it still stacks,
 # but carries two raised bands and stands taller so it is unmistakable across
 # the table.
-RUNNER_BODY_H = 12.40
+RUNNER_BODY_H = 8.30
 RUNNER_BODY_PROFILE = [
-    (6.60,  0.00),
-    (6.60,  1.10),
-    (5.73,  2.60),
-    (6.48,  3.20),   # lower band
-    (6.48,  4.30),
-    (5.73,  4.90),
-    (5.44,  6.20),
-    (5.73,  7.50),
-    (6.48,  8.10),   # upper band
-    (6.48,  9.20),
-    (5.73,  9.80),
-    (5.90, 11.30),
-    (5.90, 12.40),
+    (8.25, 0.00),
+    (8.25, 0.75),
+    (7.16, 1.75),
+    (8.10, 2.15),   # lower band
+    (8.10, 2.90),
+    (7.16, 3.30),
+    (6.80, 4.15),
+    (7.16, 5.00),
+    (8.10, 5.40),   # upper band
+    (8.10, 6.15),
+    (7.16, 6.55),
+    (7.38, 7.55),
+    (7.38, 8.30),
 ]
 
 # --------------------------------------------------------------------------

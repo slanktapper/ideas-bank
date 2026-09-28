@@ -359,13 +359,16 @@ def _annotate_stack(img, cam, W, H):
                   f"{P.PEG_SOCKET_DEPTH:.2f} deep"),
         dict(at=(0.8, 0, z0 + P.PEG_SOCKET_DEPTH + P.PEG_SOCKET_D * 0.35),
              to=(L, 0.44 * H), align="right",
-             text="45\u00b0 cone roof \u2014 no bridging"),
+             text=("45\u00b0 cone roof \u2014 no bridging"
+                   if B.socket_bridge() < 1e-9 else
+                   f"45\u00b0 cone roof, {B.socket_bridge():.1f} mm bridged")),
         dict(at=(P.PEG_BODY_PROFILE[0][0], 0, z_top1),
              to=(Rg, 0.62 * H), align="left",
              text=f"stack pitch {P.PEG_BODY_H:.2f} mm"),
         dict(at=(0.0, 0, z_top1 + P.PEG_BODY_H + P.PEG_POST_H * 0.5),
              to=(Rg, 0.40 * H), align="left",
-             text=f"piece post \u00d8{P.PEG_POST_D:.2f}, same as below"),
+             text=f"piece post \u00d8{P.PEG_POST_D:.2f} \u00d7 "
+                  f"{P.PEG_POST_H:.2f}"),
         dict(at=(0.0, 0, z0 + 2 * P.PEG_BODY_H + P.RUNNER_BODY_H * 0.6),
              to=(L, 0.14 * H), align="right",
              text="runner rides on top"),

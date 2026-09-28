@@ -137,7 +137,11 @@ def content_points() -> np.ndarray:
     r = P.PAD_OD * 0.5
     ring = [(r * np.cos(a), r * np.sin(a))
             for a in np.linspace(0, 2 * np.pi, 16, endpoint=False)]
-    corners = [(dx * P.PLAQUE_W / 2, dy * P.PLAQUE_H / 2)
+    # One footprint for every number, wide enough for a two-digit one. Sizing
+    # each column to its own number would push the frame out on the right and
+    # leave the lens sitting off-centre in it.
+    bw = max(P.PLAQUE_W, P.NUMERAL_BOX_W)
+    corners = [(dx * bw / 2, dy * P.PLAQUE_H / 2)
                for dx in (-1, 1) for dy in (-1, 1)]
     pts = []
     for i, row in all_cells():
@@ -517,9 +521,10 @@ def _digit_solid(num: int, x: float, y: float, z0: float,
     t = S.text_solid(str(num), P.NUMERAL_SIZE, thickness,
                      weight=P.NUMERAL_FONT_WEIGHT)
     w = t.bounds[1][0] - t.bounds[0][0]
-    if w > P.NUMERAL_MAX_W:              # 10, 11 and 12 are wider than a box
-        k = P.NUMERAL_MAX_W / w
-        t.apply_scale((k, k, 1.0))
+    if w > P.NUMERAL_MAX_W:              # 10, 11 and 12 are wider than that
+        # X ONLY. Scaling both axes would drop their cap height with their
+        # width and they would read as a smaller set of numbers than 2 to 9.
+        t.apply_scale((P.NUMERAL_MAX_W / w, 1.0, 1.0))
     t.apply_translation((x, y, z0))
     return t
 
@@ -638,6 +643,13 @@ def _piece_profile(body_profile, body_h: float) -> list[tuple[float, float]]:
     out across the bottom face, up the outside, in across the top, up the
     post, back to the axis, down the solid core, then out and down the
     cone-roofed socket to close.
+
+    The roof climbs at 45 degrees so it needs no support. A full cone would
+    need the socket's radius in height, which a 6.30 mm body has not got, so
+    it is truncated: it rises until PEG_SOCKET_ROOF of solid is left above it
+    and the small flat that remains is bridged. Where there IS room for a full
+    cone -- a taller body, or a narrower socket -- the flat closes to nothing
+    and this reduces to the original apex.
     """
     rq = P.PEG_POST_D * 0.5
     rs = P.PEG_SOCKET_D * 0.5
@@ -645,8 +657,8 @@ def _piece_profile(body_profile, body_h: float) -> list[tuple[float, float]]:
     sc = P.PEG_SOCKET_CHAMFER
     z_top = body_h
     z_post = z_top + P.PEG_POST_H
-    # a 45 degree cone closes the socket, so it needs no bridging
-    z_apex = P.PEG_SOCKET_DEPTH + rs
+    z_roof = min(P.PEG_SOCKET_DEPTH + rs, body_h - P.PEG_SOCKET_ROOF)
+    r_flat = max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
 
     prof = [
         (rs + sc, 0.0),         # socket mouth, flared to find the post
@@ -658,11 +670,22 @@ def _piece_profile(body_profile, body_h: float) -> list[tuple[float, float]]:
         (rq, z_post - c),       # up the post
         (rq - c, z_post),       # lead-in for the socket above
         (0.0, z_post),
-        (0.0, z_apex),          # down the solid core
+        (0.0, z_roof),          # down the solid core to the roof
+    ]
+    if r_flat > 1e-9:
+        prof.append((r_flat, z_roof))    # the flat the printer bridges
+    prof += [
         (rs, P.PEG_SOCKET_DEPTH),   # cone roof, opening out and down
         (rs, sc),               # down the socket wall
     ]
     return prof
+
+
+def socket_bridge() -> float:
+    """Span of the flat left at the top of the truncated socket roof."""
+    rs = P.PEG_SOCKET_D * 0.5
+    z_roof = min(P.PEG_SOCKET_DEPTH + rs, P.PEG_BODY_H - P.PEG_SOCKET_ROOF)
+    return 2.0 * max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
 
 
 def build_marker(segs: int | None = None) -> trimesh.Trimesh:
@@ -701,7 +724,8 @@ def build_fit_coupon(segs: int | None = None) -> trimesh.Trimesh:
     second decimal of its diameter: the one marked 9 is 5.90 mm.
     """
     segs = segs or P.CELL_SEGS
-    pitch = P.PAD_OD + 5.0
+    skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
+    pitch = max(P.PAD_OD, 2.0 * skirt) + 5.0
     parts = []
     n = len(P.FIT_TEST_POSTS)
     x0 = -(n - 1) * pitch * 0.5
@@ -768,15 +792,23 @@ def stub_box() -> tuple[tuple[float, float], tuple[float, float]]:
     # every row height standing anywhere in that band of columns, top first
     levels = sorted({round(cell_xy(i, r)[1], 6) for i, r in all_cells()
                      if x0 < cell_xy(i, r)[0] < x1}, reverse=True)
-    kept = levels[:P.STUB_ROWS]
-    below = [v for v in levels if v < min(kept)]
-    if below:
-        skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
+    # STUB_ROWS is a minimum, not a target. The bottom cut wants a gap it can
+    # sit in with a whole skirt of plate above it and the row below untouched,
+    # and the gaps here are uneven -- as little as 12 mm where two columns of
+    # different row pitch stagger past each other. So take one more row at a
+    # time until a gap is found that can hold both.
+    skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
+    y0 = poly[:, 1].min() - 10.0
+    for n in range(P.STUB_ROWS, len(levels) + 1):
+        kept = levels[:n]
+        below = [v for v in levels if v < min(kept)]
+        if not below:
+            break                                   # ran out: keep the lot
         room = min(kept) - skirt - 0.5              # a whole skirt of plate
         clear = max(below) + P.POST_D * 0.5 + 0.5   # miss the row below
-        y0 = room if room >= clear else (min(kept) + max(below)) * 0.5
-    else:
-        y0 = poly[:, 1].min() - 10.0
+        if room >= clear:
+            y0 = room
+            break
     return (x0, y0), (x1, poly[:, 1].max() + 10.0)
 
 

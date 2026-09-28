@@ -48,13 +48,42 @@ a socket underneath and a post of its own on top; so a piece drops onto the
 board, and the next piece drops onto that one, with one geometry doing both
 jobs. A piece seats when its **skirt** lands on the face below — the plate, or
 the top face of the piece beneath it — never when a post bottoms out, so stack
-height is exactly 9.40 mm per piece, every time.
+height is exactly 6.30 mm per piece, every time.
 
 Two things follow from male-up that were not obvious going in. The board has
 **no through-holes at all**, which retires a whole class of defect. And the
-seat is a 3.0-to-6.6 mm annulus rather than the rim of a ring, which is a far
-steadier thing for a 13.2 mm piece to stand on — which in turn is why the posts
-can be only 3.2 mm long.
+seat is a 3.0-to-8.3 mm annulus rather than the rim of a ring, which is a far
+steadier thing for a 16.5 mm piece to stand on — which in turn is why the posts
+can be only 2 to 3 mm long.
+
+**The pieces are counters, not pegs.** 16.5 mm across and 8.45 mm tall: a
+squat disc you pick up with two fingers and can see past. The first version
+was 13.2 x 12.6 — taller than it was wide — and read as a peg standing on the
+board rather than a counter sitting in it. A third off the height and a
+quarter onto the width fixes that and, because volume went one way as fast as
+the other, costs nothing: 0.98 cm3 against 1.00.
+
+The one thing that had to give is the socket roof. It is a 45 degree cone so
+it self-supports, and a full cone needs the socket's own radius in height —
+3.18 mm on top of the 3.60 the socket takes — which a 6.30 mm body has not
+got. So the cone is truncated: it climbs until 0.80 mm of solid is left above
+it, and the 2.55 mm of flat that remains is bridged. A 2.55 mm bridge is
+nothing; the rule that matters is that it stays small, and `test_fit.py`
+measures both the 45 degrees and the span off the real profile.
+
+**Every number is the same size, one digit or two.** A two-digit number is
+about 26 mm wide at this 16 mm cap height and a one-digit one is 12, and the
+first version dealt with that by scaling 10, 11 and 12 down to fit — which
+took their cap height down with their width, so the three of them came out
+8.6 mm tall against everyone else's 16 and read as a smaller, separate set of
+labels. They are condensed in X only now: same 16 mm height as the rest, 8%
+narrower than natural, which is not visible next to a difference in height.
+
+The ceiling on that is not typographic. A piece seated on the next column
+reaches to within 13.75 mm of this column's centre, so a number wider than
+27.5 mm would have its ends stood on by the column next door. At 24 mm there
+is 1.75 mm in hand, and `test_fit.py` checks every cell on the board against
+every column's digits.
 
 **The number is the top of the column, and you land on it.** Each column's
 topmost cell carries its number: the digit and the post share one centre. The
@@ -146,7 +175,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 69 design checks — run this after editing params.py
+python3 test_fit.py      # 72 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~6 s)
 python3 build.py --fast  # quarter-res renders  (~12 s total)
@@ -160,12 +189,14 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 
 ## Where it stands
 
-Designed and verified in software; **nothing has been printed yet.** The board
-is 284.9 × 284.9 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 40 mm
-spare in X and 35 mm in Y. A full set is about **216 g** — 158 g of board at
-10% infill plus 58 g of solid pieces.
+The **test stub has been printed and came out right** — the engraved numbers,
+the split posts and the white cap on the lip all read as intended. The board
+itself has not been printed. It is
+284.9 × 284.9 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 40 mm
+spare in X and 35 mm in Y. A full set is about **217 g** — 158 g of board at
+10% infill plus 59 g of solid pieces.
 
-`test_fit.py` passes 69 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 72 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same
@@ -181,8 +212,8 @@ Defects this loop has caught rather than a print:
   covered it completely. Accepted now, because by then the column is claimed;
 - the first version of that sightline test said *every* number was hidden,
   which the renders plainly contradicted. It was modelling a piece as one fat
-  cylinder; the body is 13.2 mm across but only 13.4 mm tall, and the post
-  above it is 5.9 mm;
+  cylinder; the body was 13.2 mm across but only 13.4 mm tall, and the post
+  above it 5.9 mm;
 - a lattice that was not mirror-symmetric, because the herringbone parity keyed
   on a row *index* and a gap and its mirror number their rows differently. No
   one reported it; it was visible in a render as a denser right-hand side;
@@ -206,8 +237,8 @@ coming off a printer. There are two test prints for that, in order:
 - `fit-test-coupon.stl` — five posts either side of nominal, ~12 minutes. It
   carries **posts, not bores**, because the board is male: you try a real
   piece over each one.
-- `stub-board-*.stl` plus `stub-pieces-x2.stl` — ~40 minutes. The stub is a
-  66 x 61 mm corner of the **real board**, cut from the finished mesh rather
+- `stub-board-*.stl` plus `stub-pieces-x2.stl` — ~1 hour. The stub is a
+  66 x 95 mm corner of the **real board**, cut from the finished mesh rather
   than built to resemble it, so the slab, the lip, the engraved digits and the
   split posts are all exactly what the 285 mm version would print. It takes
   the corner over columns 6, 7 and 8: three numbers, six posts at the real
@@ -235,7 +266,10 @@ coming off a printer. There are two test prints for that, in order:
 - **The split post on a real print.** Geometrically the number is whole. What a
   two-material boundary running up the side of a 5.9 mm post actually looks
   like off the printer — colour bleed, a seam, purge staining — is a thing only
-  a print will tell us. The stub is there to answer it for 11 g.
+  a print will tell us. **The stub answered it: the first stub printed clean**,
+  numbers and lip both. What it was printed against was the narrower version
+  of 10, 11 and 12 and the taller pieces, so a second one is worth 17 g before
+  the board itself goes on.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
   octagon is bare plate. It looks deliberate in plan; whether it looks
   unbalanced on a table is a question for a print. The lip helps.

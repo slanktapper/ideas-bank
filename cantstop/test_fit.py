@@ -239,8 +239,10 @@ def stub_checks(brd, accent):
     check("the stub is the real board's full thickness, not a thin sample",
           abs((hi[2] - lo[2]) - (SEAT_Z + P.POST_H)) < 1e-6,
           f"{hi[0]-lo[0]:.0f} x {hi[1]-lo[1]:.0f} x {hi[2]-lo[2]:.1f} mm")
+    # 10%, not 6%: the stub has to reach down far enough to give every post in
+    # it a whole skirt of plate, and the skirt got a quarter wider.
     check("the stub is small enough to be worth printing before the board",
-          (hi[0] - lo[0]) * (hi[1] - lo[1]) < 0.06 * (P.BED_X * P.BED_Y),
+          (hi[0] - lo[0]) * (hi[1] - lo[1]) < 0.10 * (P.BED_X * P.BED_Y),
           f"{(hi[0]-lo[0]) * (hi[1]-lo[1]) / 100:.0f} cm2 of bed against the "
           f"board's {284.9 * 284.9 / 100:.0f}")
     check("the stub carries the digits and their share of each post",
@@ -312,14 +314,20 @@ def main():
           f"socket {P.PEG_SOCKET_DEPTH:.2f} vs posts "
           f"{P.POST_H:.2f}/{P.PEG_POST_H:.2f}")
 
+    # What a piece actually stands on: the whole skirt on a slab, or as much
+    # of it as the pad is wide on a lattice. The rule is that the CONTACT is
+    # wide, not that the skirt is wholly supported -- a skirt that overhangs
+    # its pad a little still sits on a generous annulus.
     skirt_r = max(r for r, _ in P.PEG_BODY_PROFILE)
-    if not SLAB:
-        check("the skirt lands on the pad, not off the edge of it",
-              skirt_r < P.PAD_OD / 2,
-              f"skirt r{skirt_r:.2f} inside pad r{P.PAD_OD/2:.2f}")
+    seat_r = skirt_r if SLAB else min(skirt_r, P.PAD_OD / 2)
     check("the seat is a wide annulus, not a rim",
-          skirt_r - P.POST_D / 2 >= 3.0,
-          f"{P.POST_D/2:.2f} to {skirt_r:.2f} mm contact ring")
+          seat_r - P.POST_D / 2 >= 3.0,
+          f"{P.POST_D/2:.2f} to {seat_r:.2f} mm contact ring")
+    if not SLAB:
+        check("a piece does not overhang its pad far enough to teeter",
+              skirt_r - P.PAD_OD / 2 <= 2.0,
+              f"skirt r{skirt_r:.2f} on pad r{P.PAD_OD/2:.2f}: "
+              f"{max(0.0, skirt_r - P.PAD_OD/2):.2f} mm of air")
 
     print("\nprintability")
     if not SLAB:
@@ -331,10 +339,32 @@ def main():
         check("number shields sit flush with the pads",
               P.PLAQUE_T <= P.PAD_H,
               f"shield {P.PLAQUE_T:.2f} vs pad {P.PAD_H:.2f}")
-    apex_rise = P.PEG_SOCKET_D / 2
-    check("the socket roof is a self-supporting cone, not a bridge",
-          apex_rise >= P.PEG_SOCKET_D / 2 - 1e-9,
-          f"45 deg over a {P.PEG_SOCKET_D:.2f} mm opening")
+    # THE SOCKET ROOF, measured on the profile rather than asserted from the
+    # parameters. It closes the socket over thin air, printed the right way
+    # up, so it is the one surface in a piece that could need support. The
+    # body is too short for a full cone now, so the cone is truncated and the
+    # small flat left at the top is bridged -- which is fine while the flat
+    # stays small, and silently is not the moment it does not.
+    prof = B._piece_profile(P.PEG_BODY_PROFILE, P.PEG_BODY_H)
+    rs = P.PEG_SOCKET_D / 2
+    # the cone is the single edge arriving at the top of the socket wall
+    i = next(k for k, (r, z) in enumerate(prof)
+             if abs(r - rs) < 1e-9 and abs(z - P.PEG_SOCKET_DEPTH) < 1e-9)
+    (r0, z0), (r1, z1) = prof[i - 1], prof[i]
+    slope = abs(z1 - z0) - abs(r1 - r0)
+    check("the socket roof climbs at 45 degrees, so it needs no support",
+          abs(slope) < 1e-6,
+          f"rises {abs(z1-z0):.2f} mm over {abs(r1-r0):.2f} mm, from r"
+          f"{r0:.2f} to the socket wall at r{r1:.2f}")
+    span = B.socket_bridge()
+    check("what is left flat at the top of it is a span, not a ceiling",
+          span <= 4.0,
+          f"{span:.2f} mm bridged, out of the {P.PEG_SOCKET_D:.2f} mm a flat "
+          f"roof would have spanned")
+    check("there is solid plastic above the roof to print the top face on",
+          P.PEG_SOCKET_ROOF >= 3 * P.LAYER_H,
+          f"{P.PEG_SOCKET_ROOF:.2f} mm = "
+          f"{P.PEG_SOCKET_ROOF/P.LAYER_H:g} layers")
 
     print("\nwall thickness")
     rs = P.PEG_SOCKET_D / 2
@@ -425,26 +455,75 @@ def main():
           all(B.numeral_xy(i) == B.summit(i) for i in range(len(P.ROWS))),
           "box, digit and post on one centre")
 
+    box_w = max(P.PLAQUE_W, P.NUMERAL_BOX_W)
     hw, hh = P.NUMERAL_MAX_W / 2, P.NUMERAL_SIZE / 2
-    check("every digit fits inside its box",
-          hw + 1.0 <= P.PLAQUE_W / 2 and hh + 1.0 <= P.PLAQUE_H / 2,
-          f"digit {2*hw:.0f} x {2*hh:.0f} in a box "
-          f"{P.PLAQUE_W:.0f} x {P.PLAQUE_H:.0f}")
-    skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
-    sep = np.inf
+    check("every digit fits inside the footprint reserved for it",
+          hw + 1.0 <= box_w / 2 and hh + 1.0 <= P.PLAQUE_H / 2,
+          f"digit {2*hw:.0f} x {2*hh:.0f} in a footprint "
+          f"{box_w:.0f} x {P.PLAQUE_H:.0f}")
+
+    # EVERY NUMBER THE SAME SIZE. Two-digit numbers are wider than one-digit
+    # ones and there is nothing to be done about that, but they must not end
+    # up SHORTER. Clamping their width by a uniform scale did exactly that --
+    # "12" came out 8.6 mm tall against everyone else's 16 -- and the only
+    # sign of it was that the three of them looked wrong on the plan render.
+    inks = {}
     for i in range(len(P.ROWS)):
-        for j in range(i + 1, len(P.ROWS)):
-            d = np.abs(np.asarray(B.summit(i)) - np.asarray(B.summit(j))) \
-                - np.array([P.PLAQUE_W, P.PLAQUE_H])
-            sep = min(sep, d.max())
-    check("neighbouring summit boxes stand apart",
+        x, y = B.numeral_xy(i)
+        g = B._digit_solid(P.COLUMNS[i], x, y, 0.0, 1.0)
+        inks[P.COLUMNS[i]] = (g.bounds[0][:2], g.bounds[1][:2])
+    caps = {n: hi[1] - lo[1] for n, (lo, hi) in inks.items()}
+    check("every number is the same height, one digit or two",
+          max(caps.values()) - min(caps.values()) < 0.05,
+          f"{min(caps.values()):.2f}-{max(caps.values()):.2f} mm cap height "
+          f"across all 11; widest is "
+          f"{max(hi[0]-lo[0] for lo, hi in inks.values()):.1f} mm")
+    skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
+
+    def _gap(a, b):
+        """Clear air between two axis-aligned rectangles, negative if they
+        overlap. Separation on EITHER axis is enough."""
+        return max(max(a[0][k] - b[1][k], b[0][k] - a[1][k]) for k in (0, 1))
+
+    sep, pair = np.inf, None
+    cols = list(inks)
+    for a in range(len(cols)):
+        for b in range(a + 1, len(cols)):
+            g = _gap(inks[cols[a]], inks[cols[b]])
+            if g < sep:
+                sep, pair = g, (cols[a], cols[b])
+    check("no two numbers run into each other",
           sep >= 3.0,
-          f"{sep:.1f} mm; the middle columns step down by a quarter of a box, "
-          f"so the summits run in a shallow staircase and crowd easily")
-    check("a piece fits on the box it has to stand on",
-          2 * skirt <= min(P.PLAQUE_W, P.PLAQUE_H),
-          f"piece {2*skirt:.1f} mm on a {P.PLAQUE_W:.0f} x "
-          f"{P.PLAQUE_H:.0f} mm box")
+          f"tightest is {sep:.1f} mm, the {pair[0]} and the {pair[1]}; the "
+          f"summits step down diagonally, so the two-digit numbers clear "
+          f"their neighbours vertically rather than sideways")
+
+    # The two-digit numbers now reach 12 mm either side of their column, which
+    # is past halfway to the next one. A piece on a neighbouring cell must
+    # still not be standing on part of a number -- except on that number's own
+    # summit, where standing on it is the whole design.
+    stood_on = []
+    for i in range(len(P.ROWS)):
+        lo_i, hi_i = inks[P.COLUMNS[i]]
+        for j, r in B.all_cells():
+            if j == i and B.is_summit(j, r):
+                continue
+            cx, cy = B.cell_xy(j, r)
+            dx = max(lo_i[0] - cx, 0.0, cx - hi_i[0])
+            dy = max(lo_i[1] - cy, 0.0, cy - hi_i[1])
+            gap = float(np.hypot(dx, dy)) - skirt
+            if gap < 0.5:
+                stood_on.append((P.COLUMNS[i], P.COLUMNS[j], r, round(gap, 2)))
+    check("no piece stands on a number except the one it claims",
+          not stood_on,
+          f"nearest piece clears every other column's digits"
+          if not stood_on else f"{stood_on}")
+
+    if not SLAB:
+        check("a piece fits on the box it has to stand on",
+              2 * skirt <= min(P.PLAQUE_W, P.PLAQUE_H),
+              f"piece {2*skirt:.1f} mm on a {P.PLAQUE_W:.0f} x "
+              f"{P.PLAQUE_H:.0f} mm box")
     plate_t = P.SLAB_T if SLAB else P.PLAQUE_T
     check("the digit is inlaid, not embossed, so a piece cannot rock on it",
           0 < P.NUMERAL_DEPTH < plate_t - 1.0,
@@ -457,11 +536,20 @@ def main():
     # number is whole. A post in one flat colour loses a sixth of an 8 and
     # takes its waist with it.
     accent = B.build_board(numerals_only=True)
-    check("the accent part carries the cap on the lip as well as the digits",
-          (not SLAB) or P.RIM_CAP_H <= 1e-9
-          or accent.body_count == len(P.COLUMNS) + 5,
-          f"{accent.body_count} bodies: 11 digits, 4 of them split by the "
-          f"gap in a two-digit number, and the ring")
+    # Asked of the mesh, not of its body count: how many separate bodies the
+    # accent part comes out as depends on which glyphs their post happens to
+    # cut in two, and widening the two-digit numbers changed that.
+    if SLAB and P.RIM_CAP_H > 1e-9:
+        poly_ = np.asarray(B.octagon(), dtype=float)
+        ctr_ = B.octagon_centre()
+        mid = (poly_[0] + poly_[1]) / 2
+        n_ = (ctr_ - mid) / np.linalg.norm(ctr_ - mid)
+        probe = np.append(mid + n_ * (P.RIM_W / 2),
+                          P.SLAB_T + P.RIM_H - P.RIM_CAP_H / 2)
+        check("the accent part carries the cap on the lip as well as the "
+              "digits",
+              bool(accent.contains(probe[None, :])[0]),
+              f"solid at z={probe[2]:.2f} in the lip band")
     check("the accent part reaches the tops of the posts",
           abs(accent.bounds[1][2] - (SEAT_Z + P.POST_H)) < 1e-6,
           f"z={accent.bounds[1][2]:.2f}; the digit is carried up through "
