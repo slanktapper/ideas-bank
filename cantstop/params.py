@@ -28,10 +28,13 @@ ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 # spaces its own cells a little wider.
 #
 # A whole box (20 mm) per step is the plain version, where every column shares
-# one row pitch and the lens comes to a sharp point at the top. Giving 6 and 8
-# only half a box softens that peak without touching anything else: those two
-# columns go to a 22 mm pitch, every other column stays at 20.
-COLUMN_SHORTFALL = [0.0, 10.0, 40.0, 60.0, 80.0, 100.0]
+# one row pitch and the lens comes to a sharp point at the top.
+#
+# Here 6 and 8 give up only HALF a box, which softens that peak, and every
+# column outside them follows by the same 10 mm rather than staying put --
+# otherwise the step from 6 down to 5 is a box and a half and the silhouette
+# kinks. So: half a box once, then whole boxes all the way out.
+COLUMN_SHORTFALL = [0.0, 10.0, 30.0, 50.0, 70.0, 90.0]
 
 PITCH_X = 22.0      # centre-to-centre spacing between columns
 PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
