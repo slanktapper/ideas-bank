@@ -313,14 +313,16 @@ def export_renders(board_body, numerals, marker, runner, stub_body,
     # 7 -- THE TEST PRINT: the stub, with one piece seated and one stacked on
     #      it. This is the ~30 g, ~40 minute version of the whole board, so
     #      it is the render worth looking at before anything is printed.
-    # The pieces go on the two PLAIN posts, not on the summits: a piece on a
-    # summit hides that column's number, which is true of the real board and
-    # useless in the one render whose job is to show the numbers.
-    stack = place(marker, 8, P.ROWS[6] - 2, 1, (P.PEG_BODY_H,))
+    # Taken from the stub itself, not named, so the shot follows STUB_COLUMNS
+    # wherever it is pointed. Both pieces go on ONE plain post: a piece on a
+    # summit hides that column's number, and leaving the other plain post
+    # bare is the only way to see whether its cap is the colour it should be.
+    plain = [(i, r) for i, r in B.stub_cells() if not B.is_summit(i, r)]
+    col, row = P.COLUMNS[plain[-1][0]], plain[-1][1]
+    stack = place(marker, col, row, 1, (P.PEG_BODY_H,))
     stub = [{"mesh": stub_body, "color": C_BOARD},
             {"mesh": R.placed(stub_nums, (0, 0, 0.01)), "color": C_NUMERAL},
-            {"mesh": place(marker, 6, P.ROWS[4] - 2), "color": C_PLAYERS[3]},
-            {"mesh": place(marker, 8, P.ROWS[6] - 2), "color": C_PLAYERS[1]},
+            {"mesh": place(marker, col, row), "color": C_PLAYERS[1]},
             {"mesh": stack, "color": C_PLAYERS[0]}]
     shot("07-test-print.png", stub,
          **R.frame([stub_body, stack], azimuth_deg=-95, elevation_deg=30,

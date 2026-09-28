@@ -477,12 +477,17 @@ FIT_COUPON_T   = 3.0    # backing bar only; it does not want the shields'
 # so their summits (and therefore two numbers, one of them single-digit and
 # one not) come with the fewest cells attached, and the octagon's top-left
 # vertex and both of its neighbouring edges land inside the same small box.
-STUB_COLUMNS = (6, 7, 8)  # which columns the stub keeps
-STUB_ROWS    = 4          # how many ROW HEIGHTS down from the top of the
-                          # board it reaches. Not cells: neighbouring columns
-                          # have different row pitches and stagger past each
-                          # other, so a horizontal cut sees row heights, and
-                          # four of them here is two cells of each column.
+STUB_COLUMNS = (6, 7)     # which columns the stub keeps. 6 and 7 are the
+                          # pair worth printing: 6 is even so its posts get
+                          # white tops and 7 is odd so its do not, which puts
+                          # the column striping on a 48 mm part.
+STUB_ROWS    = 2          # how many ROW HEIGHTS down from the top of the
+                          # board it reaches, AT LEAST. Not cells: neighbouring
+                          # columns have different row pitches and stagger past
+                          # each other, so a horizontal cut sees row heights.
+                          # The bottom cut then goes on down until it finds a
+                          # gap it can sit in with a whole skirt of plate above
+                          # it, so this is a floor and not a target.
 STUB_PIECES  = 2          # full pieces printed alongside it, for the fit
 
 # --------------------------------------------------------------------------
