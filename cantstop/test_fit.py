@@ -46,8 +46,19 @@ def main():
           P.ROWS[5] == max(P.ROWS) and P.ROWS[0] == P.ROWS[-1] == min(P.ROWS))
     check("row count rises strictly towards the middle",
           all(P.ROWS[i] < P.ROWS[i + 1] for i in range(5)), f"{P.ROWS[:6]}")
-    check("every column has an odd row count, so centring lands on the grid",
+    check("every column has an odd row count, so centring lands on a cell",
           all(n % 2 for n in P.ROWS), f"{P.ROWS}")
+    drops = [B.half_height(i + 1) - B.half_height(i) for i in range(5)]
+    check("each column falls short of its neighbour by COLUMN_STEP at the top "
+          "and the same at the bottom",
+          all(abs(d - P.COLUMN_STEP) < 1e-6 for d in drops),
+          f"{P.COLUMN_STEP:.0f} mm each, against a {P.PITCH_Y:.0f} mm row "
+          f"pitch in the longest column")
+    check("no column's cells are spread so far apart they stop reading as a "
+          "column",
+          max(B.row_pitch(i) for i in range(len(P.ROWS))) <= 3 * P.PITCH_Y,
+          f"widest is {max(B.row_pitch(i) for i in range(len(P.ROWS))):.0f} mm "
+          f"in column {P.COLUMNS[max(range(len(P.ROWS)), key=B.row_pitch)]}")
 
     check("columns are centred on a shared midline",
           all(abs(B.cell_xy(i, 0)[1] + B.summit(i)[1] - P.SUMMIT_STEP) < 1e-9
@@ -179,6 +190,16 @@ def main():
           f"digit {2*hw:.0f} x {2*hh:.0f} in a box "
           f"{P.PLAQUE_W:.0f} x {P.PLAQUE_H:.0f}")
     skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
+    sep = np.inf
+    for i in range(len(P.ROWS)):
+        for j in range(i + 1, len(P.ROWS)):
+            d = np.abs(np.asarray(B.summit(i)) - np.asarray(B.summit(j))) \
+                - np.array([P.PLAQUE_W, P.PLAQUE_H])
+            sep = min(sep, d.max())
+    check("neighbouring summit boxes stand apart",
+          sep >= 3.0,
+          f"{sep:.1f} mm; the columns step down in half boxes now, so the "
+          f"summits run in a shallow staircase and crowd easily")
     check("a piece fits on the box it has to stand on",
           2 * skirt <= min(P.PLAQUE_W, P.PLAQUE_H),
           f"piece {2*skirt:.1f} mm on a {P.PLAQUE_W:.0f} x "
@@ -248,6 +269,13 @@ def main():
           clear > 1.0,
           f"{len(tall)} struts taller than {P.PLAQUE_T:.1f} mm (the octagon); "
           f"nearest is {clear:.1f} mm off column {clear_col}'s box")
+
+    print("\nthe lens fills the frame evenly")
+    lo_, hi_ = B.content_bounds()
+    w_, h_ = hi_ - lo_
+    check("the cell field is roughly square, so a regular octagon wraps it "
+          "without wasting a side",
+          abs(w_ - h_) < 0.25 * max(w_, h_), f"{w_:.1f} x {h_:.1f} mm")
 
     print("\nthe octagonal frame")
     poly = np.asarray(B.octagon(), dtype=float)

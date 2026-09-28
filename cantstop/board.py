@@ -28,9 +28,34 @@ import solids as S
 # cell addressing
 # ---------------------------------------------------------------------------
 
-def k_max(col_index: int) -> int:
-    """Half-height of a column in rows. ROWS are all odd, so this is exact."""
-    return (P.ROWS[col_index] - 1) // 2
+def k_max(col_index: int) -> float:
+    """Half-height of a column, in rows."""
+    return (P.ROWS[col_index] - 1) / 2.0
+
+
+def half_height(col_index: int) -> float:
+    """How far a column reaches above (and below) the midline, in mm.
+
+    The longest column keeps the nominal row pitch. Every shorter column falls
+    short of its neighbour by COLUMN_STEP rather than by a whole row, and
+    spreads its own cells to cover whatever span that leaves it -- so the
+    cell COUNT stays as the game needs it while the column still reaches out
+    towards the frame.
+    """
+    tallest = max(k_max(i) for i in range(len(P.ROWS)))
+    short = tallest - k_max(col_index)
+    return tallest * P.PITCH_Y - short * P.COLUMN_STEP
+
+
+def row_pitch(col_index: int) -> float:
+    """That column's own spacing between cells."""
+    k = k_max(col_index)
+    return half_height(col_index) / k if k else 0.0
+
+
+def grid_y(col_index: int, row: int) -> float:
+    """Row position on the plain centred grid, before the summit steps out."""
+    return (row - k_max(col_index)) * row_pitch(col_index)
 
 
 def cell_xy(col_index: int, row: int) -> tuple[float, float]:
@@ -40,7 +65,7 @@ def cell_xy(col_index: int, row: int) -> tuple[float, float]:
     centred, so row 0 of a short column is not level with row 0 of a long one.
 
     """
-    y = (row - k_max(col_index)) * P.PITCH_Y
+    y = grid_y(col_index, row)
     if row == P.ROWS[col_index] - 1:
         y += P.SUMMIT_STEP          # the top cell steps out, opening the gap
     return col_index * P.PITCH_X, y
@@ -102,31 +127,53 @@ def _trim(p0, p1, r0: float, r1: float):
 # the octagonal frame
 # ---------------------------------------------------------------------------
 
-def content_bounds() -> tuple[np.ndarray, np.ndarray]:
-    """Bounding box of everything the frame has to enclose."""
+def content_points() -> np.ndarray:
+    """Outline points of everything the frame has to enclose.
+
+    Real points, not a bounding box: the frame is an octagon, so what binds it
+    is how far the content reaches along the DIAGONALS as well as the axes.
+    With the columns stepping by one cell the lens now reaches well into its
+    own corners, which a bounding box cannot see.
+    """
     r = P.PAD_OD * 0.5
-    xs, ys = [], []
+    ring = [(r * np.cos(a), r * np.sin(a))
+            for a in np.linspace(0, 2 * np.pi, 16, endpoint=False)]
+    corners = [(dx * P.PLAQUE_W / 2, dy * P.PLAQUE_H / 2)
+               for dx in (-1, 1) for dy in (-1, 1)]
+    pts = []
     for i, row in all_cells():
         x, y = cell_xy(i, row)
-        hx, hy = ((P.PLAQUE_W / 2, P.PLAQUE_H / 2) if is_summit(i, row)
-                  else (r, r))
-        xs += [x - hx, x + hx]
-        ys += [y - hy, y + hy]
-    return np.array([min(xs), min(ys)]), np.array([max(xs), max(ys)])
+        for ox, oy in (corners if is_summit(i, row) else ring):
+            pts.append((x + ox, y + oy))
+    return np.asarray(pts, dtype=float)
+
+
+def content_bounds() -> tuple[np.ndarray, np.ndarray]:
+    """Bounding box of everything the frame has to enclose."""
+    pts = content_points()
+    return pts.min(axis=0), pts.max(axis=0)
 
 
 def octagon() -> list[tuple[float, float]]:
     """The eight frame vertices: a rectangle with its corners cut at 45 deg."""
-    lo, hi = content_bounds()
+    pts = content_points()
+    lo, hi = pts.min(axis=0), pts.max(axis=0)
     cx, cy = (lo + hi) * 0.5
-    a = (hi[0] - lo[0]) * 0.5 + P.OCTAGON_MARGIN
-    b = (hi[1] - lo[1]) * 0.5 + P.OCTAGON_MARGIN
+    d = np.abs(pts - np.array([cx, cy]))
+
     if P.OCTAGON_REGULAR:
-        # equal edges need a square bounding box and a chamfer of exactly
-        # 2/(2+sqrt2) of the half-span: then flat and cut come out the same
-        a = b = max(a, b)
+        # Equal edges need a chamfer of exactly 2/(2+sqrt2) of the half-span,
+        # which reduces the octagon to three constraints: |dx| <= a,
+        # |dy| <= a, and |dx| + |dy| <= a*sqrt2. Size a from the content
+        # against all three rather than from its bounding box, or the corner
+        # cuts slice through the ends of the lens.
+        need = max(d[:, 0].max(), d[:, 1].max(),
+                   (d[:, 0] + d[:, 1]).max() / np.sqrt(2.0))
+        a = b = need + P.OCTAGON_MARGIN
         c = a * 2.0 / (2.0 + np.sqrt(2.0))
     else:
+        a = (hi[0] - lo[0]) * 0.5 + P.OCTAGON_MARGIN
+        b = (hi[1] - lo[1]) * 0.5 + P.OCTAGON_MARGIN
         c = 0.55 * min(a, b)
     return [
         (cx + a - c, cy + b), (cx + a, cy + b - c),
@@ -198,27 +245,34 @@ def _lattice_struts() -> list[tuple[tuple, tuple, bool]]:
         for r in range(P.ROWS[i] - 1):
             out.append((cell_xy(i, r), cell_xy(i, r + 1), False))
 
-    # horizontals and diagonals, wherever neighbouring columns share a row.
-    # Centre-aligned columns share rows around the midline, so the overlap is
-    # symmetric: k from -kmin to +kmin.
+    # Columns need not share a row pitch any more, so nothing is guaranteed
+    # to be level and there is no such thing as a horizontal. Link each cell
+    # to the TWO nearest cells in the next column, both ways round. Where the
+    # columns do happen to line up that gives the level strut plus a diagonal
+    # (ties broken by parity, so the diagonals herringbone); where they do
+    # not it gives the two cells that bracket it. Either way the strip comes
+    # out triangulated.
     for i in range(ncol - 1):
-        kmin = min(k_max(i), k_max(i + 1))
-        for k in range(-kmin, kmin + 1):
-            a = (i, k + k_max(i))
-            b = (i + 1, k + k_max(i + 1))
-            out.append((cell_xy(*a), cell_xy(*b), False))
-
-        if P.DIAGONALS == "none":
-            continue
-        for k in range(-kmin, kmin):
-            lo_a, hi_a = k + k_max(i), k + 1 + k_max(i)
-            lo_b, hi_b = k + k_max(i + 1), k + 1 + k_max(i + 1)
-            rising = (cell_xy(i, lo_a), cell_xy(i + 1, hi_b), False)
-            falling = (cell_xy(i, hi_a), cell_xy(i + 1, lo_b), False)
-            if P.DIAGONALS == "full":
-                out.extend([rising, falling])
-            else:
-                out.append(rising if (i + k) % 2 == 0 else falling)
+        pairs, hit = set(), set()
+        for r in range(P.ROWS[i]):
+            ya = grid_y(i, r)
+            lean = 1 if (i + r) % 2 == 0 else -1
+            near = sorted(range(P.ROWS[i + 1]),
+                          key=lambda s: (abs(grid_y(i + 1, s) - ya),
+                                         -lean * np.sign(grid_y(i + 1, s) - ya)))
+            for s in near[:2]:
+                pairs.add((r, s))
+                hit.add(s)
+        # any cell in the next column the forward pass missed reaches back
+        for s in range(P.ROWS[i + 1]):
+            if s in hit:
+                continue
+            yb = grid_y(i + 1, s)
+            r = min(range(P.ROWS[i]),
+                    key=lambda r: abs(grid_y(i, r) - yb))
+            pairs.add((r, s))
+        for r, s in sorted(pairs):
+            out.append((cell_xy(i, r), cell_xy(i + 1, s), False))
 
     # the stepped upper and lower edges of the lens
     for i in range(ncol - 1):

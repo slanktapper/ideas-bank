@@ -21,17 +21,23 @@ Z  out of the print bed; the whole board sits on z = 0 and prints flat
 COLUMNS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 
-# Columns are CENTRE-aligned: every column is centred on the same midline, so
-# a column of n cells runs from k = -(n-1)/2 to +(n-1)/2. Every row count is
-# odd, so k is always a whole number and neighbouring columns share rows on
-# the same grid.
+# How far each column falls short of the one beside it, at the top and at the
+# bottom. The CELL COUNTS are fixed by the game; this is purely how far apart
+# the cells in a column are spread.
 #
-# Bottom-aligning them instead gives the stepped pyramid of the first version.
-# Centred, the lattice is a symmetric lens, which is what lets the board sit
-# inside an octagonal frame without one end of it being mostly air.
+#   COLUMN_STEP = PITCH_Y      every column uses the same row pitch, so a
+#                              column two cells shorter is a whole box shorter
+#                              top and bottom. The lens comes to a point at
+#                              each end and leaves the frame's sides empty.
+#   COLUMN_STEP = PITCH_Y / 2  half a box each. Short columns spread their
+#                              cells further apart to reach further out.
+#   COLUMN_STEP = 0            every column spans the same height; the field
+#                              fills the frame as a block.
+COLUMN_STEP = 20.0
 
 PITCH_X = 22.0      # centre-to-centre spacing between columns
-PITCH_Y = 20.0      # centre-to-centre spacing between rows
+PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
+                    # wider pitch of their own, set by COLUMN_STEP above.
 
 # --------------------------------------------------------------------------
 # Cells — a pad with a post standing on it
@@ -69,10 +75,9 @@ STRUT_H = 3.40      # height; deliberately shorter than PAD_H so the pads
 FRAME_W = 5.20      # the octagon runs thicker — it is what you pick the
 FRAME_H = 4.40      # board up by, and it is the only frame-section member
 
-# Diagonal bracing between adjacent cells. "alternating" puts one diagonal in
-# each lattice quad, flipping direction like herringbone: about half the
-# plastic and print time of full X-bracing for most of the stiffness.
-DIAGONALS = "alternating"   # "none" | "alternating" | "full"
+# Staggered columns make the lattice triangular on their own: every cell ties
+# to the two nearest in each neighbouring column, which is already a braced
+# truss. There is no quad left to put a diagonal in.
 
 # --------------------------------------------------------------------------
 # The octagonal frame
@@ -96,8 +101,10 @@ OCTAGON_SPOKE_H = 3.40
 # cell, so a piece drops into it like any other; the number sits on a shield
 # fused to the ring from above. Climbing a column and landing on its number
 # is therefore the same move as any other, which is the point.
-PLAQUE_W       = 20.0
-PLAQUE_H       = 22.0
+PLAQUE_W       = 17.0   # narrow enough to leave 5 mm between neighbouring
+PLAQUE_H       = 20.0   # summit boxes: the columns now step down in half
+                        # boxes, so the summits run in a shallow staircase
+                        # and their boxes sit much closer than they used to
 PLAQUE_T       = 4.00   # same as PAD_H, so every seating face is at one
                         # height. Struts stand 3.4 mm, so anything running
                         # under a box is buried inside it.
@@ -131,7 +138,7 @@ SUMMIT_STEP  = 4.0    # small step out for the top cell, so its box clears the
                       # pad below it
 
 NUMERAL_SIZE   = 16.0   # cap height of the digits
-NUMERAL_MAX_W  = 17.0   # widest a number may be; 10, 11 and 12 scale to fit,
+NUMERAL_MAX_W  = 14.0   # widest a number may be; 10, 11 and 12 scale to fit,
                         # and on those the post falls in the gap BETWEEN the
                         # two digits, where it costs nothing
 NUMERAL_DEPTH  = 1.20   # how deep the digit is cut into the box
