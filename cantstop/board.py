@@ -36,15 +36,14 @@ def k_max(col_index: int) -> float:
 def half_height(col_index: int) -> float:
     """How far a column reaches above (and below) the midline, in mm.
 
-    The longest column keeps the nominal row pitch. Every shorter column falls
-    short of its neighbour by COLUMN_STEP rather than by a whole row, and
-    spreads its own cells to cover whatever span that leaves it -- so the
-    cell COUNT stays as the game needs it while the column still reaches out
-    towards the frame.
+    The longest column keeps the nominal row pitch. Every other column gives
+    up the height COLUMN_SHORTFALL allows it and spreads its own cells over
+    whatever span is left -- so the cell COUNT stays as the game needs it
+    while the column can still be made to reach further towards the frame.
     """
     tallest = max(k_max(i) for i in range(len(P.ROWS)))
-    short = tallest - k_max(col_index)
-    return tallest * P.PITCH_Y - short * P.COLUMN_STEP
+    steps_out = int(round(tallest - k_max(col_index)))
+    return tallest * P.PITCH_Y - P.COLUMN_SHORTFALL[steps_out]
 
 
 def row_pitch(col_index: int) -> float:
@@ -245,32 +244,67 @@ def _lattice_struts() -> list[tuple[tuple, tuple, bool]]:
         for r in range(P.ROWS[i] - 1):
             out.append((cell_xy(i, r), cell_xy(i, r + 1), False))
 
-    # Columns need not share a row pitch any more, so nothing is guaranteed
-    # to be level and there is no such thing as a horizontal. Link each cell
-    # to the TWO nearest cells in the next column, both ways round. Where the
-    # columns do happen to line up that gives the level strut plus a diagonal
-    # (ties broken by parity, so the diagonals herringbone); where they do
-    # not it gives the two cells that bracket it. Either way the strip comes
-    # out triangulated.
+    # Columns need not share a row pitch, so nothing is guaranteed to be
+    # level and "horizontal" is not always a meaningful word. Two cases, and
+    # both have to be symmetric left-to-right or the board comes out lopsided:
+    #
+    #   columns that DO line up  -- a level strut at every shared row, plus
+    #       one diagonal per quad, herringboned by parity. This is the plain
+    #       square-grid bracing and it is what most of the board uses.
+    #   columns that do NOT     -- each cell links to the two nearest in the
+    #       other column, taken from BOTH sides and unioned, which is the
+    #       only way to keep the pattern the same on either side of the
+    #       middle.
     for i in range(ncol - 1):
-        pairs, hit = set(), set()
-        for r in range(P.ROWS[i]):
-            ya = grid_y(i, r)
-            lean = 1 if (i + r) % 2 == 0 else -1
-            near = sorted(range(P.ROWS[i + 1]),
-                          key=lambda s: (abs(grid_y(i + 1, s) - ya),
-                                         -lean * np.sign(grid_y(i + 1, s) - ya)))
-            for s in near[:2]:
-                pairs.add((r, s))
-                hit.add(s)
-        # any cell in the next column the forward pass missed reaches back
-        for s in range(P.ROWS[i + 1]):
-            if s in hit:
-                continue
-            yb = grid_y(i + 1, s)
-            r = min(range(P.ROWS[i]),
-                    key=lambda r: abs(grid_y(i, r) - yb))
-            pairs.add((r, s))
+        ya = [grid_y(i, r) for r in range(P.ROWS[i])]
+        yb = [grid_y(i + 1, s) for s in range(P.ROWS[i + 1])]
+        pairs = set()
+
+        def _nearest(vals, y):
+            return min(range(len(vals)), key=lambda k: abs(vals[k] - y))
+
+        # "Aligned" has to be a symmetric test, or a gap and its mirror take
+        # different branches and the board comes out lopsided. Equal pitches
+        # and centred columns line up exactly when their half-heights differ
+        # by a whole number of rows.
+        pa, pb = row_pitch(i), row_pitch(i + 1)
+        aligned = (abs(pa - pb) < 1e-6
+                   and abs((k_max(i) - k_max(i + 1)) % 1.0) < 1e-6)
+        if aligned:
+            # only the rows the two columns actually share; the cells beyond
+            # that are carried by their own column and by the edge chains
+            shared = sorted(((r, s) for r in range(len(ya))
+                             for s in range(len(yb))
+                             if abs(ya[r] - yb[s]) < 1e-6),
+                            key=lambda rs: ya[rs[0]])
+            pairs.update(shared)
+            for k in range(len(shared) - 1):
+                (r0, s0), (r1, s1) = shared[k], shared[k + 1]
+                # Herringbone, but mirrored about the middle of the board.
+                # Keyed on i alone the pattern is the same handedness all the
+                # way across, which reads as a lopsided board; keyed on the
+                # distance from the middle, and flipped on the right-hand
+                # side, the whole lattice comes out symmetric.
+                # Key the parity on the row's POSITION, not its index: a gap
+                # and its mirror share y values but number their rows
+                # differently, so an index-keyed herringbone comes out
+                # handed.
+                level = int(round(ya[r0] / pa))
+                near_mid = min(i, ncol - 2 - i)
+                rising = (near_mid + level) % 2 == 0
+                if i > (ncol - 2) / 2:
+                    rising = not rising
+                pairs.add((r0, s1) if rising else (r1, s0))
+        else:
+            for r, y in enumerate(ya):
+                for s in sorted(range(len(yb)),
+                                key=lambda s: abs(yb[s] - y))[:2]:
+                    pairs.add((r, s))
+            for s, y in enumerate(yb):
+                for r in sorted(range(len(ya)),
+                                key=lambda r: abs(ya[r] - y))[:2]:
+                    pairs.add((r, s))
+
         for r, s in sorted(pairs):
             out.append((cell_xy(i, r), cell_xy(i + 1, s), False))
 

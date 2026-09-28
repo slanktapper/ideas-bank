@@ -21,23 +21,21 @@ Z  out of the print bed; the whole board sits on z = 0 and prints flat
 COLUMNS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 
-# How far each column falls short of the one beside it, at the top and at the
-# bottom. The CELL COUNTS are fixed by the game; this is purely how far apart
-# the cells in a column are spread.
+# How far each column falls short of the LONGEST one, in mm, counting
+# outward from the middle: column 7, then 6 and 8, then 5 and 9, and so on.
+# The CELL COUNTS are fixed by the game; this is purely how far apart the
+# cells in a column are spread, so a column that gives up less height simply
+# spaces its own cells a little wider.
 #
-#   COLUMN_STEP = PITCH_Y      every column uses the same row pitch, so a
-#                              column two cells shorter is a whole box shorter
-#                              top and bottom. The lens comes to a point at
-#                              each end and leaves the frame's sides empty.
-#   COLUMN_STEP = PITCH_Y / 2  half a box each. Short columns spread their
-#                              cells further apart to reach further out.
-#   COLUMN_STEP = 0            every column spans the same height; the field
-#                              fills the frame as a block.
-COLUMN_STEP = 20.0
+# A whole box (20 mm) per step is the plain version, where every column shares
+# one row pitch and the lens comes to a sharp point at the top. Giving 6 and 8
+# only half a box softens that peak without touching anything else: those two
+# columns go to a 22 mm pitch, every other column stays at 20.
+COLUMN_SHORTFALL = [0.0, 10.0, 40.0, 60.0, 80.0, 100.0]
 
 PITCH_X = 22.0      # centre-to-centre spacing between columns
 PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
-                    # wider pitch of their own, set by COLUMN_STEP above.
+                    # pitch of their own, set by COLUMN_SHORTFALL above.
 
 # --------------------------------------------------------------------------
 # Cells — a pad with a post standing on it

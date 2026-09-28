@@ -48,12 +48,20 @@ def main():
           all(P.ROWS[i] < P.ROWS[i + 1] for i in range(5)), f"{P.ROWS[:6]}")
     check("every column has an odd row count, so centring lands on a cell",
           all(n % 2 for n in P.ROWS), f"{P.ROWS}")
-    drops = [B.half_height(i + 1) - B.half_height(i) for i in range(5)]
-    check("each column falls short of its neighbour by COLUMN_STEP at the top "
-          "and the same at the bottom",
-          all(abs(d - P.COLUMN_STEP) < 1e-6 for d in drops),
-          f"{P.COLUMN_STEP:.0f} mm each, against a {P.PITCH_Y:.0f} mm row "
-          f"pitch in the longest column")
+    check("column shortfalls are listed outward from the middle and never "
+          "go backwards",
+          (len(P.COLUMN_SHORTFALL) >= int(round(
+               max(B.k_max(i) for i in range(len(P.ROWS)))
+               - min(B.k_max(i) for i in range(len(P.ROWS))))) + 1
+           and P.COLUMN_SHORTFALL[0] == 0
+           and all(P.COLUMN_SHORTFALL[k] < P.COLUMN_SHORTFALL[k + 1]
+                   for k in range(len(P.COLUMN_SHORTFALL) - 1))),
+          f"{[round(v) for v in P.COLUMN_SHORTFALL]} mm")
+    drops = [round(B.half_height(i + 1) - B.half_height(i), 3) for i in range(5)]
+    check("the lens still steps down monotonically from the middle out",
+          all(d > 0 for d in drops),
+          f"drops of {drops} mm, in units of a {P.PITCH_Y:.0f} mm box: "
+          f"{[round(d / P.PITCH_Y, 2) for d in drops]}")
     check("no column's cells are spread so far apart they stop reading as a "
           "column",
           max(B.row_pitch(i) for i in range(len(P.ROWS))) <= 3 * P.PITCH_Y,
@@ -269,6 +277,24 @@ def main():
           clear > 1.0,
           f"{len(tall)} struts taller than {P.PLAQUE_T:.1f} mm (the octagon); "
           f"nearest is {clear:.1f} mm off column {clear_col}'s box")
+
+    print("\nthe board is symmetric")
+    cx = (len(P.ROWS) - 1) * P.PITCH_X / 2
+
+    def _key(a, b_):
+        return tuple(sorted([(round(a[0], 3), round(a[1], 3)),
+                             (round(b_[0], 3), round(b_[1], 3))]))
+
+    have = {_key(s[0], s[1]) for s in struts}
+    mirrored = {_key((2 * cx - s[0][0], s[0][1]),
+                     (2 * cx - s[1][0], s[1][1])) for s in struts}
+    # Easy to break and hard to see: the herringbone diagonals are chosen by
+    # a parity, and keying that on a row INDEX rather than its position makes
+    # a gap and its mirror disagree, because the two number their rows
+    # differently. The board then comes out visibly handed.
+    check("every strut has a mirror twin across the centreline",
+          have == mirrored,
+          f"{len(have)} struts, {len(have ^ mirrored)} unmatched")
 
     print("\nthe lens fills the frame evenly")
     lo_, hi_ = B.content_bounds()
