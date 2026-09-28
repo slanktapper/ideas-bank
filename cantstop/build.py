@@ -172,13 +172,13 @@ def export_stls(verbose=True):
     # one of each of the first STUB_PIECES shapes, so the test print checks
     # that a piece of one shape stacks on a piece of another
     spacing = 2 * P.PEG_MAX_R + 4.0
+    want = P.PLAYER_STYLES[:P.STUB_PIECES]
     save(trimesh.util.concatenate(
              [R.placed(m, (k * spacing, 0, 0))
               for k, m in enumerate(pieces[:P.STUB_PIECES])]),
-         "stub-pieces-x2.stl", "PLA",
-         "TEST PRINT -- a "
-         + " and a ".join(P.PLAYER_STYLES[:P.STUB_PIECES])
-         + ", to seat and to stack")
+         f"stub-pieces-x{len(want)}.stl", "PLA",
+         "TEST PRINT -- one of each: " + ", ".join(want)
+         + " -- to seat and to stack")
 
     return (board_body, numerals, pieces, runner, stub_body, stub_nums, rows)
 

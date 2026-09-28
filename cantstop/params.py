@@ -573,7 +573,10 @@ STUB_ROWS    = 2          # how many ROW HEIGHTS down from the top of the
                           # The bottom cut then goes on down until it finds a
                           # gap it can sit in with a whole skirt of plate above
                           # it, so this is a floor and not a target.
-STUB_PIECES  = 2          # full pieces printed alongside it, for the fit
+STUB_PIECES  = 4          # full pieces printed alongside the stub: ONE OF
+                          # EACH shape, so the test print checks that every
+                          # shape seats and that any of them stacks on any
+                          # other. Lower it to 2 for a quicker fit check.
 
 # --------------------------------------------------------------------------
 # Printer envelope (Bambu Lab H2D, single nozzle) — see ../available-tools.md

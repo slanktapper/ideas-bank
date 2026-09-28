@@ -44,7 +44,7 @@ Only then print the board.
 
 ```
 stub-board-body.stl + stub-board-numerals.stl   ~22 g, ~1 h     two colours
-stub-pieces-x2.stl                              ~2 g,  ~10 min   2 markers
+stub-pieces-x4.stl                              ~5 g,  ~20 min   one of each shape
 ```
 
 The coupon answers one question. The stub answers the rest of them, and it
@@ -103,7 +103,7 @@ and, for the test print above:
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
 | `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 72 x 115 mm corner of the real board |
-| `stub-pieces-x2.stl` | 1 | PLA | two markers, to seat one and stack the other |
+| `stub-pieces-x4.stl` | 1 | PLA | one of each shape, to seat and to stack |
 
 **The board is two files and needs both.** There is no single-colour version
 any more: the numbers, the title, the border and the alternating post tops
