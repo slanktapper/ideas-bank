@@ -21,5 +21,6 @@ one-line description. Add a row when you create a project.
 | Short name | Description | Status |
 | --- | --- | --- |
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
+| cantstop | 3D-printed push-your-luck dice board game — wireframe truss board, stackable pieces | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
