@@ -30,19 +30,20 @@ in X and 35 in Y.
 
 `OCTAGON_ACROSS` pins the size; 0 goes back to sizing it to the content.
 Because the margin is then whatever is left over rather than something asked
-for, `test_fit.py` measures it: 12.13 mm, against the 12 the lip and its
+for, `test_fit.py` measures it: 14.12 mm, against the 12 the lip and its
 clearance need.
 
 At that point the frame is about as small as this content allows. The eleven
-summits now sit on a staircase that runs very nearly parallel to the corner
-cut, so they all bind it at once rather than one of them binding it alone,
-and the three constraints have converged: X wants a half-span of 133 mm, Y
-wants 141, the diagonal wants 142.8. Dropping the outer columns further buys
+summits sit on a staircase that runs very nearly parallel to the corner cut,
+so they bind it together rather than one of them binding it alone, and the
+three constraints have all but converged: X wants a half-span of 134.0 mm,
+Y wants 140.4, the diagonal 140.3. Dropping the outer columns further buys
 nothing now, and shrinking the numbers and letters buys 1 mm per millimetre
-of cap height, which is a poor trade. The columns do not all share one row pitch: the middle five step down by
-only a quarter of a box and the rest follow by the same amount, which flattens
-the top of the lens and pulls its shoulders out towards the frame instead of
-leaving it a narrow spike in a wide octagon.
+of cap height, which is a poor trade. The columns do not all share one row
+pitch: the middle columns step down by a fraction of a box and the rest
+follow by whole ones, which flattens the top of the lens and pulls its
+shoulders out towards the frame instead of leaving it a narrow spike in a
+wide octagon.
 
 The board is a **6 mm solid octagonal slab, printed at 10% infill**, with a
 raised lip 8 mm wide around the edge. Every cell is a post standing on that
@@ -137,18 +138,34 @@ far down is the most expensive content that can be put on one: levelling the
 title takes the board from 310 mm across to 395, which is off the bed by
 70 mm. `TITLE_FOLLOW` blends between the two if it is ever worth revisiting.
 
-**The middle five columns are level at the top, and 6, 7 and 8 hang lower.**
-5 through 9 give up nothing, so the top of the lens runs flat across five
+**Three columns are level at the top, not five, and 6, 7 and 8 hang lower.**
+6, 7 and 8 give up nothing, so the top of the lens runs flat across three
 columns instead of coming to a point. Their bottoms used to be level too, and
 that was the problem: the same span with 9, 11 and 13 cells in it means
 column 7's dots are packed at 20 mm while column 5's are strung out at 30.
 
 `COLUMN_DROP` lengthens a column at the bottom only. Columns 6, 7 and 8 carry
 no title letter, so the plate directly below them is empty — dropping their
-bottoms 16 and 21 mm fills it and evens the spacing (7 goes 20.3 → 21.8 mm,
-6 goes 24.4 → 25.6), and costs nothing at all, because what sets the bottom
+bottoms 14 and 19 mm fills it and evens the spacing (7 goes 18.0 → 19.6 mm,
+6 goes 21.6 → 23.0), and costs nothing at all, because what sets the bottom
 of the board is the letters either side of that gap and not the dots. The
-lowest pad now reaches −147.9 mm against a title bottom of −148.0.
+lowest pad now reaches −133.9 mm against a title bottom of −134.8.
+
+**5 and 9 take half a step down.** They were level with 6, 7 and 8, which
+left 4 and 10 dropping a full 25 mm off each end of a flat run of five —
+a step that read as a mistake rather than as a shape, and left an empty
+wedge of plate between the numbers 4 and 5 under the corner cut. They now
+carry a 12.5 mm shortfall, which splits that 25 into 12.5 and 12.5 and walks
+the numbers down to the corner evenly.
+
+The same 12.5 goes into `COLUMN_DROP`, and the two cancel at the bottom: the
+shortfall lifts that end and the drop puts it back, so only the top of those
+columns moves. Nothing below the midline changes, the title stays where it
+was, and column 5's nine dots close from 27.0 to 25.4 mm — a step towards
+column 6's 23.0 rather than away from it. It also unpins the frame. With 5
+and 9 level it was the top outer corner of *their* number box that bound the
+octagon's diagonal; half a step takes that corner off the cut, and the spare
+inside the 285 mm goes from 12.13 to 14.12 mm.
 
 **Alternate columns have white post tops.** Eighty-three identical red dots
 on a red plate give the eye nothing to follow, and the columns are what a
@@ -298,7 +315,7 @@ the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
 285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
-**205 g** — 163 g of board at 10% infill plus 42 g of solid pieces.
+**205 g** — 158 g of board at 10% infill plus 47 g of solid pieces.
 
 `test_fit.py` passes 99 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's

@@ -706,7 +706,8 @@ def _title_extents(_key):
 def title_extents():
     return _title_extents((
         tuple(sorted(P.TITLE_TEXT.items())), P.TITLE_SIZE, P.TITLE_MAX_W,
-        P.TITLE_GAP, tuple(P.COLUMN_SHORTFALL), P.PITCH_X, P.PITCH_Y,
+        P.TITLE_GAP, P.TITLE_FOLLOW, tuple(P.COLUMN_SHORTFALL),
+        tuple(P.COLUMN_DROP), P.PITCH_X, P.PITCH_Y,
         tuple(P.ROWS), P.SUMMIT_STEP))
 
 

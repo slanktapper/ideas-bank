@@ -52,7 +52,15 @@ ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 # lowers that corner, and lowers the letter hanging under the same column
 # too, so it pays twice. [0, 0, 0, 20, 40, 60] needs a 326 mm frame; this
 # needs 310.
-COLUMN_SHORTFALL = [0.0, 0.0, 0.0, 25.0, 50.0, 75.0]
+#
+# 5 AND 9 ARE NOT LEVEL WITH 6, 7 AND 8. They were, and the top of the lens
+# read as a flat run of five numbers with 4 and 10 dropping a full 25 mm off
+# each end -- a step that looked like a mistake rather than a shape. Half a
+# step here splits that 25 into 12.5 and 12.5, so the numbers walk down to
+# the corner cut evenly. It also unpins the frame: with 5 and 9 level it was
+# the top outer corner of THEIR number box that bound the octagon's diagonal,
+# and half a step takes that corner off the cut entirely.
+COLUMN_SHORTFALL = [0.0, 0.0, 12.5, 25.0, 50.0, 75.0]
 
 # Extra span given to a column at the BOTTOM only, same indexing. Shortfall
 # moves both ends of a column because the grid is centred; this moves one.
@@ -63,7 +71,14 @@ COLUMN_SHORTFALL = [0.0, 0.0, 0.0, 25.0, 50.0, 75.0]
 # so the plate directly below them is empty: dropping their bottoms fills that
 # and evens the spacing out, and costs nothing, because what sets the bottom
 # of the board is the letters either side of that gap, not the dots.
-COLUMN_DROP = [19.0, 14.0, 0.0, 0.0, 0.0, 0.0]
+#
+# 5 and 9 carry the same 12.5 here as they do in the shortfall, and the two
+# cancel at the bottom: the shortfall lifts that end 12.5 and the drop puts
+# it back, so only the TOP of those columns moves. The bottom of the board,
+# and the title hanging off it, stay exactly where they were -- and column
+# 5's nine dots now sit at 25.4 mm rather than 27.0, which is a step towards
+# column 6's 23.0 instead of a step away from it.
+COLUMN_DROP = [19.0, 14.0, 12.5, 0.0, 0.0, 0.0]
 
 PITCH_X = 22.0      # centre-to-centre spacing between columns
 PITCH_Y = 18.0      # row pitch of the LONGEST column. Shorter columns get a
