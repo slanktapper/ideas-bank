@@ -17,6 +17,8 @@ without wrapping a lot of empty air.
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import numpy as np
 import trimesh
 
@@ -148,6 +150,9 @@ def content_points() -> np.ndarray:
         x, y = cell_xy(i, row)
         for ox, oy in (corners if is_summit(i, row) else ring):
             pts.append((x + ox, y + oy))
+    # the title hangs below the lens, so the frame has to come down to meet it
+    for x0, y0, x1, y1 in title_extents():
+        pts += [(x0, y0), (x0, y1), (x1, y0), (x1, y1)]
     return np.asarray(pts, dtype=float)
 
 
@@ -164,6 +169,12 @@ def octagon() -> list[tuple[float, float]]:
     cx, cy = (lo + hi) * 0.5
     d = np.abs(pts - np.array([cx, cy]))
 
+    margin = P.OCTAGON_MARGIN
+    if P.BOARD_STYLE == "slab":
+        # the raised lip sits inside the outline, so the outline has to stand
+        # off far enough that the lip never lands on a pad
+        margin = max(margin, P.RIM_W + P.RIM_CLEAR)
+
     if P.OCTAGON_REGULAR:
         # Equal edges need a chamfer of exactly 2/(2+sqrt2) of the half-span,
         # which reduces the octagon to three constraints: |dx| <= a,
@@ -172,17 +183,20 @@ def octagon() -> list[tuple[float, float]]:
         # cuts slice through the ends of the lens.
         need = max(d[:, 0].max(), d[:, 1].max(),
                    (d[:, 0] + d[:, 1]).max() / np.sqrt(2.0))
-        margin = P.OCTAGON_MARGIN
-        if P.BOARD_STYLE == "slab":
-            # the raised lip sits inside the outline, so the outline has to
-            # stand off far enough that the lip never lands on a pad
-            margin = max(margin, P.RIM_W + P.RIM_CLEAR)
         a = b = need + margin
         c = a * 2.0 / (2.0 + np.sqrt(2.0))
     else:
-        a = (hi[0] - lo[0]) * 0.5 + P.OCTAGON_MARGIN
-        b = (hi[1] - lo[1]) * 0.5 + P.OCTAGON_MARGIN
-        c = 0.55 * min(a, b)
+        # Each axis sized to its own content, so the frame hugs a lens that
+        # is taller than it is wide instead of wrapping it in a square. The
+        # chamfer then has to be checked against the content as well: the cut
+        # runs along x + y = a + b - c, and every content point has to stay
+        # `margin` clear of it measured PERPENDICULAR to the cut, which is
+        # where the sqrt2 comes from. Without that the corners slice through
+        # whatever is nearest them -- here, the ends of the title.
+        a = (hi[0] - lo[0]) * 0.5 + margin
+        b = (hi[1] - lo[1]) * 0.5 + margin
+        room = a + b - (d[:, 0] + d[:, 1]).max() - margin * np.sqrt(2.0)
+        c = min(0.55 * min(a, b), max(room, 0.0))
     return [
         (cx + a - c, cy + b), (cx + a, cy + b - c),
         (cx + a, cy - b + c), (cx + a - c, cy - b),
@@ -452,16 +466,21 @@ def seat_z() -> float:
 def rim_rings() -> tuple[list, list]:
     """(outer, inner) plan polygons of the raised lip.
 
-    The inner ring is the outline inset by RIM_W. A regular octagon has the
-    same apothem to every edge, so insetting is a plain scale about the
-    centre -- (a - RIM_W) / a -- and the lip comes out an even width the whole
-    way round.
+    The inner ring is the outline offset inward by RIM_W -- a true offset,
+    with the corners mitred, so the lip is the same width against every edge.
+
+    It used to be a plain scale about the centre, which is the same thing on a
+    REGULAR octagon because every edge shares one apothem. It is not the same
+    thing on any other shape: once the frame was allowed to hug a lens taller
+    than it is wide, scaling gave a lip that ran 7.66 mm on the long edges and
+    8.60 on the short ones, and pulled the inner edge to within 3.4 mm of a
+    number where 4 was asked for. test_fit.py caught both.
     """
+    from shapely.geometry import Polygon
+
     outer = [tuple(p) for p in octagon()]
-    ctr = octagon_centre()
-    apothem = max(abs(np.asarray(outer) - ctr).max(axis=1))
-    k = (apothem - P.RIM_W) / apothem
-    return outer, [tuple(ctr + (np.asarray(p) - ctr) * k) for p in outer]
+    inner = Polygon(outer).buffer(-P.RIM_W, join_style=2, mitre_limit=20.0)
+    return outer, [tuple(q) for q in inner.exterior.coords[:-1]]
 
 
 def _rim(z0: float, h: float) -> trimesh.Trimesh:
@@ -516,17 +535,82 @@ def _post(cx: float, cy: float, z0: float, segs: int | None = None
     return m
 
 
-def _digit_solid(num: int, x: float, y: float, z0: float,
-                 thickness: float) -> trimesh.Trimesh:
-    t = S.text_solid(str(num), P.NUMERAL_SIZE, thickness,
-                     weight=P.NUMERAL_FONT_WEIGHT)
+def _glyph_solid(text: str, size: float, max_w: float, x: float, y: float,
+                 z0: float, thickness: float) -> trimesh.Trimesh:
+    """A string extruded to `thickness`, centred on (x, y), sitting at z0.
+
+    Anything wider than max_w is condensed in X ONLY. Scaling both axes would
+    drop the cap height with the width, and a label that is shorter than its
+    neighbours reads as a different, lesser label -- which is exactly what
+    happened to 10, 11 and 12 the first time round.
+    """
+    t = S.text_solid(text, size, thickness, weight=P.NUMERAL_FONT_WEIGHT)
     w = t.bounds[1][0] - t.bounds[0][0]
-    if w > P.NUMERAL_MAX_W:              # 10, 11 and 12 are wider than that
-        # X ONLY. Scaling both axes would drop their cap height with their
-        # width and they would read as a smaller set of numbers than 2 to 9.
-        t.apply_scale((P.NUMERAL_MAX_W / w, 1.0, 1.0))
+    if w > max_w:
+        t.apply_scale((max_w / w, 1.0, 1.0))
     t.apply_translation((x, y, z0))
     return t
+
+
+def _digit_solid(num: int, x: float, y: float, z0: float,
+                 thickness: float) -> trimesh.Trimesh:
+    return _glyph_solid(str(num), P.NUMERAL_SIZE, P.NUMERAL_MAX_W,
+                        x, y, z0, thickness)
+
+
+# ---------------------------------------------------------------------------
+# the title along the bottom of the lens
+# ---------------------------------------------------------------------------
+
+def title_letters() -> list[tuple[str, float, float]]:
+    """(letter, x, y) for each title letter, hung under its column.
+
+    X always comes from the column -- that is what makes a letter belong to a
+    number. The height is TITLE_FOLLOW between two extremes:
+
+    1.0  each letter hangs below its OWN column's bottom cell, so the title
+         follows the underside of the lens and CAN'T steps down while STOP
+         steps back up.
+    0.0  one straight baseline below the lowest cell on the board.
+
+    A straight line reads better and costs a great deal more frame. An octagon
+    has its corners cut off, so a letter that is both far to one side and far
+    down is the most expensive content that can be put on one: levelling the
+    title takes this board from 317 mm across to 395, which is off the bed by
+    70 mm. The cascade keeps every letter where the octagon actually has room.
+    """
+    flat = min(cell_xy(i, 0)[1] for i in range(len(P.ROWS))) - P.TITLE_GAP
+    out = []
+    for col, ch in P.TITLE_TEXT.items():
+        i = P.COLUMNS.index(col)
+        x, y = cell_xy(i, 0)
+        own = y - P.TITLE_GAP
+        out.append((ch, x, flat + P.TITLE_FOLLOW * (own - flat)))
+    return out
+
+
+def _title_parts(thickness: float, z0: float):
+    """Letter solids at (z0, z0 + thickness)."""
+    return [_glyph_solid(ch, P.TITLE_SIZE, P.TITLE_MAX_W, x, y, z0, thickness)
+            for ch, x, y in title_letters()]
+
+
+@lru_cache(maxsize=8)
+def _title_extents(_key):
+    """Plan bounding box of each title letter. Cached: content_points() is
+    called on every octagon() and building eight glyph meshes each time is
+    seconds, not milliseconds. The key carries every parameter the answer
+    depends on, so changing one at runtime invalidates it."""
+    return tuple((float(m.bounds[0][0]), float(m.bounds[0][1]),
+                  float(m.bounds[1][0]), float(m.bounds[1][1]))
+                 for m in _title_parts(1.0, 0.0))
+
+
+def title_extents():
+    return _title_extents((
+        tuple(sorted(P.TITLE_TEXT.items())), P.TITLE_SIZE, P.TITLE_MAX_W,
+        P.TITLE_GAP, tuple(P.COLUMN_SHORTFALL), P.PITCH_X, P.PITCH_Y,
+        tuple(P.ROWS), P.SUMMIT_STEP))
 
 
 def _summit_parts(segs: int | None = None):
@@ -546,6 +630,12 @@ def _summit_parts(segs: int | None = None):
     cutters, accents, body_posts = [], [], []
     depth, t_post = P.NUMERAL_DEPTH, P.POST_H
     top = seat_z()
+
+    # the title, cut into the plate exactly as the numbers are. No post runs
+    # through a letter, so there is nothing to split and nothing to hand back.
+    if P.TITLE_TEXT:
+        cutters += _title_parts(P.TITLE_DEPTH + 1.0, top - P.TITLE_DEPTH)
+        accents += _title_parts(P.TITLE_DEPTH, top - P.TITLE_DEPTH)
 
     for i, num in enumerate(P.COLUMNS):
         x, y = numeral_xy(i)

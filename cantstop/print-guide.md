@@ -43,16 +43,16 @@ Only then print the board.
 ## 1a. Then print the stub
 
 ```
-stub-board-body.stl + stub-board-numerals.stl   ~17 g, ~1 h     two colours
+stub-board-body.stl + stub-board-numerals.stl   ~22 g, ~1 h     two colours
 stub-pieces-x2.stl                              ~2 g,  ~10 min   2 markers
 ```
 
 The coupon answers one question. The stub answers the rest of them, and it
 answers them about the real board, because **it is the real board**: the
-finished mesh intersected with a 66 x 95 mm box, not a small part built to
+finished mesh intersected with a 72 x 115 mm box, not a small part built to
 look similar. The slab thickness, the raised lip, the engraved digits, the
 split posts, the clearance between the lip and the topmost pads and the
-seating faces are all bit-for-bit what the 285 mm board would print.
+seating faces are all bit-for-bit what the full board would print.
 
 It is the corner over columns 6, 7 and 8 — the densest part of the board, so
 it carries three numbers, six posts at the real 22 mm column pitch, and the
@@ -84,7 +84,7 @@ Print it in the two colours you mean to use, then check:
 the lip and the seating. `renders/07-test-print.png` is what it should come
 out like.
 
-What the stub cannot tell you is whether 285 mm of flat PLA warps. Nothing
+What the stub cannot tell you is whether 300 mm of flat PLA warps. Nothing
 66 mm across will.
 
 ---
@@ -102,7 +102,7 @@ and, for the test print above:
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
-| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 66 x 95 mm corner of the real board, lip cap included |
+| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 72 x 115 mm corner of the real board, lip cap included |
 | `stub-board.stl` | 1 | PLA red | the same corner, single colour |
 | `stub-pieces-x2.stl` | 1 | PLA | two markers, to seat one and stack the other |
 
@@ -146,12 +146,12 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **217 g**: ~158 g board (6 mm slab at 10% infill),
+A full set is roughly **246 g**: ~187 g board (6 mm slab at 10% infill),
 ~53 g of markers (44), ~5 g of runners (3). A marker is 16.5 mm across and
 8.45 mm tall, a runner 16.5 x 10.45, and every stacked piece adds exactly
 6.30 mm. The board is
-284.9 × 284.9 × 9.2 mm and sits on the H2D bed with 40 mm spare in X and
-35 mm in Y.
+293.0 × 306.0 × 9.2 mm and sits on the H2D bed with 32 mm spare in X and
+14 mm in Y.
 
 ---
 
@@ -208,7 +208,7 @@ moving it does far less than it looks: at 5% the board is 131 g, at 10% it is
 as stiff in bending as the old lattice was, for 13% more plastic. Turning the
 infill up buys very little more.
 
-**Brim.** 285 mm of flat 6 mm PLA is a large area and the corners of the
+**Brim.** 300 mm of flat 6 mm PLA is a large area and the corners of the
 octagon are exactly where a plate lifts. The H2D's heated chamber helps; a
 brim is cheap insurance on the first attempt.
 
@@ -247,10 +247,10 @@ the board will be.
 
 ## 6. After printing
 
-- Check the board is flat. Sight down it. 285 mm of solid PLA is the most
+- Check the board is flat. Sight down it. 300 mm of solid PLA is the most
   warp-prone thing in this project.
 - Check a piece seats on a post at the middle, at the ends of the lens, and on
-  a summit. FDM parts are not dimensionally uniform across 285 mm; if the
+  a summit. FDM parts are not dimensionally uniform across 300 mm; if the
   edges differ from the middle, that is bed levelling or warp, not the model.
 - Check three pieces stack without wobble. The posts are deliberately short
   (3.2 mm), so if a stack rocks, look at the skirt seating on the face below
@@ -265,7 +265,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 72 checks, ~40 s
+python3 test_fit.py    # 76 checks, ~40 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

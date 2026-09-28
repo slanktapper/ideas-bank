@@ -131,28 +131,29 @@ def slab_checks(brd, poly, ctr, skirt_r):
                   - (P.SLAB_T + body_lip)) < 1e-6,
           "board.stl keeps the cap; board-body.stl hands it to the numerals")
 
-    # the same inset slab_plate() uses, rebuilt here so the check is on the
-    # construction and not on a number copied out of it
-    apothem = max(abs(np.asarray(poly) - ctr).max(axis=1))
-    k = (apothem - P.RIM_W) / apothem
-    inner = (np.asarray(poly) - ctr) * k + ctr
-    widths = [o - i for o, i in zip(_apothems(poly, ctr),
-                                    _apothems(inner, ctr))]
+    # Measured against the rings the plate is actually built from, at the
+    # midpoint of every outer edge. Not recomputed from the parameters: the
+    # inset is the thing under test, and it was wrong -- a scale about the
+    # centre is only an even inset on a REGULAR octagon, and this one is not
+    # regular any more.
+    _outer, _inner = B.rim_rings()
+    ring_in = Poly2D(_inner).exterior
+    op = np.asarray(_outer, dtype=float)
+    widths = [ring_in.distance(Point(*(op[j] + op[(j + 1) % len(op)]) / 2))
+              for j in range(len(op))]
     check("the lip is the same width the whole way round",
           max(widths) - min(widths) < 0.05 and abs(min(widths) - P.RIM_W) < 0.05,
           f"{min(widths):.2f}-{max(widths):.2f} mm against a {P.RIM_W:.0f} mm "
-          f"target, on all eight edges")
+          f"target, on all {len(op)} edges")
 
-    ring = Poly2D([tuple(q) for q in inner]).exterior
-    pad_gap = min(ring.distance(Point(*q)) for q in B.content_points())
-    check("the lip clears every pad and every number box",
-          Poly2D([tuple(q) for q in inner]).contains(
-              Poly2D([tuple(q) for q in B.content_points()]).convex_hull)
+    face = Poly2D(_inner)
+    pad_gap = min(face.exterior.distance(Point(*q)) for q in B.content_points())
+    check("the lip clears every pad, every number and every letter",
+          face.contains(Poly2D([tuple(q) for q in B.content_points()]).convex_hull)
           and pad_gap >= P.RIM_CLEAR - 0.05,
           f"{pad_gap:.1f} mm of flat between the lip and the nearest content, "
           f"against a {P.RIM_CLEAR:.0f} mm target")
 
-    face = Poly2D([tuple(q) for q in inner])
     off = []
     for i, r in B.all_cells():
         cx, cy = B.cell_xy(i, r)
@@ -276,20 +277,26 @@ def main():
           all(P.ROWS[i] < P.ROWS[i + 1] for i in range(5)), f"{P.ROWS[:6]}")
     check("every column has an odd row count, so centring lands on a cell",
           all(n % 2 for n in P.ROWS), f"{P.ROWS}")
+    # Non-decreasing, not strictly increasing. Equal entries level a run of
+    # columns -- [0, 0, 0, ...] puts 5 through 9 on one line -- and that is a
+    # legitimate shape, not a mistake. What is never allowed is a shortfall
+    # going DOWN as you move outward, which would have a short column reach
+    # higher than a long one.
     check("column shortfalls are listed outward from the middle and never "
           "go backwards",
           (len(P.COLUMN_SHORTFALL) >= int(round(
                max(B.k_max(i) for i in range(len(P.ROWS)))
                - min(B.k_max(i) for i in range(len(P.ROWS))))) + 1
            and P.COLUMN_SHORTFALL[0] == 0
-           and all(P.COLUMN_SHORTFALL[k] < P.COLUMN_SHORTFALL[k + 1]
+           and all(P.COLUMN_SHORTFALL[k] <= P.COLUMN_SHORTFALL[k + 1]
                    for k in range(len(P.COLUMN_SHORTFALL) - 1))),
           f"{[round(v) for v in P.COLUMN_SHORTFALL]} mm")
     drops = [round(B.half_height(i + 1) - B.half_height(i), 3) for i in range(5)]
-    check("the lens still steps down monotonically from the middle out",
-          all(d > 0 for d in drops),
+    check("the lens never steps back UP on its way out from the middle",
+          all(d >= 0 for d in drops),
           f"drops of {drops} mm, in units of a {P.PITCH_Y:.0f} mm box: "
-          f"{[round(d / P.PITCH_Y, 2) for d in drops]}")
+          f"{[round(d / P.PITCH_Y, 2) for d in drops]}"
+          + ("; a zero is a levelled run of columns" if 0 in drops else ""))
     check("no column's cells are spread so far apart they stop reading as a "
           "column",
           max(B.row_pitch(i) for i in range(len(P.ROWS))) <= 3 * P.PITCH_Y,
@@ -525,6 +532,37 @@ def main():
           f"nearest piece clears every other column's digits"
           if not stood_on else f"{stood_on}")
 
+    # The title, when it is switched on. Nothing here runs otherwise.
+    if P.TITLE_TEXT:
+        print("\nthe title along the bottom")
+        letters = B.title_letters()
+        check("every letter is in line with its column",
+              all(abs(x - B.cell_xy(P.COLUMNS.index(c), 0)[0]) < 1e-9
+                  for (ch, x, y), c in zip(letters, P.TITLE_TEXT)),
+              "".join(ch for ch, _, _ in letters))
+        ext = B.title_extents()
+        caps = [y1 - y0 for _x0, y0, _x1, y1 in ext]
+        check("every letter is the same height",
+              max(caps) - min(caps) < 0.05,
+              f"{min(caps):.2f}-{max(caps):.2f} mm cap height")
+        worst, who = np.inf, None
+        for (ch, _lx, _ly), (x0, y0, x1, y1) in zip(letters, ext):
+            for j, r in B.all_cells():
+                cx, cy = B.cell_xy(j, r)
+                dx = max(x0 - cx, 0.0, cx - x1)
+                dy = max(y0 - cy, 0.0, cy - y1)
+                g = float(np.hypot(dx, dy)) - skirt
+                if g < worst:
+                    worst, who = g, (ch, P.COLUMNS[j], r)
+        check("no piece stands on a letter",
+              worst >= 2.5,
+              f"tightest is {worst:.2f} mm, the {who[0]} against column "
+              f"{who[1]}")
+        gaps = [max(max(a[0]-b[2], b[0]-a[2]), max(a[1]-b[3], b[1]-a[3]))
+                for i, a in enumerate(ext) for b in ext[i+1:]]
+        check("no two letters run into each other",
+              min(gaps) >= 3.0, f"tightest is {min(gaps):.1f} mm")
+
     if not SLAB:
         check("a piece fits on the box it has to stand on",
               2 * skirt <= min(P.PLAQUE_W, P.PLAQUE_H),
@@ -644,10 +682,18 @@ def main():
     edges = [float(np.linalg.norm(poly[(j + 1) % 8] - poly[j])) for j in range(8)]
     check("the frame really is an octagon (8 distinct vertices)",
           len(poly) == 8 and len(set(map(tuple, np.round(poly, 3)))) == 8)
-    check("all eight edges are the same length",
-          max(edges) - min(edges) < 0.05,
-          f"{min(edges):.1f} mm each" if max(edges) - min(edges) < 0.05
-          else f"{np.round(edges, 1).tolist()}")
+    if P.OCTAGON_REGULAR:
+        check("all eight edges are the same length",
+              max(edges) - min(edges) < 0.05,
+              f"{min(edges):.1f} mm each" if max(edges) - min(edges) < 0.05
+              else f"{np.round(edges, 1).tolist()}")
+    else:
+        # Not a regular octagon: each axis is sized to its own content. The
+        # rule that still has to hold is that it is a SENSIBLE octagon --
+        # four flats and four corner cuts, none of them vanishing.
+        check("the frame is an octagon with no degenerate edge",
+              min(edges) > 20.0,
+              f"flats and chamfers run {min(edges):.0f}-{max(edges):.0f} mm")
 
     ctr = B.octagon_centre()
 

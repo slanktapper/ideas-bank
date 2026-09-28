@@ -12,8 +12,13 @@ is thirteen — eighty-three cells in all.
 
 Columns are **centre-aligned** on a shared midline, so the cell field is a
 symmetric lens rather than a pyramid, and the whole thing sits inside a
-**regular octagon** — all eight edges the same 118.0 mm, 284.9 mm across the
-flats. The columns do not all share one row pitch: the middle five step down by
+**octagon that hugs it** — 293 × 306 mm, four flats and four corner cuts, but
+not a regular one. It was regular until the title went in: wrapping a lens
+that is much taller than it is wide in a square octagon costs 30 mm of frame
+and spends it on empty plate at the left and right, because what binds a
+regular one is the diagonal — the corner cuts have to clear the number boxes
+at columns 2 and 12, which sit at the extreme of x and well up in y. Sizing
+each axis to its own content instead fills 95% of the board. The columns do not all share one row pitch: the middle five step down by
 only a quarter of a box and the rest follow by the same amount, which flattens
 the top of the lens and pulls its shoulders out towards the frame instead of
 leaving it a narrow spike in a wide octagon.
@@ -70,6 +75,26 @@ got. So the cone is truncated: it climbs until 0.80 mm of solid is left above
 it, and the 2.55 mm of flat that remains is bridged. A 2.55 mm bridge is
 nothing; the rule that matters is that it stays small, and `test_fit.py`
 measures both the 45 degrees and the span off the real profile.
+
+**The title is spelled out along the bottom.** One letter per column,
+engraved into the plate exactly as the numbers are and printed in their
+colour: CAN'T under 2 3 4 5, STOP under 9 10 11 12, and nothing under 6, 7
+and 8 — the hole they leave in the middle is the word space. The lower half
+of the board was a cell field with nothing to read on it; this is what goes
+there.
+
+The letters hang below each column's own bottom cell rather than sitting on
+one straight baseline, so the title follows the underside of the lens and
+mirrors the numbers' cascade at the top. That is not a stylistic choice. An
+octagon has its corners cut off, so a letter that is both far to one side and
+far down is the most expensive content that can be put on one: levelling the
+title takes the board from 293 mm across to 395, which is off the bed by
+70 mm. `TITLE_FOLLOW` blends between the two if it is ever worth revisiting.
+
+**The middle five columns are level.** 5 through 9 give up nothing, so the
+top of the lens runs flat across five columns instead of coming to a point —
+and, because the columns are centred on a shared midline, the bottom does
+too, which is the straight edge the title hangs from.
 
 **Every number is the same size, one digit or two.** A two-digit number is
 about 26 mm wide at this 16 mm cap height and a one-digit one is 12, and the
@@ -175,7 +200,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 72 design checks — run this after editing params.py
+python3 test_fit.py      # 76 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~6 s)
 python3 build.py --fast  # quarter-res renders  (~12 s total)
@@ -192,15 +217,15 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 The **test stub has been printed and came out right** — the engraved numbers,
 the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
-284.9 × 284.9 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 40 mm
-spare in X and 35 mm in Y. A full set is about **217 g** — 158 g of board at
+293.0 × 306.0 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 32 mm
+spare in X and 14 mm in Y. A full set is about **246 g** — 187 g of board at
 10% infill plus 59 g of solid pieces.
 
-`test_fit.py` passes 72 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 76 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same
-width on all eight edges, clears the outermost pads by 4 mm, and is genuinely a
+width on every edge, clears the outermost pads by 4 mm, and is genuinely a
 lip rather than a plate that came out 7.2 mm thick everywhere.
 
 Defects this loop has caught rather than a print:
@@ -238,9 +263,9 @@ coming off a printer. There are two test prints for that, in order:
   carries **posts, not bores**, because the board is male: you try a real
   piece over each one.
 - `stub-board-*.stl` plus `stub-pieces-x2.stl` — ~1 hour. The stub is a
-  66 x 95 mm corner of the **real board**, cut from the finished mesh rather
+  72 x 115 mm corner of the **real board**, cut from the finished mesh rather
   than built to resemble it, so the slab, the lip, the engraved digits and the
-  split posts are all exactly what the 285 mm version would print. It takes
+  split posts are all exactly what the full board would print. It takes
   the corner over columns 6, 7 and 8: three numbers, six posts at the real
   pitch, and the stretch of lip that comes closest to a pad anywhere on the
   board. Two full markers come with it, one to seat and one to stack.
@@ -263,7 +288,7 @@ coming off a printer. There are two test prints for that, in order:
   the fixture to try new pieces on. Below roughly 0.15 diametral this stops
   being a fit and becomes an interference the plastic has to absorb, so there
   is no third halving; if 0.23 is tight, the next move is up, not down.
-- **Warp.** 285 mm of solid 6 mm PLA is a much bigger flat area than the
+- **Warp.** 300 mm of solid 6 mm PLA is a much bigger flat area than the
   lattice ever was, and flat PLA that size is exactly what lifts at the
   corners. The heated chamber is on our side here; a brim may still be wanted.
 - **The lip on a slicer.** 8 mm wide and 1.2 mm tall is six layers of a narrow
@@ -274,7 +299,7 @@ coming off a printer. There are two test prints for that, in order:
   like off the printer — colour bleed, a seam, purge staining — is a thing only
   a print will tell us. **The stub answered it: the first stub printed clean**,
   numbers and lip both. What it was printed against was the narrower version
-  of 10, 11 and 12 and the taller pieces, so a second one is worth 17 g before
+  of 10, 11 and 12 and the taller pieces, so a second one is worth 22 g before
   the board itself goes on.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
   octagon is bare plate. It looks deliberate in plan; whether it looks

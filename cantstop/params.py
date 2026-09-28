@@ -36,9 +36,20 @@ ROWS    = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]   # 83 cells total
 # rather than staying put; otherwise the next step down would be an awkward
 # box and three quarters and the silhouette would kink.
 # So: a quarter box twice, then whole boxes all the way out.
-COLUMN_SHORTFALL = [0.0, 5.0, 10.0, 30.0, 50.0, 70.0]
+#
+# LEVELLING 5 TO 9 -- [0, 0, 0, 20, 40, 60] -- was tried and rendered. It
+# looks better: the top of the lens is flat across five columns instead of
+# coming to a point. It costs 13 mm of frame, because the shoulders of the
+# lens move out into the octagon's cut corners, and the board goes 284.9 ->
+# 297.6 mm. On its own that still fits the bed. Together with the title
+# below it does not; see TITLE_TEXT.
+COLUMN_SHORTFALL = [0.0, 0.0, 0.0, 20.0, 40.0, 60.0]
 
-PITCH_X = 22.0      # centre-to-centre spacing between columns
+PITCH_X = 24.0      # centre-to-centre spacing between columns. Widened from
+                    # 22 along with the title: the frame hugs the content now,
+                    # so a wider grid fills a shape that is otherwise much
+                    # taller than it is wide. It also buys the two-digit
+                    # numbers enough room to print at natural width.
 PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
                     # pitch of their own, set by COLUMN_SHORTFALL above.
 
@@ -125,11 +136,21 @@ FRAME_H = 4.40      # board up by, and it is the only frame-section member
 # 45 degrees. The lattice is a lens and does not reach the corners, so the
 # cut-off triangles are where the number shields and the bracing spokes live.
 OCTAGON_MARGIN  = 6.0    # clear air between the content and the frame
-# A REGULAR octagon: all eight edges the same length. That needs a square
+# A REGULAR octagon -- all eight edges the same length -- needs a square
 # bounding box (so the half-span is taken as the larger of the two) and a
 # chamfer of exactly 2/(2+sqrt2) = 0.5858 of it, at which point the four flats
 # and the four corner cuts come out identical.
-OCTAGON_REGULAR = True
+#
+# FALSE here, because the lens is not square any more. With the title below
+# it the content is 266 x 306, and wrapping that in a square octagon costs
+# 30 mm of frame and spends it on empty plate at the left and right. What
+# binds a regular one is the DIAGONAL: the corner cuts have to clear the
+# number boxes at columns 2 and 12, which sit at the extreme of x and well up
+# in y. Sizing each axis to its own content hugs the board instead, and the
+# corner cuts are then taken back to whatever clears the content.
+#
+# True still works and is one line away.
+OCTAGON_REGULAR = False
 OCTAGON_SPOKE_W = 3.20   # bracing struts from the lattice out to the frame
 OCTAGON_SPOKE_H = 3.40
 
@@ -177,9 +198,11 @@ SUMMIT_STEP  = 4.0    # small step out for the top cell, so its box clears the
                       # pad below it
 
 NUMERAL_SIZE   = 16.0   # cap height of EVERY number, one and two digit alike
-NUMERAL_MAX_W  = 24.0   # widest a number may be. A two-digit number is about
-                        # 26 mm wide at this cap height, so 10, 11 and 12 are
-                        # condensed by 8% -- squeezed in X ONLY, never scaled.
+NUMERAL_MAX_W  = 27.0   # widest a number may be. At PITCH_X 24 a two-digit
+                        # number fits at its natural 26 mm, so nothing is
+                        # condensed any more -- but the clamp stays, because
+                        # narrowing the pitch would need it again. Squeezing
+                        # is X ONLY, never a uniform scale.
                         #
                         # Scaling them uniformly was the first version and it
                         # was wrong: clamped to 14 mm, "12" came out at 0.54
@@ -193,7 +216,7 @@ NUMERAL_MAX_W  = 24.0   # widest a number may be. A two-digit number is about
                         # this column's centre, so a number wider than 27.5 mm
                         # would have its ends stood on by the column next door.
                         # 24 leaves 1.75 mm.
-NUMERAL_BOX_W  = 26.0   # footprint a number reserves on the plate: the widest
+NUMERAL_BOX_W  = 29.0   # footprint a number reserves on the plate: the widest
                         # number plus a margin, and the SAME for every column
                         # so the octagon stays symmetric about the lens rather
                         # than growing only on the two-digit side
@@ -203,6 +226,53 @@ NUMERAL_POST_CLEAR = 0.00  # the pocket stops exactly at the post's edge, so
                            # post meet with no black seam between them. The
                            # post still stands on solid plate.
 NUMERAL_FONT_WEIGHT = "bold"
+
+# --------------------------------------------------------------------------
+# The title, spelled out along the bottom of the lens
+# --------------------------------------------------------------------------
+# One letter per column, engraved into the plate exactly as the numbers are
+# and printed in their colour. The lower half of the board is a cell field
+# with nothing to read on it, and this is what goes there.
+#
+# CAN'T descends left to right and STOP climbs back, because the columns
+# they hang under do -- 2 is short and 5 is long, then 8 and 9 are long and
+# 11 is short. Columns 6 and 7 carry no letter, and the hole they leave in
+# the middle is the word space.
+#
+# OFF BY DEFAULT, because it does not come free. The letters hang below the
+# lens, which is the one direction the board has no room in: the octagon's
+# corners are cut away and a letter that is both far to one side and far down
+# is the most expensive content that can be put on one.
+#
+#   as it stands, no title                        284.9 mm   35 mm bed spare
+#   level 5-9, no title                           297.6 mm   22 mm
+#   title, 16 mm letters, 6 mm lip                308.5 mm   11 mm
+#   title, 20 mm letters, 8 mm lip                316.7 mm    3 mm  -- no
+#   title on one level baseline                   394.8 mm   off the bed
+#
+# Those figures are all for a REGULAR octagon, which is what made it a
+# straight trade against the 8 mm lip. Letting the frame hug the content
+# instead (OCTAGON_REGULAR = False) pays for the whole thing: 290 x 306 mm
+# with the title, the levelled top, a wider column pitch AND the 8 mm lip.
+#
+# Set TITLE_TEXT = {} to take the title off.
+#
+# CAN'T hangs under 2345 and STOP under 9 10 11 12, so the two halves are
+# mirror images. 6, 7 and 8 carry no letter, and the hole they leave in the
+# middle is the word space.
+TITLE_TEXT  = {2: "C", 3: "A", 4: "N'", 5: "T",
+               9: "S", 10: "T", 11: "O", 12: "P"}
+TITLE_SIZE  = 16.0   # cap height
+TITLE_MAX_W = 20.0   # condensed in X only past this, as the numbers are
+TITLE_FOLLOW = 1.0   # 1 = each letter hangs under its own column and the
+                     # title follows the underside of the lens; 0 = one
+                     # straight baseline. See board.title_letters(): a level
+                     # title is worth 78 mm of extra frame on an octagon.
+TITLE_GAP   = 20.0   # from the bottom cell's centre to the letter's centre.
+                     # A piece on that cell reaches 8.25 mm and a letter
+                     # reaches 10, so this leaves about 6 mm of plate between
+                     # the two.
+TITLE_DEPTH = 1.20   # same relief as the numbers and the lip
 
 # --------------------------------------------------------------------------
 # Playing pieces
