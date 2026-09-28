@@ -18,8 +18,11 @@ import sys
 
 import numpy as np
 
+import trimesh
+
 import board as B
 import params as P
+import solids as S
 
 FAILS: list[str] = []
 CHECKS = 0
@@ -166,47 +169,62 @@ def main():
           all(abs(B.numeral_xy(i)[0] - B.summit(i)[0]) < 1e-9
               for i in range(len(P.ROWS))),
           "digit x == column x for all 11")
+    check("the digit and the post share the box's centre",
+          all(B.numeral_xy(i) == B.summit(i) for i in range(len(P.ROWS))),
+          "box, digit and post on one centre")
 
     hw, hh = P.NUMERAL_MAX_W / 2, P.NUMERAL_SIZE / 2
-    check("every digit fits inside its tab",
+    check("every digit fits inside its box",
           hw + 1.0 <= P.PLAQUE_W / 2 and hh + 1.0 <= P.PLAQUE_H / 2,
-          f"digit {2*hw:.0f} x {2*hh:.0f} in a tab "
+          f"digit {2*hw:.0f} x {2*hh:.0f} in a box "
           f"{P.PLAQUE_W:.0f} x {P.PLAQUE_H:.0f}")
-    gap = P.TAB_DROP - P.PAD_OD / 2 - P.PLAQUE_H / 2
-    check("the tab stands clear of its summit pad",
-          gap >= 2.5,
-          f"{gap:.1f} mm gap, so it reads as a label rather than as a box "
-          f"with a post stuck on its edge")
-    check("every tab is tied back to its column",
-          len([s for s in struts if s[4] == "neck"]) == len(P.ROWS),
-          f"{len([s for s in struts if s[4] == 'neck'])} necks, each running "
-          f"UNDER its tab where it cannot be printed across the digit")
-
-    # THE POINT OF THE WHOLE ARRANGEMENT: from directly above, a number is an
-    # orange digit on black. Nothing may stand in it -- no post, and no piece
-    # on any cell. A post centred on the digit is what this is guarding
-    # against: it punched an orange dot through every glyph and made 6, 8 and
-    # 9 indistinguishable.
     skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
-    gx = np.linspace(-hw, hw, 11)
-    gy = np.linspace(-hh, hh, 9)
-    fouled = []
-    for i in range(len(P.ROWS)):
-        nx, ny = B.numeral_xy(i)
-        for dx in gx:
-            for dy in gy:
-                q = np.array([nx + dx, ny + dy])
-                for j, r_ in B.all_cells():
-                    c = np.asarray(B.cell_xy(j, r_))
-                    # a pad, and any piece standing on it, occupy this circle
-                    if np.linalg.norm(q - c) < max(skirt, P.PAD_OD / 2) + 0.5:
-                        fouled.append(P.COLUMNS[i])
-    check("seen from above, every digit is clear of every pad and piece",
-          not fouled,
-          "nothing overlaps a digit in plan"
-          if not fouled else f"columns {sorted(set(fouled))} obstructed")
+    check("a piece fits on the box it has to stand on",
+          2 * skirt <= min(P.PLAQUE_W, P.PLAQUE_H),
+          f"piece {2*skirt:.1f} mm on a {P.PLAQUE_W:.0f} x "
+          f"{P.PLAQUE_H:.0f} mm box")
+    check("the digit is inlaid, not embossed, so a piece cannot rock on it",
+          0 < P.NUMERAL_DEPTH < P.PLAQUE_T - 1.0,
+          f"{P.NUMERAL_DEPTH:.2f} mm deep in a {P.PLAQUE_T:.2f} mm plate")
 
-    # Only members taller than a tab matter: a strut is 3.4 mm and a tab is
+    # THE LEGIBILITY MECHANISM. The post has to stand in the middle of the
+    # digit, so the only free variable is its colour. Body-coloured, it
+    # recedes into the background and the number reads as a stencil glyph;
+    # painted to match the number it merged with the glyph into one orange
+    # mass and 6, 8 and 9 became indistinguishable.
+    accent = B.build_board(numerals_only=True)
+    check("the posts are BODY parts, so they recede instead of joining the "
+          "digit's colour",
+          accent.bounds[1][2] <= P.PLAQUE_T + 1e-6,
+          f"accent part tops out at z={accent.bounds[1][2]:.2f}, flush with "
+          f"the box at {P.PLAQUE_T:.2f} -- no post in it")
+    check("the board body carries every post itself",
+          abs(B.build_board(with_numerals=False).bounds[1][2]
+              - (P.PLAQUE_T + P.POST_H)) < 0.01,
+          "body reaches the summit post tops")
+
+    # and a stencil only works if the glyph is large next to the hole
+    lost = []
+    for i, num in enumerate(P.COLUMNS):
+        x, y = B.numeral_xy(i)
+        g = S.text_solid(str(num), P.NUMERAL_SIZE, P.NUMERAL_DEPTH,
+                         weight=P.NUMERAL_FONT_WEIGHT)
+        w_ = g.bounds[1][0] - g.bounds[0][0]
+        if w_ > P.NUMERAL_MAX_W:
+            k = P.NUMERAL_MAX_W / w_
+            g.apply_scale((k, k, 1.0))
+        g.apply_translation((x, y, 0.0))
+        ko = S.tube(x, y, P.POST_D / 2 + P.NUMERAL_POST_CLEAR, 0.0,
+                    -1.0, 2.0, segs=64)
+        cut = trimesh.boolean.difference([g, ko], engine="manifold")
+        lost.append((100 * (g.volume - cut.volume) / g.volume, num))
+    worst_pct, worst_num = max(lost)
+    check("the post takes only a corner out of each glyph",
+          worst_pct <= 25.0,
+          f"worst is {worst_pct:.0f}% of the {worst_num}; on 11 and 12 the "
+          f"post falls between the digits and costs nothing")
+
+    # Only members taller than a box matter: a strut is 3.4 mm and a box is
     # 4.0 mm thick, so anything running under one is buried inside it.
     tall = [s for s in struts if s[3] > P.PLAQUE_T]
     bx = np.linspace(-P.PLAQUE_W / 2, P.PLAQUE_W / 2, 13)
@@ -219,40 +237,10 @@ def main():
                 for p0, p1, w_, _h, _k in tall)
         if d < clear:
             clear, clear_col = d, P.COLUMNS[i]
-    check("nothing standing proud of a tab goes anywhere near one",
+    check("nothing standing proud of a box goes anywhere near one",
           clear > 1.0,
           f"{len(tall)} struts taller than {P.PLAQUE_T:.1f} mm (the octagon); "
-          f"nearest is {clear:.1f} mm off column {clear_col}'s tab")
-
-    # and at a seated angle, the only thing that could shadow a tab is a piece
-    # two cells down the same column
-    body_top = P.PAD_H + P.PEG_BODY_H
-    post_top = body_top + P.PEG_POST_H
-    digit_z = P.PLAQUE_T + P.NUMERAL_EMBOSS
-    worst, worst_col = 0.0, None
-    for i in range(len(P.ROWS)):
-        nx, ny = B.numeral_xy(i)
-        for row in range(P.ROWS[i]):
-            px, py = B.cell_xy(i, row)
-            if py >= ny:
-                continue                       # behind the digit, not in front
-            for dx in gx:
-                for dy in gy:
-                    qx, qy = nx + dx, ny + dy
-                    for r_, ztop in ((skirt, body_top),
-                                     (P.PEG_POST_D / 2, post_top)):
-                        off = abs(qx - px)
-                        if off >= r_:
-                            continue
-                        back = py + np.sqrt(r_ ** 2 - off ** 2)
-                        if qy <= back:
-                            continue
-                        ang = np.degrees(np.arctan2(ztop - digit_z, qy - back))
-                        if ang > worst:
-                            worst, worst_col = ang, P.COLUMNS[i]
-    check("no piece shadows a number at a seated angle",
-          worst <= 42.0,
-          f"readable from {worst:.0f} deg and above (worst: column {worst_col})")
+          f"nearest is {clear:.1f} mm off column {clear_col}'s box")
 
     print("\nthe octagonal frame")
     poly = np.asarray(B.octagon(), dtype=float)

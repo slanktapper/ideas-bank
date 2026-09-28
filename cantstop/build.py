@@ -132,7 +132,11 @@ def export_renders(board_body, numerals, marker, runner, fast=False, verbose=Tru
     # numbers are unreadable as black-on-black, and this is what the AMS
     # would actually produce.
     bd = {"mesh": board_body, "color": C_BOARD}
-    nm = {"mesh": numerals, "color": C_NUMERAL}
+    # The digits are inlaid dead flush, so their top faces and the box's sit
+    # at exactly the same depth and the z-buffer cannot break the tie -- it
+    # speckles. Lift them a hundredth of a millimetre FOR THE RENDER ONLY;
+    # the exported mesh stays flush.
+    nm = {"mesh": R.placed(numerals, (0, 0, 0.01)), "color": C_NUMERAL}
     board_all = [bd, nm]
 
     # 1 -- the whole board, three-quarter view from the players' side

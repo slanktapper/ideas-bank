@@ -96,11 +96,11 @@ OCTAGON_SPOKE_H = 3.40
 # cell, so a piece drops into it like any other; the number sits on a shield
 # fused to the ring from above. Climbing a column and landing on its number
 # is therefore the same move as any other, which is the point.
-PLAQUE_W       = 18.0
-PLAQUE_H       = 16.0
-PLAQUE_T       = 4.00   # same as PAD_H. Struts stand 3.4 mm, so anything
-                        # running under a tab is buried inside it and can
-                        # never be printed across a digit.
+PLAQUE_W       = 20.0
+PLAQUE_H       = 22.0
+PLAQUE_T       = 4.00   # same as PAD_H, so every seating face is at one
+                        # height. Struts stand 3.4 mm, so anything running
+                        # under a box is buried inside it.
 PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 
 # The shield stands off its summit ring on a short neck, and it leans OUTWARD
@@ -112,29 +112,29 @@ PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 # octagon build you had to be looking down from nearly 70 degrees to read a
 # claimed number. Leaning the shield outward moves the digit sideways out of
 # the piece's shadow, and the stand-off buys the rest of the angle back.
-# The number sits on its own tab, below its column's post and in line with the
-# column, with a clear gap between the two. Nothing ever stands on a tab, so
-# from above a number is always just an orange digit on black.
+# Each column's topmost cell IS its number box: a rounded plate standing in
+# for the usual round pad. The digit and the post share the box's centre.
 #
-# This is the third arrangement tried and the constraint that decided it is
-# blunt: a post standing in the middle of a glyph cannot leave that glyph
-# readable. Centring the post on the digit and colouring it to match gave a
-# black moat and an orange dot punched through the middle of every number --
-# 6, 8 and 9 became indistinguishable. The post has to be off the number.
-SUMMIT_STEP  = 22.0   # extra rise of the top cell above the ladder pitch,
-                      # opening the gap the number tab sits in. Also what
-                      # keeps a piece two cells down from shadowing the tab
-                      # at a seated angle: 18 needed a 50 degree view, 22
-                      # needs 38.
-TAB_DROP     = 19.0   # post centre to tab centre. Set so the tab clears the
-                      # summit pad by about 4 mm: touching, it reads as a box
-                      # with a post stuck on its edge rather than as a label.
+# The post is BODY-COLOURED, and that is the whole trick. It has to stand in
+# the middle of the digit, so the only question is which colour lets the digit
+# survive it. Painting it to match the number was tried and failed -- post and
+# glyph merged into one orange mass and 6, 8 and 9 became indistinguishable.
+# In the board's own colour the post recedes into the background instead, and
+# the number reads as a stencil glyph: a black disc punched through orange,
+# which the eye completes.
+#
+# That only works if the digit is large next to the post, hence a box big
+# enough to carry a 16 mm cap height over a 5.9 mm post.
+SUMMIT_STEP  = 4.0    # small step out for the top cell, so its box clears the
+                      # pad below it
 
-NUMERAL_SIZE   = 11.0   # cap height of the digits
-NUMERAL_MAX_W  = 14.0   # widest a number may be; 10, 11 and 12 scale to fit
-NUMERAL_EMBOSS = 1.20   # raised off the tab. Embossed, not inlaid: nothing
-                        # seats on a tab, so there is no reason to give up the
-                        # crispness of raised lettering.
+NUMERAL_SIZE   = 16.0   # cap height of the digits
+NUMERAL_MAX_W  = 17.0   # widest a number may be; 10, 11 and 12 scale to fit,
+                        # and on those the post falls in the gap BETWEEN the
+                        # two digits, where it costs nothing
+NUMERAL_DEPTH  = 1.20   # how deep the digit is cut into the box
+NUMERAL_POST_CLEAR = 0.30  # the post stands on solid plate, so its footprint
+                           # plus this is kept out of the pocket
 NUMERAL_FONT_WEIGHT = "bold"
 
 # --------------------------------------------------------------------------
