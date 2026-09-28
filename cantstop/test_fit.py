@@ -145,6 +145,86 @@ def slab_checks(brd, poly, ctr, skirt_r):
           f"{int(miss.sum())}/8 wrongly solid just inside it")
 
 
+def stub_checks(brd, accent):
+    """The test-print stub: a corner of the real board, cut out of it.
+
+    The stub is an intersection with the finished board, so almost everything
+    about it is guaranteed by the board's own checks. What is not guaranteed
+    is where the knife lands. Three of its four sides cut across open plate,
+    and a cut line half a millimetre out shaves a post in half or leaves a
+    piece's skirt hanging over a raw edge -- neither of which the board tests
+    would ever see, because on the board those cells are in the middle of a
+    slab.
+    """
+    print("\nthe test-print stub")
+    (x0, y0), (x1, y1) = B.stub_box()
+    cells = B.stub_cells()
+    skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
+    post_r = P.POST_D / 2
+
+    check("the stub keeps whole columns' worth of summits",
+          sum(1 for i, r in cells if B.is_summit(i, r)) == len(P.STUB_COLUMNS),
+          f"{len(cells)} cells, numbers "
+          f"{[P.COLUMNS[i] for i, r in cells if B.is_summit(i, r)]}")
+
+    sliced = []
+    for i, r in B.all_cells():
+        cx, cy = B.cell_xy(i, r)
+        touches = (x0 - post_r < cx < x1 + post_r
+                   and y0 - post_r < cy < y1 + post_r)
+        whole = (x0 + post_r <= cx <= x1 - post_r
+                 and y0 + post_r <= cy <= y1 - post_r)
+        if touches and not whole:
+            sliced.append((P.COLUMNS[i], r))
+    check("no cut line shaves a post in half",
+          not sliced, "every post is wholly in or wholly out"
+          if not sliced else f"{sliced} are cut")
+
+    room = min(min(B.cell_xy(i, r)[0] - x0, x1 - B.cell_xy(i, r)[0],
+                   B.cell_xy(i, r)[1] - y0) for i, r in cells)
+    check("every post in the stub has a whole skirt of plate under it",
+          room >= skirt,
+          f"tightest is {room:.2f} mm of plate against a {skirt:.2f} mm skirt")
+
+    stub = B.build_board_stub(brd)
+    stub_n = B.build_board_stub(accent)
+    lo, hi = stub.bounds
+    if not SLAB:
+        check("the stub is a solid piece of board",
+              stub.is_watertight and stub.is_winding_consistent,
+              f"{len(stub.faces)} triangles, {stub.body_count} bodies")
+    else:
+        check("the stub is a watertight single solid",
+              stub.is_watertight and stub.is_winding_consistent
+              and stub.body_count == 1,
+              f"{len(stub.faces)} triangles, {stub.body_count} body")
+    check("the stub is the real board's full thickness, not a thin sample",
+          abs((hi[2] - lo[2]) - (SEAT_Z + P.POST_H)) < 1e-6,
+          f"{hi[0]-lo[0]:.0f} x {hi[1]-lo[1]:.0f} x {hi[2]-lo[2]:.1f} mm")
+    check("the stub is small enough to be worth printing before the board",
+          (hi[0] - lo[0]) * (hi[1] - lo[1]) < 0.06 * (P.BED_X * P.BED_Y),
+          f"{(hi[0]-lo[0]) * (hi[1]-lo[1]) / 100:.0f} cm2 of bed against the "
+          f"board's {284.9 * 284.9 / 100:.0f}")
+    check("the stub carries the digits and their share of each post",
+          len(stub_n.faces) > 0
+          and abs(stub_n.bounds[1][2] - (SEAT_Z + P.POST_H)) < 1e-6,
+          "body and accent split each summit post here too")
+
+    if SLAB:
+        # One side of the stub has to be real board edge, or it tests
+        # everything about the board except the lip.
+        # measured off the stub's own outer edge, not off the knife: the top
+        # side of the box is out in open air, and what bounds the stub there
+        # is the octagon
+        z = P.SLAB_T + P.RIM_H / 2
+        band = np.asarray([(x, hi[1] - P.RIM_W / 2, z)
+                           for x in np.linspace(lo[0] + 15, hi[0] - 15, 9)])
+        check("one side of the stub is real board edge, lip and all",
+              stub.contains(band).all(),
+              f"{int(stub.contains(band).sum())}/9 points land in the lip "
+              f"along the top edge")
+
+
 def main():
     print("ladder")
     check("11 columns, numbered 2..12",
@@ -472,6 +552,8 @@ def main():
 
     if SLAB:
         slab_checks(brd, poly, ctr, skirt_r)
+
+    stub_checks(brd, accent)
 
     print("\ncounts")
     check("83 cells", sum(P.ROWS) == 83, f"{sum(P.ROWS)}")

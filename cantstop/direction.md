@@ -141,7 +141,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 56 design checks — run this after editing params.py
+python3 test_fit.py      # 64 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~6 s)
 python3 build.py --fast  # quarter-res renders  (~12 s total)
@@ -160,7 +160,7 @@ is 284.9 × 284.9 × 9.2 mm, which fits the H2D's 325 × 320 mm bed with 40 mm
 spare in X and 35 mm in Y. A full set is about **216 g** — 158 g of board at
 10% infill plus 58 g of solid pieces.
 
-`test_fit.py` passes 56 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 64 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same
@@ -195,9 +195,19 @@ Defects this loop has caught rather than a print:
   57,000 mm² sheet and it showed at once, as wedges of z-fighting radiating
   from its vertices. `render.py` now interpolates 1/z, which is exact.
 
-What software cannot tell us is the fit. That is what `fit-test-coupon.stl`
-is for, and it is the first thing to print. **It carries posts, not bores**,
-because the board is male: you try a real piece over each one.
+What software cannot tell us is the fit, or what a colour boundary looks like
+coming off a printer. There are two test prints for that, in order:
+
+- `fit-test-coupon.stl` — five posts either side of nominal, ~12 minutes. It
+  carries **posts, not bores**, because the board is male: you try a real
+  piece over each one.
+- `stub-board-*.stl` plus `stub-pieces-x2.stl` — ~40 minutes. The stub is a
+  66 x 61 mm corner of the **real board**, cut from the finished mesh rather
+  than built to resemble it, so the slab, the lip, the engraved digits and the
+  split posts are all exactly what the 285 mm version would print. It takes
+  the corner over columns 6, 7 and 8: three numbers, six posts at the real
+  pitch, and the stretch of lip that comes closest to a pad anywhere on the
+  board. Two full markers come with it, one to seat and one to stack.
 
 ## Open questions
 
@@ -220,7 +230,7 @@ because the board is male: you try a real piece over each one.
 - **The split post on a real print.** Geometrically the number is whole. What a
   two-material boundary running up the side of a 5.9 mm post actually looks
   like off the printer — colour bleed, a seam, purge staining — is a thing only
-  a print will tell us.
+  a print will tell us. The stub is there to answer it for 11 g.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
   octagon is bare plate. It looks deliberate in plan; whether it looks
   unbalanced on a table is a question for a print. The lip helps.

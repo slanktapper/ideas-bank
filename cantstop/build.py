@@ -46,25 +46,44 @@ DENSITY = {"PLA": 1.24, "PETG": 1.27}   # g/cm^3
 LAYER, LINE, WALLS, SKINS = 0.20, 0.42, 3, 3
 
 
-def slab_filament() -> float:
-    """cm3 of filament a slab board actually eats, walls + skins + infill.
+def _slab_filament(area: float, peri: float, n_posts: int) -> float:
+    """cm3 of filament a slab of this plan shape eats: walls, skins, infill.
 
     A lattice is nearly all perimeter, so quoting it at 100% infill is close
-    to the truth. A slab is not: its skins are a fixed 94 g over this octagon
-    however thick it is, and everything between them is set by the infill.
-    Quoting a slab at 100% would overstate it by a factor of three.
+    to the truth. A slab is not: its skins are a fixed 94 g over the full
+    octagon however thick it is, and everything between them is set by the
+    infill. Quoting a slab at 100% would overstate it by a factor of three.
     """
-    poly = np.asarray(B.octagon(), dtype=float)
-    x, y = poly[:, 0], poly[:, 1]
-    area = 0.5 * abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
-    peri = sum(float(np.linalg.norm(poly[(j + 1) % 8] - poly[j]))
-               for j in range(8))
     core = max(P.SLAB_T - 2 * SKINS * LAYER, 0.0)
-    posts = len(B.all_cells()) * np.pi * (P.POST_D / 2) ** 2 * P.POST_H
+    posts = n_posts * np.pi * (P.POST_D / 2) ** 2 * P.POST_H
     return (peri * WALLS * LINE * P.SLAB_T
             + 2 * SKINS * LAYER * area
             + core * area * P.SLAB_INFILL
             + posts) / 1000.0
+
+
+def _plan(poly) -> tuple[float, float]:
+    """(area, perimeter) of a closed plan polygon."""
+    p = np.asarray(poly, dtype=float)
+    x, y = p[:, 0], p[:, 1]
+    area = 0.5 * abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+    peri = sum(float(np.linalg.norm(p[(j + 1) % len(p)] - p[j]))
+               for j in range(len(p)))
+    return area, peri
+
+
+def slab_filament() -> float:
+    return _slab_filament(*_plan(B.octagon()), len(B.all_cells()))
+
+
+def stub_filament() -> float:
+    """Same model, over the stub's own plan: the octagon clipped to its box."""
+    from shapely.geometry import Polygon, box as _box
+
+    (x0, y0), (x1, y1) = B.stub_box()
+    plan = Polygon([tuple(p) for p in B.octagon()]).intersection(
+        _box(x0, y0, x1, y1))
+    return _slab_filament(plan.area, plan.length, len(B.stub_cells()))
 
 
 # ---------------------------------------------------------------------------
@@ -136,14 +155,35 @@ def export_stls(verbose=True):
     save(B.build_fit_coupon(), "fit-test-coupon.stl", "PLA",
          "PRINT THIS FIRST -- bore fit check")
 
-    return board_full, board_body, numerals, marker, runner, rows
+    # The test print: a corner of the real board, plus enough pieces to seat
+    # one and stack another on it.
+    if verbose:
+        print("cutting the board stub ...")
+    stub_full = B.build_board_stub(board_full)
+    stub_body = B.build_board_stub(board_body)
+    stub_nums = B.build_board_stub(numerals)
+    cols = "/".join(str(c) for c in P.STUB_COLUMNS)
+    save(stub_full, "stub-board.stl", "PLA",
+         f"TEST PRINT -- real board corner, columns {cols}, single colour",
+         cm3=stub_filament() if slab else None)
+    save(stub_body, "stub-board-body.stl", "PLA",
+         "TEST PRINT -- two-colour: load with stub-board-numerals",
+         cm3=stub_filament() - stub_nums.volume / 1000.0 if slab else None)
+    save(stub_nums, "stub-board-numerals.stl", "PLA",
+         "TEST PRINT -- the digits and their slice of each post")
+    save(B.build_plate(marker, P.STUB_PIECES), "stub-pieces-x2.stl", "PLA",
+         f"TEST PRINT -- {P.STUB_PIECES} full markers, to seat and to stack")
+
+    return (board_full, board_body, numerals, marker, runner,
+            stub_body, stub_nums, rows)
 
 
 # ---------------------------------------------------------------------------
 # renders
 # ---------------------------------------------------------------------------
 
-def export_renders(board_body, numerals, marker, runner, fast=False, verbose=True):
+def export_renders(board_body, numerals, marker, runner, stub_body,
+                   stub_nums, fast=False, verbose=True):
     RENDER_DIR.mkdir(exist_ok=True)
     W, H = (760, 560) if fast else (1520, 1120)
     ss = 1 if fast else 2
@@ -277,10 +317,26 @@ def export_renders(board_body, numerals, marker, runner, fast=False, verbose=Tru
     shot("06-assembly.png", scene,
          **R.frame([board_body], azimuth_deg=-84, elevation_deg=38, margin=0.73))
 
-    # 7 -- bed fit, drawn rather than rendered
+    # 7 -- THE TEST PRINT: the stub, with one piece seated and one stacked on
+    #      it. This is the ~30 g, ~40 minute version of the whole board, so
+    #      it is the render worth looking at before anything is printed.
+    # The pieces go on the two PLAIN posts, not on the summits: a piece on a
+    # summit hides that column's number, which is true of the real board and
+    # useless in the one render whose job is to show the numbers.
+    stack = place(marker, 8, P.ROWS[6] - 2, 1, (P.PEG_BODY_H,))
+    stub = [{"mesh": stub_body, "color": C_BOARD},
+            {"mesh": R.placed(stub_nums, (0, 0, 0.01)), "color": C_NUMERAL},
+            {"mesh": place(marker, 6, P.ROWS[4] - 2), "color": C_PLAYERS[3]},
+            {"mesh": place(marker, 8, P.ROWS[6] - 2), "color": C_PLAYERS[1]},
+            {"mesh": stack, "color": C_PLAYERS[0]}]
+    shot("07-test-print.png", stub,
+         **R.frame([stub_body, stack], azimuth_deg=-95, elevation_deg=30,
+                   margin=0.72))
+
+    # 8 -- bed fit, drawn rather than rendered
     _bed_fit_diagram(board_body)
     if verbose:
-        print("  07-bed-fit.png")
+        print("  08-bed-fit.png")
 
 
 def _annotate_stack(img, cam, W, H):
@@ -411,7 +467,7 @@ def _bed_fit_diagram(board_full):
         f"  —  {P.BED_X - w:.0f} mm spare in X, {P.BED_Y - h:.0f} mm in Y",
         fontsize=12, color="#2e3440", pad=14)
     fig.tight_layout()
-    fig.savefig(RENDER_DIR / "07-bed-fit.png", facecolor="white")
+    fig.savefig(RENDER_DIR / "08-bed-fit.png", facecolor="white")
     plt.close(fig)
 
 
@@ -452,10 +508,12 @@ def main(argv=None):
     do_ren = a.renders or not a.stl
 
     t0 = time.time()
-    board_full, board_body, numerals, marker, runner, rows = export_stls(verbose=do_stl)
+    (board_full, board_body, numerals, marker, runner,
+     stub_body, stub_nums, rows) = export_stls(verbose=do_stl)
     if do_ren:
         print("rendering ...")
-        export_renders(board_body, numerals, marker, runner, fast=a.fast)
+        export_renders(board_body, numerals, marker, runner, stub_body,
+                       stub_nums, fast=a.fast)
     if do_stl:
         print_report(rows, board_full)
     print(f"\ndone in {time.time() - t0:.1f}s")

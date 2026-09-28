@@ -38,6 +38,50 @@ Only then print the board.
 
 ---
 
+## 1a. Then print the stub
+
+```
+stub-board-body.stl + stub-board-numerals.stl   ~11 g, ~40 min   two colours
+stub-pieces-x2.stl                              ~2 g,  ~10 min   2 markers
+```
+
+The coupon answers one question. The stub answers the rest of them, and it
+answers them about the real board, because **it is the real board**: the
+finished mesh intersected with a 66 x 61 mm box, not a small part built to
+look similar. The slab thickness, the raised lip, the engraved digits, the
+split posts, the clearance between the lip and the topmost pads and the
+seating faces are all bit-for-bit what the 285 mm board would print.
+
+It is the corner over columns 6, 7 and 8 — the densest part of the board, so
+it carries three numbers, six posts at the real 22 mm column pitch, and the
+run of raised lip that comes closest to a pad anywhere on the board. Three of
+its four edges are raw cuts through open plate; the fourth is the board's own
+outline.
+
+Print it in the two colours you mean to use, then check:
+
+1. **The numbers read.** Look straight down. Each digit should be whole, with
+   the post in the middle of it in the number's colour and no ring of body
+   colour around it. This is the one thing that cannot be settled from a
+   render, because it depends on how your printer handles a colour boundary
+   running up the side of a 5.9 mm post — bleed, seam, purge staining.
+2. **A piece seats flat** on a plain post and does not rock.
+3. **A second piece stacks** on the first, sits square, and comes off again.
+4. **Two pieces on neighbouring posts** clear each other. 8.8 mm along a row.
+5. **The lip.** Look for a seam where the ring starts each layer, and check it
+   has not crept in far enough to foul a piece on the top row of posts.
+6. **The engraved pockets.** Six layers at 0.20 mm. If the colour smears,
+   raise `NUMERAL_DEPTH` (and `RIM_H` with it) rather than fighting the purge.
+
+`stub-board.stl` is the same thing in one colour, if you only want to look at
+the lip and the seating. `renders/07-test-print.png` is what it should come
+out like.
+
+What the stub cannot tell you is whether 285 mm of flat PLA warps. Nothing
+66 mm across will.
+
+---
+
 ## 2. What to print
 
 | File | Qty | Material | Notes |
@@ -47,7 +91,16 @@ Only then print the board.
 | `plate-markers-x11.stl` | 4 | PLA | one per player colour |
 | `plate-runners-x3.stl` | 1 | PLA or PETG | the shared neutral runners |
 
-Print **either** `board.stl` **or** the body/numerals pair, not both.
+and, for the test print above:
+
+| File | Qty | Material | Notes |
+| --- | --- | --- | --- |
+| `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 66 x 61 mm corner of the real board |
+| `stub-board.stl` | 1 | PLA red | the same corner, single colour |
+| `stub-pieces-x2.stl` | 1 | PLA | two markers, to seat one and stack the other |
+
+Print **either** `board.stl` **or** the body/numerals pair, not both. The same
+goes for the stub.
 
 For two colours: load `board-body.stl`, then add `board-numerals.stl` to the
 *same object* as a second part (in Bambu Studio: right-click the object →
@@ -182,7 +235,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 56 checks, ~20 s
+python3 test_fit.py    # 64 checks, ~30 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 
@@ -192,8 +245,8 @@ quietly grown past the bed, a lip that has crept in far enough to land on a
 pad, a number you cannot read once a piece is sitting on it. Each one costs a
 print to discover and nothing to check.
 
-Look at `renders/03-surface-detail.png`, `renders/05-stacking-section.png` and
-`renders/06-assembly.png` after any change. Those three catch the things the
+Look at `renders/03-surface-detail.png`, `renders/05-stacking-section.png`,
+`renders/06-assembly.png` and `renders/07-test-print.png` after any change. Those three catch the things the
 tests do not — the hidden-number defect was found in the assembly render, and
 only then written into the test suite.
 

@@ -274,6 +274,28 @@ FIT_COUPON_T   = 3.0    # backing bar only; it does not want the shields'
                         # extra thickness, which is there to lift the digits
 
 # --------------------------------------------------------------------------
+# Board stub — a corner of the real board, for a test print
+# --------------------------------------------------------------------------
+# The coupon above answers one question (what diameter fits). The stub answers
+# the rest of them, and it answers them about the REAL board because it IS the
+# real board: the finished mesh intersected with a box, not a small part built
+# to look similar. So the slab thickness, the raised lip, the mitre where two
+# outline edges meet, the engraved digits, the split posts and the seating
+# faces are all exactly what the 285 mm board would print.
+#
+# The corner chosen is the one columns 2 and 3 sit in: the shortest columns,
+# so their summits (and therefore two numbers, one of them single-digit and
+# one not) come with the fewest cells attached, and the octagon's top-left
+# vertex and both of its neighbouring edges land inside the same small box.
+STUB_COLUMNS = (6, 7, 8)  # which columns the stub keeps
+STUB_ROWS    = 4          # how many ROW HEIGHTS down from the top of the
+                          # board it reaches. Not cells: neighbouring columns
+                          # have different row pitches and stagger past each
+                          # other, so a horizontal cut sees row heights, and
+                          # four of them here is two cells of each column.
+STUB_PIECES  = 2          # full pieces printed alongside it, for the fit
+
+# --------------------------------------------------------------------------
 # Printer envelope (Bambu Lab H2D, single nozzle) — see ../available-tools.md
 # --------------------------------------------------------------------------
 BED_X = 325.0

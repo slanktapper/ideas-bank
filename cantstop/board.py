@@ -699,3 +699,79 @@ def build_fit_coupon(segs: int | None = None) -> trimesh.Trimesh:
                                  (n - 1) * pitch + P.PAD_OD,
                                  bar_y1 - bar_y0, P.FIT_COUPON_T, 2.0))
     return S.union_all(parts)
+
+
+# ---------------------------------------------------------------------------
+# board stub — a corner of the real board, for a test print
+# ---------------------------------------------------------------------------
+
+def stub_box() -> tuple[tuple[float, float], tuple[float, float]]:
+    """The plan rectangle the stub is cut out of, ((x0, y0), (x1, y1)).
+
+    The top side runs OUTSIDE the octagon, and does nothing: the cut is an
+    intersection with the board, so what survives there is the board's own
+    outline and its raised lip. The stub always takes the TOP of its columns,
+    because that is where the numbers are and where the lip comes closest to
+    a pad -- the two things on this board a small test print can settle.
+
+    The other three sides are raw cut edges across open plate, and they are
+    placed to miss every post rather than at a fixed offset. Sideways that is
+    easy: columns are a uniform PITCH_X apart, so half a pitch out from the
+    outermost kept column is always 11 mm of clearance, which is more than the
+    6.6 mm skirt needs. Downwards it is not, because neighbouring columns have
+    different row pitches and stagger past each other -- the gap there can be
+    as little as 12 mm, and the midpoint of it would leave a piece's skirt
+    hanging 0.6 mm off the raw edge. So the bottom edge drops as far as it can
+    while still clearing the highest row the stub does not keep: far enough
+    that every post in the stub has a full skirt's worth of plate under it.
+    """
+    poly = np.asarray(octagon(), dtype=float)
+    idx = sorted(P.COLUMNS.index(c) for c in P.STUB_COLUMNS)
+
+    xs = [cell_xy(i, 0)[0] for i in idx]
+    x0, x1 = min(xs) - P.PITCH_X * 0.5, max(xs) + P.PITCH_X * 0.5
+    if x0 - poly[:, 0].min() < P.PITCH_X:          # the outline is nearer than
+        x0 = poly[:, 0].min() - 10.0               # the next column would be
+    if poly[:, 0].max() - x1 < P.PITCH_X:
+        x1 = poly[:, 0].max() + 10.0
+
+    # every row height standing anywhere in that band of columns, top first
+    levels = sorted({round(cell_xy(i, r)[1], 6) for i, r in all_cells()
+                     if x0 < cell_xy(i, r)[0] < x1}, reverse=True)
+    kept = levels[:P.STUB_ROWS]
+    below = [v for v in levels if v < min(kept)]
+    if below:
+        skirt = max(r for r, _ in P.PEG_BODY_PROFILE)
+        room = min(kept) - skirt - 0.5              # a whole skirt of plate
+        clear = max(below) + P.POST_D * 0.5 + 0.5   # miss the row below
+        y0 = room if room >= clear else (min(kept) + max(below)) * 0.5
+    else:
+        y0 = poly[:, 1].min() - 10.0
+    return (x0, y0), (x1, poly[:, 1].max() + 10.0)
+
+
+def stub_cells() -> list[tuple[int, int]]:
+    """(column index, row) of every cell that falls inside the stub."""
+    (x0, y0), (x1, y1) = stub_box()
+    return [(i, r) for i, r in all_cells()
+            if x0 < cell_xy(i, r)[0] < x1 and y0 < cell_xy(i, r)[1] < y1]
+
+
+def build_board_stub(part: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Cut the stub out of an already-built board part.
+
+    Takes the board rather than rebuilding a lookalike, so there is no second
+    definition of the slab, the lip or the numbers that could drift away from
+    the first one. Pass the fused board, the two-colour body, or the numerals;
+    each gives the matching piece of the stub.
+
+    The result stays in BOARD coordinates. It has to: the stub body and the
+    stub numerals are loaded into a slicer as two parts of one object and
+    land in register only because neither has been moved.
+    """
+    (x0, y0), (x1, y1) = stub_box()
+    zlo, zhi = -10.0, P.SLAB_T + P.POST_H + 10.0
+    knife = trimesh.creation.box(extents=(x1 - x0, y1 - y0, zhi - zlo))
+    knife.apply_translation(((x0 + x1) * 0.5, (y0 + y1) * 0.5,
+                             (zlo + zhi) * 0.5))
+    return trimesh.boolean.intersection([part, knife], engine="manifold")
