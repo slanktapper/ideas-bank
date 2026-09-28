@@ -96,10 +96,11 @@ OCTAGON_SPOKE_H = 3.40
 # cell, so a piece drops into it like any other; the number sits on a shield
 # fused to the ring from above. Climbing a column and landing on its number
 # is therefore the same move as any other, which is the point.
+# The number box doubles as the summit's pad, so it has to be big enough for
+# a piece to stand on and thick enough to match the round pads exactly.
 PLAQUE_W       = 18.0
 PLAQUE_H       = 20.0
-PLAQUE_T       = 4.00   # shield thickness in Z. Matches PAD_H, so a shield
-                        # is flush with the pads and can never foul a piece.
+PLAQUE_T       = 4.00   # same as PAD_H, so every seating face is at one height
 PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 
 # The shield stands off its summit ring on a short neck, and it leans OUTWARD
@@ -111,35 +112,25 @@ PLAQUE_FILLET  = 2.0    # corner rounding (approximated by an inset polygon)
 # octagon build you had to be looking down from nearly 70 degrees to read a
 # claimed number. Leaning the shield outward moves the digit sideways out of
 # the piece's shadow, and the stand-off buys the rest of the angle back.
-# Where a column's number sits relative to its summit post. All three keep it
-# on the column's centreline.
-#   "pad_below"  the column steps out to a summit platform and the number is
-#                embossed on it just BELOW the post -- in front of any piece
-#                that claims the column, so it can never be covered
-#   "above"      a shield standing off beyond the summit, number above the post
-#   "around"     number on the summit pad itself, directly under the post
-NUMBER_PLACEMENT = "pad_below"
-
-SUMMIT_STEP   = 18.0   # "pad_below": extra rise of the summit above the
-                       # ladder pitch, making room for the number under it
-SHIELD_DROP   = 13.0   # "pad_below": shield centre below the post. The shield
-                       # reaches further UP than the digit does, so it can
-                       # overlap the summit pad and fuse to it directly.
-NUMBER_DROP   = 15.0   # "pad_below"/"around": digit centre below the post.
-                       # Bounded from above by the top chain, which leaves the
-                       # summit at 42 degrees and would otherwise clip the
-                       # digit's upper corners -- it passed 0.28 mm away at 12.5.
-SHIELD_OFFSET = 26.0   # "above": post to shield centre
-NECK_LEG_DX   = 5.0    # "around": how far either side of the centreline the
-                       # two reconnecting legs run. Bounded by the pad radius
-                       # at one end and the digit's width at the other.
-
-NUMERAL_SIZE   = 9.0    # cap height of the digits (10-12 scale down to fit)
-NUMERAL_MAX_W  = 12.0   # widest a number may be. The shield is sized so that
-                        # the digit keeps 1.2 mm from the ring below it and
-                        # 2.0 mm from every edge the bracing spoke leaves by --
-                        # at 18 mm wide the spoke passed 0.19 mm off the "2".
-NUMERAL_EMBOSS = 1.20   # how far the digits stand proud of the shield
+# Each column's topmost cell IS its number box: a rounded plate standing in
+# for the usual round pad, with the number inlaid into its face and the post
+# rising through the middle of the digit. So the summit is an ordinary cell --
+# you land on it the same way you land on any other -- and the thing you land
+# on is the number itself.
+#
+# The number is INLAID FLUSH, not embossed, and that is not decoration. A
+# piece seats on this plate, so a digit standing 1.2 mm proud of it would be
+# what the skirt rests on, and the piece would rock. Cut into the plate, the
+# seating face stays flat and the digit still comes out in the second colour.
+# Printed in one colour it simply reads as engraved.
+NUMERAL_SIZE   = 14.0   # cap height of the digits
+NUMERAL_MAX_W  = 15.0   # widest a number may be; 10, 11 and 12 scale to fit
+NUMERAL_DEPTH  = 1.20   # how deep the digit is cut into the plate
+NUMERAL_POST_CLEAR = 1.00  # the post stands on solid plate, so its footprint
+                           # plus this is kept out of the pocket. Wide enough
+                           # to read as a moat: post and digit are the same
+                           # colour and touching, so without a band of body
+                           # colour between them they merge into one blob.
 NUMERAL_FONT_WEIGHT = "bold"
 
 # --------------------------------------------------------------------------

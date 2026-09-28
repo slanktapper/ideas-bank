@@ -46,11 +46,10 @@ def main():
     check("every column has an odd row count, so centring lands on the grid",
           all(n % 2 for n in P.ROWS), f"{P.ROWS}")
 
-    step = P.SUMMIT_STEP if P.NUMBER_PLACEMENT == "pad_below" else 0.0
     check("columns are centred on a shared midline",
-          all(abs(B.cell_xy(i, 0)[1] + B.summit(i)[1] - step) < 1e-9
+          all(abs(B.cell_xy(i, 0)[1] + B.summit(i)[1]) < 1e-9
               for i in range(len(P.ROWS))),
-          "bottom and summit are equal and opposite, plus the summit step")
+          "bottom and summit are equal and opposite")
 
     print("\nthe post/socket interface  (male-up: board, then every piece)")
     board_clear = P.PEG_SOCKET_D - P.POST_D
@@ -167,55 +166,63 @@ def main():
           all(abs(B.numeral_xy(i)[0] - B.summit(i)[0]) < 1e-9
               for i in range(len(P.ROWS))),
           "digit x == column x for all 11")
+    check("the number IS the summit cell, so landing on it is an ordinary move",
+          all(B.numeral_xy(i) == B.summit(i) for i in range(len(P.ROWS))),
+          "digit, box and post share one centre")
 
-    hw = B.numeral_half_width()
-    gx = np.linspace(-hw, hw, 9)
-    gy = np.linspace(-P.NUMERAL_SIZE / 2, P.NUMERAL_SIZE / 2, 7)
-    crossed, closest = [], np.inf
-    for i in range(len(P.ROWS)):
-        nx, ny = B.numeral_xy(i)
-        for dx in gx:
-            for dy in gy:
-                for p0, p1, w_, _h, _k in struts:
-                    d = B.strut_distance_to((nx + dx, ny + dy), p0, p1, w_)
-                    closest = min(closest, d)
-                    if d < 0.3:
-                        crossed.append(P.COLUMNS[i])
-    check("no strut is printed across a column number", not crossed,
-          f"nearest strut is {closest:.2f} mm off a digit"
-          if not crossed else f"crosses {sorted(set(crossed))}")
+    hw, hh = P.NUMERAL_MAX_W / 2, P.NUMERAL_SIZE / 2
+    check("every digit fits inside its box",
+          hw + 1.0 <= P.PLAQUE_W / 2 and hh + 1.0 <= P.PLAQUE_H / 2,
+          f"digit {2*hw:.0f} x {2*hh:.0f} in a box "
+          f"{P.PLAQUE_W:.0f} x {P.PLAQUE_H:.0f}")
+    check("a piece fits on the box it has to stand on",
+          2 * skirt_r <= min(P.PLAQUE_W, P.PLAQUE_H),
+          f"piece {2*skirt_r:.1f} mm on a {P.PLAQUE_W:.0f} x "
+          f"{P.PLAQUE_H:.0f} mm box")
 
-    # THE ONE THE RENDERS CAUGHT. A piece is not one fat cylinder: the body is
-    # 13.2 mm across but only 13.4 mm tall, and the post above it is 5.9 mm
-    # across. Model both, or the answer is "every number is hidden", which the
-    # renders plainly contradict.
-    body_top = P.PAD_H + P.PEG_BODY_H
-    post_top = body_top + P.PEG_POST_H
-    digit_z = P.PLAQUE_T + P.NUMERAL_EMBOSS
-    worst, worst_col = 0.0, None
+    # The digit is cut INTO the box, not raised off it. That is what keeps the
+    # seating face flat -- and it is also why struts crossing a digit in plan
+    # no longer matter: a strut is shorter than the box is thick, so it is
+    # buried inside the plate rather than printed across the number.
+    check("the digit is inlaid, not embossed, so a piece cannot rock on it",
+          P.NUMERAL_DEPTH > 0 and P.NUMERAL_DEPTH < P.PLAQUE_T - 1.0,
+          f"{P.NUMERAL_DEPTH:.2f} mm deep in a {P.PLAQUE_T:.2f} mm plate")
+    # Only the octagon itself is taller than a box. It has to stay clear of
+    # them: a strut shorter than the plate is buried inside it and harmless,
+    # but one standing proud would be printed across the number. Measure the
+    # box's actual footprint -- comparing its diagonal reach against a
+    # perpendicular distance calls a 3.4 mm gap a collision.
+    tall = [s for s in struts if s[3] > P.PLAQUE_T]
+    bx = np.linspace(-P.PLAQUE_W / 2, P.PLAQUE_W / 2, 13)
+    by = np.linspace(-P.PLAQUE_H / 2, P.PLAQUE_H / 2, 15)
+    gap, gap_col = np.inf, None
     for i in range(len(P.ROWS)):
-        nx, ny = B.numeral_xy(i)
-        for row in (P.ROWS[i] - 1, P.ROWS[i] - 2):
-            px, py = B.cell_xy(i, row)
-            for dx in gx:
-                for dy in gy:
-                    qx, qy = nx + dx, ny + dy
-                    for r_, ztop in ((skirt_r, body_top),
-                                     (P.PEG_POST_D / 2, post_top)):
-                        off = abs(qx - px)
-                        if off >= r_:
-                            continue
-                        half = np.sqrt(r_ ** 2 - off ** 2)
-                        if py - half <= qy <= py + half:
-                            worst, worst_col = 90.0, P.COLUMNS[i]
-                        elif qy > py + half:
-                            ang = np.degrees(np.arctan2(ztop - digit_z,
-                                                        qy - (py + half)))
-                            if ang > worst:
-                                worst, worst_col = ang, P.COLUMNS[i]
-    check("no piece hides a column number from a seated view",
-          worst <= 40.0,
-          f"readable from {worst:.0f} deg and above (worst: column {worst_col})")
+        sx, sy = B.summit(i)
+        d = min(B.strut_distance_to((sx + dx, sy + dy), p0, p1, w_)
+                for dx in bx for dy in by
+                for p0, p1, w_, _h, _k in tall)
+        if d < gap:
+            gap, gap_col = d, P.COLUMNS[i]
+    check("nothing standing proud of a box goes anywhere near one",
+          gap > 1.0,
+          f"{len(tall)} struts taller than {P.PLAQUE_T:.1f} mm (the octagon); "
+          f"nearest is {gap:.2f} mm off column {gap_col}'s box")
+
+    check("the post stands on solid plate, not over the engraving",
+          P.NUMERAL_POST_CLEAR > 0,
+          f"{P.NUMERAL_POST_CLEAR:.2f} mm of pocket kept clear around it")
+
+    # the summit posts must ship with the digits, or they print body-coloured
+    accent = B.build_board(numerals_only=True)
+    check("the summit posts are exported with the numbers, so they come out "
+          "in the number's colour",
+          accent.bounds[1][2] > P.PLAQUE_T + P.POST_H - 0.01,
+          f"accent part reaches z={accent.bounds[1][2]:.2f}, "
+          f"post tops at {P.PLAQUE_T + P.POST_H:.2f}")
+    check("the board body carries no summit posts of its own",
+          abs(B.build_board(with_numerals=False).bounds[1][2]
+              - (P.PAD_H + P.POST_H)) < 0.01,
+          "body tops out at the ordinary cells' posts")
 
     print("\nthe octagonal frame")
     poly = np.asarray(B.octagon(), dtype=float)
@@ -242,6 +249,8 @@ def main():
     outside = []
     pr = P.PAD_OD / 2
     for i, r in B.all_cells():
+        if B.is_summit(i, r):
+            continue                       # checked as a box, just below
         cx, cy = B.cell_xy(i, r)
         for a in np.linspace(0, 2 * np.pi, 8, endpoint=False):
             if not _inside(np.array([cx + pr * np.cos(a), cy + pr * np.sin(a)])):
@@ -253,10 +262,10 @@ def main():
                 pt = np.array([sx + dx * P.PLAQUE_W / 2,
                                sy + dy * P.PLAQUE_H / 2])
                 if not _inside(pt):
-                    outside.append(("shield", P.COLUMNS[i], None))
-    check("the frame encloses every pad and every number shield",
+                    outside.append(("box", P.COLUMNS[i], None))
+    check("the frame encloses every pad and every number box",
           not outside,
-          "83 cells + 11 shields" if not outside
+          "72 pads + 11 boxes" if not outside
           else f"{sorted(set(outside))} pokes out")
     check("the lens is braced out to the frame on every edge",
           len([s for s in struts if s[4] == "spoke"]) >= 2 * len(P.ROWS),

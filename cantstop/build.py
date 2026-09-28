@@ -90,9 +90,10 @@ def export_stls(verbose=True):
     board_body = B.build_board(with_numerals=False)
     numerals = B.build_board(numerals_only=True)
 
-    save(board_full, "board.stl", "PETG", "single colour, digits fused in")
+    save(board_full, "board.stl", "PETG", "single colour, numbers engraved")
     save(board_body, "board-body.stl", "PETG", "two-colour: load with numerals")
-    save(numerals, "board-numerals.stl", "PETG", "two-colour: second material")
+    save(numerals, "board-numerals.stl", "PETG",
+         "two-colour: digits + the 11 summit posts")
 
     if verbose:
         print("building pieces ...")

@@ -39,13 +39,8 @@ def cell_xy(col_index: int, row: int) -> tuple[float, float]:
     Rows are numbered from the bottom for the game's sake; the geometry is
     centred, so row 0 of a short column is not level with row 0 of a long one.
 
-    Under NUMBER_PLACEMENT == "pad_below" the top row of every column steps a
-    further SUMMIT_STEP outward, opening the gap the number sits in.
     """
-    y = (row - k_max(col_index)) * P.PITCH_Y
-    if P.NUMBER_PLACEMENT == "pad_below" and row == P.ROWS[col_index] - 1:
-        y += P.SUMMIT_STEP
-    return col_index * P.PITCH_X, y
+    return col_index * P.PITCH_X, (row - k_max(col_index)) * P.PITCH_Y
 
 
 def summit(col_index: int) -> tuple[float, float]:
@@ -64,26 +59,16 @@ def lattice_centre() -> np.ndarray:
 
 
 def shield_xy(col_index: int) -> tuple[float, float]:
-    """Centre of a column's number SHIELD, always on the column's centreline."""
-    x, y = summit(col_index)
-    if P.NUMBER_PLACEMENT == "above":
-        return x, y + P.SHIELD_OFFSET
-    if P.NUMBER_PLACEMENT == "pad_below":
-        return x, y - P.SHIELD_DROP
-    return x, y - P.NUMBER_DROP
+    """Centre of a column's number box, which is its summit cell."""
+    return summit(col_index)
 
 
-def numeral_xy(col_index: int) -> tuple[float, float]:
-    """Centre of the DIGIT itself, which need not be the shield's centre.
+# the digit, the box and the post all share one centre
+numeral_xy = shield_xy
 
-    Under "pad_below" the shield reaches further up than the digit does, so it
-    can fuse straight onto the summit pad while the digit sits low enough to
-    stay out of the top chain.
-    """
-    x, y = summit(col_index)
-    if P.NUMBER_PLACEMENT == "above":
-        return shield_xy(col_index)
-    return x, y - P.NUMBER_DROP
+
+def is_summit(col_index: int, row: int) -> bool:
+    return row == P.ROWS[col_index] - 1
 
 
 def all_cells() -> list[tuple[int, int]]:
@@ -120,12 +105,10 @@ def content_bounds() -> tuple[np.ndarray, np.ndarray]:
     xs, ys = [], []
     for i, row in all_cells():
         x, y = cell_xy(i, row)
-        xs += [x - r, x + r]
-        ys += [y - r, y + r]
-    for i in range(len(P.ROWS)):
-        x, y = shield_xy(i)
-        xs += [x - P.PLAQUE_W / 2, x + P.PLAQUE_W / 2]
-        ys += [y - P.PLAQUE_H / 2, y + P.PLAQUE_H / 2]
+        hx, hy = ((P.PLAQUE_W / 2, P.PLAQUE_H / 2) if is_summit(i, row)
+                  else (r, r))
+        xs += [x - hx, x + hx]
+        ys += [y - hy, y + hy]
     return np.array([min(xs), min(ys)]), np.array([max(xs), max(ys)])
 
 
@@ -204,15 +187,12 @@ def _lattice_struts() -> list[tuple[tuple, tuple, bool]]:
     # section: the octagon is the frame now, and a 5.2 mm chain strut leaving
     # a summit at 42 degrees clips the bottom corner of that column's digit.
     #
-    # The top vertical is skipped when the number lives below the summit,
-    # because it would run straight down the column's centreline and print a
-    # bar across the digit. _necks() reconnects the summit instead.
-    skip_top = P.NUMBER_PLACEMENT in ("pad_below", "around")
+    # Struts can run right under a number box without any special handling:
+    # they stand 3.4 mm tall and the box is 4.0 mm thick, so a strut that
+    # crosses a digit in plan is buried inside the plate, not printed across
+    # the number.
     for i in range(ncol):
-        last = P.ROWS[i] - 2
         for r in range(P.ROWS[i] - 1):
-            if skip_top and r == last:
-                continue
             out.append((cell_xy(i, r), cell_xy(i, r + 1), False))
 
     # horizontals and diagonals, wherever neighbouring columns share a row.
@@ -244,48 +224,6 @@ def _lattice_struts() -> list[tuple[tuple, tuple, bool]]:
     return out
 
 
-def numeral_half_width() -> float:
-    """Half the widest a digit may be, given what has to pass beside it."""
-    if P.NUMBER_PLACEMENT == "around":
-        # legs flank the digit, so it has to fit between them
-        return min(P.NUMERAL_MAX_W,
-                   2 * (P.NECK_LEG_DX - P.STRUT_W / 2 - 0.5)) / 2
-    return P.NUMERAL_MAX_W / 2
-
-
-def _necks() -> list[tuple[tuple, tuple]]:
-    """Whatever reconnects a summit pad to the column below it.
-
-    "above"      the summit is part of the lattice already; the neck runs the
-                 other way, on up to the shield beyond it.
-    "pad_below"  the shield sits in the gap the summit step opens, so one
-                 strut comes up the centreline and stops in the band of
-                 shield BELOW the digit.
-    "around"     there is no band to stop in, so two legs flank the digit
-                 instead, and the digit is narrowed to fit between them.
-    """
-    out = []
-    up = np.array([0.0, 1.0])
-
-    if P.NUMBER_PLACEMENT == "above":
-        for i in range(len(P.ROWS)):
-            start = np.asarray(summit(i), dtype=float) + up * P.WELD_R
-            end = _rect_exit(shield_xy(i), P.PLAQUE_W, P.PLAQUE_H, -up, inset=2.0)
-            out.append((tuple(start), tuple(end)))
-        return out
-
-    for i in range(len(P.ROWS)):
-        x, y_below = cell_xy(i, P.ROWS[i] - 2)
-        _, sy = shield_xy(i)
-        shield_bottom = sy - P.PLAQUE_H / 2
-        if P.NUMBER_PLACEMENT == "pad_below":
-            out.append(((x, y_below + P.WELD_R), (x, shield_bottom + 2.5)))
-        else:
-            for dx in (-P.NECK_LEG_DX, P.NECK_LEG_DX):
-                out.append(((x + dx, y_below), (x + dx, sy + P.PLAQUE_H / 2)))
-    return out
-
-
 def _spokes(poly) -> list[tuple[tuple, tuple]]:
     """Bracing from the edge of the lens out to the octagonal frame.
 
@@ -304,10 +242,7 @@ def _spokes(poly) -> list[tuple[tuple, tuple]]:
         if np.linalg.norm(d) < 1e-9:
             d = np.array([0.0, 1.0])
         d = d / np.linalg.norm(d)
-        if P.NUMBER_PLACEMENT == "above":
-            start = _rect_exit(shield_xy(i), P.PLAQUE_W, P.PLAQUE_H, d, inset=2.0)
-        else:
-            start = sp + d * P.WELD_R
+        start = _rect_exit(sp, P.PLAQUE_W, P.PLAQUE_H, d, inset=2.0)
         hit = _ray_hit(start, d, poly)
         if hit is not None:
             out.append((tuple(start), tuple(hit)))
@@ -353,9 +288,6 @@ def final_struts() -> list[tuple[tuple, tuple, float, float, str]]:
         w, h = (P.FRAME_W, P.FRAME_H) if is_frame else (P.STRUT_W, P.STRUT_H)
         out.append((tuple(t[0]), tuple(t[1]), w, h, "lattice"))
 
-    for p0, p1 in _necks():
-        out.append((p0, p1, P.STRUT_W, P.STRUT_H, "neck"))
-
     poly = octagon()
     for j in range(len(poly)):
         out.append((poly[j], poly[(j + 1) % len(poly)],
@@ -391,8 +323,9 @@ def strut_distance_to(point, p0, p1, width) -> float:
 # board
 # ---------------------------------------------------------------------------
 
-def build_cell(cx: float, cy: float, segs: int | None = None) -> trimesh.Trimesh:
-    """One board cell: a pad with a post standing on it.
+def build_cell(cx: float, cy: float, segs: int | None = None,
+               with_post: bool = True) -> trimesh.Trimesh:
+    """An ordinary board cell: a round pad with a post standing on it.
 
     A solid of revolution, so there is no boolean and no hole to protect. The
     pad's top face is the seat; the post only locates.
@@ -401,69 +334,126 @@ def build_cell(cx: float, cy: float, segs: int | None = None) -> trimesh.Trimesh
     rq = P.POST_D * 0.5
     c = P.POST_CHAMFER
     top = P.PAD_H + P.POST_H
-    prof = [
-        (0.0, 0.0),
-        (rp, 0.0),            # underside, out to the rim
-        (rp, P.PAD_H),        # up the pad
-        (rq, P.PAD_H),        # in across the seating face
-        (rq, top - c),        # up the post
-        (rq - c, top),        # 45 deg lead-in so a socket finds it
-        (0.0, top),
-    ]
+    prof = [(0.0, 0.0), (rp, 0.0), (rp, P.PAD_H)]
+    if with_post:
+        prof += [(rq, P.PAD_H), (rq, top - c), (rq - c, top), (0.0, top)]
+    else:
+        prof += [(0.0, P.PAD_H)]
     m = S.lathe(prof, segs=segs or P.CELL_SEGS)
     m.apply_translation((cx, cy, 0.0))
     return m
+
+
+def build_summit_box(cx: float, cy: float) -> trimesh.Trimesh:
+    """A column's number box, which is also its summit pad.
+
+    Same thickness as the round pads, so every seating face on the board is at
+    one height and a piece sits the same whatever cell it is in.
+    """
+    return S.rounded_plate(cx, cy, P.PLAQUE_W, P.PLAQUE_H,
+                           P.PLAQUE_T, P.PLAQUE_FILLET)
+
+
+def _post(cx: float, cy: float, z0: float, segs: int | None = None
+          ) -> trimesh.Trimesh:
+    rq = P.POST_D * 0.5
+    c = P.POST_CHAMFER
+    top = z0 + P.POST_H
+    m = S.lathe([(0.0, z0), (rq, z0), (rq, top - c), (rq - c, top), (0.0, top)],
+                segs=segs or P.CELL_SEGS)
+    m.apply_translation((cx, cy, 0.0))
+    return m
+
+
+def summit_posts(segs: int | None = None) -> list[trimesh.Trimesh]:
+    """The eleven posts that stand in the middle of the numbers.
+
+    These belong to the NUMBER, not to the board: they are exported with the
+    digits so they print in the accent colour, and a post then reads as part
+    of the number it stands on rather than as another anonymous peg.
+    """
+    return [_post(*shield_xy(i), P.PLAQUE_T, segs=segs)
+            for i in range(len(P.ROWS))]
+
+
+def _numeral_shapes(segs: int | None = None):
+    """(cutters, fills) for the inlaid digits.
+
+    The digit is cut INTO the box rather than raised off it, because a piece
+    seats on that box: a digit standing proud would be what the skirt rests on
+    and the piece would rock. The fill is exactly the pocket, so in two
+    colours it comes out flush; in one colour the pocket is simply left empty
+    and reads as engraving.
+
+    The post's footprint is kept out of both, so the post stands on solid
+    plate instead of bridging over the engraving.
+    """
+    cutters, fills = [], []
+    for i, num in enumerate(P.COLUMNS):
+        x, y = shield_xy(i)
+        keep_out = S.tube(x, y, P.POST_D * 0.5 + P.NUMERAL_POST_CLEAR, 0.0,
+                          P.PLAQUE_T - P.NUMERAL_DEPTH - 1.0, P.PLAQUE_T + 2.0,
+                          segs=segs or P.CELL_SEGS)
+
+        def _digit(z0, thickness):
+            t = S.text_solid(str(num), P.NUMERAL_SIZE, thickness,
+                             weight=P.NUMERAL_FONT_WEIGHT)
+            w = t.bounds[1][0] - t.bounds[0][0]
+            if w > P.NUMERAL_MAX_W:
+                k = P.NUMERAL_MAX_W / w
+                t.apply_scale((k, k, 1.0))
+            t.apply_translation((x, y, z0))
+            return t
+
+        # the cutter runs proud of the plate so its top face is not coplanar
+        # with the plate's, which is where boolean engines get fussy
+        cut = _digit(P.PLAQUE_T - P.NUMERAL_DEPTH, P.NUMERAL_DEPTH + 1.0)
+        fill = _digit(P.PLAQUE_T - P.NUMERAL_DEPTH, P.NUMERAL_DEPTH)
+        cutters.append(trimesh.boolean.difference([cut, keep_out],
+                                                  engine="manifold"))
+        fills.append(trimesh.boolean.difference([fill, keep_out],
+                                                engine="manifold"))
+    return cutters, fills
 
 
 def build_board(with_numerals: bool = True, numerals_only: bool = False,
                 segs: int | None = None, verbose: bool = False) -> trimesh.Trimesh:
     """Construct the board.
 
-    with_numerals=True   the single-colour board, digits fused in
-    numerals_only=True   just the digits, for loading as a second material
+    numerals_only=True   the accent parts on their own: the digit fills and
+                         the eleven summit posts, for a second filament
+    with_numerals=True   the single-colour board -- pockets left empty, so the
+                         numbers read as engraved -- with the posts fused in
+    with_numerals=False  the body alone, to be paired with numerals_only
     """
     segs = segs or P.CELL_SEGS
-    numerals = _build_numerals()
+    cutters, fills = _numeral_shapes(segs)
+
     if numerals_only:
-        return S.union_all(numerals)
+        return S.union_all(fills + summit_posts(segs))
 
     parts: list[trimesh.Trimesh] = []
-
     for i, r in all_cells():
-        parts.append(build_cell(*cell_xy(i, r), segs=segs))
+        x, y = cell_xy(i, r)
+        if is_summit(i, r):
+            parts.append(build_summit_box(x, y))
+        else:
+            parts.append(build_cell(x, y, segs=segs))
 
     for p0, p1, w, h, _kind in final_struts():
         parts.append(S.strut(p0, p1, w, h))
 
-    for i in range(len(P.ROWS)):
-        x, y = shield_xy(i)
-        parts.append(S.rounded_plate(x, y, P.PLAQUE_W, P.PLAQUE_H,
-                                     P.PLAQUE_T, P.PLAQUE_FILLET))
-
     if with_numerals:
-        parts.extend(numerals)
+        parts.extend(summit_posts(segs))
 
     if verbose:
         print(f"    fusing {len(parts)} solids ...", flush=True)
-    return S.union_all(parts)
+    body = S.union_all(parts)
 
-
-def _build_numerals() -> list[trimesh.Trimesh]:
-    """The embossed column numbers, as separate solids sitting on the shields."""
-    out = []
-    for i, num in enumerate(P.COLUMNS):
-        x, y = numeral_xy(i)
-        t = S.text_solid(str(num), P.NUMERAL_SIZE, P.NUMERAL_EMBOSS,
-                         weight=P.NUMERAL_FONT_WEIGHT)
-        max_w = 2 * numeral_half_width()
-        w = t.bounds[1][0] - t.bounds[0][0]
-        if w > max_w:                    # 10, 11 and 12 are wider than a shield
-            k = max_w / w
-            t.apply_scale((k, k, 1.0))
-        # overlap the shield by 0.2 mm so the union welds them
-        t.apply_translation((x, y, P.PLAQUE_T - 0.2))
-        out.append(t)
-    return out
+    if verbose:
+        print("    cutting 11 number pockets ...", flush=True)
+    return trimesh.boolean.difference([body, S.union_all(cutters)],
+                                      engine="manifold")
 
 
 # ---------------------------------------------------------------------------
