@@ -335,13 +335,14 @@ coming off a printer. There are two test prints for that, in order:
 - `fit-test-coupon.stl` — five posts either side of nominal, ~12 minutes. It
   carries **posts, not bores**, because the board is male: you try a real
   piece over each one.
-- `stub-board-*.stl` plus `stub-pieces-x2.stl` — ~1 hour. The stub is a
+- `stub-board-*.stl` plus `stub-pieces-x4.stl` — about half an hour. The stub is a
   72 x 115 mm corner of the **real board**, cut from the finished mesh rather
   than built to resemble it, so the slab, the lip, the engraved digits and the
   split posts are all exactly what the full board would print. It takes
   the corner over columns 6, 7 and 8: three numbers, six posts at the real
   pitch, and the stretch of lip that comes closest to a pad anywhere on the
-  board. Two full markers come with it, one to seat and one to stack.
+  board. One of each of the four shapes comes with it, so every shape gets seated and
+  every pairing gets stacked.
 
 ## Open questions
 
