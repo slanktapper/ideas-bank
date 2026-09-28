@@ -109,6 +109,11 @@ and, for the test print above:
 Print **either** `board.stl` **or** the body/numerals pair, not both. The same
 goes for the stub.
 
+`board.stl` is the one-colour fallback and it is a lesser board: the numbers,
+the title and the lip are all still there as relief, but the alternating
+white post tops are the whole reason the columns read at a glance, and in one
+colour they are invisible. Print the pair unless you have a reason not to.
+
 For two colours: load `board-body.stl`, then add `board-numerals.stl` to the
 *same object* as a second part (in Bambu Studio: right-click the object →
 Add part → Load, then assign the numerals to a different filament). They are
@@ -268,7 +273,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 83 checks, ~60 s
+python3 test_fit.py    # 84 checks, ~60 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

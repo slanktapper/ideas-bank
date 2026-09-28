@@ -654,6 +654,28 @@ def title_letters() -> list[tuple[str, float, float]]:
     return out
 
 
+def pocket_fills(thickness: float | None = None):
+    """The digit and letter solids that sit in the engraved pockets.
+
+    The one thing the two-colour pair has that the single-colour board does
+    not: on board.stl those pockets are left empty and read as engraving.
+    Everything else -- the whole lip, the whole post tops, the whole summit
+    posts -- has to be present in BOTH.
+    """
+    t = P.NUMERAL_DEPTH if thickness is None else thickness
+    top = seat_z()
+    out = []
+    for i, num in enumerate(P.COLUMNS):
+        x, y = numeral_xy(i)
+        # the post stands on solid plate, so the pocket stops at its edge --
+        # the same cut _summit_parts() makes, or the volumes do not line up
+        column = S.tube(x, y, P.POST_D * 0.5 + P.NUMERAL_POST_CLEAR, 0.0,
+                        top - t - 1.0, top + 2.0, segs=P.CELL_SEGS)
+        out.append(trimesh.boolean.difference(
+            [_digit_solid(num, x, y, top - t, t), column], engine="manifold"))
+    return out + _title_parts(P.TITLE_DEPTH, top - P.TITLE_DEPTH)
+
+
 def _title_parts(thickness: float, z0: float):
     """Letter solids at (z0, z0 + thickness)."""
     return [_glyph_solid(ch, P.TITLE_SIZE, P.TITLE_MAX_W, x, y, z0, thickness)
@@ -746,6 +768,16 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
         # only the two-colour body hands its tops to the accent part, exactly
         # as it hands over the cap on the lip
         return "stem" if post_capped(i, r) and not single_colour else "all"
+
+    def _summit_post(x, y, n):
+        # Likewise at a summit. body_posts[n] is the post with the digit's
+        # prism cut out of it, which is right only when the accent part is
+        # there to fill the slot back in. On the single-colour board nothing
+        # fills it, so it has to be a whole post -- otherwise every summit
+        # ships with a digit-shaped slot milled through it, which is what it
+        # did until the two boards were tied together by a test.
+        return _post(x, y, seat_z(), segs=segs) if with_numerals \
+            else body_posts[n]
     if numerals_only:
         if slab and P.RIM_CAP_H > 1e-9:
             accents = accents + [rim_cap()]
@@ -763,7 +795,7 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
         x, y = cell_xy(i, r)
         if P.BOARD_STYLE == "slab":
             # the plate is the pad; only the post stands on it
-            parts.append(body_posts[summit_n] if is_summit(i, r)
+            parts.append(_summit_post(x, y, summit_n) if is_summit(i, r)
                          else _post(x, y, seat_z(), segs=segs,
                                     part=_post_part(i, r, with_numerals)))
             summit_n += is_summit(i, r)
@@ -773,7 +805,7 @@ def build_board(with_numerals: bool = True, numerals_only: bool = False,
             # part the digit does not pass through -- the rest ships with the
             # numbers so it prints in their colour
             parts.append(build_summit_box(x, y))
-            parts.append(body_posts[summit_n])
+            parts.append(_summit_post(x, y, summit_n))
             summit_n += 1
         else:
             parts.append(build_cell(x, y, segs=segs,

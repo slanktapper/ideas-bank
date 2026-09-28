@@ -734,6 +734,29 @@ def main():
               have == mirrored,
               f"{len(have)} struts, {len(have ^ mirrored)} unmatched")
 
+    # THE TWO BOARDS, TIED TOGETHER. board.stl is printed in one colour with
+    # the pockets left empty; board-body.stl plus board-numerals.stl is the
+    # same board split between two filaments. Everything except those pocket
+    # fills has to appear in BOTH, and it is the single-colour one that keeps
+    # getting forgotten, because nothing downstream looks at it:
+    #
+    #   - it lost the top 0.6 mm of every capped post, leaving them short
+    #     and flat;
+    #   - it shipped every summit post with a digit-shaped slot milled
+    #     through it, because it was using the post the ACCENT part completes.
+    #
+    # Neither was visible in a render. This one identity catches both, and
+    # anything else that is added to one board and not the other.
+    print("\nthe single-colour board and the two-colour pair agree")
+    body_only = B.build_board(with_numerals=False)
+    fills = sum(m.volume for m in B.pocket_fills())
+    gap = (body_only.volume + accent.volume - brd.volume - fills) / 1000.0
+    check("the two colours add up to the one colour, plus the pocket fills",
+          abs(gap) < 0.02,
+          f"body {body_only.volume/1000:.2f} + accent {accent.volume/1000:.2f}"
+          f" - board {brd.volume/1000:.2f} = {fills/1000:.2f} cm3 of filled "
+          f"pocket, to within {abs(gap)*1000:.0f} mm3")
+
     print("\nthe lens fills the frame evenly")
     lo_, hi_ = B.content_bounds()
     w_, h_ = hi_ - lo_
