@@ -826,6 +826,36 @@ def main():
               have == mirrored,
               f"{len(have)} struts, {len(have ^ mirrored)} unmatched")
 
+    # WHAT THE SLICER WILL SEE. An STL has no notion of separate bodies: it
+    # is a bag of triangles, and every loader welds coincident vertices on
+    # the way in. The accent part is 60 bodies, and where two of them TOUCH,
+    # welding turns the shared rim into an edge with four faces on it -- so
+    # the file that is perfectly watertight in memory loads back as "not
+    # watertight" and a slicer offers to repair it.
+    #
+    # That is expected here and harmless: every body is closed and correctly
+    # wound on its own, and each touch is a pocket fill meeting the slice of
+    # the post standing in it, at the seat plane. What must not happen is
+    # non-manifold edges appearing ANYWHERE ELSE, which would mean two solids
+    # actually intersecting rather than abutting.
+    print("\nthe accent part as a slicer will load it")
+    welded = accent.copy()
+    welded.merge_vertices()
+    import collections
+    counts = collections.Counter(map(tuple, welded.edges_sorted))
+    odd = [e for e, n in counts.items() if n != 2]
+    zs = welded.vertices[list({v for e in odd for v in e})][:, 2] if odd else \
+        np.zeros(0)
+    check("every body of it is closed and wound the right way on its own",
+          all(c.is_watertight and c.is_winding_consistent
+              for c in accent.split(only_watertight=False)),
+          f"{accent.body_count} bodies, all closed")
+    check("bodies only ever touch at the seat plane, never intersect",
+          len(zs) == 0 or (abs(zs - SEAT_Z).max() < 1e-6),
+          f"{len(odd)} welded edges, all at z={SEAT_Z:.2f} -- each one a "
+          f"number's pocket meeting the post standing in it"
+          if len(zs) else "nothing touches at all")
+
     # THE TWO HALVES. The board is two files now and only two, so the thing
     # to check is that they partition it: every cubic millimetre belongs to
     # exactly one filament. An OVERLAP means both claim the same space and

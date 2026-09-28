@@ -92,10 +92,10 @@ What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
 | `board-body.stl` + `board-numerals.stl` | 1 | PLA red + jade white | the board; two files, one object |
-| `plate-counter-x11.stl` | 1 | PLA | player 1 |
-| `plate-crown-x11.stl` | 1 | PLA | player 2 |
-| `plate-saucer-x11.stl` | 1 | PLA | player 3 |
-| `plate-cog-x11.stl` | 1 | PLA | player 4 |
+| `game-pieces-A.stl` | 1 | PLA | player A — 11 counters |
+| `game-pieces-B.stl` | 1 | PLA | player B — 11 crowns |
+| `game-pieces-C.stl` | 1 | PLA | player C — 11 saucers |
+| `game-pieces-D.stl` | 1 | PLA | player D — 11 cogs |
 | `plate-runners-x3.stl` | 1 | PLA or PETG | the shared neutral runners |
 
 and, for the test print above:
@@ -222,6 +222,15 @@ infill up buys very little more.
 octagon are exactly where a plate lifts. The H2D's heated chamber helps; a
 brim is cheap insurance on the first attempt.
 
+**Your slicer will probably offer to repair `board-numerals.stl`.** Let it,
+or ignore it — either is fine. It is 60 separate bodies, and an STL has no
+way to say so: every loader welds coincident vertices, which turns the rim
+where a number's pocket meets the post standing in it into an edge with four
+faces on it. Every body is closed and correctly wound on its own, which is
+all a slicer actually needs. `test_fit.py` checks that those welds only ever
+happen at the seat plane, because anywhere else would mean two solids really
+were intersecting.
+
 On the **numerals**: at 1.2 mm deep they are six layers at 0.20 mm. If the
 colour change smears, raise `NUMERAL_DEPTH` rather than fighting the purge.
 Note that `RIM_H` is deliberately the same number, so raising one without the
@@ -275,7 +284,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 96 checks, ~90 s
+python3 test_fit.py    # 98 checks, ~90 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

@@ -432,6 +432,7 @@ PEG_SEGS = 64
 # taken out of the side leaves a scallop, and scallops are self-supporting
 # whatever their depth.
 PLAYER_STYLES = ["counter", "crown", "saucer", "cog"]
+PLAYER_LABELS = ["A", "B", "C", "D"]   # what the printable sets are called
 PEG_MAX_R = 8.25          # half of 16.5; the skirt, and nothing wider
 
 # crown -- a cup that flares to a straight rim, with V notches taken out of it

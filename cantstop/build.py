@@ -146,10 +146,10 @@ def export_stls(verbose=True):
     for k, (style, m) in enumerate(zip(P.PLAYER_STYLES, pieces), start=1):
         save(m, f"piece-{style}.stl", "PLA", f"player {k}: one {style}")
     save(runner, "piece-runner.stl", "PLA", "one neutral runner")
-    for k, (style, m) in enumerate(zip(P.PLAYER_STYLES, pieces), start=1):
+    for lab, style, m in zip(P.PLAYER_LABELS, P.PLAYER_STYLES, pieces):
         save(B.build_plate(m, P.MARKERS_PER_PLAYER),
-             f"plate-{style}-x{P.MARKERS_PER_PLAYER}.stl", "PLA",
-             f"player {k}'s set ({P.MARKERS_PER_PLAYER} {style}s)")
+             f"game-pieces-{lab}.stl", "PLA",
+             f"player {lab}: {P.MARKERS_PER_PLAYER} {style}s, one per column")
     save(B.build_plate(runner, P.RUNNERS), "plate-runners-x3.stl",
          "PLA", f"the shared runners ({P.RUNNERS})")
 
