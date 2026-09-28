@@ -241,7 +241,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 76 design checks — run this after editing params.py
+python3 test_fit.py      # 83 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~6 s)
 python3 build.py --fast  # quarter-res renders  (~12 s total)
