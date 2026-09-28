@@ -908,6 +908,23 @@ def main():
               min(edges) > 20.0,
               f"flats and chamfers run {min(edges):.0f}-{max(edges):.0f} mm")
 
+    # OCTAGON_ACROSS pins the frame to a number somebody typed, so the margin
+    # is whatever is left over rather than something that was asked for. If
+    # the content ever grows past it the lip starts eating into the board
+    # instead of the board growing, and nothing else would say so.
+    if P.OCTAGON_REGULAR and P.OCTAGON_ACROSS:
+        pts_ = B.content_points()
+        lo_, hi_ = pts_.min(axis=0), pts_.max(axis=0)
+        dd = np.abs(pts_ - (lo_ + hi_) / 2)
+        need = max(dd[:, 0].max(), dd[:, 1].max(),
+                   (dd[:, 0] + dd[:, 1]).max() / np.sqrt(2.0))
+        spare = P.OCTAGON_ACROSS / 2 - need
+        check("the size it is pinned to still leaves room for the lip",
+              spare >= P.RIM_W + P.RIM_CLEAR - 0.05,
+              f"{P.OCTAGON_ACROSS:.0f} mm across leaves {spare:.2f} mm "
+              f"outside the content, against {P.RIM_W + P.RIM_CLEAR:.0f} the "
+              f"lip and its clearance need")
+
     ctr = B.octagon_centre()
 
     def _inside(pt):

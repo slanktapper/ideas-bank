@@ -63,15 +63,16 @@ COLUMN_SHORTFALL = [0.0, 0.0, 0.0, 25.0, 50.0, 75.0]
 # so the plate directly below them is empty: dropping their bottoms fills that
 # and evens the spacing out, and costs nothing, because what sets the bottom
 # of the board is the letters either side of that gap, not the dots.
-COLUMN_DROP = [21.0, 16.0, 0.0, 0.0, 0.0, 0.0]
+COLUMN_DROP = [19.0, 14.0, 0.0, 0.0, 0.0, 0.0]
 
-PITCH_X = 24.0      # centre-to-centre spacing between columns. Widened from
-                    # 22 along with the title: a regular octagon is square, so
-                    # a lens that is much taller than it is wide leaves the
-                    # left and right flats empty. 24 brings the content to
-                    # 266 x 282, which is close enough to square to fill it.
-PITCH_Y = 20.0      # row pitch of the LONGEST column. Shorter columns get a
+PITCH_X = 22.0      # centre-to-centre spacing between columns
+PITCH_Y = 18.0      # row pitch of the LONGEST column. Shorter columns get a
                     # pitch of their own, set by COLUMN_SHORTFALL above.
+                    #
+                    # Both pitches follow the piece diameter, and the piece
+                    # diameter follows the board: 13 cells at this pitch is
+                    # what sets the height of the lens, and a square frame
+                    # has to be that wide as well as that tall.
 
 # --------------------------------------------------------------------------
 # Board style
@@ -181,21 +182,24 @@ OCTAGON_MARGIN  = 6.0    # clear air between the content and the frame
 # chamfer of exactly 2/(2+sqrt2) = 0.5858 of it, at which point the four flats
 # and the four corner cuts come out identical.
 #
-# FALSE, and not for looks: a regular octagon is SQUARE, and the dual-nozzle
-# bed is not. 300 x 320 mm has 20 mm more in Y than in X, and the content --
-# thirteen cells tall, eleven columns wide, with the title below -- is 266 x
-# 282. Forcing a square frame around that spends the board's width on empty
-# plate at the left and right and puts it 10 mm over the bed in exactly the
-# axis that is short.
+# TRUE: all eight edges the same length, on a board 285.0 mm across.
 #
-# Sizing each axis to its own content gives 290.0 x 306.0 and fits with 10 mm
-# to spare in X and 14 in Y. Nothing else moves: same pitches, same drops,
-# same numbers, same lip, same pieces.
-#
-# It was regular for one revision and it did look better. Equal edges cost
-# 20 mm of X and the bed has not got it. True is one line away if the board
-# is ever printed in one colour, or on something bigger.
-OCTAGON_REGULAR = False
+# A regular octagon is SQUARE by definition and the dual-nozzle bed is not --
+# 300 x 320 -- so the board's WIDTH is the binding dimension and the whole
+# design has to fit inside it. That was measured rather than guessed. With
+# the 16.5 mm pieces a square board could not get under 291 mm even after
+# giving up the title, the level 6/7/8 spacing and every millimetre of
+# clearance between pieces. What buys it back is the piece diameter: at
+# 14.5 mm the column pitch comes down to 22.0 and the row pitch to 18.0, and
+# 285 mm then holds the title, the level spacing AND 5.07 mm between
+# neighbouring pieces.
+OCTAGON_REGULAR = True
+OCTAGON_ACROSS  = 285.0   # pin the octagon to exactly this across the flats
+                          # rather than sizing it to its content. 0 sizes it
+                          # to the content, as it used to. Whatever is left
+                          # over becomes the margin the lip lives in, so
+                          # test_fit.py checks it still clears RIM_W +
+                          # RIM_CLEAR rather than trusting the number.
 OCTAGON_SPOKE_W = 3.20   # bracing struts from the lattice out to the frame
 OCTAGON_SPOKE_H = 3.40
 
@@ -243,7 +247,7 @@ SUMMIT_STEP  = 4.0    # small step out for the top cell, so its box clears the
                       # pad below it
 
 NUMERAL_SIZE   = 16.0   # cap height of EVERY number, one and two digit alike
-NUMERAL_MAX_W  = 24.0   # widest a number may be. A two-digit number is 26 mm
+NUMERAL_MAX_W  = 22.0   # widest a number may be. A two-digit number is 26 mm
                         # at this cap height, so 10, 11 and 12 are condensed
                         # by 8% -- X ONLY, never a uniform scale, which would
                         # take their cap height down with their width and make
@@ -266,7 +270,7 @@ NUMERAL_MAX_W  = 24.0   # widest a number may be. A two-digit number is 26 mm
                         # this column's centre, so a number wider than 27.5 mm
                         # would have its ends stood on by the column next door.
                         # 24 leaves 1.75 mm.
-NUMERAL_BOX_W  = 26.0   # footprint a number reserves on the plate: the widest
+NUMERAL_BOX_W  = 24.0   # footprint a number reserves on the plate: the widest
                         # number plus a margin, and the SAME for every column
                         # so the octagon stays symmetric about the lens rather
                         # than growing only on the two-digit side
@@ -318,7 +322,7 @@ TITLE_FOLLOW = 1.0   # 1 = each letter hangs under its own column and the
                      # title follows the underside of the lens; 0 = one
                      # straight baseline. See board.title_letters(): a level
                      # title is worth 78 mm of extra frame on an octagon.
-TITLE_GAP   = 20.0   # from the bottom cell's centre to the letter's centre.
+TITLE_GAP   = 18.75  # from the bottom cell's centre to the letter's centre.
                      # A piece on that cell reaches 8.25 mm and a letter
                      # reaches 10, so this leaves about 6 mm of plate between
                      # the two.
@@ -405,13 +409,13 @@ PEG_BODY_H = 6.30         # skirt to top face. This is also the stack pitch:
 # matters. On the slab -- which is what is printed -- the plate is the pad and
 # the question does not arise.
 PEG_BODY_PROFILE = [
-    (8.25, 0.00),
-    (8.25, 0.75),
-    (7.16, 2.20),
-    (6.72, 3.60),
-    (7.16, 5.10),
-    (7.38, 5.85),
-    (7.38, 6.30),
+    (7.25, 0.00),
+    (7.25, 0.75),
+    (6.29, 2.20),
+    (5.91, 3.60),
+    (6.29, 5.10),
+    (6.49, 5.85),
+    (6.49, 6.30),
 ]
 PEG_SEGS = 64
 
@@ -439,19 +443,23 @@ PEG_SEGS = 64
 # whatever their depth.
 PLAYER_STYLES = ["counter", "crown", "saucer", "cog"]
 PLAYER_LABELS = ["A", "B", "C", "D"]   # what the printable sets are called
-PEG_MAX_R = 8.25          # half of 16.5; the skirt, and nothing wider
+PEG_MAX_R = 7.25          # half of 14.5; the skirt, and nothing wider.
+                          # 16.5 was asked for and built, and it is what put
+                          # a square board 6 mm over the bed. 14.5 is the
+                          # largest that lets a 285 mm regular octagon keep
+                          # the title and the level spacing.
 
 # crown -- a cup that flares to a straight rim, with V notches taken out of it
 CROWN_BODY_PROFILE = [
-    (8.25, 0.00),
-    (8.25, 0.80),
-    (6.90, 1.80),
-    (6.90, 2.60),
-    (8.10, 4.00),   # flares out at 41 degrees, and is done flaring before
-    (8.10, 6.30),   # the notches start, so they cut a vertical wall
+    (7.25, 0.00),
+    (7.25, 0.80),
+    (6.05, 1.80),
+    (6.05, 2.60),
+    (7.15, 4.00),   # flares out at 38 degrees, and is done flaring before
+    (7.15, 6.30),   # the notches start, so they cut a vertical wall
 ]
 CROWN_POINTS = 6          # V notches, leaving 6 points
-CROWN_CUT_AT = 8.40       # how far out each notch's axis sits: at the top
+CROWN_CUT_AT = 8.30       # how far out each notch's axis sits: at the top
                           # face it has cut in to r6.10, which still leaves a
                           # 3.15 mm seating ring for whatever stacks on it
 CROWN_CUT_Z  = 4.00       # the apex of the V, level with the top of the
@@ -477,28 +485,28 @@ CROWN_CUT_Z  = 4.00       # the apex of the V, level with the top of the
 # below about r6 without losing the 3 mm seating ring. 8.25 down to 6.10 is
 # the whole budget.
 SAUCER_BODY_PROFILE = [
-    (6.60, 0.00),
-    (6.60, 0.50),
-    (5.80, 1.00),
-    (5.80, 1.30),
-    (8.25, 3.75),   # the underside of the brim, at 45 degrees exactly
-    (8.25, 4.05),   # the brim edge, 0.30 thick and 1.65 proud of the base
-    (6.60, 4.60),
-    (6.10, 6.30),   # the dome, such as there is room for
+    (6.10, 0.00),   # the base cannot shrink with the rest: 6.10 is what
+    (6.10, 0.50),   # keeps a 3.15 mm seating ring, and the ring is the rule
+    (5.40, 1.00),
+    (5.40, 1.30),
+    (7.25, 3.15),   # the underside of the brim, at 45 degrees exactly
+    (7.25, 3.45),   # the brim edge, 0.30 thick and 1.15 proud of the base
+    (6.30, 4.10),
+    (6.00, 6.30),   # the dome, such as there is room for
 ]
 
 # cog -- a barrel with vertical flutes cut round it
 COG_BODY_PROFILE = [
-    (8.25, 0.00),
-    (8.25, 1.20),   # the skirt stays a whole ring; the flutes start above it
-    (7.80, 1.90),
-    (7.80, 5.40),
-    (8.10, 6.00),
-    (8.10, 6.30),
+    (7.25, 0.00),
+    (7.25, 1.20),   # the skirt stays a whole ring; the flutes start above it
+    (6.85, 1.90),
+    (6.85, 5.40),
+    (7.15, 6.00),
+    (7.15, 6.30),
 ]
 COG_FLUTES = 10
-COG_CUT_R  = 1.70
-COG_CUT_AT = 8.90         # cuts in to r7.20
+COG_CUT_R  = 1.55
+COG_CUT_AT = 7.65         # cuts in to r6.10
 COG_CUT_Z  = 1.40
 
 # The runner (the shared neutral marker you advance during a turn, before you

@@ -12,26 +12,26 @@ is thirteen — eighty-three cells in all.
 
 Columns are **centre-aligned** on a shared midline, so the cell field is a
 symmetric lens rather than a pyramid, and the whole thing sits inside a
-**octagon that hugs its content** — 290 × 306 mm, four flats and four corner
-cuts but not a regular one, because the bed it has to print on is not square
-either.
+**regular octagon** — all eight edges the same 118.1 mm, and the board is
+pinned to exactly **285.0 mm** across rather than being sized to its content.
 
-It was regular for one revision and it did look better. What settled it is
-that the board is a **two-filament** part, and two nozzles on one toolhead
-cost 25 mm of X: the usable bed is 300 × 320, not 325 × 320. A regular
-octagon is square by definition, so wrapping content that is 266 wide and 282
-tall in one spends the board's width on empty plate at the left and right and
-lands it 10 mm over the bed in exactly the axis that is short. Sizing each
-axis to its own content gives 290 × 306 and fits with 10 mm to spare in X and
-14 in Y, with nothing else moved — same pitches, same drops, same numbers,
-same lip, same pieces.
+A regular octagon is square by definition, and the board is a **two-filament**
+part: two nozzles on one toolhead cost 25 mm of X, so the usable bed is
+300 × 320, not 325 × 320. The board's width is therefore the binding
+dimension and everything has to fit inside it.
 
-The columns are spaced 24 mm rather than 22, and the four outer steps are a
-box and a quarter rather than a whole box. Both were done for the regular
-octagon, which was bound by its DIAGONAL: the corner cuts have to clear the
-number boxes at columns 2 and 12, which sit far out in x and well up in y,
-exactly where the cut is. They still earn their place — the content fills
-92% of the board across and 92% up.
+What it costs is the piece diameter, and that was measured rather than
+guessed. With 16.5 mm pieces a square board could not get under 291 mm even
+after giving up the title, the level 6/7/8 spacing and every millimetre of
+clearance between pieces. At **14.5 mm** the column pitch comes down to 22.0
+and the row pitch to 18.0, and 285 mm then holds the title, the level
+spacing and 5.07 mm between neighbouring pieces, with 15 mm of bed to spare
+in X and 35 in Y.
+
+`OCTAGON_ACROSS` pins the size; 0 goes back to sizing it to the content.
+Because the margin is then whatever is left over rather than something asked
+for, `test_fit.py` measures it: 12.13 mm, against the 12 the lip and its
+clearance need.
 
 At that point the frame is about as small as this content allows. The eleven
 summits now sit on a staircase that runs very nearly parallel to the corner
@@ -279,7 +279,7 @@ deterministic — the same geometry gives the same PNG on any machine.
 cd cantstop
 python3 -m pip install -r requirements.txt
 
-python3 test_fit.py      # 98 design checks — run this after editing params.py
+python3 test_fit.py      # 99 design checks — run this after editing params.py
 python3 build.py         # every STL into stl/, every render into renders/
 python3 build.py --stl   # STLs only            (~6 s)
 python3 build.py --fast  # quarter-res renders  (~12 s total)
@@ -296,11 +296,11 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 The **test stub has been printed and came out right** — the engraved numbers,
 the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
-290.0 × 306.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
-300 × 320 mm with 10 mm spare in X and 14 mm in Y. A full set is about
-**237 g** — 177 g of board at 10% infill plus 60 g of solid pieces.
+285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
+300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
+**205 g** — 163 g of board at 10% infill plus 42 g of solid pieces.
 
-`test_fit.py` passes 98 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 99 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

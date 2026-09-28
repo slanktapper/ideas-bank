@@ -202,7 +202,18 @@ def octagon() -> list[tuple[float, float]]:
         # cuts slice through the ends of the lens.
         need = max(d[:, 0].max(), d[:, 1].max(),
                    (d[:, 0] + d[:, 1]).max() / np.sqrt(2.0))
-        a = b = need + margin
+        # OCTAGON_ACROSS pins the size; otherwise it follows the content.
+        # Either way the margin has to come out at least RIM_W + RIM_CLEAR,
+        # and test_fit.py measures what it actually came out as rather than
+        # trusting the number that was typed in.
+        if P.OCTAGON_ACROSS:
+            # the number means the BOARD's size. On a slab the outline is the
+            # board; on a lattice the frame is a strut straddling the outline,
+            # so half its width stands outside and has to come off first.
+            frame = 0.0 if P.BOARD_STYLE == "slab" else P.FRAME_W
+            a = b = (P.OCTAGON_ACROSS - frame) / 2.0
+        else:
+            a = b = need + margin
         c = a * 2.0 / (2.0 + np.sqrt(2.0))
     else:
         # Each axis sized to its own content, so the frame hugs a lens that

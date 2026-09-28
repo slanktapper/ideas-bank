@@ -149,15 +149,15 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **237 g**: ~177 g board, body and numerals together
+A full set is roughly **205 g**: ~163 g board, body and numerals together
 (6 mm slab at 10% infill),
 ~54 g of markers (11 each of four shapes), ~5 g of runners (3). A marker is 16.5 mm across and
 8.45 mm tall, a runner 16.5 x 10.45, and every stacked piece adds exactly
 6.30 mm. The board is
-290.0 × 306.0 × 9.2 mm. Note that the board is a **two-filament** part, so
+285.0 × 285.0 × 9.2 mm. Note that the board is a **two-filament** part, so
 the envelope that applies is the H2D's **dual-nozzle** one — 300 × 320, not
-the 325 × 320 you get with a single nozzle. It fits with 10 mm spare in X and
-14 in Y.
+the 325 × 320 you get with a single nozzle. It fits with 15 mm spare in X and
+35 in Y.
 
 ---
 
@@ -285,7 +285,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 98 checks, ~90 s
+python3 test_fit.py    # 99 checks, ~90 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 
