@@ -142,7 +142,9 @@ def export_stls(verbose=True):
     pieces = [B.build_player_piece(s) for s in P.PLAYER_STYLES]
     marker = pieces[0]
     runner = B.build_runner()
-    active = B.build_active()
+    active = B.build_active()                     # the two fused
+    active_body = B.build_active(part="body")     # white
+    active_cap = B.build_active(part="accent")    # red
     # Every note leads with the piece NUMBER, so a line in this report, a
     # panel in 09-piece-catalogue.png and a sentence in conversation are all
     # naming the same thing the same way.
@@ -152,9 +154,15 @@ def export_stls(verbose=True):
              f"{B.piece_role(style)}")
     save(runner, "piece-runner.stl", "PLA",
          f"piece {B.piece_number('runner')} -- one neutral runner, shared")
-    save(active, "piece-active.stl", "PLA",
-         f"piece {B.piece_number('active')} -- one active-player marker; "
-         f"no post on top, so nothing stacks on it")
+    # PIECE 6 SHIPS AS TWO FILES, like the board. Load both into one object
+    # in the slicer and leave them where they are: they are in the same
+    # coordinates and land in register only because neither has been moved.
+    save(active_body, "piece-active-body.stl", "PLA",
+         f"piece {B.piece_number('active')} -- WHITE part: foot, shaft, web "
+         f"and the raised lip. Load with piece-active-accent")
+    save(active_cap, "piece-active-accent.stl", "PLA",
+         f"piece {B.piece_number('active')} -- RED part: the octagon cap, "
+         f"under the white lip")
     for lab, style, m in zip(P.PLAYER_LABELS, P.PLAYER_STYLES, pieces):
         save(B.build_plate(m, P.MARKERS_PER_PLAYER),
              f"game-pieces-{lab}.stl", "PLA",
@@ -163,10 +171,15 @@ def export_stls(verbose=True):
     save(B.build_plate(runner, P.RUNNERS), "plate-runners-x3.stl",
          "PLA", f"piece {B.piece_number('runner')} -- the shared runners "
          f"({P.RUNNERS})")
-    save(B.build_plate(active, P.ACTIVES, spacing=2 * P.PEG_MAX_R + 6.0),
-         f"plate-active-x{P.ACTIVES}.stl", "PLA",
-         f"piece {B.piece_number('active')} -- one per player "
-         f"({P.ACTIVES}), print each in that player's colour")
+    sp = 2 * P.PEG_MAX_R + 6.0
+    save(B.build_plate(active_body, P.ACTIVES, spacing=sp),
+         f"plate-active-body-x{P.ACTIVES}.stl", "PLA",
+         f"piece {B.piece_number('active')} -- WHITE part, {P.ACTIVES} of "
+         f"them; load with the accent plate")
+    save(B.build_plate(active_cap, P.ACTIVES, spacing=sp),
+         f"plate-active-accent-x{P.ACTIVES}.stl", "PLA",
+         f"piece {B.piece_number('active')} -- RED part, {P.ACTIVES} caps, "
+         f"in register with the body plate")
 
     save(B.build_fit_coupon(), "fit-test-coupon.stl", "PLA",
          "PRINT THIS FIRST -- bore fit check")
@@ -423,12 +436,21 @@ def _piece_catalogue(pieces, runner, active, panel, fast=False, verbose=True):
             mesh = pieces[k]
         colour = {"runner": C_RUNNER, "active": C_PLAYERS[0]}.get(
             style, C_PLAYERS[k if k < len(C_PLAYERS) else 0])
+        # PIECE 6 IS TWO COLOURS and drawing it in one would hide the only
+        # thing worth looking at on it -- a red cap under a white lip, on a
+        # white tower. Its panel renders the two parts as two meshes, the
+        # way the board's renders do.
+        if style == "active":
+            # the board's own two filaments, which is the point of it
+            scene = [{"mesh": B.build_active(part="body"), "color": C_NUMERAL},
+                     {"mesh": B.build_active(part="accent"), "color": C_BOARD}]
+        else:
+            scene = [{"mesh": mesh, "color": colour}]
         lo, hi = mesh.bounds
         target = tuple((lo + hi) * 0.5)
         cam = {"eye": R.orbit_eye(np.asarray(target), span * 4.0, -90.0, 20.0),
                "target": target, "ortho_height": span}
-        img = R.render([{"mesh": mesh, "color": colour}],
-                       width=panel, height=panel, supersample=ss,
+        img = R.render(scene, width=panel, height=panel, supersample=ss,
                        edges=0.45, **cam)
         img.save(RENDER_DIR / f"piece-{B.piece_number(style)}-{style}.png")
         panels.append(img)
@@ -602,7 +624,10 @@ def print_report(rows, board_body):
              + sum(g[f"piece-{s}.stl"] for s in P.PLAYER_STYLES)
                * P.MARKERS_PER_PLAYER
              + g["piece-runner.stl"] * P.RUNNERS
-             + g["piece-active.stl"] * P.ACTIVES)
+             # piece 6 is two files now, so BOTH have to be counted or the
+             # set is billed for a marker with no cap on it
+             + (g["piece-active-body.stl"]
+                + g["piece-active-accent.stl"]) * P.ACTIVES)
     how = f"board at {100*P.SLAB_INFILL:.0f}% infill, pieces solid"
     print(f"full set, {how}: ~{total:.0f} g "
           f"(1 board + {P.MARKERS_PER_PLAYER} each of "

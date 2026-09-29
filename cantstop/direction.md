@@ -304,12 +304,46 @@ nothing about either.
   seat contract promises.
 - **5 runner** — three square-edged tiers and two deep grooves, all turned,
   with the flares at 44 degrees so they carry themselves.
-- **6 active** — the active player's marker, and the only piece that does not
-  stack. Everything else on this board is round, squat and solid; this is
-  **square, tall and hollow**. A flared foot with the socket in it, a slim
-  parallel shaft, a flat top, and a spider web cut through each of the
-  shaft's four walls. 28.4 mm against a marker's 8.45, one per player, in
-  their colour.
+- **6 active** — the active player's marker: the only piece that does not
+  stack, and the only one in **two colours**. Everything else on this board
+  is squat and solid; this is tall and hollow. A round flared foot with the
+  socket in it, a slim square shaft webbed through all four walls, and a red
+  octagonal cap with a raised white lip round its edge. 28.4 mm against a
+  marker's 8.45, one per player.
+
+  **The foot is round, and that retired two checks.** It was a 17.50 mm
+  *square*, whose corners reach 12.37 mm from the cell centre against a
+  circle's 8.75 — so it needed two tests of its own that every radius-based
+  check in the suite was blind to: one for clearing its neighbours, one for
+  keeping its corners off the raised lip. A round 17.50 foot is the same disc
+  as every other piece, so the ordinary skirt checks cover it and both
+  special cases are **gone** rather than left passing about a shape that no
+  longer exists. What is still wide up high is the cap, and there is one new
+  check for the only thing it can ever meet: another active piece's cap on a
+  neighbouring cell.
+
+  It is built as the **convex hull** of three outlines — the disc at the bed,
+  the same disc a hair above it, and the shaft's square at the top. The
+  second disc is what gives the piece a straight side before the taper
+  starts, so it stands on a face and not on an edge. Nothing in the foot
+  overhangs: the whole thing narrows as it rises.
+
+  **Two materials, and the split is a plane.** The cap is red, everything
+  below it is white, and the boundary is z = `ACTIVE_TOP_Z` — one flat cut
+  across the piece, so the slicer changes filament once on the way up and
+  never goes back. No interleaving, no purge tower to speak of, no seam to
+  wander.
+
+  The **lip is the exception, and it is deliberate**: white, sitting on top
+  of the red cap, so the print goes white → red → white. That is the board's
+  own trick upside down — there the body is dark and the top `RIM_CAP_H` of
+  the lip prints in the numbers' colour; here the field is red and the lip is
+  white all through. It means the white part contains two separate solids,
+  the tower and a ring floating above it, exactly as `board-numerals.stl`
+  holds sixty. The ring rests on the red cap, so it is supported.
+
+  It ships as `piece-active-body.stl` and `piece-active-accent.stl`, in the
+  same coordinates, landing in register only because neither has been moved.
 
   **The silhouette comes from the sketch, and it took a review to notice it
   had drifted off it.** The sketch is a section: a foot that *flares* from
@@ -689,7 +723,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 136 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 141 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

@@ -97,7 +97,8 @@ What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 | `game-pieces-C.stl` | 1 | PLA | **piece 3** — player C, 11 saucers |
 | `game-pieces-D.stl` | 1 | PLA | **piece 4** — player D, 11 cogs |
 | `plate-runners-x3.stl` | 1 | PLA or PETG | **piece 5** — the shared neutral runners |
-| `plate-active-x4.stl` | 1 | PLA | **piece 6** — one active-player marker each; print each in that player's colour |
+| `plate-active-body-x4.stl` | 1 | PLA, jade white | **piece 6** — the white part of four markers; load with the accent plate |
+| `plate-active-accent-x4.stl` | 1 | PLA, red | **piece 6** — the four red caps, in register with the body plate |
 
 ### The piece numbers
 
@@ -113,7 +114,7 @@ on its own.
 | **3** | saucer | player C | `piece-saucer.stl` | `game-pieces-C.stl` |
 | **4** | cog | player D | `piece-cog.stl` | `game-pieces-D.stl` |
 | **5** | runner | shared | `piece-runner.stl` | `plate-runners-x3.stl` |
-| **6** | active | one each | `piece-active.stl` | `plate-active-x4.stl` |
+| **6** | active | one each | `piece-active-body` + `-accent` | `plate-active-body-x4` + `-accent-x4` |
 
 Pieces 1 to 5 are 17.5 mm across and 8.45 mm tall, to the micron, and any of
 them stacks on any other adding exactly 6.30 mm. **Piece 6 is the odd one
@@ -354,7 +355,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 136 checks, ~2 min
+python3 test_fit.py    # 141 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

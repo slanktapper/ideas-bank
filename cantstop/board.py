@@ -818,6 +818,57 @@ def _cap_octagon(r: float) -> np.ndarray:
     return np.column_stack([r * np.cos(a), r * np.sin(a)])
 
 
+def _round_foot(segs: int | None = None) -> trimesh.Trimesh:
+    """The flared foot: a disc at the bed drawing up into the square shaft.
+
+    ROUND, and the same 17.50 across as every other piece, so this one sits
+    in a cell like the rest of them rather than being the one shape whose
+    corners every footprint check had to be told about separately.
+
+    Built as the CONVEX HULL of three outlines -- the disc at the bed, the
+    same disc a hair above it, and the shaft's square at the top. The second
+    disc is what gives the bottom a straight side before the taper starts,
+    so the piece stands on a face and not on an edge. Nothing here overhangs:
+    the whole foot narrows as it rises.
+    """
+    segs = segs or P.PEG_SEGS
+    r = P.ACTIVE_BASE * 0.5
+    a = P.ACTIVE_SHAFT * 0.5
+    ang = np.linspace(0.0, 2.0 * np.pi, segs, endpoint=False)
+    disc = np.column_stack([r * np.cos(ang), r * np.sin(ang)])
+    pts = [(x, y, 0.0) for x, y in disc]
+    pts += [(x, y, P.BOTTOM_FLAT_H) for x, y in disc]
+    pts += [(sx * a, sy * a, P.ACTIVE_FOOT_H)
+            for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    return trimesh.Trimesh(vertices=np.asarray(pts, dtype=float)).convex_hull
+
+
+def active_cap_top() -> float:
+    """The top of the red octagon -- the face the white lip stands on."""
+    return P.ACTIVE_TOP_Z + P.ACTIVE_CAP_RISE + P.ACTIVE_CAP_T
+
+
+def active_lip() -> trimesh.Trimesh:
+    """The raised white lip round the edge of the red octagon.
+
+    The same idea as the board's: a ring standing proud at the outer edge,
+    printed in the OTHER colour from the field it surrounds. On the board the
+    body is dark and the lip's top is white; here the field is red and the
+    whole lip is white, which is the same trick upside down.
+
+    It is a separate solid floating above the tower, and that is correct --
+    it rests on the red cap, so the body part of this piece has two bodies in
+    it the way board-numerals.stl has sixty.
+    """
+    from shapely.geometry import Polygon
+    outer = Polygon(_cap_octagon(P.ACTIVE_CAP_R))
+    inner = outer.buffer(-P.ACTIVE_LIP_W, join_style=2)
+    ring = trimesh.creation.extrude_polygon(outer.difference(inner),
+                                            P.ACTIVE_LIP_H)
+    ring.apply_translation((0.0, 0.0, active_cap_top()))
+    return ring
+
+
 def active_cap() -> trimesh.Trimesh:
     """The octagonal cap: a flare off the shaft's square top, then a plate.
 
@@ -940,26 +991,36 @@ def _socket_void(segs: int | None = None) -> trimesh.Trimesh:
     return S.lathe(prof, segs=segs or P.PEG_SEGS)
 
 
-def build_active(segs: int | None = None) -> trimesh.Trimesh:
-    """Piece 6: the active player's marker. Square, hollow, webbed, and the
-    only piece that takes no stack -- a socket below and nothing on top.
+def build_active(segs: int | None = None,
+                 part: str = "all") -> trimesh.Trimesh:
+    """Piece 6: the active player's marker, and the only one in two colours.
 
-    A flared foot with the socket in it, a slim parallel shaft that is hollow
-    from above the socket roof up, and an orb web cut through each of the
-    shaft's four walls.
+    A round flared foot with the socket in it, a slim square shaft that is
+    hollow from the foot up, an orb of web cut through each of its four
+    walls, and a red octagonal cap with a raised white lip round its edge.
+
+    `part` picks what comes back: "body" is everything that prints white --
+    the foot, the shaft, the web and the lip ring floating above it --
+    "accent" is the red cap, and "all" is the two of them fused, which is
+    what a picture or a stacking check wants.
     """
     segs = segs or P.PEG_SEGS
-    solid = S.union_all([
-        _sq_frustum(P.ACTIVE_BASE / 2, 0.0, P.ACTIVE_SHAFT / 2,
-                    P.ACTIVE_FOOT_H),
+    body = S.union_all([
+        _round_foot(segs),
         _sq_frustum(P.ACTIVE_SHAFT / 2, P.ACTIVE_FOOT_H,
                     P.ACTIVE_SHAFT / 2, P.ACTIVE_TOP_Z),
+        active_lip(),
     ])
-    solid = S.union_all([solid, active_cap()])
     cuts = [_socket_void(segs), active_core_void()]
     for zc, along_x in active_webs():
         cuts += _web_cut(zc, along_x)
-    return trimesh.boolean.difference([solid] + cuts, engine="manifold")
+    body = trimesh.boolean.difference([body] + cuts, engine="manifold")
+    if part == "body":
+        return body
+    accent = active_cap()
+    if part == "accent":
+        return accent
+    return S.union_all([body, accent])
 
 
 def socket_bridge() -> float:
@@ -1150,7 +1211,12 @@ def piece_profile_of(style: str):
                 # of this piece the ordinary overhang loop has any business
                 # with -- so it belongs in the profile and not in a note.
                 (cap, z1),
-                (cap, z1 + P.ACTIVE_CAP_T)]
+                (cap, z1 + P.ACTIVE_CAP_T),
+                # the lip stands on the cap at the cap's own outer edge, so
+                # it adds height without adding width -- but it does add
+                # height, and this profile is where the piece's own idea of
+                # how tall it is comes from.
+                (cap, z1 + P.ACTIVE_CAP_T + P.ACTIVE_LIP_H)]
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
             "cog": P.COG_BODY_PROFILE,
             "runner": P.RUNNER_BODY_PROFILE}[style]

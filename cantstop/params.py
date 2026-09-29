@@ -820,7 +820,8 @@ COG_SLOT_W = 2.60    # 18.7 degrees of gap at the tip against 17.3 of tooth,
 # needs a face of at least 12.4 mm. It does not. The print this piece is
 # modelled on has narrow limbs carrying two cells, and a narrow face carries
 # them at a BETTER ratio of hole to rib than a wide one does.
-ACTIVE_BASE    = 17.50    # at the bed: the full width of a cell, same as
+ACTIVE_BASE    = 17.50    # at the bed: the DIAMETER of a round foot, the
+                          # same 17.50 across as
                           # every other piece, because it still has to sit in
                           # one. There is a hard floor at 2 * SEAT_BOTTOM_R =
                           # 14.8, below which it cannot cover a crown's top.
@@ -835,7 +836,7 @@ ACTIVE_SHAFT   = 9.00     # the shaft, parallel all the way up. 51% of the
                           # at 9.00 the wall beside it is 1.38 mm and at 8.00
                           # it would be 0.88 -- one hair over two perimeters,
                           # on the one part of this piece that takes a load.
-ACTIVE_TOP_Z   = 24.75    # where the SHAFT stops. The octagon cap sits on
+ACTIVE_TOP_Z   = 23.95    # where the SHAFT stops. The octagon cap sits on
                           # top of it and the piece finishes at 28.40, which
                           # is where it finished before the cap existed --
                           # the height the cap costs was taken back off the
@@ -967,6 +968,23 @@ ACTIVE_CAP_RISE = 2.45    # how far the cap flares out over. The flare is the
                           # conservative by design, and there is no reason to
                           # think it errs the same way for another shape.
 ACTIVE_CAP_T   = 1.20     # the flat octagonal top itself
+
+# TWO MATERIALS, AND THE SPLIT IS A PLANE. The cap is RED and everything
+# below it is WHITE, and the boundary is z = ACTIVE_TOP_Z -- one flat cut
+# right across the piece, so the slicer changes filament once on the way up
+# and never goes back. That is the cheapest two-colour print there is: no
+# interleaving, no purge tower to speak of, no chance of a seam wandering.
+#
+# The lip is the exception and it is deliberate. It is WHITE, and it sits on
+# top of the RED cap, so the print goes white, red, white -- the same trick
+# the board plays with its own lip, where the top RIM_CAP_H prints in the
+# numbers' colour rather than the body's. It means the body part has two
+# separate solids in it, the tower and a ring floating above it, exactly as
+# board-numerals.stl has sixty.
+ACTIVE_LIP_W   = 1.20     # how far in from the cap's edge the lip runs
+ACTIVE_LIP_H   = 0.80     # four layers at 0.20, and it stands this proud of
+                          # the red. The height it costs came off the shaft
+                          # rather than the piece, which still ends at 28.40.
 
 ACTIVES = 4               # one per player
 

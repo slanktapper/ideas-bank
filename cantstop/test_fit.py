@@ -690,6 +690,63 @@ def main():
     # the blank band this design kept being judged on. The core swallows the
     # roof instead, so the bore opens into the hollow, and what has to be
     # checked is the floor the core leaves round it.
+    # THE FOOT IS ROUND NOW, which is what retired two checks of its own up
+    # in the neighbours block. Measured on the mesh rather than read off
+    # ACTIVE_BASE, because what matters is that the SOLID has no corner
+    # reaching past the skirt every other piece obeys.
+    _b = B.build_active(part="body")
+    _low = _b.vertices[_b.vertices[:, 2] <= P.BOTTOM_FLAT_H + 1e-6]
+    _rmax = float(np.hypot(_low[:, 0], _low[:, 1]).max())
+    check("the active piece's foot is round, inside the same skirt as the rest",
+          _rmax <= P.PEG_MAX_R + 1e-6,
+          f"r{_rmax:.3f} at the widest point of the foot against the "
+          f"{P.PEG_MAX_R:.2f} every other piece stops at -- so the skirt "
+          f"checks cover it and it needs no special case")
+
+    # TWO COLOURS, AND THEY HAVE TO PARTITION THE PIECE: the white body and
+    # the red cap between them must claim every cubic millimetre once and
+    # none of it twice. Exactly the test the board's two filaments get.
+    _acc = B.build_active(part="accent")
+    _all = B.build_active()
+    check("white and red claim the whole piece and neither claims it twice",
+          abs(_b.volume + _acc.volume - _all.volume) < 1e-3,
+          f"{_b.volume/1000:.3f} + {_acc.volume/1000:.3f} = "
+          f"{_all.volume/1000:.3f} cm3 fused, to within "
+          f"{abs(_b.volume + _acc.volume - _all.volume):.4f} mm3")
+    check("the two parts fuse into one solid, so the piece is not two things",
+          _all.is_watertight and _all.body_count == 1,
+          f"{_all.body_count} body from a white part that is "
+          f"{_b.body_count} (the tower, and the lip ring floating above it) "
+          f"and a red part that is {_acc.body_count}")
+
+    # THE COLOUR CHANGE IS A PLANE. The cheapest two-colour print is one
+    # where the filament changes once on the way up and never goes back --
+    # no interleaving, no seam to wander. It is true here except for the lip,
+    # which is the deliberate exception: white, red, white.
+    check("the colour boundary is one flat cut across the piece",
+          abs(_acc.bounds[0][2] - P.ACTIVE_TOP_Z) < 1e-6,
+          f"red starts at z{_acc.bounds[0][2]:.2f}, exactly where the shaft "
+          f"stops -- then white again for the lip from z{B.active_cap_top():.2f}")
+
+    # THE LIP, and it is the board's own trick upside down: there the body is
+    # dark and the lip's top is white, here the field is red and the lip is
+    # white all through.
+    check("the lip is a whole number of layers and stands proud of the red",
+          abs(P.ACTIVE_LIP_H / 0.20 - round(P.ACTIVE_LIP_H / 0.20)) < 1e-9
+          and P.ACTIVE_LIP_H >= 0.40,
+          f"{P.ACTIVE_LIP_H:.2f} mm = {round(P.ACTIVE_LIP_H/0.20):.0f} layers "
+          f"at 0.20, standing on a red field "
+          f"{2*(P.ACTIVE_CAP_R*np.cos(np.pi/8) - P.ACTIVE_LIP_W):.2f} mm across")
+    # bounds is a 2x3 array: take the x/y columns and the largest magnitude
+    # in them, which for an octagon with a vertex on neither axis is its
+    # circumradius measured across the flats' bounding box.
+    _lip = B.active_lip()
+    _lip_r = float(np.abs(_lip.bounds[:, :2]).max())
+    check("the lip sits on the cap's own edge, not over it",
+          abs(_lip_r - P.ACTIVE_CAP_R * np.cos(np.pi / 8)) < 1e-6,
+          f"same {P.ACTIVE_CAP_R:.2f} outline as the cap below it, "
+          f"{P.ACTIVE_LIP_W:.2f} mm wide")
+
     check("the hollow starts at the foot, so the web runs the whole shaft",
           abs(B.active_web_floor() - P.ACTIVE_FOOT_H) < 1e-9,
           f"core floor at z{B.active_web_floor():.2f}, the same height the "
@@ -762,21 +819,29 @@ def main():
               pitch - 2 * skirt_r >= P.PIECE_GAP_MIN - 1e-9,
               f"{pitch - 2*skirt_r:.2f} mm gap, against "
               f"{P.PIECE_GAP_MIN:.1f} asked for")
-    # A SQUARE PIECE IS A DIFFERENT QUESTION. Everything above measures a
-    # radius, and piece 6 has corners: 12.37 mm from the cell centre against
-    # a circle's 8.75. Two axis-aligned squares miss each other when EITHER
-    # axis clears, which is what saves it -- columns are 22.0 apart and the
-    # tightest row pitch is 19.58, and no two cells are closer than that in
-    # both at once. Measured rather than argued.
-    sq = P.ACTIVE_BASE
+    # PIECE 6 USED TO BE THE EXCEPTION HERE and no longer is. Its base was a
+    # 17.50 mm SQUARE, whose corners reach 12.37 mm from the cell centre
+    # against a circle's 8.75, so it needed two checks of its own that every
+    # radius-based test above was blind to. The base is a round 17.50 now --
+    # the same disc as every other piece -- so the skirt checks above cover
+    # it and those two are gone rather than left passing about a shape that
+    # does not exist.
+    #
+    # What IS still square-ish is the CAP, 13.21 mm across its flats, and it
+    # sits 24 mm up where nothing else on the board reaches. Two actives on
+    # neighbouring cells are the only things that can meet up there. An
+    # octagon fits inside its own bounding square, so measuring the square is
+    # both simpler and conservative, and two axis-aligned squares miss when
+    # EITHER axis clears.
+    cap_sq = 2.0 * P.ACTIVE_CAP_R * np.cos(np.pi / 8)
     pts_ = np.array([B.cell_xy(i, r) for i, r in B.all_cells()])
     dd = np.abs(pts_[:, None, :] - pts_[None, :, :])
     np.fill_diagonal(dd[:, :, 0], 1e9)
     np.fill_diagonal(dd[:, :, 1], 1e9)
-    sq_gap = float((np.maximum(dd[:, :, 0], dd[:, :, 1]) - sq).min())
-    check("the square piece clears its neighbours on every cell",
-          sq_gap >= P.PIECE_GAP_MIN - 1e-9,
-          f"{sq_gap:.2f} mm at the tightest, a {sq:.1f} mm square on cells "
+    cap_gap = float((np.maximum(dd[:, :, 0], dd[:, :, 1]) - cap_sq).min())
+    check("two active pieces' caps clear each other on any two cells",
+          cap_gap >= P.PIECE_GAP_MIN - 1e-9,
+          f"{cap_gap:.2f} mm at the tightest, a {cap_sq:.2f} mm cap on cells "
           f"{P.PITCH_X:.0f} apart in x and {narrow:.2f} in y")
     check("posts clear each other up a column", P.PITCH_Y - P.POST_D >= 3.0,
           f"{P.PITCH_Y - P.POST_D:.2f} mm gap; the plate is the seat, so only "
@@ -848,28 +913,12 @@ def main():
                 for z in zs:
                     probes.append((cx + rad * np.cos(a), cy + rad * np.sin(a), z))
     inside = brd.contains(np.asarray(probes))
-    # The square piece again: its corners reach further than any skirt, so
-    # the run above -- which probes a circle -- says nothing about them. A
-    # corner landing on the raised lip would rock the piece.
-    from shapely.geometry import Polygon as _Poly, Point as _Pt
-    _inner = _Poly(B.octagon()).buffer(-P.RIM_W, join_style=2)
-    _h = P.ACTIVE_BASE / 2
-    _worst, _who = 1e9, None
-    for i, r in B.all_cells():
-        cx, cy = B.cell_xy(i, r)
-        for dx in (-_h, _h):
-            for dy in (-_h, _h):
-                q = _Pt(cx + dx, cy + dy)
-                d = _inner.exterior.distance(q)
-                if not _inner.contains(q):
-                    d = -d
-                if d < _worst:
-                    _worst, _who = d, (P.COLUMNS[i], r)
-    check("the square piece's corners stay off the lip, on every cell",
-          _worst > 0.0,
-          f"{_worst:.2f} mm of flat to spare at the tightest, column "
-          f"{_who[0]}; a corner is {_h * np.sqrt(2):.2f} mm from the centre "
-          f"against a skirt's {skirt_r:.2f}")
+    # The check that used to live here probed the four CORNERS of piece 6's
+    # square base against the raised lip, because a corner landing on the lip
+    # would rock the piece and the circular probe above could not see it.
+    # The base is round now and sits inside the same 8.75 skirt as every
+    # other piece, so the probe above covers it and there is nothing left
+    # here to special-case.
 
     check(f"all {sum(P.ROWS)} cells have a clear seat",
           not inside.any(),
