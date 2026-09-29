@@ -92,28 +92,32 @@ What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
 | `board-body.stl` + `board-numerals.stl` | 1 | PLA red + jade white | the board; two files, one object |
-| `game-pieces-A.stl` | 1 | PLA | **piece 1** — player A, 11 counters |
-| `game-pieces-B.stl` | 1 | PLA | **piece 2** — player B, 11 crowns |
-| `game-pieces-C.stl` | 1 | PLA | **piece 3** — player C, 11 saucers |
-| `game-pieces-D.stl` | 1 | PLA | **piece 4** — player D, 11 cogs |
-| `plate-runners-x3.stl` | 1 | PLA or PETG | **piece 5** — the shared neutral runners |
+| `pieces-1-counter-x11.stl` | 1 | PLA | **piece 1** — 11 counters, one per column |
+| `pieces-2-crown-x11.stl` | 1 | PLA | **piece 2** — 11 crowns |
+| `pieces-3-saucer-x11.stl` | 1 | PLA | **piece 3** — 11 saucers |
+| `pieces-4-cog-x11.stl` | 1 | PLA | **piece 4** — 11 cogs |
+| `pieces-5-runner-x11.stl` | 1 | PLA | **piece 5** — 11 runners, if that shape is a player's set |
+| `plate-runners-x3.stl` | 1 | PLA or PETG | **piece 5** — the 3 shared neutral runners, which is what the rules ask for |
 | `plate-active-body-x4.stl` | 1 | PLA, jade white | **piece 6** — the white part of four markers; load with the accent plate |
 | `plate-active-accent-x4.stl` | 1 | PLA, red | **piece 6** — the four red caps, in register with the body plate |
 
 ### The piece numbers
 
 Every piece has a number, and it is the same number in conversation, in the
-report `build.py` prints, in the STL notes and in the catalogue render. See
+report `build.py` prints, in the STL **filenames**, in the STL notes and in
+the catalogue render. The set plates used to be named by the player's letter
+(`game-pieces-B.stl`), which tells you nothing without a lookup; they lead
+with the piece number now. See
 `renders/09-piece-catalogue.png`, or `renders/piece-<n>-<style>.png` for one
 on its own.
 
 | # | Shape | Whose | One piece | The printable set |
 | --- | --- | --- | --- | --- |
-| **1** | counter | player A | `piece-counter.stl` | `game-pieces-A.stl` |
-| **2** | crown | player B | `piece-crown.stl` | `game-pieces-B.stl` |
-| **3** | saucer | player C | `piece-saucer.stl` | `game-pieces-C.stl` |
-| **4** | cog | player D | `piece-cog.stl` | `game-pieces-D.stl` |
-| **5** | runner | shared | `piece-runner.stl` | `plate-runners-x3.stl` |
+| **1** | counter | player A | `piece-counter.stl` | `pieces-1-counter-x11.stl` |
+| **2** | crown | player B | `piece-crown.stl` | `pieces-2-crown-x11.stl` |
+| **3** | saucer | player C | `piece-saucer.stl` | `pieces-3-saucer-x11.stl` |
+| **4** | cog | player D | `piece-cog.stl` | `pieces-4-cog-x11.stl` |
+| **5** | runner | shared | `piece-runner.stl` | `plate-runners-x3.stl`, or `pieces-5-runner-x11.stl` |
 | **6** | active | one each | `piece-active-body` + `-accent` | `plate-active-body-x4` + `-accent-x4` |
 
 Pieces 1 to 5 are 17.5 mm across and 8.45 mm tall, to the micron, and any of

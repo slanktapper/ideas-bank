@@ -163,14 +163,24 @@ def export_stls(verbose=True):
     save(active_cap, "piece-active-accent.stl", "PLA",
          f"piece {B.piece_number('active')} -- RED part: the octagon cap, "
          f"under the white lip")
-    for lab, style, m in zip(P.PLAYER_LABELS, P.PLAYER_STYLES, pieces):
+    # A FULL SET OF ELEVEN FOR EVERY PLAYABLE SHAPE, named by PIECE NUMBER.
+    # They used to be game-pieces-A..D, which is the player's letter, and a
+    # letter tells you nothing without a lookup -- this project's own rule is
+    # that every note leads with the number, and the filenames were the last
+    # place still ignoring it.
+    #
+    # The runner gets an eleven-up as well as its three. Three is what the
+    # rules want of a NEUTRAL runner; eleven is what you need if you are
+    # using that shape as a fourth player's markers instead, which is a
+    # reasonable thing to want given it is the nicest of the five to hold.
+    for style, m in list(zip(P.PLAYER_STYLES, pieces)) + [("runner", runner)]:
+        n = B.piece_number(style)
         save(B.build_plate(m, P.MARKERS_PER_PLAYER),
-             f"game-pieces-{lab}.stl", "PLA",
-             f"piece {B.piece_number(style)} -- player {lab}: "
-             f"{P.MARKERS_PER_PLAYER} {style}s, one per column")
+             f"pieces-{n}-{style}-x{P.MARKERS_PER_PLAYER}.stl", "PLA",
+             f"piece {n} -- {P.MARKERS_PER_PLAYER} {style}s, one per column")
     save(B.build_plate(runner, P.RUNNERS), "plate-runners-x3.stl",
-         "PLA", f"piece {B.piece_number('runner')} -- the shared runners "
-         f"({P.RUNNERS})")
+         "PLA", f"piece {B.piece_number('runner')} -- the {P.RUNNERS} shared "
+         f"neutral runners, which is what the rules ask for")
     sp = 2 * P.PEG_MAX_R + 6.0
     save(B.build_plate(active_body, P.ACTIVES, spacing=sp),
          f"plate-active-body-x{P.ACTIVES}.stl", "PLA",
