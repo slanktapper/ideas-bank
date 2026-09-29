@@ -80,23 +80,32 @@ height is exactly 6.30 mm per piece, every time.
 Two things follow from male-up that were not obvious going in. The board has
 **no through-holes at all**, which retires a whole class of defect. And the
 seat is a 3.0-to-8.3 mm annulus rather than the rim of a ring, which is a far
-steadier thing for a 16.5 mm piece to stand on — which in turn is why the posts
+steadier thing for a 14.5 mm piece to stand on — which in turn is why the posts
 can be only 2 to 3 mm long.
 
-**Four shapes, one interface.** Each player gets a different piece: a
-counter, a crown, a saucer and a cog. What none of them may change is the
-socket underneath, the post on top, the skirt that seats and the 6.30 mm
-body — player A stacks on player B, so every piece has to accept every other
-one and add exactly the same height doing it. `test_fit.py` builds all
-sixteen pairings and measures the rise.
+**Five shapes, one interface, one envelope.** Each player gets a different
+piece — a counter, a crown, a saucer and a cog — and the runner is the fifth.
+What none of them may change is the socket underneath, the post on top, the
+skirt that seats and the 6.30 mm body: player A stacks on player B, so every
+piece has to accept every other one and add exactly the same height doing it.
+`test_fit.py` builds all twenty-five pairings and measures the rise.
+
+**And none of them may change its size.** Every piece is 14.5 mm across and
+8.45 mm tall, to the micron. That is a rule rather than a ceiling, and the
+difference matters: a ceiling is passed just as happily by a piece 2 mm short
+of it, which is exactly how the runner stayed 16.5 x 10.45 through a resize
+that took every marker down to 14.5 x 8.45. Nothing caught it, because every
+piece rule in `test_fit.py` was written over the four player styles and the
+runner is not one of them. The checks now run over `B.PIECE_STYLES`, all five,
+and they measure the SPREAD of width and height rather than their maximum.
 
 What that leaves free is the silhouette, and it is less than it looks:
 
 - the top face is what the **next** piece stands on, so it cannot taper away
   to a point. It has to keep an unbroken seating ring 3 mm wide, which puts a
   floor of about 6 mm on the top radius. No cones, no spires — the saucer's
-  dome is shallow because 8.25 down to 6.10 is the whole budget;
-- nothing may exceed 8.25 mm of radius, or pieces touch in adjacent cells;
+  dome is shallow because 7.25 down to 5.95 is the whole budget;
+- nothing may exceed 7.25 mm of radius, or pieces touch in adjacent cells;
 - printed flat with no supports, so no surface may overhang more than 45
   degrees. A profile may widen going up by at most a millimetre of radius per
   millimetre of height, and the saucer's brim sits exactly on that line.
@@ -105,10 +114,12 @@ Anything beyond the lathe is **cut, never added**. The crown's points are six
 45-degree cones taken out of its rim, and the cog's flutes are ten vertical
 cylinders taken out of its side: both leave a part that narrows all the way
 up, which is the condition for printing without support. The saucer's base is
-6.60 where the others are 8.25, because a brim has to stand proud of what it
-sits on or the thing reads as a bell.
+6.10 where the others are 7.25, because a brim has to stand proud of what it
+sits on or the thing reads as a bell. The runner is the one piece that needs
+no cutting at all: three square-edged tiers and two deep grooves, all of it
+turned, with the flares at 43.5 degrees so they carry themselves.
 
-**The pieces are counters, not pegs.** 16.5 mm across and 8.45 mm tall: a
+**The pieces are counters, not pegs.** 14.5 mm across and 8.45 mm tall: a
 squat disc you pick up with two fingers and can see past. The first version
 was 13.2 x 12.6 — taller than it was wide — and read as a peg standing on the
 board rather than a counter sitting in it. A third off the height and a
@@ -315,9 +326,9 @@ the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
 285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
-**205 g** — 158 g of board at 10% infill plus 47 g of solid pieces.
+**203 g** — 158 g of board at 10% infill plus 45 g of solid pieces.
 
-`test_fit.py` passes 99 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 101 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same
@@ -412,8 +423,8 @@ coming off a printer. There are two test prints for that, in order:
   like off the printer — colour bleed, a seam, purge staining — is a thing only
   a print will tell us. **The stub answered it: the first stub printed clean**,
   numbers and lip both. What it was printed against was the narrower version
-  of 10, 11 and 12 and the taller pieces, so a second one is worth 22 g before
-  the board itself goes on.
+  of 10, 11 and 12 and the 16.5 mm pieces, so a second one is worth a few
+  grams before the board itself goes on.
 - **Empty lower half.** The numbers are all at the top, so the bottom of the
   octagon is bare plate. It looks deliberate in plan; whether it looks
   unbalanced on a table is a question for a print. The lip helps.

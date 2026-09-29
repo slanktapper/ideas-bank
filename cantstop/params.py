@@ -460,7 +460,17 @@ PEG_SEGS = 64
 #   - nothing may exceed PEG_MAX_R, or pieces touch in adjacent cells.
 #   - printed flat with no supports, so no surface may overhang more than 45
 #     degrees: a profile may widen going up by at most one millimetre of
-#     radius per millimetre of height. test_fit.py measures this on all four.
+#     radius per millimetre of height.
+#
+# ONE ENVELOPE, EVERY PIECE. Those rules are not "the four player shapes plus
+# whatever the runner does". Every piece on this board is 2 * PEG_MAX_R across
+# and PEG_BODY_H + PEG_POST_H tall, without exception, and test_fit.py
+# measures all five against the same numbers rather than the markers against
+# each other. The runner spent a while wider and taller than a marker and it
+# was not a decision -- it simply kept the old size through a resize that took
+# the markers down, and no check was looking. What tells a runner apart is its
+# silhouette and its colour, which is a job the bands do without costing it a
+# millimetre of clearance on the board's tightest row.
 #
 # Anything added on top of the lathe is cut, never added: a vertical cylinder
 # taken out of the side leaves a scallop, and scallops are self-supporting
@@ -535,23 +545,30 @@ COG_CUT_Z  = 1.40
 
 # The runner (the shared neutral marker you advance during a turn, before you
 # decide to bank) uses the identical pin/socket interface so it still stacks,
-# but carries two raised bands and stands taller so it is unmistakable across
-# the table.
-RUNNER_BODY_H = 8.30
+# and now the identical envelope as well: it is a marker's size to the micron.
+# What makes it unmistakable is the shape -- three square-edged tiers cut by
+# two deep grooves, against the markers' smooth waisted bodies -- and the
+# neutral colour, not bulk.
+#
+# It used to stand 16.5 x 10.45 against a marker's 14.5 x 8.45, and the bands
+# flared at 67 degrees from vertical, which is an overhang the machine would
+# have had to bridge or droop through. No check caught either, because every
+# piece rule was written over PLAYER_STYLES and the runner is not one. Both
+# are fixed here: the flares are 43.5 degrees, and the checks now run over all
+# five pieces.
+RUNNER_BODY_H = PEG_BODY_H    # the rule, in the one place it could be broken
 RUNNER_BODY_PROFILE = [
-    (8.25, 0.00),
-    (8.25, 0.75),
-    (7.16, 1.75),
-    (8.10, 2.15),   # lower band
-    (8.10, 2.90),
-    (7.16, 3.30),
-    (6.80, 4.15),
-    (7.16, 5.00),
-    (8.10, 5.40),   # upper band
-    (8.10, 6.15),
-    (7.16, 6.55),
-    (7.38, 7.55),
-    (7.38, 8.30),
+    (7.25, 0.00),
+    (7.25, 0.75),   # tier 1 is the skirt
+    (6.30, 1.35),   # groove, 0.95 deep -- the same relief the old bands had
+    (6.30, 1.70),
+    (7.25, 2.70),   # tier 2, flaring at 43.5 degrees so it self-supports
+    (7.25, 3.25),
+    (6.30, 3.85),   # groove
+    (6.30, 4.20),
+    (7.25, 5.20),   # tier 3, the same flare
+    (7.25, 5.75),
+    (6.45, 6.30),   # in to the top face, which stays a 3.50 mm seating ring
 ]
 
 # --------------------------------------------------------------------------

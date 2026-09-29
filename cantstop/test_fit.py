@@ -361,12 +361,13 @@ def main():
     # of it as the pad is wide on a lattice. The rule is that the CONTACT is
     # wide, not that the skirt is wholly supported -- a skirt that overhangs
     # its pad a little still sits on a generous annulus.
-    # Four shapes now, so every one of these is the worst of the four. The
-    # widest is what has to clear a neighbour; the narrowest BASE is what has
-    # to seat, and they are not the same piece -- the saucer's brim overhangs
-    # a base 1.65 mm narrower than it.
-    skirt_r = max(B.piece_max_r(s) for s in P.PLAYER_STYLES)
-    worst = min(P.PLAYER_STYLES, key=B.piece_seat_r)
+    # FIVE shapes, so every one of these is the worst of the five -- the
+    # runner included, which is the whole point of reading B.PIECE_STYLES
+    # here rather than P.PLAYER_STYLES. The widest is what has to clear a
+    # neighbour; the narrowest BASE is what has to seat, and they are not the
+    # same piece -- the saucer's brim overhangs a base 1.15 mm narrower.
+    skirt_r = max(B.piece_max_r(s) for s in B.PIECE_STYLES)
+    worst = min(B.PIECE_STYLES, key=B.piece_seat_r)
     base_r = B.piece_seat_r(worst)
     seat_r = base_r if SLAB else min(base_r, P.PAD_OD / 2)
     check("the seat is a wide annulus, not a rim",
@@ -441,8 +442,7 @@ def main():
               f"exists to avoid")
     print("\nwall thickness")
     rs = P.PEG_SOCKET_D / 2
-    for name, prof in ([(s, B.piece_profile_of(s)) for s in P.PLAYER_STYLES]
-                       + [("runner", P.RUNNER_BODY_PROFILE)]):
+    for name, prof in [(s, B.piece_profile_of(s)) for s in B.PIECE_STYLES]:
         walls = [r - rs for r, dz in prof if dz <= P.PEG_SOCKET_DEPTH]
         check(f"{name}: wall between socket and outside stays printable",
               min(walls) >= 1.20,
@@ -451,8 +451,8 @@ def main():
     # FOUR SHAPES, ONE INTERFACE. Player A stacks on player B, so every piece
     # has to accept every other and add exactly the same height doing it. The
     # silhouette is the only thing a style may change.
-    print(f"\n{len(P.PLAYER_STYLES)} shapes, one interface")
-    built = {s: B.build_player_piece(s) for s in P.PLAYER_STYLES}
+    print(f"\n{len(B.PIECE_STYLES)} shapes, one interface, ONE ENVELOPE")
+    built = {s: B.build_piece(s) for s in B.PIECE_STYLES}
     tall = {s: m.bounds[1][2] - m.bounds[0][2] for s, m in built.items()}
     check("every piece is the same height, to the micron",
           max(tall.values()) - min(tall.values()) < 1e-6
@@ -470,6 +470,14 @@ def main():
           max(wide.values()) <= 2 * P.PEG_MAX_R + 1e-6,
           f"widest is the {max(wide, key=wide.get)} at "
           f"{max(wide.values()):.2f} mm against a {2*P.PEG_MAX_R:.2f} limit")
+    # A CEILING IS NOT THE RULE. The rule is that they are all the same size,
+    # and a ceiling is passed just as happily by a piece that is 2 mm short of
+    # it -- which is how the runner stayed the odd one out. So measure the
+    # spread, not the maximum.
+    check("every piece is the same width, to the micron",
+          max(wide.values()) - min(wide.values()) < 1e-6
+          and abs(max(wide.values()) - 2 * P.PEG_MAX_R) < 1e-6,
+          f"{max(wide.values()):.2f} mm across, all {len(wide)} of them")
     # Measured on the mesh, not on the profile: the crown's notches are cut
     # into its top face after the lathe, so the profile says r8.10 and the
     # UNBROKEN ring is a good deal less than that. What the next piece stands
@@ -490,7 +498,7 @@ def main():
     check("every shape keeps an unbroken seating ring for what stacks on it",
           rings[thin] - P.PEG_POST_D / 2 >= 3.0,
           "rings out to "
-          + ", ".join(f"{s} r{rings[s]:.2f}" for s in P.PLAYER_STYLES)
+          + ", ".join(f"{s} r{rings[s]:.2f}" for s in B.PIECE_STYLES)
           + f"; tightest is the {thin} at "
           f"{rings[thin] - P.PEG_POST_D/2:.2f} mm wide")
 
@@ -500,7 +508,7 @@ def main():
     # limit. Measured on the profiles, because it is the one rule a new
     # silhouette will break without anything else noticing.
     worst_over, who = 0.0, None
-    for s in P.PLAYER_STYLES:
+    for s in B.PIECE_STYLES:
         prof = B.piece_profile_of(s)
         for (r0, z0), (r1, z1) in zip(prof, prof[1:]):
             if r1 > r0 and z1 > z0 and (r1 - r0) / (z1 - z0) > worst_over:
@@ -512,8 +520,8 @@ def main():
 
     # and the thing all of that is for: any of them on any of them
     heights = []
-    for a in P.PLAYER_STYLES:
-        for b in P.PLAYER_STYLES:
+    for a in B.PIECE_STYLES:
+        for b in B.PIECE_STYLES:
             lower = built[a].copy()
             upper = R_placed(built[b], P.PEG_BODY_H)
             heights.append(upper.bounds[1][2] - lower.bounds[1][2])

@@ -149,11 +149,11 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **205 g**: ~158 g board, body and numerals together
+A full set is roughly **203 g**: ~158 g board, body and numerals together
 (6 mm slab at 10% infill),
-~42 g of markers (11 each of four shapes), ~5 g of runners (3). A marker is 14.5 mm across and
-8.45 mm tall, a runner 16.5 x 10.45, and every stacked piece adds exactly
-6.30 mm. The board is
+~42 g of markers (11 each of four shapes), ~3 g of runners (3). A marker is 14.5 mm across and
+8.45 mm tall and so is a runner — every piece on this board is the same size
+to the micron — and every stacked piece adds exactly 6.30 mm. The board is
 285.0 × 285.0 × 9.2 mm. Note that the board is a **two-filament** part, so
 the envelope that applies is the H2D's **dual-nozzle** one — 300 × 320, not
 the 325 × 320 you get with a single nozzle. It fits with 15 mm spare in X and
@@ -182,8 +182,7 @@ interchangeable in every way that matters: any one stacks on any other and
 adds the same 6.30 mm.
 
 **Pieces print the right way up — skirt down, post up.** The first layer is
-the full 14.5 mm skirt (16.5 on a runner), which is a generous footprint, so
-no brim is needed.
+the full 14.5 mm skirt, which is a generous footprint, so no brim is needed.
 
 The socket faces downward and is closed by a **45° cone**, not a flat ceiling.
 That is deliberate: a flat roof would be a 6.24 mm bridge over thin air part
@@ -209,7 +208,7 @@ from post to skirt becomes a flat overhang ring and genuinely needs support.
 | Walls | 3 | 3 |
 | Top/bottom layers | 3 | 3 |
 | Infill | **10%** | 20% |
-| Brim | see below | none needed — 16.5 mm skirt |
+| Brim | see below | none needed — 14.5 mm skirt |
 | Supports | **none** | **none** |
 
 **The 10% is the design, not a suggestion.** A solid plate's cost is its
@@ -286,7 +285,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 99 checks, ~90 s
+python3 test_fit.py    # 101 checks, ~90 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

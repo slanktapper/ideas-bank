@@ -99,8 +99,9 @@ SEAT_Z = B.seat_z()
 def place(mesh, col: int, row: int, level: int = 0, below=()):
     """Drop a piece into cell (column 2..12, row 0-based), stacked `level` high.
 
-    `below` lists the body heights of the pieces already in the cell, so a
-    marker landing on top of a taller runner still seats correctly.
+    `below` lists the body heights of the pieces already in the cell. Every
+    piece is PEG_BODY_H now, runner included, so they are all the same -- but
+    the argument stays, because the day one is not is the day this is wrong.
     """
     i = P.COLUMNS.index(col)
     x, y = B.cell_xy(i, row)
@@ -257,7 +258,7 @@ def export_renders(board_body, numerals, pieces, runner, stub_body,
         dict(text=f"marker \u2014 {P.MARKERS_PER_PLAYER} per player, "
                   f"{P.PLAYERS} colours",
              px=tuple(anchors[0]), to=(0.05 * W, 0.84 * H), align="left"),
-        dict(text=f"runner \u2014 {P.RUNNERS} shared, banded and taller",
+        dict(text=f"runner \u2014 {P.RUNNERS} shared, banded, a marker's size",
              px=tuple(anchors[1]), to=(0.33 * W, 0.93 * H), align="left"),
         dict(text="the same marker, sectioned",
              px=tuple(anchors[2]), to=(0.66 * W, 0.84 * H), align="left"),
@@ -283,7 +284,7 @@ def export_renders(board_body, numerals, pieces, runner, stub_body,
     # needs to be clearest.
     board_bit = S.union_all([c for c in (collar, rail) if c is not None])
     stack_parts = []
-    heights = [P.PEG_BODY_H, P.PEG_BODY_H, P.RUNNER_BODY_H]
+    heights = [P.PEG_BODY_H, P.PEG_BODY_H, P.RUNNER_BODY_H]   # all equal
     for lvl, (mesh, col) in enumerate([(marker, C_PLAYERS[0]),
                                        (marker, C_PLAYERS[1]),
                                        (runner, C_RUNNER)]):

@@ -966,10 +966,24 @@ def build_player_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
     raise ValueError(style)
 
 
+# Every piece on the board, not just the four a player owns. The runner
+# obeys the same envelope rules as a marker, so it belongs in the same list
+# -- the checks that read this are the ones that would have caught it being
+# 2 mm wider and 2 mm taller than everything else for as long as it was.
+PIECE_STYLES = list(P.PLAYER_STYLES) + ["runner"]
+
+
 def piece_profile_of(style: str):
     """The lathe profile behind a style, for the printability checks."""
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
-            "saucer": P.SAUCER_BODY_PROFILE, "cog": P.COG_BODY_PROFILE}[style]
+            "saucer": P.SAUCER_BODY_PROFILE, "cog": P.COG_BODY_PROFILE,
+            "runner": P.RUNNER_BODY_PROFILE}[style]
+
+
+def build_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
+    """Any piece by name: the four player shapes, or the runner."""
+    return (build_runner(segs) if style == "runner"
+            else build_player_piece(style, segs))
 
 
 def build_marker(segs: int | None = None) -> trimesh.Trimesh:
