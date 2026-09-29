@@ -725,63 +725,48 @@ COG_ROOT_R = 7.45    # how deep the slots go: 1.30 mm of tooth, which is a
 COG_SLOT_W = 2.60    # 18.7 degrees of gap at the tip against 17.3 of tooth,
                      # so the two read as the same size
 
-# active -- THE ACTIVE PLAYER'S PIECE, and the first one that does not stack.
+# active -- THE ACTIVE PLAYER'S PIECE, and the only one that does not stack.
 #
 # It marks whose turn it is, so it wants to be seen across the table and it
-# wants to be unmistakable from the markers: tall where they are squat, and
-# open where they are solid. One per player, in their colour.
+# wants to be unmistakable from the markers. Everything else on this board is
+# round, squat and solid; this is SQUARE, tall, and open.
 #
 # No post on top. Nothing lands on it -- it is the end of a stack by
 # construction -- so it owes nothing to a seat above it and it is free of the
 # 8.45 mm height that makes stack pitch exact. It keeps everything on the way
 # IN: the same socket, the same whole flat bottom, the same 17.5 mm footprint.
 #
-# Shape: a flared foot, a slender shaft, and a head of three tiers of spikes
-# that shrink and rotate as they climb, with a finial on the axis. The tiers
-# are the same shape at 0.70 the size each time, which is the nearest thing
-# to a fractal that survives an 0.4 mm nozzle -- a real branching tree at this
-# scale ends in twigs thinner than a line width, and they snap.
-ACTIVE_H = 20.00          # 2.4 times a marker. It is meant to stand out.
-# The lathe is a stepped SPIRE: foot, shaft, head, and then three columns
-# each narrower than the last, with a flat ledge at every step. Each ledge is
-# what a tier of spikes stands on -- a spike has to land on something or the
-# union leaves it floating in the air, which is exactly what the first
-# version did.
-ACTIVE_BODY_PROFILE = [
-    (8.75, 0.00),
-    (8.75, 0.70),   # the foot: full width, and the flat bottom the contract
-    (7.40, 1.50),   # wants. Narrowing upward the whole way, so no support.
-    (4.70, 2.90),
-    (4.70, 4.30),
-    (3.60, 6.60),   # the shaft. 3.60 keeps 1.20 of wall round the socket
-    (3.60, 11.40),  # roof on the way past it.
-    (6.60, 14.60),  # flaring back out at 43 degrees to carry the head
-    (6.60, 15.20),  # the head's rim
-    (4.30, 15.20),  # ledge -- tier 1 stands on this
-    (4.30, 17.00),
-    (2.60, 17.00),  # ledge -- tier 2
-    (2.60, 18.40),
-    (1.30, 18.40),  # ledge -- tier 3
-    (1.30, 19.10),  # and the finial caps it
-]
-ACTIVE_TIERS = [
-    # (ring radius, spikes, spike scale, z of the ledge it stands on)
-    (5.20, 8, 1.00, 15.20),
-    (3.40, 6, 0.70, 17.00),
-    (1.90, 5, 0.49, 18.40),
-]
-ACTIVE_SPIKE = [          # (r, z) of one spike at scale 1, from its own floor
-    (0.95, 0.00),         # -- the crown's cone on a cone, shrunk
-    (0.42, 1.55),
-    (0.72, 2.40),
-    (0.66, 2.90),
-]
-ACTIVE_FINIAL = [         # the tip, on the axis
-    (1.30, 0.00),
-    (0.55, 0.90),
-    (0.95, 1.45),
-    (0.00, 1.70),
-]
+# SQUARE IS SAFE, and it is worth saying why rather than hoping. Columns are
+# 22.0 mm apart and the tightest row pitch is 19.58, so two cells are never
+# closer than 19.58 in Y or 22.0 in X -- and an axis-aligned 17.5 mm square
+# clears both. What a square DOES reach further into is the corner: 12.37 mm
+# from the cell centre against a circle's 8.75, which is why test_fit.py puts
+# the footprint on all 83 cells and checks the corners stay off the lip.
+ACTIVE_PLATE   = 17.50    # the base: a full-width plate...
+ACTIVE_PLATE_H = 1.60
+ACTIVE_PLATE_R = 1.20     # corner radius, so it is square and not sharp
+ACTIVE_BLOCK   = 11.00    # ...and a block on it holding the socket. 5.50 of
+ACTIVE_BLOCK_H = 6.00     # half-width against a 3.12 bore is 2.38 of wall.
+
+# THE TOWER IS A GOLDEN-RATIO WIREFRAME. Four legs rising from the block's
+# corners, tied by a square frame at every stage, and each stage is the one
+# below divided by phi -- in width AND in height, so every stage is the same
+# shape as the last and the whole thing is one form repeated five times at
+# 61.8% each time.
+#
+# That ratio is also what makes it printable, which is the happy part. The
+# legs lean inward by (1 - 1/phi) of their half-diagonal over ACTIVE_RISE
+# times their half-width, which comes out at 22 degrees from vertical -- half
+# of what the printer would refuse. And the frames span 2a, which shrinks by
+# phi as well: the widest bridge in the tower is the bottom one at 5.7 mm,
+# against the 3.0 mm the socket roof already bridges on this same piece.
+PHI            = 1.6180339887
+ACTIVE_TOWER_A = 4.20     # half-width of the bottom frame
+ACTIVE_TIERS   = 4        # frames, each 1/phi the one below
+ACTIVE_RISE    = 1.60     # a stage rises this many times its own half-width
+ACTIVE_BAR     = 1.20     # square section of every leg and every frame bar
+ACTIVE_FINIAL_H = 1.40    # a little pyramid to finish it
+
 ACTIVES = 4               # one per player
 
 # The runner (the shared neutral marker you advance during a turn, before you

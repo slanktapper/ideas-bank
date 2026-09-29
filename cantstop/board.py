@@ -613,36 +613,116 @@ def _terminal_profile(body_profile) -> list[tuple[float, float]]:
     return prof
 
 
-def _spike(prof, scale: float, at_r: float, angle: float, z0: float,
-           segs: int | None = None) -> trimesh.Trimesh:
-    """One waisted spike from a (r, z) profile, scaled and placed."""
-    pts = [(r * scale, z0 + z * scale) for r, z in prof]
-    z_lo, z_hi = pts[0][1], pts[-1][1]
-    m = S.lathe(pts + [(0.0, z_hi), (0.0, z_lo)], segs=segs or P.PEG_SEGS)
-    m.apply_translation((at_r * np.cos(angle), at_r * np.sin(angle), 0.0))
+def _bar(p0, p1, w: float, over: float = 0.0) -> trimesh.Trimesh:
+    """A square-section bar between two points in space, any lean.
+
+    `over` runs it past both ends. Members that stop exactly ON the face of
+    the member they meet leave the boolean a tangent contact and a handful of
+    sliver triangles floating free of the solid; a millimetre of overlap and
+    the union is one body.
+    """
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    d = p1 - p0
+    length = float(np.linalg.norm(d))
+    if over:
+        u = d / length
+        p0, p1 = p0 - u * over, p1 + u * over
+        length += 2.0 * over
+    m = trimesh.creation.box(extents=(w, w, length))
+    m.apply_transform(trimesh.geometry.align_vectors([0.0, 0.0, 1.0],
+                                                     d / length))
+    m.apply_translation((p0 + p1) * 0.5)
     return m
 
 
-def build_active(segs: int | None = None) -> trimesh.Trimesh:
-    """Piece 6: the active player's marker. Socket below, no post above.
+def active_tiers() -> list[tuple[float, float]]:
+    """(half-width, z) of every frame in the tower, bottom to top.
 
-    The head is three tiers of the same spike at 0.70 the size each time,
-    each tier rotated half a step off the one below so nothing lines up and
-    the thing reads as intricate from every side. That is as fractal as an
-    0.4 mm nozzle allows -- a real branching tree at this scale ends in twigs
-    thinner than a line width, and they snap.
+    Each stage is the one below divided by phi, in width and in height, so
+    the whole tower is one shape repeated at 61.8% a stage.
+    """
+    a, z = P.ACTIVE_TOWER_A, P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H
+    out = [(a, z)]
+    for _ in range(P.ACTIVE_TIERS - 1):
+        z += a * P.ACTIVE_RISE
+        a /= P.PHI
+        out.append((a, z))
+    return out
+
+
+def active_leg_lean() -> float:
+    """Steepest lean of a tower leg, as dr/dz -- the overhang it leaves."""
+    tiers = active_tiers()
+    return max(abs(a1 - a0) * np.sqrt(2.0) / (z1 - z0)
+               for (a0, z0), (a1, z1) in zip(tiers, tiers[1:]))
+
+
+def _socket_void(segs: int | None = None) -> trimesh.Trimesh:
+    """The hole a post goes into: mouth chamfer, bore, 45 degree cone roof.
+
+    Cut rather than lathed into a profile, because this piece is SQUARE and
+    there is no profile to put it in.
+    """
+    rs = P.PEG_SOCKET_D * 0.5
+    sc = P.PEG_SOCKET_CHAMFER
+    top = P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H
+    z_roof = min(P.PEG_SOCKET_DEPTH + rs, top - P.PEG_SOCKET_ROOF)
+    r_flat = max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
+    prof = [(0.0, -0.5), (rs + sc, -0.5), (rs + sc, 0.0), (rs, sc),
+            (rs, P.PEG_SOCKET_DEPTH)]
+    if r_flat > 1e-9:
+        prof.append((r_flat, z_roof))
+    prof += [(0.0, z_roof)]
+    return S.lathe(prof, segs=segs or P.PEG_SEGS)
+
+
+def active_socket_bridge() -> float:
+    """Span of the flat left at the top of this piece's truncated roof."""
+    rs = P.PEG_SOCKET_D * 0.5
+    top = P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H
+    z_roof = min(P.PEG_SOCKET_DEPTH + rs, top - P.PEG_SOCKET_ROOF)
+    return 2.0 * max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
+
+
+def build_active(segs: int | None = None) -> trimesh.Trimesh:
+    """Piece 6: the active player's marker. Square, open, and it takes no
+    stack -- a socket below and nothing on top.
+
+    A plate, a block with the socket in it, and a wireframe tower: four legs
+    leaning in from the block's corners, tied by a square frame at every
+    stage, each stage 1/phi of the one below in width and in height.
     """
     segs = segs or P.PEG_SEGS
-    parts = [S.lathe(_terminal_profile(P.ACTIVE_BODY_PROFILE), segs=segs)]
-    turn = 0.0
-    for at_r, n, scale, z0 in P.ACTIVE_TIERS:
-        for k in range(n):
-            a = turn + k * 2.0 * np.pi / n
-            parts.append(_spike(P.ACTIVE_SPIKE, scale, at_r, a, z0, segs))
-        turn += np.pi / n          # half a step, so no tier lines up
-    parts.append(_spike(P.ACTIVE_FINIAL, 1.0, 0.0, 0.0,
-                        P.ACTIVE_BODY_PROFILE[-1][1], segs))
-    return S.union_all(parts)
+    w, b = P.ACTIVE_BAR, P.ACTIVE_BAR
+    parts = [
+        S.rounded_plate(0.0, 0.0, P.ACTIVE_PLATE, P.ACTIVE_PLATE,
+                        P.ACTIVE_PLATE_H, P.ACTIVE_PLATE_R),
+        S.rounded_plate(0.0, 0.0, P.ACTIVE_BLOCK, P.ACTIVE_BLOCK,
+                        P.ACTIVE_BLOCK_H, P.ACTIVE_PLATE_R,
+                        z0=P.ACTIVE_PLATE_H),
+    ]
+    corners = [(1, 1), (1, -1), (-1, -1), (-1, 1)]
+    tiers = active_tiers()
+    # frames centred ON the tier height, legs run a bar's width past both
+    # ends, so every joint is an overlap and never a tangent
+    for a, z in tiers:
+        for k in range(4):
+            sx, sy = corners[k]
+            tx, ty = corners[(k + 1) % 4]
+            parts.append(_bar((sx * a, sy * a, z), (tx * a, ty * a, z), w))
+    for (a0, z0), (a1, z1) in zip(tiers, tiers[1:]):
+        for sx, sy in corners:
+            parts.append(_bar((sx * a0, sy * a0, z0),
+                              (sx * a1, sy * a1, z1), w, over=b))
+    # the finial: a little pyramid capping the top frame
+    a_top, z_top = tiers[-1]
+    z_cap = z_top + b / 2
+    parts.append(S.lathe([(a_top + b / 2, z_cap - b / 2),
+                          (0.0, z_cap + P.ACTIVE_FINIAL_H),
+                          (0.0, z_cap - b / 2)], segs=4))
+    solid = S.union_all(parts)
+    return trimesh.boolean.difference([solid, _socket_void(segs)],
+                                      engine="manifold")
 
 
 def socket_bridge() -> float:
@@ -811,9 +891,18 @@ def piece_profile_of(style: str):
     """
     if style == "saucer":
         return _saucer_profile()
+    if style == "active":
+        # not a lathe at all -- a square plate, a square block, a wireframe
+        # tower. What the wall and overhang checks want from a "profile" is
+        # the INSCRIBED half-width at each height, and for a square that is
+        # exactly what half the side is.
+        return [(P.ACTIVE_PLATE / 2, 0.00),
+                (P.ACTIVE_PLATE / 2, P.ACTIVE_PLATE_H),
+                (P.ACTIVE_BLOCK / 2, P.ACTIVE_PLATE_H),
+                (P.ACTIVE_BLOCK / 2, P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H)]
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
-            "cog": P.COG_BODY_PROFILE, "runner": P.RUNNER_BODY_PROFILE,
-            "active": P.ACTIVE_BODY_PROFILE}[style]
+            "cog": P.COG_BODY_PROFILE,
+            "runner": P.RUNNER_BODY_PROFILE}[style]
 
 
 def build_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:

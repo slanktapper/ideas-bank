@@ -104,7 +104,7 @@ Each carries a **number**, which is its position in `PIECE_STYLES`:
 | 3 | saucer | player C | yes |
 | 4 | cog | player D | yes |
 | 5 | runner | shared | yes |
-| 6 | active | one each | **no** |
+| 6 | active | one each | **no** — square, 23.0 mm tall |
 
 The numbers exist so a piece can be named in one character — in conversation,
 in a render, in a print note, in a commit message — instead of "the round
@@ -267,18 +267,41 @@ nothing about either.
   seat contract promises.
 - **5 runner** — three square-edged tiers and two deep grooves, all turned,
   with the flares at 44 degrees so they carry themselves.
-- **6 active** — the active player's marker, and the first piece that does
-  not stack. A flared foot, a slender shaft, and a head of three tiers of
-  spikes that shrink and rotate as they climb, with a finial on the axis.
-  20.8 mm tall against a marker's 8.45, one per player, in their colour.
+- **6 active** — the active player's marker, and the only piece that does not
+  stack. Everything else on this board is round, squat and solid; this is
+  **square, tall and open**. A full-width plate, a block on it holding the
+  socket, and a wireframe tower. 23.0 mm against a marker's 8.45, one per
+  player, in their colour.
 
-  The tiers are the same spike at 0.70 the size each time, each rotated half
-  a step off the one below so nothing lines up and it reads as intricate from
-  every side. That is as fractal as an 0.4 mm nozzle allows — a real
-  branching tree at this scale ends in twigs thinner than a line width, and
-  they snap. Each tier stands on a flat ledge of the lathe: the first version
-  had them floating in mid-air, which the "one watertight solid" check caught
-  as thirteen separate bodies.
+  **The tower is a golden-ratio frame.** Four legs rise from the block's
+  corners, tied by a square frame at every stage, and each stage is the one
+  below divided by φ — in width *and* in height, so every stage is the same
+  shape as the last and the whole thing is one form repeated four times at
+  61.8% each time.
+
+  That ratio is also what makes it printable, which is the happy part. The
+  legs lean in by (1 − 1/φ) of their half-diagonal over 1.6 times their
+  half-width, which is **18.7° from vertical** — less than half what the
+  printer would refuse. And the frames span 2a, which shrinks by φ as well,
+  so the widest bridge in the tower is the bottom one at 8.4 mm.
+
+  **Square is safe, and it is worth saying why rather than hoping.** Columns
+  are 22.0 mm apart and the tightest row pitch is 19.58, so two cells are
+  never closer than that — and an axis-aligned 17.5 mm square clears both,
+  because two squares miss each other when *either* axis clears. What a
+  square does reach further into is the corner: 12.37 mm from the cell centre
+  against a circle's 8.75. So `test_fit.py` puts the footprint on all 83
+  cells and checks the corners stay off the raised lip (5.40 mm to spare at
+  the tightest) as well as off each other (2.08 mm, the same as any two
+  markers).
+
+  It replaced a round version with three tiers of shrinking spikes, which
+  was fractal in the same sense but read as a pine cone. Two things that
+  version taught, both kept: every member has to *land* on something or the
+  union leaves it floating — the first attempt was thirteen separate bodies
+  — and a member that stops exactly on the face of the one it meets leaves
+  the boolean a tangent and a handful of sliver triangles, so every joint
+  here overlaps by a bar's width.
 
 Anything beyond the lathe is **cut where cutting works and added where it
 does not**, and the line between the two turned out to be sharper than it
@@ -501,7 +524,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 120 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 123 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

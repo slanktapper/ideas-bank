@@ -117,10 +117,12 @@ on its own.
 
 Pieces 1 to 5 are 17.5 mm across and 8.45 mm tall, to the micron, and any of
 them stacks on any other adding exactly 6.30 mm. **Piece 6 is the odd one
-out on purpose**: 20.8 mm tall, no post on top, so nothing stacks on it. It
-takes the same socket and the same 17.5 mm footprint, so it drops onto a
-board post or onto a marker like anything else — it is just the end of the
-stack. A number stays with its shape: a new shape takes the next free number
+out on purpose**: square, 23.0 mm tall, no post on top, so nothing stacks on
+it. It takes the same socket and the same 17.5 mm footprint, so it drops onto
+a board post or onto a marker like anything else — it is just the end of the
+stack. Being square it reaches 12.37 mm into its corners against a round
+piece's 8.75, which still clears both its neighbours and the raised lip;
+`test_fit.py` puts it on all 83 cells and measures. A number stays with its shape: a new shape takes the next free number
 rather than shuffling these, which is exactly what 6 did.
 
 and, for the test print above:
@@ -311,7 +313,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 120 checks, ~2 min
+python3 test_fit.py    # 123 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

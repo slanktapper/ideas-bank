@@ -578,6 +578,14 @@ def main():
           f"steepest {np.degrees(np.arctan(spike_over)):.0f} degrees from "
           f"vertical, on a profile that is {max(P.CROWN_SPIKE_SQUASH):.2f} "
           f"times wider along the rim than it was turned")
+    # The active piece's tower is bars in space, not a profile, so the loop
+    # above cannot see it either. A leg leans in as it rises and the lean IS
+    # the overhang.
+    check("the tower's legs lean less than the printer minds",
+          B.active_leg_lean() <= 1.0 + 1e-9,
+          f"{np.degrees(np.arctan(B.active_leg_lean())):.0f} degrees from "
+          f"vertical, and the widest frame it has to bridge is "
+          f"{2 * B.active_tiers()[0][0]:.1f} mm")
     check("nothing overhangs more than 45 degrees, so nothing needs support",
           worst_over <= 1.0 + 1e-9,
           f"steepest is the {who[0]} between z{who[1]:.2f} and z{who[2]:.2f}, "
@@ -602,6 +610,22 @@ def main():
               pitch - 2 * skirt_r >= P.PIECE_GAP_MIN - 1e-9,
               f"{pitch - 2*skirt_r:.2f} mm gap, against "
               f"{P.PIECE_GAP_MIN:.1f} asked for")
+    # A SQUARE PIECE IS A DIFFERENT QUESTION. Everything above measures a
+    # radius, and piece 6 has corners: 12.37 mm from the cell centre against
+    # a circle's 8.75. Two axis-aligned squares miss each other when EITHER
+    # axis clears, which is what saves it -- columns are 22.0 apart and the
+    # tightest row pitch is 19.58, and no two cells are closer than that in
+    # both at once. Measured rather than argued.
+    sq = P.ACTIVE_PLATE
+    pts_ = np.array([B.cell_xy(i, r) for i, r in B.all_cells()])
+    dd = np.abs(pts_[:, None, :] - pts_[None, :, :])
+    np.fill_diagonal(dd[:, :, 0], 1e9)
+    np.fill_diagonal(dd[:, :, 1], 1e9)
+    sq_gap = float((np.maximum(dd[:, :, 0], dd[:, :, 1]) - sq).min())
+    check("the square piece clears its neighbours on every cell",
+          sq_gap >= P.PIECE_GAP_MIN - 1e-9,
+          f"{sq_gap:.2f} mm at the tightest, a {sq:.1f} mm square on cells "
+          f"{P.PITCH_X:.0f} apart in x and {narrow:.2f} in y")
     check("posts clear each other up a column", P.PITCH_Y - P.POST_D >= 3.0,
           f"{P.PITCH_Y - P.POST_D:.2f} mm gap; the plate is the seat, so only "
           f"the posts have to stand apart")
@@ -672,6 +696,29 @@ def main():
                 for z in zs:
                     probes.append((cx + rad * np.cos(a), cy + rad * np.sin(a), z))
     inside = brd.contains(np.asarray(probes))
+    # The square piece again: its corners reach further than any skirt, so
+    # the run above -- which probes a circle -- says nothing about them. A
+    # corner landing on the raised lip would rock the piece.
+    from shapely.geometry import Polygon as _Poly, Point as _Pt
+    _inner = _Poly(B.octagon()).buffer(-P.RIM_W, join_style=2)
+    _h = P.ACTIVE_PLATE / 2
+    _worst, _who = 1e9, None
+    for i, r in B.all_cells():
+        cx, cy = B.cell_xy(i, r)
+        for dx in (-_h, _h):
+            for dy in (-_h, _h):
+                q = _Pt(cx + dx, cy + dy)
+                d = _inner.exterior.distance(q)
+                if not _inner.contains(q):
+                    d = -d
+                if d < _worst:
+                    _worst, _who = d, (P.COLUMNS[i], r)
+    check("the square piece's corners stay off the lip, on every cell",
+          _worst > 0.0,
+          f"{_worst:.2f} mm of flat to spare at the tightest, column "
+          f"{_who[0]}; a corner is {_h * np.sqrt(2):.2f} mm from the centre "
+          f"against a skirt's {skirt_r:.2f}")
+
     check(f"all {sum(P.ROWS)} cells have a clear seat",
           not inside.any(),
           f"{len(probes)} probe points, {int(inside.sum())} obstructed")
