@@ -345,6 +345,20 @@ nothing about either.
   It ships as `piece-active-body.stl` and `piece-active-accent.stl`, in the
   same coordinates, landing in register only because neither has been moved.
 
+  **The rib went up a quarter, from 0.45 to 0.56, and openness is what that
+  cost** — 65% → 58% on the same cell pitch. The pattern is unchanged, same
+  cells in the same places; the lines through it are simply heavier, which is
+  the right lever, because the struts are what a dropped piece loses. It is
+  still a **single bead**: 0.56 is 1.4 nozzles, which a 0.4 lays as one line,
+  where two 0.42 lines would need 0.84. There is no width in between where
+  the slicer tries to fit two and leaves a void down the middle of every rib,
+  and `test_fit.py` holds it under 1.5 nozzles so there never is.
+
+  The lip came down with it — **0.85 wide and 0.60 tall**, from 1.20 and
+  0.80. The width is two perimeters, the floor for anything on this project
+  that is a wall, and a rim standing on a face is one. The height is the same
+  0.60 the board's own lip cap is, which is the thing it was modelled on.
+
   **The silhouette comes from the sketch, and it took a review to notice it
   had drifted off it.** The sketch is a section: a foot that *flares* from
   the full width of a cell into a slim shaft over about a sixth of the

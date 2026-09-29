@@ -230,7 +230,7 @@ from post to skirt becomes a flat overhang ring and genuinely needs support.
 **Piece 6 is the exception on this board, and it needs its own profile.**
 Everything else here is designed so a default profile cannot get it wrong.
 This one is a hollow square tube with an irregular web cut through all four
-walls — 92 cells, ribs one extrusion wide, under an octagonal cap — and it wants three changes:
+walls — 88 cells, ribs one wide bead each, under an octagonal cap — and it wants three changes:
 
 | Setting | Piece 6 | Everything else |
 | --- | --- | --- |
@@ -241,14 +241,17 @@ walls — 92 cells, ribs one extrusion wide, under an octagonal cap — and it w
 **Slice it at 0.12 mm, not 0.20.** This is the one that matters. A sloping
 *face* droops past 45°, but a *rib* is not a face: each of its layers only
 has to land on the one below, and it has the rib's whole width to do it in.
-The limit is arctan(rib/2 ÷ layer) — **62° at 0.12 mm, and only 48° at
-0.20**. An irregular web has ribs at every angle, so the coarse layer will
-drop the shallow ones and the fine one will not.
+The limit is arctan(rib/2 ÷ layer) — **67° at 0.12 mm, and 54° at 0.20**. An
+irregular web has ribs at every angle. The thicker rib bought some margin
+here (it was 62° and 48°), so 0.20 is no longer certain to fail — but 0.12
+still carries ribs a 0.20 layer would drop, and this is a 20-minute print.
 
-**Ribs are 0.45 mm — one bead — and that is on purpose.** Two perimeters is
-the floor everywhere else on this board, because everywhere else the thin
-thing is a wall. A web is struts. Do not "fix" it by raising the wall count;
-four loops on a 0.45 mm rib makes the slicer thin-wall the whole tower.
+**Ribs are 0.56 mm — one wide bead — and that is on purpose.** Two perimeters
+is the floor everywhere else on this board, because everywhere else the thin
+thing is a wall. A web is struts. 0.56 is 1.4 nozzles, which a 0.4 lays as a
+single line; two 0.42 lines would need 0.84, so the slicer never tries to fit
+two in and leave a void down the middle of every rib. Do not "fix" it by
+raising the wall count.
 
 **Supports off, and ignore the warning.** Some slicers flag a hole in a wall
 on principle. Supports inside those cells would be unremovable.
@@ -257,15 +260,15 @@ on principle. Supports inside those cells would be unremovable.
 to z24.0, and that cavity is what you see through. If the slicer shows solid
 infill in there, the model has been repaired by something on the way in.
 
-**Two bridges, both fine.** The widest cell ceiling is 2.66 mm, and the top
+**Two bridges, both fine.** The widest cell ceiling is 2.50 mm, and the top
 plate spans the 6.60 mm core anchored on all four walls. The board itself has
 no bridges at all; these are the only ones in the set.
 
-**It is the most fragile piece here** — 0.45 × 1.20 mm ribs in PLA, handled
-every turn. The four corner posts carry it, and the frame ties the web into
+**It is still the most fragile piece here** — 0.56 × 1.20 mm ribs in PLA,
+handled every turn, though a quarter thicker than the first version. The four corner posts carry it, and the frame ties the web into
 them, but a dropped one will lose ribs where a counter would just bounce.
 Print the four together so a reprint is cheap, and if it turns out too
-delicate in the hand, `ACTIVE_RIB` takes it back to 0.85 at the cost of the
+delicate in the hand, `ACTIVE_RIB` takes it to 0.85 at the cost of the
 look — see `direction.md` for what that trade actually costs.
 
 ---

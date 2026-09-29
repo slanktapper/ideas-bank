@@ -836,7 +836,7 @@ ACTIVE_SHAFT   = 9.00     # the shaft, parallel all the way up. 51% of the
                           # at 9.00 the wall beside it is 1.38 mm and at 8.00
                           # it would be 0.88 -- one hair over two perimeters,
                           # on the one part of this piece that takes a load.
-ACTIVE_TOP_Z   = 23.95    # where the SHAFT stops. The octagon cap sits on
+ACTIVE_TOP_Z   = 24.15    # where the SHAFT stops. The octagon cap sits on
                           # top of it and the piece finishes at 28.40, which
                           # is where it finished before the cap existed --
                           # the height the cap costs was taken back off the
@@ -899,8 +899,20 @@ ACTIVE_WALL    = 1.20     # about three perimeters. The webs are cut through
 # you need 2.5 mm cells, which is three and a half. Two perimeters cannot
 # make a web at this size; they can only make a wall with holes in it, which
 # is what the last three versions were.
-ACTIVE_RIB     = 0.45     # one 0.42 line plus a hair, so the slicer lays a
-                          # single bead and does not try to fit two.
+ACTIVE_RIB     = 0.56     # ONE BEAD, and a wide one. This was 0.45 -- a
+                          # 0.42 line plus a hair -- and went up a quarter
+                          # for strength, which is the right lever: the
+                          # struts are what a dropped piece loses.
+                          #
+                          # It is still a SINGLE bead, which is the thing
+                          # that must stay true. A 0.4 nozzle will lay one
+                          # line anywhere from about 0.40 to 0.60 wide, so
+                          # 0.56 is 1.4 nozzles and near the top of that --
+                          # but two 0.42 lines need 0.84, so there is no
+                          # danger of the slicer trying to fit two in and
+                          # leaving a void down the middle of every rib.
+                          # Past 0.60 it would have to, and test_fit.py
+                          # holds it under.
 ACTIVE_WEB_CELL = 2.50    # the target size of one opening. With a 0.45 rib
                           # this is 73% open, which is the drawing.
 ACTIVE_WEB_FRAME = 0.90   # the border left round each face's web. Two ribs,
@@ -981,9 +993,15 @@ ACTIVE_CAP_T   = 1.20     # the flat octagonal top itself
 # numbers' colour rather than the body's. It means the body part has two
 # separate solids in it, the tower and a ring floating above it, exactly as
 # board-numerals.stl has sixty.
-ACTIVE_LIP_W   = 1.20     # how far in from the cap's edge the lip runs
-ACTIVE_LIP_H   = 0.80     # four layers at 0.20, and it stands this proud of
-                          # the red. The height it costs came off the shaft
+ACTIVE_LIP_W   = 0.85     # how far in from the cap's edge the lip runs. Two
+                          # 0.42 perimeters, which is the floor for anything
+                          # on this project that is a WALL, and a rim
+                          # standing on a face is one. It was 1.20 and read
+                          # as a band rather than a line.
+ACTIVE_LIP_H   = 0.60     # three layers at 0.20, and it stands this proud of
+                          # the red -- the same 0.60 the BOARD's lip cap is,
+                          # which is the thing this was modelled on. It was
+                          # 0.80. The height it costs came off the shaft
                           # rather than the piece, which still ends at 28.40.
 
 ACTIVES = 4               # one per player

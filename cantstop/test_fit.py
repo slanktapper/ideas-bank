@@ -615,11 +615,14 @@ def main():
     # print in reference/ is made of. Measured on the polygons rather than
     # assumed, because a mitred buffer on an acute corner can take more than
     # it was asked for.
-    check("every rib in the web is a bead the printer can lay",
-          B.active_rib_min() >= LINE - 0.01,
-          f"{B.active_rib_min():.2f} mm at the tightest, against one {LINE} "
-          f"line. Two perimeters is the floor everywhere else on this board; "
-          f"a web is struts, not wall")
+    NOZZLE = 0.40
+    check("every rib in the web is ONE bead, and a bead this nozzle can lay",
+          LINE - 0.01 <= B.active_rib_min() <= 1.5 * NOZZLE + 1e-9,
+          f"{B.active_rib_min():.2f} mm at the tightest -- "
+          f"{B.active_rib_min()/NOZZLE:.1f} nozzles, inside the 1.0 to 1.5 a "
+          f"single line can be widened to. Two {LINE} lines would need "
+          f"{2*LINE:.2f}, so there is no width here where the slicer tries "
+          f"to fit two and leaves a void down the middle of every rib")
 
     # AND THE REASON THAT IS SAFE: a strut is not a surface. A sloping FACE
     # has nothing under its outer edge and droops past 45 degrees. A rib's
@@ -639,11 +642,19 @@ def main():
     # (d/(d+w))^2 open, so 73% at a 0.85 rib needs 5 mm cells -- one and a
     # half across a 9 mm face. Three versions failed on exactly this and all
     # three came out a wall with holes in it.
+    # 0.55 AND NOT 0.60, AND THE DIFFERENCE WAS BOUGHT ON PURPOSE. The rib
+    # went 0.45 -> 0.56 for strength, a quarter thicker, and openness is what
+    # that costs: 65% -> 58% on the same cell pitch. The pattern is
+    # unchanged -- same cells in the same places -- the lines through it are
+    # simply heavier. The floor is here to stop this drifting back into a
+    # wall with holes in it, which is what 1.60 mm cells on a fat rib looked
+    # like at 18%, and 58% is not that.
     check("the web is mostly air, the way the drawing is",
-          B.active_web_open() >= 0.60,
+          B.active_web_open() >= 0.55,
           f"{100*B.active_web_open():.0f}% of a face is open, against the "
-          f"drawing's 73% -- {len(B.web_cells(0))} cells on a "
-          f"{P.ACTIVE_WEB_CELL:.2f} mm pitch with a {P.ACTIVE_RIB:.2f} rib")
+          f"drawing's 73% and the 65% this was before the rib was thickened "
+          f"-- {len(B.web_cells(0))} cells on a {P.ACTIVE_WEB_CELL:.2f} mm "
+          f"pitch with a {P.ACTIVE_RIB:.2f} rib")
 
     # THE BRIDGES. An irregular web has some cells that come to a peak and
     # some with a flat top, and the flat ones are bridges. They are short and
@@ -733,9 +744,11 @@ def main():
     # white all through.
     check("the lip is a whole number of layers and stands proud of the red",
           abs(P.ACTIVE_LIP_H / 0.20 - round(P.ACTIVE_LIP_H / 0.20)) < 1e-9
-          and P.ACTIVE_LIP_H >= 0.40,
-          f"{P.ACTIVE_LIP_H:.2f} mm = {round(P.ACTIVE_LIP_H/0.20):.0f} layers "
-          f"at 0.20, standing on a red field "
+          and P.ACTIVE_LIP_H >= 0.40
+          and P.ACTIVE_LIP_W >= 2 * LINE - 0.05,
+          f"{P.ACTIVE_LIP_W:.2f} mm wide and {P.ACTIVE_LIP_H:.2f} tall = "
+          f"{round(P.ACTIVE_LIP_H/0.20):.0f} layers at 0.20, the same height "
+          f"as the board's own lip cap, standing on a red field "
           f"{2*(P.ACTIVE_CAP_R*np.cos(np.pi/8) - P.ACTIVE_LIP_W):.2f} mm across")
     # bounds is a 2x3 array: take the x/y columns and the largest magnitude
     # in them, which for an octagon with a vertex on neither axis is its
