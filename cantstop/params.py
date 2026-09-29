@@ -835,7 +835,7 @@ ACTIVE_SHAFT   = 9.00     # the shaft, parallel all the way up. 51% of the
                           # at 9.00 the wall beside it is 1.38 mm and at 8.00
                           # it would be 0.88 -- one hair over two perimeters,
                           # on the one part of this piece that takes a load.
-ACTIVE_TOP_Z   = 24.95    # where the SHAFT stops. The octagon cap sits on
+ACTIVE_TOP_Z   = 24.75    # where the SHAFT stops. The octagon cap sits on
                           # top of it and the piece finishes at 28.40, which
                           # is where it finished before the cap existed --
                           # the height the cap costs was taken back off the
@@ -921,31 +921,51 @@ ACTIVE_TOP_T   = 1.20     # the plate that closes the hollow. It bridges the
                           # core -- see direction.md; this is the one bridge
                           # left in the piece, anchored on all four walls.
 
-# THE CAP IS AN OCTAGON, like the board it is played on. The shaft is square
-# and the cap has to cover it, which is what fixes the size: a square of half
-# width 4.50 has its corners 6.364 out, so an octagon turned to put a VERTEX
-# at 45 degrees needs a circumradius of at least that, or the shaft's corners
-# poke out past it and the top stops being an octagon. Turned the other way,
-# flat side at 45, it would need 6.88 and come out a 13.8 mm cap.
-ACTIVE_CAP_R   = 6.60     # 13.20 across the vertices: clears the shaft's
-                          # corners by 0.24 mm and overhangs its flats by
-                          # 2.10. At 6.40 it cleared them by 0.036, which
-                          # passes and is no place for a number to sit -- the
-                          # cap's vertices would have been tangent to the
-                          # shaft's corners, and any later nudge to
-                          # ACTIVE_SHAFT would have put them inside it.
-ACTIVE_CAP_RISE = 2.25    # how far the cap flares out over. The flare is the
+# THE CAP IS AN OCTAGON, like the board it is played on, and it is turned so
+# its FLAT SIDES RUN PARALLEL TO THE SHAFT'S. That orientation is the whole
+# reason it is as big as it is.
+#
+# The cap has to cover the square shaft or the top stops being an octagon,
+# and a square of half width 4.50 has its corners 6.364 out. Which part of
+# the octagon has to reach that far depends entirely on how it is turned:
+#
+#   vertex at 45 (what this was)   the CIRCUMRADIUS reaches the corner,
+#                                  so R >= 6.364 and the cap is 12.8 across
+#   flat at 45 (what this is)      the INRADIUS reaches it, and the inradius
+#                                  is only 0.924 of R, so R >= 6.89 and the
+#                                  cap is 14.3 across
+#
+# Turning it to line the flats up therefore costs 1.5 mm of width and 0.2 mm
+# of flare height, and it is worth it: the cap's sides now sit square to the
+# shaft's instead of cutting across them at 22.5 degrees.
+ACTIVE_CAP_R   = 7.15     # circumradius. The number that matters is the
+                          # INRADIUS it implies, 6.606, which clears the
+                          # shaft's corners by 0.24 mm. 6.90 would clear them
+                          # by 0.011 -- passing, and no place for a number to
+                          # sit, since any later nudge to ACTIVE_SHAFT would
+                          # put the corners outside the cap.
+ACTIVE_CAP_RISE = 2.45    # how far the cap flares out over. The flare is the
                           # CONVEX HULL of the shaft's square top and the
                           # cap's octagon, which is the one construction that
                           # gets this right: both outlines are convex, so
-                          # their hull is exactly the solid between them. Its
-                          # steepest face runs from the middle of a square
-                          # edge to the octagon vertex above it -- 2.10 out
-                          # over 2.25 up, which is 43.0 degrees, and every
-                          # other direction is shallower. At a rise of 2.10
-                          # that face would be 45.0 exactly: passing, and
-                          # sitting on the limit, which is never where a
-                          # number belongs.
+                          # their hull is exactly the solid between them.
+                          #
+                          # WHICH FACE IS STEEPEST MOVES WITH THE ORIENTATION,
+                          # so board.active_cap_overhang() measures the mesh
+                          # rather than working it out from these numbers.
+                          # Here it is the square-on one -- a face of the
+                          # shaft to the octagon flat parallel to it, 2.106
+                          # out over 2.45 up, which is 40.7 degrees.
+                          #
+                          # Sizing it by the longest RADIAL run instead says
+                          # 2.279, out at 22.5 degrees to a vertex, and that
+                          # is simply the wrong measurement: a face's slope
+                          # is its run PERPENDICULAR to itself, and the
+                          # diagonal run is spread across a triangle that
+                          # leans less than the square-on face does. The
+                          # radial figure is conservative here, but it is not
+                          # conservative by design, and there is no reason to
+                          # think it errs the same way for another shape.
 ACTIVE_CAP_T   = 1.20     # the flat octagonal top itself
 
 ACTIVES = 4               # one per player

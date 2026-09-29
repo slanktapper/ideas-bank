@@ -354,7 +354,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 135 checks, ~2 min
+python3 test_fit.py    # 136 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

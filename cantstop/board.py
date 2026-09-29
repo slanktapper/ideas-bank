@@ -804,14 +804,17 @@ def active_core_floor_ledge() -> float:
 
 
 def _cap_octagon(r: float) -> np.ndarray:
-    """The cap's plan: an octagon with a VERTEX at 45 degrees.
+    """The cap's plan: an octagon with its FLATS parallel to the shaft's.
 
-    That orientation is not decoration. The shaft is square, and a square of
-    half width a has its corners a*sqrt(2) out; an octagon only covers them
-    if it reaches that far along the diagonal, which it does at a vertex and
-    not at a flat. Turned the other way it would have to be 8% bigger.
+    Vertices at 22.5 degrees and every 45 after, which puts an edge square
+    across each face of the shaft and another across each corner. It is the
+    expensive orientation -- what has to reach the shaft's corners is now the
+    INRADIUS rather than the circumradius, and an octagon's inradius is only
+    0.924 of its circumradius, so the cap is 1.5 mm wider than it would be
+    turned the other way. What it buys is the cap's sides running parallel to
+    the shaft's instead of cutting across them at 22.5 degrees.
     """
-    a = np.arange(8) * np.pi / 4.0
+    a = np.pi / 8.0 + np.arange(8) * np.pi / 4.0
     return np.column_stack([r * np.cos(a), r * np.sin(a)])
 
 
@@ -838,8 +841,34 @@ def active_cap() -> trimesh.Trimesh:
 
 
 def active_cap_overhang() -> float:
-    """dr/dz of the steepest face on the cap's flare. 1.0 would be 45."""
-    return (P.ACTIVE_CAP_R - P.ACTIVE_SHAFT * 0.5) / P.ACTIVE_CAP_RISE
+    """dr/dz of the steepest face on the cap's flare. 1.0 would be 45.
+
+    MEASURED OFF THE MESH, not worked out from the parameters, because the
+    steepest face is not on an axis and where it is depends on how the
+    octagon is turned. With a vertex at 45 the widest run out from the square
+    is at 0 degrees; with a flat at 45 it is at 22.5, out to a vertex, and it
+    is 0.17 mm longer. A formula that looked at 0 degrees was right for one
+    orientation and quietly wrong for the other.
+
+    For a face with unit normal n, an outward flare has n_z < 0 and the
+    surface sits arcsin(-n_z) from vertical, so dr/dz is the tangent of that.
+    """
+    a = P.ACTIVE_SHAFT * 0.5
+    z0, z1 = P.ACTIVE_TOP_Z, P.ACTIVE_TOP_Z + P.ACTIVE_CAP_RISE
+    square = [(-a, -a), (a, -a), (a, a), (-a, a)]
+    pts = [(x, y, z0) for x, y in square] + \
+          [(x, y, z1) for x, y in _cap_octagon(P.ACTIVE_CAP_R)]
+    hull = trimesh.Trimesh(vertices=np.asarray(pts, dtype=float)).convex_hull
+    # SIDE FACES ONLY. The hull's own bottom is a face too, pointing straight
+    # down, and counting it reads as a 90-degree overhang -- which it is not:
+    # it is the seam where the cap meets the shaft, and there is solid shaft
+    # under every millimetre of it. A side face is one that touches both
+    # outlines, so it has a vertex at each height.
+    zs = hull.vertices[hull.faces][:, :, 2]
+    side = (np.abs(zs - z0).min(axis=1) < 1e-6) & (np.abs(zs - z1).min(axis=1) < 1e-6)
+    nz = hull.face_normals[side, 2]
+    worst = float(-nz[nz < -1e-9].min()) if (nz < -1e-9).any() else 0.0
+    return float(np.tan(np.arcsin(min(worst, 1.0 - 1e-12))))
 
 
 def active_core_top() -> float:
@@ -1105,14 +1134,23 @@ def piece_profile_of(style: str):
         # the INSCRIBED half-width at each height, and for a square that is
         # exactly what half the side is.
         z1 = P.ACTIVE_TOP_Z + P.ACTIVE_CAP_RISE
+        # THE CAP GOES IN AS ITS INRADIUS, NOT ITS CIRCUMRADIUS. This
+        # "profile" is the INSCRIBED half-width at each height -- that is
+        # what the wall and overhang checks read it as, and for the square
+        # parts it is exactly half the side. An octagon's inscribed
+        # half-width is R*cos(pi/8), and putting R in instead made the
+        # overhang loop read the flare as 47 degrees where the mesh measures
+        # 40.7: it was comparing a circumradius at the top against a
+        # half-side at the bottom, which is not a slope of anything.
+        cap = P.ACTIVE_CAP_R * np.cos(np.pi / 8.0)
         return [(P.ACTIVE_BASE / 2, 0.00),
                 (P.ACTIVE_SHAFT / 2, P.ACTIVE_FOOT_H),
                 (P.ACTIVE_SHAFT / 2, P.ACTIVE_TOP_Z),
                 # the cap flares OUTWARD as it rises, which is the only part
                 # of this piece the ordinary overhang loop has any business
                 # with -- so it belongs in the profile and not in a note.
-                (P.ACTIVE_CAP_R, z1),
-                (P.ACTIVE_CAP_R, z1 + P.ACTIVE_CAP_T)]
+                (cap, z1),
+                (cap, z1 + P.ACTIVE_CAP_T)]
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
             "cog": P.COG_BODY_PROFILE,
             "runner": P.RUNNER_BODY_PROFILE}[style]

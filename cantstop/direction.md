@@ -402,21 +402,46 @@ nothing about either.
   ceiling to bridge — so the piece went from three bridges to two by
   extending the web, which is not the usual direction of travel.
 
-  **The cap is an octagon, like the board.** The shaft is square and the cap
-  has to cover it, which is what fixes the size: a square of half-width 4.50
-  has its corners 6.364 out, so an octagon turned to put a **vertex** at 45°
-  needs a circumradius of at least that, or the shaft's corners poke out past
-  it and the top stops being an octagon. Turned the other way — flat side at
-  45° — it would need 6.88 and come out a 13.8 mm cap. It is 6.60, clearing
-  the corners by 0.24 mm; at 6.40 it cleared them by 0.036, which passes and
-  is no place for a number to sit.
+  **The cap is an octagon, like the board**, turned so its **flat sides run
+  parallel to the shaft's**. That orientation is the whole reason it is as
+  big as it is.
+
+  The cap has to cover the square shaft or the top stops being an octagon,
+  and a square of half-width 4.50 has its corners 6.364 out. *Which part of
+  the octagon has to reach that far depends entirely on how it is turned:*
+
+  | Orientation | What reaches the corner | Size needed |
+  | --- | --- | --- |
+  | Vertex at 45° | the **circumradius** | R ≥ 6.364, a 12.8 mm cap |
+  | Flat at 45° (this one) | the **inradius**, only 0.924 of R | R ≥ 6.89, a 14.3 mm cap |
+
+  So lining the flats up costs 1.5 mm of width and 0.2 mm of flare height.
+  `ACTIVE_CAP_R` is 7.15, whose inradius of 6.606 clears the corners by
+  0.24 mm — 6.90 would clear them by 0.011, which passes and is no place for
+  a number to sit.
 
   The flare under it is the **convex hull** of the shaft's square top and the
-  cap's octagon, which is the one construction that gets this right: both
-  outlines are convex, so their hull is exactly the solid between them. Its
-  steepest face runs from the middle of a square edge to the octagon vertex
-  above it — 2.10 out over 2.25 up, 43.0° — and every other direction is
-  shallower.
+  cap's octagon: both outlines are convex, so their hull is exactly the solid
+  between them. Its steepest face is the square-on one — a face of the shaft
+  to the octagon flat parallel to it, 2.106 out over 2.45 up, **40.7°**.
+
+  **That figure is measured off the mesh, not derived**, because which face
+  is steepest moves with the orientation. Sizing it by the longest *radial*
+  run instead gives 2.279, out at 22.5° to a vertex — and that is simply the
+  wrong measurement. A face's slope is its run *perpendicular to itself*, and
+  the diagonal run is spread across a triangle that leans less than the
+  square-on face does. The radial figure happens to be conservative here, but
+  it is not conservative *by design*, and there is no reason to think it errs
+  the same way for the next shape.
+
+  Rotating the cap also turned up a live bug in the *other* check. The
+  "profile" `piece_profile_of` hands the overhang and wall checks is the
+  **inscribed half-width** at each height — for the square parts, exactly
+  half the side. The cap had gone in as its *circumradius*, so the loop was
+  comparing a circumradius at the top against a half-side at the bottom,
+  which is not the slope of anything: it read the flare as 47° where the mesh
+  measures 40.7°, and failed. It goes in as R·cos(π/8) now, and the two
+  agree to the second decimal.
 
   The height the cap costs was taken back off the shaft rather than added to
   the piece, so it still finishes at 28.40.
@@ -664,7 +689,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 135 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 136 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

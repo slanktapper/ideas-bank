@@ -708,18 +708,35 @@ def main():
     check("the octagon cap carries itself",
           B.active_cap_overhang() <= 0.97,
           f"{np.degrees(np.arctan(B.active_cap_overhang())):.1f} degrees from "
-          f"vertical on the steepest face of the flare -- square edge to the "
-          f"octagon vertex above it, {P.ACTIVE_CAP_R - P.ACTIVE_SHAFT/2:.2f} "
-          f"out over {P.ACTIVE_CAP_RISE:.2f} up")
-    # AND IT HAS TO COVER THE SHAFT, or the top is not an octagon: a square
-    # of half width a has its corners a*sqrt(2) out, and an octagon only
-    # reaches that far along the diagonal at a VERTEX.
+          f"vertical on the steepest face of the flare -- a face of the shaft "
+          f"out to the octagon flat parallel to it, "
+          f"{B.active_cap_overhang() * P.ACTIVE_CAP_RISE:.3f} out over "
+          f"{P.ACTIVE_CAP_RISE:.2f} up. Measured off the mesh: the "
+          f"circumradius would say {P.ACTIVE_CAP_R - P.ACTIVE_SHAFT/2:.2f}, "
+          f"which is a radial distance and not a face's slope")
+    # AND IT HAS TO COVER THE SHAFT, or the top is not an octagon. A square of
+    # half width a has its corners a*sqrt(2) out, and WHICH PART of the
+    # octagon has to reach them depends on how it is turned. With the flats
+    # running parallel to the shaft's there is an octagon flat facing the
+    # corner, so what has to clear it is the INRADIUS -- only 0.924 of the
+    # circumradius. Checking R against the corner instead would pass a cap
+    # that the shaft's corners poke straight out of.
     corner = P.ACTIVE_SHAFT / 2 * np.sqrt(2.0)
+    inradius = P.ACTIVE_CAP_R * np.cos(np.pi / 8)
     check("the cap covers the square shaft's corners, so the top is an octagon",
-          P.ACTIVE_CAP_R >= corner,
-          f"a {P.ACTIVE_CAP_R:.2f} circumradius against corners {corner:.3f} "
-          f"out -- {P.ACTIVE_CAP_R - corner:.3f} mm to spare, with a vertex "
-          f"turned to 45 degrees to get it")
+          inradius >= corner + 0.05,
+          f"a {inradius:.3f} inradius (from a {P.ACTIVE_CAP_R:.2f} "
+          f"circumradius) against corners {corner:.3f} out -- "
+          f"{inradius - corner:.3f} mm to spare")
+    # AND ITS FLATS HAVE TO LINE UP WITH THE SHAFT'S, which is the thing that
+    # sized it: an octagon has a flat facing the shaft's face only if its
+    # vertices sit at 22.5 degrees and every 45 after.
+    v = B._cap_octagon(P.ACTIVE_CAP_R)
+    ang = np.degrees(np.arctan2(v[:, 1], v[:, 0])) % 45.0
+    check("the cap's flat sides run parallel to the shaft's",
+          np.allclose(ang, 22.5, atol=1e-6),
+          f"vertices every 45 degrees starting at 22.5, so a flat faces each "
+          f"side of the shaft and another faces each corner")
 
     check("nothing overhangs more than 45 degrees, so nothing needs support",
           worst_over <= 1.0 + 1e-9,
