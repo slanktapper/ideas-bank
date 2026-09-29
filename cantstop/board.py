@@ -610,19 +610,26 @@ def _scallops(n: int, at_r: float, r: float, z0: float, z1: float,
 
 
 def _v_notches(n: int, at_r: float, z_apex: float, z_top: float,
+               slope: float = 1.0,
                segs: int | None = None) -> list[trimesh.Trimesh]:
-    """n cones, apex down, opening upward at 45 degrees.
+    """n cones, apex down, opening upward at atan(slope) from vertical.
 
-    Cut away, they leave points that taper to a tip. The piece narrows the
-    whole way up as a result, which is exactly the condition for printing
-    without support -- a square-topped merlon would need none either, but it
-    would be a castle and not a crown.
+    Cut away, they leave a valley that is narrow at the bottom and wide at
+    the top -- so the points between them TAPER, which is the difference
+    between a crown and a castle. The piece narrows the whole way up as a
+    result, which is also exactly the condition for printing without support.
+
+    `slope` is dr/dz and must stay at or under 1.0, which is 45 degrees: past
+    that the wall the notch leaves behind leans out further than the printer
+    can lay it. Under it the notch is narrower and the points are fatter, and
+    that is the only dial between "reads as a crown" and "carries the next
+    piece" -- both of which it has to do.
     """
-    h = z_top - z_apex
     out = []
     for a in np.linspace(0, 2 * np.pi, n, endpoint=False):
-        m = S.lathe([(0.0, z_apex), (h, z_top), (0.0, z_top)],
-                    segs=segs or P.PEG_SEGS)
+        m = S.lathe([(0.0, z_apex),
+                     (slope * (z_top - z_apex), z_top),
+                     (0.0, z_top)], segs=segs or P.PEG_SEGS)
         m.apply_translation((at_r * np.cos(a), at_r * np.sin(a), 0.0))
         out.append(m)
     return out
@@ -669,6 +676,28 @@ def _arc(r0: float, z0: float, r1: float, z1: float, bulge: float,
     s = u + bulge * u * (1.0 - u)
     return [(float(r0 + (r1 - r0) * t), float(z0 + (z1 - z0) * v))
             for t, v in zip(u, s)]
+
+
+def _crown_points(segs: int | None = None) -> list[trimesh.Trimesh]:
+    """Six tapered spikes standing on the crown's floor, out at the rim.
+
+    Frusta, not cut cones. Three earlier crowns were made by cutting into a
+    solid rim, and a cut cannot turn a wall into six separate things standing
+    up -- it can only put holes in it. Added, each point is a thing in its own
+    right: 4.00 mm across at the foot, 2.30 at the top, narrowing the whole
+    way, which is the printable direction and the crown-shaped one at once.
+    """
+    segs = segs or P.PEG_SEGS
+    out = []
+    for a in np.linspace(0, 2 * np.pi, P.CROWN_POINTS, endpoint=False):
+        m = S.lathe([(P.CROWN_SPIKE_R0, P.CROWN_SPIKE_Z0),
+                     (P.CROWN_SPIKE_R1, P.PEG_BODY_H),
+                     (0.0, P.PEG_BODY_H),
+                     (0.0, P.CROWN_SPIKE_Z0)], segs=segs)
+        m.apply_translation((P.CROWN_SPIKE_AT * np.cos(a),
+                             P.CROWN_SPIKE_AT * np.sin(a), 0.0))
+        out.append(m)
+    return out
 
 
 def _saucer_profile() -> list[tuple[float, float]]:
@@ -731,14 +760,7 @@ def build_player_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
     if style == "crown":
         body = S.lathe(_piece_profile(P.CROWN_BODY_PROFILE, P.PEG_BODY_H),
                        segs=segs)
-        # the trough first: one ring taken out of the top face, leaving the
-        # boss inside it and the rim outside it
-        cut = [S.tube(0.0, 0.0, P.CROWN_TROUGH_R1, P.CROWN_TROUGH_R0,
-                      P.CROWN_TROUGH_Z, top + 1.0, segs=segs)]
-        # then the gaps, which go through the rim and give it its points
-        cut += _scallops(P.CROWN_POINTS, P.CROWN_CUT_AT, P.CROWN_CUT_R,
-                         P.CROWN_TROUGH_Z, top + 1.0, segs)
-        return trimesh.boolean.difference([body] + cut, engine="manifold")
+        return S.union_all([body] + _crown_points(segs))
 
     if style == "saucer":
         body = S.lathe(_piece_profile(_saucer_profile(), P.PEG_BODY_H),

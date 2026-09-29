@@ -168,7 +168,7 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **221 g**: ~158 g board, body and numerals together
+A full set is roughly **218 g**: ~158 g board, body and numerals together
 (6 mm slab at 10% infill),
 ~58 g of markers (11 each of four shapes), ~5 g of runners (3). A marker is 17.5 mm across and
 8.45 mm tall and so is a runner — every piece on this board is the same size
@@ -305,7 +305,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 105 checks, ~90 s
+python3 test_fit.py    # 115 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

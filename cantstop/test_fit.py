@@ -453,30 +453,25 @@ def main():
           f"{max(wide.values()):.2f} mm across, all {len(wide)} of them")
     # THE SEAT CONTRACT
     #
-    # Measured on the finished meshes and by AREA, not on the profiles and not
-    # as a ring. The old rule -- an unbroken annulus 3 mm wide -- was one way
-    # of building a seat mistaken for the requirement itself, and it ruled out
-    # a crown with open points and a saucer on raised lugs, both of which
-    # carry a piece perfectly well. What actually matters is how much contact
-    # there is, that it is spread round the axis, and that something is
-    # continuous so two gappy faces cannot meet gap to gap.
+    # Measured on the finished meshes and by AREA, not on the profiles and
+    # not as a ring. It is asymmetric on purpose: bottoms are whole, tops may
+    # be as gappy as their shape needs. See params.py, SEAT_*.
     print("\nthe seat contract  (params.py: SEAT_*)")
+    r_mouth = P.PEG_SOCKET_D / 2 + P.PEG_SOCKET_CHAMFER
+    band = np.pi * (P.SEAT_BAND_R ** 2 - r_mouth ** 2)
     # A POLAR GRID, not a random cloud: rotating one piece against another is
     # then a np.roll along the angle axis, which is what lets the pairing
-    # check below try every relative rotation instead of the one the meshes
-    # happen to have been built at. Radii are spaced so every sample stands
-    # for the same area, so a mean over the grid IS the solid fraction.
-    r_mouth = P.PEG_SOCKET_D / 2 + P.PEG_SOCKET_CHAMFER
-    annulus = np.pi * (P.PEG_MAX_R ** 2 - r_mouth ** 2)
+    # check try every relative rotation rather than the one the meshes happen
+    # to have been built at. Radii are spaced so every sample stands for the
+    # same area, so a mean over the grid IS the solid fraction.
     NR, NA = 48, 360
     rr_s = np.sqrt(r_mouth ** 2 + (np.arange(NR) + 0.5) / NR
-                   * (P.PEG_MAX_R ** 2 - r_mouth ** 2))
+                   * (P.SEAT_BAND_R ** 2 - r_mouth ** 2))
     th_s = (np.arange(NA) + 0.5) * 2 * np.pi / NA
     RR, TH = np.meshgrid(rr_s, th_s, indexing="ij")
     xy = np.column_stack([(RR * np.cos(TH)).ravel(), (RR * np.sin(TH)).ravel()])
     N = NR * NA
-    sect = np.tile((np.arange(NA) // (NA // P.SEAT_SECTORS)), NR)
-    core = np.repeat(rr_s <= P.SEAT_CORE_R, NA)
+    radius = RR.ravel()
 
     def face_at(m, z):
         return m.contains(np.column_stack([xy, np.full(N, z)]))
@@ -485,45 +480,37 @@ def main():
     bots = {s: face_at(m, 0.05) for s, m in built.items()}
     deep = {s: face_at(m, P.BOTTOM_FLAT_H - 0.05) for s, m in built.items()}
 
+    # BOTTOMS ARE WHOLE. This is the half of the contract that lets the other
+    # half be loose: a top may put its support anywhere in the band and be
+    # certain of landing on something, at any rotation, with no case to think
+    # about.
     for s in B.PIECE_STYLES:
-        t, b = tops[s].mean(), bots[s].mean()
-        check(f"{s}: both faces carry their share of the seat",
-              min(t, b) >= P.SEAT_MIN_FRAC,
-              f"top {t*100:.0f}%, bottom {b*100:.0f}% of a "
-              f"{annulus:.0f} mm2 annulus, against {P.SEAT_MIN_FRAC*100:.0f}%")
-    worst = min(B.PIECE_STYLES,
-                key=lambda s: min(tops[s][core].mean(), bots[s][core].mean()))
-    check("every piece is solid to SEAT_CORE_R on both faces, so no two can "
-          "meet gap to gap",
-          all(tops[s][core].all() and bots[s][core].all()
-              for s in B.PIECE_STYLES),
-          f"r{P.SEAT_CORE_R:.2f} core = "
-          f"{np.pi*(P.SEAT_CORE_R**2 - r_mouth**2)/annulus*100:.0f}% of the "
-          f"seat, guaranteed at any rotation; thinnest is the {worst}")
-    spread = {}
-    for s in B.PIECE_STYLES:
-        spread[s] = min(tops[s][sect == k].mean() for k in range(P.SEAT_SECTORS))
-    lop = min(spread, key=spread.get)
-    check("the support is spread, not all down one side",
-          min(spread.values()) >= P.SEAT_MIN_FRAC,
-          f"leanest {P.SEAT_SECTORS}th is the {lop}'s at "
-          f"{spread[lop]*100:.0f}%")
-
-    # THE BOTTOM IS FLAT. Not "ends at z = 0" -- flat, with vertical walls
-    # above it, so the first layer is the face the piece will stand on for the
-    # rest of its life and not a knife edge that happens to touch the bed.
-    for s in B.PIECE_STYLES:
-        check(f"{s}: the bottom is flat and stays flat for "
-              f"{P.BOTTOM_FLAT_H:.2f} mm",
-              abs(bots[s].mean() - deep[s].mean()) < 0.01
+        inner = radius <= P.SEAT_BOTTOM_R
+        check(f"{s}: the bottom is a whole flat annulus out to SEAT_BOTTOM_R",
+              bots[s][inner].all()
+              and abs(bots[s].mean() - deep[s].mean()) < 0.01
               and abs(built[s].bounds[0][2]) < 1e-9,
-              f"{bots[s].mean()*100:.0f}% at the bed, "
-              f"{deep[s].mean()*100:.0f}% at z{P.BOTTOM_FLAT_H:.2f}")
+              f"solid to r{P.SEAT_BOTTOM_R:.2f}, and still "
+              f"{deep[s].mean()*100:.0f}% of the band at "
+              f"z{P.BOTTOM_FLAT_H:.2f}, so it is a face and not an edge")
 
-    # and the thing the contract is FOR: contact, for every pairing, at the
-    # worst rotation. Two faces with 45% each could in principle interleave
-    # and touch nowhere; the core is what stops that, so this is the check
-    # that proves the core is doing its job.
+    # TOPS CARRY ENOUGH, FAR ENOUGH OUT, ON EVERY SIDE.
+    sect = np.tile(np.arange(NA) // (NA // P.SEAT_SECTORS), NR)
+    for s in B.PIECE_STYLES:
+        f = tops[s].mean()
+        arm = (radius[tops[s]].mean() if tops[s].any() else 0.0)
+        lean = min(tops[s][sect == k].mean() for k in range(P.SEAT_SECTORS))
+        check(f"{s}: the top carries the next piece",
+              f >= P.SEAT_MIN_FRAC and arm >= P.SEAT_MIN_ARM
+              and lean >= P.SEAT_MIN_FRAC,
+              f"{f*100:.0f}% of a {band:.0f} mm2 band ({f*band:.0f} mm2) at a "
+              f"mean arm of r{arm:.2f}, leanest sixth {lean*100:.0f}%; "
+              f"floors are {P.SEAT_MIN_FRAC*100:.0f}%, r{P.SEAT_MIN_ARM:.2f}")
+
+    # and the thing the contract is FOR. Because every bottom is whole across
+    # the band, contact is just the top's own area whatever the rotation --
+    # which is the point of making the rule asymmetric, and this is what
+    # proves it rather than assuming it.
     pair_min, pair_who = 1.0, None
     turns = [np.roll(np.arange(NA), k) for k in range(0, NA, 5)]
     for a in B.PIECE_STYLES:
@@ -535,11 +522,10 @@ def main():
                 if f < pair_min:
                     pair_min, pair_who = f, (b, a)
     check("any piece on any piece, at any rotation, lands on a real seat",
-          pair_min >= np.pi * (P.SEAT_CORE_R ** 2 - r_mouth ** 2) / annulus
-          - 0.02,
-          f"worst of {len(B.PIECE_STYLES)**2} pairings is a {pair_who[0]} on "
-          f"a {pair_who[1]} at {pair_min*100:.0f}% "
-          f"({pair_min*annulus:.0f} mm2)")
+          pair_min >= P.SEAT_MIN_FRAC - 0.005,
+          f"worst of {len(B.PIECE_STYLES)**2} pairings at "
+          f"{len(turns)} rotations each is a {pair_who[0]} on a "
+          f"{pair_who[1]} at {pair_min*100:.0f}% ({pair_min*band:.0f} mm2)")
 
     # PRINTED FLAT, NO SUPPORTS. A profile that widens going up is an
     # overhang, and the angle from vertical is atan(dr/dz) -- so a

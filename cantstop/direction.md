@@ -147,20 +147,29 @@ faces have to agree for a stack to sit straight — the bottom of the piece
 going on, and the top of the piece underneath — and `params.py` states that
 agreement once rather than letting each shape happen to have it:
 
-- **`SEAT_MIN_FRAC` = 42%** of the seat annulus, at the top *and* the bottom
-  of every piece. This replaced "an unbroken ring 3 mm wide", which was one
-  way of making a seat mistaken for the requirement: it ruled out a crown
-  with open points and a saucer on raised lugs, both of which carry a piece
-  perfectly well.
-- **`SEAT_CORE_R` = 4.80** — something has to be continuous, or two gappy
-  faces could meet gap to gap and rock. Every piece is solid from the axis to
-  here on both faces whatever it does further out. That ring is guaranteed at
-  every rotation; `test_fit.py` proves it by stacking all twenty-five
-  pairings at seventy-two relative rotations each and taking the worst
-  contact it can find. It was 5.60 and came down: 5.60 forced the crown's
-  centre boss to 11.6 mm, which swallowed the open middle a crown is
-  supposed to have. 4.80 buys a 10 mm boss and a trough half again as wide,
-  and the ring it guarantees is still 1.18 mm of continuous annulus.
+It is **deliberately asymmetric**, because the two faces are not doing the
+same job:
+
+- **`SEAT_BOTTOM_R` = 7.30** — every piece's bottom is a *whole* flat
+  annulus from the socket mouth out to here. No gaps, no exceptions. Which
+  means a top may put its support wherever it likes inside the band and be
+  certain of landing on something, at every rotation, with no case left to
+  reason about.
+- **`SEAT_MIN_FRAC` = 18%** of that band — all the top has to do is carry
+  *enough*, and at least that much again in each of six sectors so nothing
+  is held up on one side.
+- **`SEAT_MIN_ARM` = 4.80** — and carry it *out there*. Area alone would let
+  a piece balance on a pip round the post; what stops a stack leaning is the
+  moment arm, so the area-weighted mean radius of the support has a floor of
+  its own. The crown's six pads come in at r6.30, the best arm of the five.
+
+The rule before this one was symmetric — 42% on both faces and a continuous
+core ring on both — and it sounded stricter while being worse. It forced
+every piece to keep a wide flat table at full height in the middle, and that
+table is precisely what stopped the crown reading as a crown: points cannot
+look tall standing next to a disc of their own height. `test_fit.py` proves
+the new one the same way, stacking all twenty-five pairings at seventy-two
+relative rotations each and taking the worst contact it can find.
 - **`SEAT_SECTORS` = 6** — what is out beyond the core has to be spread, so
   every 60° sector carries its share and nothing is held up on one side.
 - **`BOTTOM_FLAT_H` = 0.40** — the bottom is *flat*: one plane at z = 0 with
@@ -179,15 +188,21 @@ nothing about either.
 ### What each shape does with that
 
 - **1 counter** — the plain waisted spool. Nothing to explain.
-- **2 crown** — a central boss carrying the post, a trough 1.7 mm wide and
-  3.7 mm deep around it, and six points standing up at the rim with **flat
-  tops dead level at 6.30**. The old one was a disc with shallow V notches
-  nicked out of the edge and it read as a gear; what makes a crown a crown is
-  that the top is mostly air. The flat tops are the other half of it — a V
-  notch tapers to a tip and so can carry nothing, where six pads and a boss
-  carry the next piece between them. The boss is as small as the seat
-  contract allows and not a millimetre larger; see `SEAT_CORE_R` above for
-  what that cost.
+- **2 crown** — a band, six tapered points standing on it, an empty middle,
+  and the post rising out of a column barely wider than itself. It took four
+  goes. A disc with shallow V notches nicked out of the edge read as a gear.
+  Square merlons round an open trough read as a castle turret. Cones cut into
+  a thick rim read as dimples drilled in a bowl — **a cut can put holes in a
+  wall but it cannot turn the wall into six separate things standing up**. So
+  the points are added, like the saucer's legs and for the same reason:
+  frusta 4.10 mm across at the foot and 2.20 at the top, narrowing the whole
+  way, which is the printable direction and the crown-shaped one at once.
+
+  They still have flat tops dead level at 6.30, because the next piece stands
+  on them and on nothing else. 2.20 mm is as slim as they go: six pads of it
+  is 22.8 mm², which is 18.1% of the seat band against the 18% the contract
+  asks for. The shape wants them slimmer and the contract will not have it —
+  the right way round for that argument to be settled.
 - **3 saucer** — a flying one. A whole disc base on the ground, four square
   landing tubes standing on it with daylight between them, a hull sweeping
   out to a thin brim at the full radius, a domed top, and six rectangular
@@ -210,14 +225,16 @@ nothing about either.
   with the flares at 44 degrees so they carry themselves.
 
 Anything beyond the lathe is **cut where cutting works and added where it
-does not**. A vertical cylinder taken out of the side is self-supporting
-whatever its depth and the floor it leaves is an upward face, which is why
-the crown's gaps and the cog's flutes are cuts. Cutting the saucer's legs
-out of a solid ring was tried and abandoned: the gap wants a *ceiling*, and
-a ceiling is either a bridge or an overhang. Four tubes standing on the base
-are neither — they are vertical walls from the first layer up, welded into
-the hull at the top. Same for the six pads: a bar sitting on the dome is
-four vertical walls and a flat top.
+does not**, and the line between the two turned out to be sharper than it
+looked. A vertical cylinder taken out of the side is self-supporting whatever
+its depth and the floor it leaves is an upward face, which is why the cog's
+flutes are cuts. But a cut only ever *removes*, and three of the five shapes
+wanted something to *stand up*: the saucer's legs, its pads, the crown's
+points. Cutting the saucer's leg gaps out of a solid ring leaves a ceiling,
+and a ceiling is either a bridge or an overhang; cutting the crown's valleys
+into a solid rim leaves a rim with dents in it. Added, each of those is four
+vertical walls and a flat top, printable from the first layer and shaped like
+the thing it is meant to be.
 
 **The pieces are counters, not pegs.** 17.5 mm across and 8.45 mm tall: a
 squat disc you pick up with two fingers and can see past. The first version
@@ -426,9 +443,9 @@ the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
 285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
-**221 g** — 158 g of board at 10% infill plus 63 g of solid pieces.
+**218 g** — 158 g of board at 10% infill plus 60 g of solid pieces.
 
-`test_fit.py` passes 105 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 115 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

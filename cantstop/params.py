@@ -428,28 +428,39 @@ PEG_SEGS = 64
 # them, and it is written once here rather than being a property each
 # silhouette happens to have.
 #
-# The nominal seat is the annulus from the socket mouth out to PEG_MAX_R --
-# everything a bottom face could touch. Against that:
+# The seat is the annulus from the socket mouth out to SEAT_BAND_R, and the
+# contract is DELIBERATELY ASYMMETRIC, because the two faces are not doing
+# the same job:
 #
-#   SEAT_MIN_FRAC   every piece must carry at least this fraction of it, at
-#                   the top AND at the bottom. Not "an unbroken 3 mm ring",
-#                   which was the old rule: a ring is one way to make a seat
-#                   and it rules out a crown with open points or a saucer on
-#                   raised lugs, both of which seat perfectly well.
-#   SEAT_CORE_R     ...but SOMETHING has to be continuous, or two pieces with
-#                   gappy faces could meet gap-to-gap and rock. So every piece
-#                   is solid from the axis out to here on both faces, whatever
-#                   it does further out. That ring alone is 29% of the seat,
-#                   and it is guaranteed at every rotation.
-#   SEAT_SECTORS    and what IS out beyond the core has to be spread: every
-#                   60 degree sector carries its share, so nothing is
-#                   supported on one side only.
-#   BOTTOM_FLAT_H   the bottom is FLAT -- one plane at z = 0 with vertical
+#   SEAT_BAND_R     how far out the agreement reaches.
+#   SEAT_BOTTOM_R   every piece's bottom is CONTINUOUS from the socket mouth
+#                   to here -- a whole flat annulus, no gaps, no exceptions.
+#                   Which means a top may put its support wherever it likes
+#                   inside the band and be certain of landing on something,
+#                   at every rotation, with no case to reason about.
+#   SEAT_MIN_FRAC   the top then only has to carry ENOUGH: this fraction of
+#                   the band, and at least that much again in every one of
+#                   SEAT_SECTORS sectors, so nothing is held up on one side.
+#   SEAT_MIN_ARM    and it has to carry it OUT THERE. Area alone would let a
+#                   piece be balanced on a pip round the post; what stops a
+#                   stack leaning is the moment arm, so the area-weighted
+#                   mean radius of the support has a floor of its own.
+#   BOTTOM_FLAT_H   the bottom is flat: one plane at z = 0 with vertical
 #                   walls above it for this height. No knife edges, no taper
-#                   running out to nothing, and a first layer that is what the
-#                   piece will actually stand on.
-SEAT_MIN_FRAC = 0.42
-SEAT_CORE_R   = 4.80
+#                   running out to nothing, and a first layer that is the
+#                   face the piece will stand on for the rest of its life.
+#
+# This replaced a symmetric rule -- 42% on BOTH faces and a continuous core
+# ring on both -- which sounded stricter and was not. It forced every piece
+# to keep a wide flat table at full height in the middle, and that table is
+# exactly what stopped the crown reading as a crown: points cannot look tall
+# next to a disc of their own height. Six pads out at r7 hold a piece far
+# more steadily than a narrow ring at r4 does anyway, which the arm floor
+# below is there to say out loud.
+SEAT_BAND_R   = 7.30
+SEAT_BOTTOM_R = 7.30
+SEAT_MIN_FRAC = 0.18
+SEAT_MIN_ARM  = 4.80
 SEAT_SECTORS  = 6
 BOTTOM_FLAT_H = 0.40
 
@@ -472,8 +483,8 @@ PIECE_GAP_MIN = 2.0
 # and it is less than it looks:
 #
 #   - the top face is what the NEXT piece stands on, so it cannot taper away
-#     to a point. It has to meet the seat contract above: solid to
-#     SEAT_CORE_R, SEAT_MIN_FRAC of the annulus in total, spread evenly.
+#     to a point. It has to meet the seat contract above: enough area, far
+#     enough out, present in every sector.
 #   - nothing may exceed PEG_MAX_R, or pieces touch in adjacent cells.
 #   - printed flat with no supports, so no surface may overhang more than 45
 #     degrees: a profile may widen going up by at most one millimetre of
@@ -527,51 +538,63 @@ PEG_MAX_R = 8.75          # half of 17.5; the skirt, and nothing wider.
                           # the cells have not moved, the pieces have grown
                           # into the space that was already there.
 
-# crown -- an open cup: a central boss with the post on it, a deep annular
-# trough round that, and six square points standing up at the rim.
+# crown -- a BAND at the bottom, and six tapered points standing on it.
 #
-# The old one was a disc with shallow V notches nicked out of the edge, and it
-# read as a gear. What makes a crown a crown is that the top is mostly AIR:
-# points round an open middle, with the band between them recessed. So the
-# trough is 1.7 mm wide and 3.7 mm deep, and the points stand 3.7 mm proud of
-# its floor.
+# Four goes at this. A disc with shallow V notches nicked out of the edge,
+# which read as a gear. Square merlons round an open trough, which read as a
+# castle turret. Cones cut into a thick rim, which read as dimples drilled
+# into a bowl -- a cut can make a hole in a wall but it cannot make the wall
+# into six separate things standing up.
 #
-# The points have FLAT TOPS, dead level at PEG_BODY_H. That is the whole
-# difference from V notches, which tapered to a tip and so could not carry
-# anything: the next piece now stands on six pads and on the boss, and
-# test_fit.py measures that against the seat contract rather than looking for
-# a continuous ring. The post protrudes from the boss exactly as it does on
-# every other piece, and the socket below is untouched -- same bore, same
-# depth, same roof.
+# So the points are ADDED, like the saucer's legs and for the same reason.
+# What the lathe makes is a shallow cup: a band, a low wall, a floor, and the
+# column the socket needs up the middle. Six tapered spikes are then stood on
+# that floor, and they are the only thing at full height out at the rim.
+#
+# The three things a crown silhouette has, which the first three attempts all
+# missed at least one of:
+#
+#   a solid band across the bottom, wider than what stands on it
+#   points that TAPER as they rise
+#   an EMPTY middle -- nothing between the points at their own height
+#
+# The third is what the old seat rule made impossible: it wanted a
+# continuous ring of support up at 6.30, which is a table, and points cannot
+# look tall standing next to a table of their own height. The rule is
+# asymmetric now (see SEAT_*) and the middle of this piece is a column barely
+# wider than the post coming out of it.
+#
+# The spikes still have FLAT TOPS dead level at PEG_BODY_H, because the next
+# piece stands on them, and on nothing else: six pads at r6.2 carry it with a
+# far better moment arm than the old table ever had.
 CROWN_BODY_PROFILE = [
     (8.75, 0.00),
-    (8.75, 1.00),   # a full skirt: the bottom stays flat and whole
-    (8.30, 2.20),
-    (8.30, 4.20),
-    (8.75, 5.40),   # flares back out at 21 degrees to thicken the rim
-    (8.75, 6.30),
+    (8.75, 1.20),   # the band: full, plain, and the widest part of the piece
+    (8.20, 1.55),   # stepped in 0.55 -- the line under the band that most of
+    (8.20, 1.95),   # the drawn ones have. Kept low: a tall cup wall competes
+    (4.60, 1.95),   # with the points, and the points are the crown.
+    (4.60, 3.60),   # the column: 1.48 mm of wall round the socket
+    (3.40, 5.00),   # tapering once it is past the socket roof, so what shows
+    (3.40, 6.30),   # in the middle is barely wider than the post itself
 ]
-CROWN_POINTS    = 6
-CROWN_TROUGH_R0 = 5.00    # just OUTSIDE SEAT_CORE_R, not on it. The cut is
-                          # a polygon inscribed in that radius, so its facet
-                          # midpoints sit a hundredth inside the number typed
-                          # here -- put it on the core exactly and the boss
-                          # loses it by 7 microns in six places, which the
-                          # seat check duly caught.
+CROWN_POINTS   = 6
+CROWN_SPIKE_AT = 6.30     # centre radius of each spike
+CROWN_SPIKE_R0 = 2.05     # 4.10 mm across at the foot, welded into the cup
+CROWN_SPIKE_R1 = 1.15     # 2.30 mm across at the top. This is as slim as the
+                          # points can be: six pads of it is 19.0% of the
+                          # seat band against the 18% SEAT_MIN_FRAC asks for.
+                          # The shape wants them slimmer and the contract
+                          # will not have it, which is the right way round
+                          # for that argument to be settled.
                           #
-                          # This is as far in as the boss can be trimmed. It
-                          # is what SEAT_CORE_R is for, and SEAT_CORE_R came
-                          # down from 5.60 to 4.80 to let it come this far --
-                          # a 10 mm boss instead of a 11.6 mm one, and a
-                          # trough half again as wide.
-CROWN_TROUGH_R1 = 6.80    # leaves a 1.95 mm rim for the points to stand on
-CROWN_TROUGH_Z  = 2.60    # floor of the trough
-CROWN_CUT_AT    = 9.20    # six vertical cylinders, cutting in to r6.80 --
-CROWN_CUT_R     = 2.40    # past the rim's inner face, so the gaps go right
-                          # through and the points really are separate. A
-                          # vertical cut is self-supporting whatever its
-                          # depth, and its floor is an upward face, so the
-                          # whole thing prints without a scrap of support.
+                          # 1.10 was tried and measured 17.9%, not the 18.1%
+                          # the arithmetic promised: the pad is a 64-sided
+                          # polygon INSCRIBED in this radius, so it is a fifth
+                          # of a percent smaller than the circle it is named
+                          # after. Worth knowing before setting any of these
+                          # numbers exactly on a limit.
+CROWN_SPIKE_Z0 = 1.75     # starts just below the floor so there is no seam
+                          # at the weld
 
 # saucer -- a flying one. A landing pad on the ground, four struts holding the
 # hull up off it, a hull whose underside sweeps out to a thin brim at the full
