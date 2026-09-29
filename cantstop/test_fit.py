@@ -578,31 +578,66 @@ def main():
           f"steepest {np.degrees(np.arctan(spike_over)):.0f} degrees from "
           f"vertical, on a profile that is {max(P.CROWN_SPIKE_SQUASH):.2f} "
           f"times wider along the rim than it was turned")
-    # The active piece's lattice is holes cut through a solid, not a profile,
-    # so the loop above cannot see it either -- and a hole has a CEILING,
-    # which is the overhang that matters. A regular hexagon with a vertex at
-    # the top looks like it should roof itself and does not: 0.866r of run
-    # for 0.5r of rise is 60 degrees. The cells are gables for that reason,
-    # and this is the check that would have caught it.
-    check("the lattice roofs its own holes",
+    # The active piece's web is cells cut through a solid, not a profile, so
+    # the loop above cannot see it either -- and a hole has a CEILING, which
+    # is the overhang that matters. A regular hexagon with a vertex at the
+    # top looks like it should roof itself and does not: 0.866r of run for
+    # 0.5r of rise is 60 degrees. The cells are STRETCHED hexagons for that
+    # reason, and this is the check that would have caught it.
+    cells = B.active_lattice()
+    check("the web roofs its own cells",
           B.active_cell_roof() <= 1.0 + 1e-9,
           f"{np.degrees(np.arctan(B.active_cell_roof())):.0f} degrees from "
-          f"vertical on every one of {len(B.active_lattice())} cells, so "
-          f"there is not a bridge in the tower")
-    # AND THE WEB BETWEEN THE HOLES, which is what actually decides how small
-    # the cells can get. Shrinking a cell is free; shrinking the wall left
-    # between two of them is not, and the two move together. A face only gets
-    # a row every OTHER row, so what stands between two holes up a face is
-    # twice ROW_DZ less the hole -- not ROW_DZ less the hole, which is the
-    # easy way to talk yourself into a tower made of nothing.
+          f"vertical on every one of {len(cells)} cells, so there is not a "
+          f"bridge in the tower")
+    # AND THE RIBS BETWEEN THE CELLS, which are what decide how big the cells
+    # can get. Widening a cell is free; the rib left between two of them is
+    # not, and the two move together.
+    #
+    # The rib between two rows of a face is the one worth computing rather
+    # than eyeballing, and board.active_web() does it: the rows are offset
+    # half a pitch, so what stands between them is the gap between two
+    # PARALLEL 45-degree edges, and the perpendicular distance across that is
+    # shorter than either the vertical or the horizontal gap. Taking
+    # 2*ROW_DZ - HOLE instead -- the vertical gap -- reads 1.4 mm where the
+    # printer sees 0.85, which is how a tower made of nothing gets signed off.
     LINE = 0.42                      # nozzle line width
-    web_x = P.ACTIVE_HOLE_PITCH - P.ACTIVE_HOLE
-    web_z = 2 * P.ACTIVE_ROW_DZ - P.ACTIVE_HOLE
-    check("the lattice leaves a web the printer can actually lay down",
-          min(web_x, web_z, P.ACTIVE_EDGE) >= 2 * LINE - 0.05,
-          f"{web_x:.2f} mm across a row, {web_z:.2f} mm up a face, "
-          f"{P.ACTIVE_EDGE:.2f} at the edge -- two {LINE} perimeters and no "
-          f"infill is {2*LINE:.2f}")
+    rib_x, rib_d, rib_e = B.active_web()
+    check("the web leaves a rib the printer can actually lay down",
+          min(rib_x, rib_d, rib_e) >= 2 * LINE - 0.05,
+          f"{rib_x:.2f} mm across a row, {rib_d:.2f} mm between two rows of "
+          f"one face, {rib_e:.2f} at the edge -- two {LINE} perimeters and "
+          f"no infill is {2*LINE:.2f}")
+    # A WEB IS A RATIO, NOT A COUNT. Two versions failed this from opposite
+    # ends -- 1.60 mm cells on a fat rib, then 1.10 mm cells on a fatter one
+    # relative to them -- and both read as a wall with holes in it. The
+    # reference print's openings are millimetres across and its lines are one
+    # extrusion wide. Three of cell to one of rib is what looks like a web.
+    check("the cells are wide enough against their ribs to read as a web",
+          P.ACTIVE_HOLE / rib_x >= 2.0,
+          f"{P.ACTIVE_HOLE / rib_x:.1f} of cell to one of rib "
+          f"({P.ACTIVE_HOLE:.2f} mm across on a {rib_x:.2f} mm line)")
+    # IT HAS TO BE A HONEYCOMB ON EACH FACE, and for two versions it was a
+    # grid. The axis alternates every row, so a face only ever sees the even
+    # rows or only the odd ones -- which means keying the stagger on the row
+    # index gives every row of a given face the SAME offsets, and they stack
+    # up in columns. Nobody can see two adjacent rows at once, because they
+    # are on faces at right angles, so this is invisible in every view except
+    # the one that matters.
+    #
+    # The test is the property itself: down one face, rows must alternate
+    # between having a cell ON the axis and straddling it.
+    for name, want_x in (("front and back", True), ("left and right", False)):
+        rows: dict[float, list[float]] = {}
+        for z, off, along_x in cells:
+            if along_x == want_x:
+                rows.setdefault(z, []).append(off)
+        kinds = [any(abs(o) < 1e-9 for o in rows[z]) for z in sorted(rows)]
+        check(f"the {name} faces are a honeycomb, not a grid",
+              all(a != b for a, b in zip(kinds, kinds[1:])),
+              "rows alternate " +
+              " ".join("on" if k else "straddling" for k in kinds) +
+              " the axis, bottom to top")
     check("nothing overhangs more than 45 degrees, so nothing needs support",
           worst_over <= 1.0 + 1e-9,
           f"steepest is the {who[0]} between z{who[1]:.2f} and z{who[2]:.2f}, "

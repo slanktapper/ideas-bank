@@ -629,24 +629,34 @@ def _sq_frustum(a0: float, z0: float, a1: float, z1: float) -> trimesh.Trimesh:
 
 def _cell_hole(z: float, off: float, across: float, along_x: bool,
                reach: float = 30.0) -> trimesh.Trimesh:
-    """One lattice cell, cut straight through: a gabled hole, roof at 45.
+    """One lattice cell, cut straight through: a hexagon, stretched to 45.
 
     THE ROOF ANGLE IS THE WHOLE POINT. A hole through a wall has a ceiling,
-    and a ceiling is either self-supporting or it is a bridge. The first
-    attempt used a regular hexagon with a vertex at the top, on the belief
-    that a vertex-up hex roofs itself. It does not: its top edges run 0.866r
-    across for 0.5r up, which is 60 degrees from vertical -- half again past
-    what the printer will carry.
+    and a ceiling is either self-supporting or it is a bridge. A REGULAR
+    hexagon with a vertex at the top does not roof itself, whatever it looks
+    like: its top edges run 0.866r across for 0.5r up, which is 60 degrees
+    from vertical, half again past what the printer will carry.
 
-    So the cell is a gable instead: vertical sides up to a shoulder, then two
-    edges at exactly 45 degrees to a ridge. The floor is flat, which is an
-    upward-facing surface and free. It reads as a hexagon and it prints as a
-    house.
+    But a hexagon does not have to be regular. Put the six corners at
+
+        (+-a, +-t)  and  (0, +-(t + a))
+
+    and the top two edges run `a` across for `a` up -- 45 degrees exactly,
+    whatever t is. That is a pointy-top hexagon stretched vertically, and the
+    stretch is the only thing separating a shape that prints from one that
+    sags. t is a fraction of a (ACTIVE_CELL_SIDE), so it stays close enough
+    to regular to read as a honeycomb rather than as a diamond.
+
+    An earlier version squared this off into a gable -- vertical sides, a 45
+    degree roof, a flat floor. It printed, but a gable is a house, and the
+    reference for this piece is a spider's web. Six sides, all of them lines
+    of the net.
     """
     from shapely.geometry import Polygon
-    w = across * 0.5
-    sh = w * P.ACTIVE_CELL_SHOULDER
-    poly = Polygon([(-w, -w), (w, -w), (w, sh), (0.0, sh + w), (-w, sh)])
+    a = across * 0.5
+    t = a * P.ACTIVE_CELL_SIDE
+    poly = Polygon([(-a, -t), (0.0, -t - a), (a, -t),
+                    (a, t), (0.0, t + a), (-a, t)])
     m = trimesh.creation.extrude_polygon(poly, 2.0 * reach)
     # extruded along +z from 0: lay it on its side, so the section becomes
     # the hole's profile and the extrusion becomes the bore
@@ -664,45 +674,66 @@ def _cell_hole(z: float, off: float, across: float, along_x: bool,
 
 
 def active_cell_roof() -> float:
-    """The lattice roof's slope, dr/dz. 1.0 is 45 degrees, which is the
-    limit -- the gable is built to sit exactly on it."""
-    w = P.ACTIVE_HOLE * 0.5
-    return w / w
+    """The lattice roof's slope, run/rise. 1.0 is 45 degrees, which is the
+    limit -- the stretched hexagon is built to sit exactly on it.
+
+    Written out as the run over the rise of the top edge rather than as the
+    constant 1.0, so that if the cell's corners are ever moved this stops
+    agreeing with the check that reads it.
+    """
+    a = P.ACTIVE_HOLE * 0.5
+    t = a * P.ACTIVE_CELL_SIDE
+    run = a - 0.0                       # (a, t) across to (0, t + a)
+    rise = (t + a) - t
+    return run / rise
 
 
 def active_lattice() -> list[tuple[float, float, bool]]:
-    """(z, y-offset, along x?) for every hole in the spire's lattice.
+    """(z, offset, along x?) for every cell in the spire's web.
 
     Rows climb by ACTIVE_ROW_DZ and alternate axis, so one row opens the left
-    and right faces and the next the front and back -- every face gets holes
-    on every other row. Alternate rows are offset half a pitch, which is what
-    makes it a honeycomb and not a grid. A row carries as many holes as the
-    spire is wide enough for at that height, so the lattice thins out as the
-    tower does without anything having to say so.
+    and right faces and the next the front and back. A row carries as many
+    cells as the spire is wide enough for at that height, so the web thins
+    out as the tower does without anything having to say so.
+
+    THE STAGGER KEYS ON THE ROW'S POSITION WITHIN ITS OWN FACE, not on the
+    row index. That is the difference between a honeycomb and a grid, and it
+    was a grid for two versions without anyone noticing: with the axis
+    alternating every row, a face only ever sees the EVEN rows (or only the
+    odd ones), so keying the stagger on k % 2 gives every row on a given face
+    the same offsets. What a face wants is its own rows alternating, which is
+    k // 2. Nobody sees two adjacent rows of the tower at once -- they are on
+    faces at right angles -- so the pattern that matters is the one down a
+    single face.
     """
     z0 = P.ACTIVE_BASE_H
     h = P.ACTIVE_SPIRE_H
     a0, a1 = P.ACTIVE_SPIRE_BASE / 2, P.ACTIVE_SPIRE_TOP
+    a = P.ACTIVE_HOLE * 0.5
+    t = a * P.ACTIVE_CELL_SIDE
     out = []
     k = 0
-    z = z0 + P.ACTIVE_ROW_DZ * 0.4
-    while z < z0 + h - P.ACTIVE_ROW_DZ * 0.4:
-        half = a0 + (a1 - a0) * (z - z0) / h
-        # work out the WIDEST offset a hole can sit at and fill in from
-        # there, rather than picking a count and throwing away what does not
-        # fit -- that gave rows of 4, 3, 2, 2, 3, 2 up the same tower
-        far = half - P.ACTIVE_EDGE - P.ACTIVE_HOLE / 2
+    z = z0 + (t + a) + P.ACTIVE_EDGE
+    while z + (t + a) + P.ACTIVE_EDGE < z0 + h:
+        # measure the face where the cell is at FULL WIDTH -- its upper
+        # shoulder, (+-a, t) -- not at its centre. The spire tapers, so the
+        # top of a cell sits in a narrower face than its middle does, and
+        # measuring at the middle is how a cell's shoulder ends up hanging
+        # over the edge of the face it was supposed to fit inside.
+        half = a0 + (a1 - a0) * (z + t - z0) / h
+        far = half - P.ACTIVE_EDGE - a
         if far > 0:
             pitch = P.ACTIVE_HOLE_PITCH
             # BUILD EACH ROW OUT FROM THE MIDDLE, not by centring a span and
             # then nudging it. Offsetting a centred row by half a pitch walks
-            # its far end past the edge, the filter drops that one hole and
+            # its far end past the edge, the filter drops that one cell and
             # the row comes out lopsided -- three on the left and two on the
-            # right of the same face. An even row puts a hole ON the axis and
-            # pairs off either side of it; an odd row straddles the axis with
-            # a pair at half a pitch. Both are symmetric by construction, and
-            # the two together are the honeycomb.
-            if k % 2 == 0:
+            # right of the same face. One kind of row puts a cell ON the
+            # axis and pairs off either side of it; the other straddles the
+            # axis with a pair at half a pitch. Both are symmetric by
+            # construction, and the two alternating down a face are the
+            # honeycomb.
+            if (k // 2) % 2 == 0:
                 offs = [0.0]
                 j = 1
                 while j * pitch <= far + 1e-9:
@@ -719,6 +750,29 @@ def active_lattice() -> list[tuple[float, float, bool]]:
         k += 1
         z += P.ACTIVE_ROW_DZ
     return out
+
+
+def active_web() -> tuple[float, float, float]:
+    """The three thicknesses of rib the web is made of, in mm.
+
+    (across a row, between two rows of the same face, at the edge of a face).
+
+    The middle one is the one worth computing rather than eyeballing. Two
+    cells in adjacent rows of the same face are offset half a pitch
+    sideways, so what stands between them is not a horizontal slab -- it is
+    the gap between one cell's upper-right edge and the next one's lower-left
+    edge, and those are PARALLEL lines at 45 degrees. The rib is the
+    perpendicular distance between them, which is shorter than either the
+    vertical or the horizontal gap and is what actually gets printed.
+    """
+    a = P.ACTIVE_HOLE * 0.5
+    t = a * P.ACTIVE_CELL_SIDE
+    p = P.ACTIVE_HOLE_PITCH
+    dy = 2.0 * P.ACTIVE_ROW_DZ          # two rows apart: a face's own spacing
+    # upper-right edge of the lower cell:  y = -x + (t + a)
+    # lower-left edge of the one above it: y = -x + (p/2 - a + dy - t)
+    diag = abs((p / 2 - a + dy - t) - (t + a)) / np.sqrt(2.0)
+    return p - 2.0 * a, diag, P.ACTIVE_EDGE
 
 
 def active_socket_bridge() -> float:
@@ -939,10 +993,17 @@ def piece_profile_of(style: str):
         # tower. What the wall and overhang checks want from a "profile" is
         # the INSCRIBED half-width at each height, and for a square that is
         # exactly what half the side is.
+        z2 = P.ACTIVE_BASE_H + P.ACTIVE_SPIRE_H
         return [(P.ACTIVE_BASE / 2, 0.00),
                 (P.ACTIVE_BASE_TOP / 2, P.ACTIVE_BASE_H),
                 (P.ACTIVE_SPIRE_BASE / 2, P.ACTIVE_BASE_H),
-                (P.ACTIVE_SPIRE_TOP, P.ACTIVE_BASE_H + P.ACTIVE_SPIRE_H)]
+                (P.ACTIVE_SPIRE_TOP, z2),
+                # the finial, which the profile used to stop short of. It
+                # only ever narrows going up, so no overhang check was ever
+                # going to fail on it -- but a "profile" that leaves off the
+                # top 5 mm of the piece is a trap for the next thing that
+                # reads one, and piece_max_r and the height come from here.
+                (0.20, z2 + P.ACTIVE_FINIAL_H)]
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
             "cog": P.COG_BODY_PROFILE,
             "runner": P.RUNNER_BODY_PROFILE}[style]

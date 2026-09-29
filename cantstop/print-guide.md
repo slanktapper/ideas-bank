@@ -226,14 +226,17 @@ number: `test_fit.py` prints it and fails it past 4 mm.
 Do **not** print pieces upside down to "avoid" the socket. Inverted, the step
 from post to skirt becomes a flat overhang ring and genuinely needs support.
 
-**Piece 6's lattice needs no support either, and a slicer may disagree.** The
-tower is cut through with 33 holes, and every one of them is a *gable* — two
-edges at exactly 45° to a ridge — so each hole roofs itself. Some slicers
-flag a hole in a wall on principle. Ignore it: supports inside those cells
-are unremovable, and the geometry does not want them. The web between the
-cells is 0.85–1.00 mm, which is **two perimeters and no infill**, so set the
-piece's wall count to 2 or better and let gap fill do the rest — three
-perimeters on a 0.85 mm web just makes the slicer thin-wall the whole tower.
+**Piece 6's web needs no support either, and a slicer may disagree.** The
+tower is cut through with 16 hexagonal cells, and every one of them is
+*stretched* so its top two edges sit at exactly 45° — so each cell roofs
+itself. (A regular hexagon would not: vertex-up, its top edges are at 60°.)
+Some slicers flag a hole in a wall on principle. Ignore it — supports inside
+those cells would be unremovable, and the geometry does not want them.
+
+**Set the piece's wall count to 2, not 3.** Every rib in the web is 0.85 mm,
+which is exactly two 0.42 perimeters with no infill. Asking for three makes
+the slicer thin-wall the whole tower, and thin-walled single extrusions
+across a 21-cell web is a much worse print than two clean perimeters.
 
 ---
 
@@ -322,7 +325,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 124 checks, ~2 min
+python3 test_fit.py    # 127 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

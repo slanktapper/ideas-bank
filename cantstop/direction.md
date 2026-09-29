@@ -221,19 +221,35 @@ nothing about either.
   rim** — and cut to four facets rather than sixty-four, which is crisper,
   closer to the drawn ones, and the easiest thing a printer ever laid.
 
-  **The points touch at the foot.** At 1.72 the feet are 7.05 mm wide on a
-  6.55 mm spacing, so each one overlaps its neighbours by half a millimetre
-  and the six of them fuse into a continuous scalloped band before they part
-  company and rise as six separate blades. That is both what a drawn crown
-  looks like and what makes them strong: a blade standing on its own at this
-  scale is a thing waiting to snap off a game piece that lives in a box, and
-  now none of them stands on its own.
+  **The points overlap at the foot, and the foot is most of the point.** The
+  foot went out to r2.35, which after the squash is 8.08 mm along the rim on
+  a 6.55 mm spacing: each one runs a millimetre and a half into its
+  neighbours, and the six of them are one continuous scalloped rim that six
+  blades rise out of. That is both what a drawn crown looks like and what
+  makes them survive a box — a blade standing on its own at this scale is a
+  thing waiting to snap off. It still stops at r8.01, inside the band's own
+  8.20, so nothing pokes out past the widest part of the piece.
 
-  The flare is 38° from vertical after the squash multiplies it, inside the
-  45 the printer will carry — the waist dropped to z 3.60 to keep it there,
-  since widening the point steepened the flare. `test_fit.py` checks it
-  separately, because the points are turned and *then* squashed and the
-  ordinary overhang loop reads profiles, which know nothing about it.
+  The waist moved **up** 1.10 mm at the same time, to z 4.70, which is what
+  makes the foot read as a pyramid rather than a stub: it now rises 1.70 mm
+  clear of the floor.
+
+  **That rise is not free, and it is the tightest number on the piece.** The
+  squash multiplies the flare, so the limit is dr/dz ≤ 1/1.72 — raising the
+  waist shortens the rise the flare has to happen over, and the flare gets
+  steeper for it. At a knob of r1.61 it came out at 44.6°: inside the 45 and
+  *passing*, and far too close to it to want to print. r1.59 puts it back to
+  43.7°. There is no more room here — widen the foot again and the waist has
+  to come back down to pay for it. `test_fit.py` checks this separately,
+  because the points are turned and *then* squashed, and the ordinary
+  overhang loop reads profiles, which know nothing about the squash.
+
+  **The floor came up to z 3.00.** It sat at 1.95, which made the middle of
+  the crown a well nearly two thirds of the piece deep, and from anywhere but
+  straight overhead what you saw was the inside of a bowl with some points
+  behind it. At 3.00 it is a shallow tray: the eye reads a band with points
+  standing out of it, which is the thing. It also buries the bottom third of
+  each foot, so the points grow out of the rim instead of being parked on it.
 
   The knobs have flat tops dead level at 6.30 because the next piece stands
   on them and on nothing else. Six of them is 31 mm², 24% of the band and
@@ -279,48 +295,86 @@ nothing about either.
 - **6 active** — the active player's marker, and the only piece that does not
   stack. Everything else on this board is round, squat and solid; this is
   **square, tall and open**. A tapered plinth with the socket in it, a ledge,
-  and a latticed spire. 21.6 mm against a marker's 8.45, one per player, in
+  and a webbed spire. 27.0 mm against a marker's 8.45, one per player, in
   their colour.
 
-  **The tower is a lattice.** Rows of holes cut straight through the spire,
-  alternating axis row by row — one row opens the left and right faces, the
-  next the front and back, so every face gets holes on every other row, and
-  the rows straddle each other so the pattern is a honeycomb and not a grid.
-  Thirty-three cells.
+  **The tower is a web.** Rows of hexagonal cells cut straight through the
+  spire, alternating axis row by row — one row opens the left and right
+  faces, the next the front and back. The reference is a print whose surface
+  is the exposed perimeter of a hexagonal infill: thin lines with big
+  openings between them.
 
-  **Each cell is a gable, not a hexagon.** Vertical sides up to a shoulder,
-  then two edges at exactly 45° to a ridge, and a flat floor. A hole through
-  a wall has a *ceiling*, and a ceiling either holds itself up or it is a
-  bridge. The first version used regular hexagons with a vertex at the top,
-  on the belief that a vertex-up hexagon roofs itself. **It does not** — its
-  top edges run 0.866r across for 0.5r up, which is 60° from vertical, half
-  again past what the printer will carry, and the tower would have come off
-  the bed with twenty-one sagging ceilings in it. The gable is the shape that
-  actually does the job. `test_fit.py` measures the angle rather than taking
-  anyone's word for it.
+  **Every cell is a hexagon stretched until it prints.** A hole through a
+  wall has a *ceiling*, and a ceiling either holds itself up or it is a
+  bridge. A regular hexagon with a vertex at the top does **not** hold itself
+  up, whatever it looks like: its top edges run 0.866r across for 0.5r up,
+  which is 60° from vertical, half again past what the printer will carry.
+  Put the corners at (±a, ±t) and (0, ±(t+a)) instead and the top two edges
+  run *a* across for *a* up — 45° exactly, whatever *t* is. `ACTIVE_CELL_SIDE`
+  sets *t* as a fraction of *a*: at 0.30 the cell is 1.3 times as tall as it
+  is wide, which still reads as a hexagon.
 
-  **The web sets the cell size, not the other way round.** The first pass cut
-  a 1.60 mm hole on a 2.20 mm pitch and the tower read as a solid obelisk
-  with a few slots punched in it. Widening the cell is the obvious fix and it
-  is the wrong one: the face is only 11 mm across, and what limits a row is
-  where the outermost hole's *centre* can sit, so a bigger cell buys fewer of
-  them. Going the other way worked — cells small and many, at a 1.10 mm hole
-  on a 1.95 mm pitch, with the web pinned at two 0.42 perimeters (0.85 across
-  a row, 1.00 up a face) and the pitch derived from that floor.
+  A **gable** was tried in between — vertical sides, a 45° roof, a flat
+  floor — and it printed perfectly well. It was abandoned for looking like
+  what it was: a row of little houses.
 
-  `ACTIVE_EDGE` is the one that is easy to get wrong. It reads like a
-  cosmetic margin — how close a hole may come to the edge of a face — but a
-  row's tunnels run the full depth of the spire, so what it really sets is
-  the **thickness of the slab left standing at the outside of the row**, and
-  the next row up cuts across that slab at right angles. It is held to the
-  same two-perimeter floor as the rest of the web, and checked there.
+  **The rib is the parameter; everything else follows.** Two failed passes
+  made the same mistake from opposite ends. The first cut 1.60 mm holes on a
+  2.20 pitch and read as a solid obelisk with slots in it. The correction was
+  to go *smaller and denser* — 1.10 mm cells on a 1.95 pitch — and that was
+  worse, because it was the wrong diagnosis. The reference print's openings
+  are **millimetres** across and its lines are one extrusion wide. What makes
+  a web look like a web is that ratio, roughly three of hole to one of rib.
+  Small cells with a fat rib between them is not a web; it is a wall with
+  holes in it. The rib is pinned at two 0.42 perimeters and the cell and the
+  pitch are whatever is left.
 
-  **The golden ratio sets the taper, not the holes.** The spire runs 5.50 →
-  2.10 of half-width, which is 1/φ² exactly. An earlier version put φ into
-  the *hole spacing* instead, subdividing the height by the golden section
-  each time — and a golden subdivision crowds everything into the last two
-  millimetres, which is a fact about the ratio rather than about the piece.
-  The lattice is an even honeycomb; the silhouette is golden.
+  There are **three ribs**, and `ACTIVE_EDGE` is the one that is easy to get
+  wrong. It reads like a cosmetic margin — how close a cell may come to the
+  edge of a face — but a row's cells are cut straight through the spire, so
+  it really sets the thickness of the slab left standing outboard of the row,
+  and the next row up cuts across that slab at right angles. The one between
+  two rows of a face is not the vertical gap either: the rows are offset half
+  a pitch, so what stands between them is the gap between one cell's
+  upper-right edge and the next one's lower-left edge, which are *parallel
+  lines at 45°*. The rib is the perpendicular distance between them, shorter
+  than either the vertical or the horizontal gap. `board.active_web()`
+  computes all three and `test_fit.py` checks them.
+
+  **The stagger keys on the row's position within its own face.** That is the
+  difference between a honeycomb and a grid, and it was a grid for two
+  versions without anyone noticing. With the axis alternating every row, a
+  face only ever sees the even rows or only the odd ones — so keying the
+  stagger on `k % 2` gives every row on a given face the *same* offsets. What
+  a face wants is its own rows alternating, which is `k // 2`. Nobody ever
+  sees two adjacent rows at once; they are on faces at right angles.
+
+  **The shaft does not taper, and that is the whole argument of the piece.**
+  It ran 5.50 → 2.10 of half-width, which is 1/φ² exactly — a nice fact that
+  cost this piece the thing it was for. A row holds three cells only while
+  the face is at least 2 × (pitch + half a cell + the edge rib), which here
+  is 12.4 mm. Against a taper the face loses a cell every few millimetres, so
+  the rows run 3, 2, 1 up a spire that started wide enough for three. Worse,
+  the only way to keep three high up is to start very *wide* — and then the
+  bottom rows have a centimetre of bare face either side of them, because the
+  cells sit on a fixed pitch and stop where the pitch stops. Blank strips
+  down both edges of every face is exactly what stopped this reading as a
+  web: it looked like an obelisk with holes drilled up the middle of it.
+
+  A parallel shaft has neither problem. Every row is the same width, so every
+  row holds three (or two, staggered) all the way up, with 0.10 mm of slack
+  beyond the edge rib instead of 0.74. The spire is 12.60 across and stays
+  there, and the **point is a separate 45° pyramid** sitting on top of it —
+  which is also what the sketch this came from shows: a flared foot, a
+  straight shaft, a cap.
+
+  **The open fraction is the number to watch, and it is why the cells are
+  3 mm.** A face reads as a web when most of it is missing. Ribs are pinned
+  at the printer's floor, so the only lever is cell size, and the arithmetic
+  is unforgiving: a 2.2 mm cell leaves a 3-cell row 45% open, a 3.0 mm cell
+  leaves it 54%. Bigger still would be better and there is nowhere to put it
+  — a 3.4 mm cell needs a 13.8 mm shaft, which is wider than the plinth it
+  stands on.
 
   **Square is safe, and it is checked rather than hoped.** Columns are
   22.0 mm apart and the tightest row pitch is 19.58, and two axis-aligned
@@ -558,7 +612,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 124 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 127 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same
