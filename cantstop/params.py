@@ -618,15 +618,15 @@ CROWN_SPIKE_SQUASH = (0.62, 1.72)   # (through the wall, along the rim)
                                     # 1.34 left 1.06 mm of air between one
                                     # point's foot and the next, which is a
                                     # gap you can see and a neck you can
-                                    # snap. At 1.72, with the foot out at
-                                    # 2.35, the feet are 8.08 mm across on a
+                                    # snap. At 1.72, with a straight foot at
+                                    # r2.20, the feet are 7.57 mm across on a
                                     # 6.55 mm spacing -- they overlap by a
-                                    # millimetre and a half and weld into one
-                                    # scalloped rim, the way drawn crowns
-                                    # have their points rising out of a band
-                                    # rather than standing on it. The knobs
-                                    # still clear each other by 1.1 mm, so
-                                    # the gaps are up where they read.
+                                    # millimetre and weld into one scalloped
+                                    # rim, the way drawn crowns have their
+                                    # points rising out of a band rather than
+                                    # standing on it. The knobs still clear
+                                    # each other by 1.8 mm, so the gaps are
+                                    # up where they read.
 
 # A POINT IS A CONE ON A CONE. It narrows to a waist and then flares back out
 # to a knob, which is the shape a crown point has in half the drawn ones --
@@ -640,13 +640,26 @@ CROWN_SPIKE_SQUASH = (0.62, 1.72)   # (through the wall, along the rim)
 # inside the 45 the printer will carry, and the knob's top is FLAT at
 # PEG_BODY_H because the next piece stands on it.
 CROWN_SPIKE_PROFILE = [
-    (2.35, 1.75),   # THE FOOT, buried in the floor so there is no seam. It
-                    # was 2.05, which after the squash is 7.05 mm along the
-                    # rim on a 6.55 spacing -- touching, but only just. At
-                    # 2.35 it is 8.08, so each foot runs a millimetre and a
-                    # half into its neighbours and the six of them are one
-                    # continuous scalloped rim. It still stops at r8.01,
-                    # inside the band's own 8.20, so nothing pokes out.
+    (2.20, 1.75),   # THE FOOT, buried in the floor so there is no seam...
+    (2.20, 3.40),   # ...and STRAIGHT for the first 1.65 mm of it, which is
+                    # the only reason the points touch where you can see it.
+                    #
+                    # The foot was a cone from r2.35 straight to the waist,
+                    # and measured at its widest it overlapped its neighbours
+                    # by 1.53 mm -- every millimetre of which was under the
+                    # floor. A cone is narrowing the whole way up, so by the
+                    # time it came out at z3.00 it was down to r1.76, which
+                    # is 6.04 mm along the rim on a 6.55 spacing: half a
+                    # millimetre APART. The overlap was real and invisible,
+                    # which is the worst kind.
+                    #
+                    # What matters is the width where the foot LEAVES THE
+                    # FLOOR, so the foot holds its radius until 0.40 mm above
+                    # it. At r2.20 that is 7.57 mm along the rim -- a full
+                    # millimetre of overlap on each side, out in the open,
+                    # and the six feet are one scalloped rim that six blades
+                    # rise out of. Reach is 7.91, inside the band's own 8.20,
+                    # so nothing pokes out past the edge of the piece.
     (0.95, 4.70),   # the waist: the thing you grip, and it moved UP 1.10 mm.
                     # That is the "taller" half of the job -- the foot is the
                     # pyramid you see, and it now rises 1.70 mm clear of the

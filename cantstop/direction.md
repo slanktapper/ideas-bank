@@ -221,18 +221,30 @@ nothing about either.
   rim** — and cut to four facets rather than sixty-four, which is crisper,
   closer to the drawn ones, and the easiest thing a printer ever laid.
 
-  **The points overlap at the foot, and the foot is most of the point.** The
-  foot went out to r2.35, which after the squash is 8.08 mm along the rim on
-  a 6.55 mm spacing: each one runs a millimetre and a half into its
-  neighbours, and the six of them are one continuous scalloped rim that six
-  blades rise out of. That is both what a drawn crown looks like and what
-  makes them survive a box — a blade standing on its own at this scale is a
-  thing waiting to snap off. It still stops at r8.01, inside the band's own
-  8.20, so nothing pokes out past the widest part of the piece.
+  **The points overlap at the foot, and the foot is STRAIGHT.** That second
+  part is the whole of it. The foot was a cone running from r2.35 up to the
+  waist, and measured at its widest it overlapped its neighbours by 1.53 mm
+  — every millimetre of which was under the floor. A cone narrows the whole
+  way up, so by the time it came out at z3.00 it was down to r1.76, which is
+  6.04 mm along the rim on a 6.55 mm spacing: half a millimetre **apart**.
+  The overlap was real and invisible, which is the worst kind, and it is why
+  there is now a check that measures the width where the foot *leaves the
+  floor* rather than where it is widest.
+
+  So the foot holds r2.20 until 0.40 mm above the floor and only then draws
+  in. That is 7.57 mm along the rim — a millimetre of overlap on each side,
+  out in the open — and the six feet are one continuous scalloped rim that
+  six blades rise out of. It is both what a drawn crown looks like and what
+  makes them survive a box: a blade standing on its own at this scale is a
+  thing waiting to snap off. Reach is 7.91, inside the band's own 8.20, so
+  nothing pokes out past the edge of the piece. The knobs still clear each
+  other by 1.18 mm, and there is a check on that too — the gaps belong up at
+  the top, where they read as a crown, and a piece whose points touch all the
+  way up is a cup.
 
   The waist moved **up** 1.10 mm at the same time, to z 4.70, which is what
-  makes the foot read as a pyramid rather than a stub: it now rises 1.70 mm
-  clear of the floor.
+  makes the foot read as a pyramid rather than a stub: it rises 1.70 mm clear
+  of the floor.
 
   **That rise is not free, and it is the tightest number on the piece.** The
   squash multiplies the flare, so the limit is dr/dz ≤ 1/1.72 — raising the
@@ -612,7 +624,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 127 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 129 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

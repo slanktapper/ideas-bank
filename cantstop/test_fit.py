@@ -578,6 +578,30 @@ def main():
           f"steepest {np.degrees(np.arctan(spike_over)):.0f} degrees from "
           f"vertical, on a profile that is {max(P.CROWN_SPIKE_SQUASH):.2f} "
           f"times wider along the rim than it was turned")
+    # THE POINTS HAVE TO TOUCH WHERE YOU CAN SEE THEM, and "where you can see
+    # them" is the floor of the crown, not the bottom of the spike profile.
+    # This is measured rather than read off the widest radius because reading
+    # off the widest radius is exactly the mistake it exists to catch: a
+    # coned foot overlapped its neighbours by 1.53 mm at its base and was
+    # half a millimetre CLEAR of them by the time it came out of the floor,
+    # 1.25 mm higher up. Every millimetre of that overlap was buried. Real,
+    # and invisible, which is the worst kind.
+    bp = P.CROWN_BODY_PROFILE
+    floor_z = max(z0 for (r0, z0), (r1, z1) in zip(bp, bp[1:])
+                  if z1 == z0 and r1 < r0)          # the step in, at the floor
+    r_at = np.interp(floor_z + 0.40, [z for _, z in sp], [r for r, _ in sp])
+    lap = 2.0 * r_at * P.CROWN_SPIKE_SQUASH[1] - P.CROWN_SPIKE_AT
+    check("the crown's points overlap where they leave the floor",
+          lap >= 0.50,
+          f"{lap:+.2f} mm at z{floor_z + 0.40:.2f}, just clear of a floor at "
+          f"z{floor_z:.2f} -- {2*r_at*P.CROWN_SPIKE_SQUASH[1]:.2f} mm of foot "
+          f"on a {P.CROWN_SPIKE_AT:.2f} mm spacing")
+    # ...and NOT at the top, or it stops being a crown and becomes a cup.
+    top = 2.0 * sp[-1][0] * P.CROWN_SPIKE_SQUASH[1]
+    check("the crown's knobs still stand apart at the top",
+          P.CROWN_SPIKE_AT - top >= 1.0,
+          f"{P.CROWN_SPIKE_AT - top:.2f} mm of air between one knob and the "
+          f"next, so the gaps are up where they read")
     # The active piece's web is cells cut through a solid, not a profile, so
     # the loop above cannot see it either -- and a hole has a CEILING, which
     # is the overhang that matters. A regular hexagon with a vertex at the
