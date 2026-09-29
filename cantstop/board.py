@@ -627,159 +627,155 @@ def _sq_frustum(a0: float, z0: float, a1: float, z1: float) -> trimesh.Trimesh:
     return m
 
 
-def _cell_hole(z: float, off: float, across: float, along_x: bool,
-               reach: float = 30.0) -> trimesh.Trimesh:
-    """One lattice cell, cut straight through: a hexagon, stretched to 45.
+def _web_octagon(r: float) -> np.ndarray:
+    """The vertices of one ring: a FLAT-TOP octagon of circumradius r.
 
-    THE ROOF ANGLE IS THE WHOLE POINT. A hole through a wall has a ceiling,
-    and a ceiling is either self-supporting or it is a bridge. A REGULAR
-    hexagon with a vertex at the top does not roof itself, whatever it looks
-    like: its top edges run 0.866r across for 0.5r up, which is 60 degrees
-    from vertical, half again past what the printer will carry.
+    Flat-top means a horizontal edge at the top and the bottom and a vertical
+    one at each side, which is the orientation a drawn web has. The
+    alternative -- turned 22.5 degrees, vertex up -- is worse for printing,
+    not better: the two edges meeting at that vertex lie at 67.5 degrees from
+    vertical, where the flat top is a short bridge.
+    """
+    n = P.ACTIVE_WEB_SIDES
+    a = np.pi / n + np.arange(n) * 2.0 * np.pi / n     # 22.5, 67.5, ...
+    return np.column_stack([r * np.cos(a), r * np.sin(a)])
 
-    But a hexagon does not have to be regular. Put the six corners at
 
-        (+-a, +-t)  and  (0, +-(t + a))
+def web_cells(scale: float = 1.0) -> list:
+    """The open cells of one orb web, in its own plane, centred on (0, 0).
 
-    and the top two edges run `a` across for `a` up -- 45 degrees exactly,
-    whatever t is. That is a pointy-top hexagon stretched vertically, and the
-    stretch is the only thing separating a shape that prints from one that
-    sags. t is a fraction of a (ACTIVE_CELL_SIDE), so it stays close enough
-    to regular to read as a honeycomb rather than as a diamond.
+    A cell is bounded by two neighbouring rings and two neighbouring spokes:
+    a straight-sided trapezoid, because one ring's edge between two spokes IS
+    a straight octagon edge. Build the trapezoid, then pull it in by half a
+    rib all round, and what is left uncut between the cells is the web --
+    rings and spokes of one even thickness, without either ever having to be
+    drawn.
 
-    An earlier version squared this off into a gable -- vertical sides, a 45
-    degree roof, a flat floor. It printed, but a gable is a house, and the
-    reference for this piece is a spider's web. Six sides, all of them lines
-    of the net.
+    The innermost radius is the hub and stays solid. Everything outside the
+    outer ring is the face the web sits on.
     """
     from shapely.geometry import Polygon
-    a = across * 0.5
-    t = a * P.ACTIVE_CELL_SIDE
-    poly = Polygon([(-a, -t), (0.0, -t - a), (a, -t),
-                    (a, t), (0.0, t + a), (-a, t)])
-    m = trimesh.creation.extrude_polygon(poly, 2.0 * reach)
-    # extruded along +z from 0: lay it on its side, so the section becomes
-    # the hole's profile and the extrusion becomes the bore
-    m.apply_translation((0.0, 0.0, -reach))
-    m.apply_transform(trimesh.transformations.rotation_matrix(
-        np.pi / 2, (0.0, 1.0, 0.0)))
-    m.apply_transform(trimesh.transformations.rotation_matrix(
-        np.pi / 2, (1.0, 0.0, 0.0)))
-    m.apply_translation((0.0, off, 0.0))
-    if not along_x:
-        m.apply_transform(trimesh.transformations.rotation_matrix(
-            np.pi / 2, (0.0, 0.0, 1.0)))
-    m.apply_translation((0.0, 0.0, z))
-    return m
-
-
-def active_cell_roof() -> float:
-    """The lattice roof's slope, run/rise. 1.0 is 45 degrees, which is the
-    limit -- the stretched hexagon is built to sit exactly on it.
-
-    Written out as the run over the rise of the top edge rather than as the
-    constant 1.0, so that if the cell's corners are ever moved this stops
-    agreeing with the check that reads it.
-    """
-    a = P.ACTIVE_HOLE * 0.5
-    t = a * P.ACTIVE_CELL_SIDE
-    run = a - 0.0                       # (a, t) across to (0, t + a)
-    rise = (t + a) - t
-    return run / rise
-
-
-def active_lattice() -> list[tuple[float, float, bool]]:
-    """(z, offset, along x?) for every cell in the spire's web.
-
-    Rows climb by ACTIVE_ROW_DZ and alternate axis, so one row opens the left
-    and right faces and the next the front and back. A row carries as many
-    cells as the spire is wide enough for at that height, so the web thins
-    out as the tower does without anything having to say so.
-
-    THE STAGGER KEYS ON THE ROW'S POSITION WITHIN ITS OWN FACE, not on the
-    row index. That is the difference between a honeycomb and a grid, and it
-    was a grid for two versions without anyone noticing: with the axis
-    alternating every row, a face only ever sees the EVEN rows (or only the
-    odd ones), so keying the stagger on k % 2 gives every row on a given face
-    the same offsets. What a face wants is its own rows alternating, which is
-    k // 2. Nobody sees two adjacent rows of the tower at once -- they are on
-    faces at right angles -- so the pattern that matters is the one down a
-    single face.
-    """
-    z0 = P.ACTIVE_BASE_H
-    h = P.ACTIVE_SPIRE_H
-    a0, a1 = P.ACTIVE_SPIRE_BASE / 2, P.ACTIVE_SPIRE_TOP
-    a = P.ACTIVE_HOLE * 0.5
-    t = a * P.ACTIVE_CELL_SIDE
+    rr = [f * P.ACTIVE_WEB_R * scale for f in P.ACTIVE_WEB_RADII]
+    half_rib = P.ACTIVE_RIB * 0.5
     out = []
-    k = 0
-    z = z0 + (t + a) + P.ACTIVE_EDGE
-    while z + (t + a) + P.ACTIVE_EDGE < z0 + h:
-        # measure the face where the cell is at FULL WIDTH -- its upper
-        # shoulder, (+-a, t) -- not at its centre. The spire tapers, so the
-        # top of a cell sits in a narrower face than its middle does, and
-        # measuring at the middle is how a cell's shoulder ends up hanging
-        # over the edge of the face it was supposed to fit inside.
-        half = a0 + (a1 - a0) * (z + t - z0) / h
-        far = half - P.ACTIVE_EDGE - a
-        if far > 0:
-            pitch = P.ACTIVE_HOLE_PITCH
-            # BUILD EACH ROW OUT FROM THE MIDDLE, not by centring a span and
-            # then nudging it. Offsetting a centred row by half a pitch walks
-            # its far end past the edge, the filter drops that one cell and
-            # the row comes out lopsided -- three on the left and two on the
-            # right of the same face. One kind of row puts a cell ON the
-            # axis and pairs off either side of it; the other straddles the
-            # axis with a pair at half a pitch. Both are symmetric by
-            # construction, and the two alternating down a face are the
-            # honeycomb.
-            if (k // 2) % 2 == 0:
-                offs = [0.0]
-                j = 1
-                while j * pitch <= far + 1e-9:
-                    offs += [-j * pitch, j * pitch]
-                    j += 1
-            else:
-                offs = []
-                j = 0
-                while (j + 0.5) * pitch <= far + 1e-9:
-                    offs += [-(j + 0.5) * pitch, (j + 0.5) * pitch]
-                    j += 1
-            for off in sorted(offs):
-                out.append((z, off, k % 2 == 0))
-        k += 1
-        z += P.ACTIVE_ROW_DZ
+    for ra, rb in zip(rr, rr[1:]):
+        va, vb = _web_octagon(ra), _web_octagon(rb)
+        n = len(va)
+        for k in range(n):
+            j = (k + 1) % n
+            quad = Polygon([va[k], va[j], vb[j], vb[k]])
+            cell = quad.buffer(-half_rib, join_style=2)     # mitred
+            if cell.is_empty or cell.area < 0.02:
+                continue
+            out.append(cell)
     return out
 
 
-def active_web() -> tuple[float, float, float]:
-    """The three thicknesses of rib the web is made of, in mm.
+def active_webs() -> list[tuple[float, bool]]:
+    """(z of the web's centre, does it face +-x?) for every web on the piece.
 
-    (across a row, between two rows of the same face, at the edge of a face).
-
-    The middle one is the one worth computing rather than eyeballing. Two
-    cells in adjacent rows of the same face are offset half a pitch
-    sideways, so what stands between them is not a horizontal slab -- it is
-    the gap between one cell's upper-right edge and the next one's lower-left
-    edge, and those are PARALLEL lines at 45 degrees. The rib is the
-    perpendicular distance between them, which is shorter than either the
-    vertical or the horizontal gap and is what actually gets printed.
+    All four faces carry the same webs at the same heights -- which is only
+    possible because each cut stops at the wall. The flag says which pair of
+    walls a given cut belongs to, and both pairs get a web at every height.
     """
-    a = P.ACTIVE_HOLE * 0.5
-    t = a * P.ACTIVE_CELL_SIDE
-    p = P.ACTIVE_HOLE_PITCH
-    dy = 2.0 * P.ACTIVE_ROW_DZ          # two rows apart: a face's own spacing
-    # upper-right edge of the lower cell:  y = -x + (t + a)
-    # lower-left edge of the one above it: y = -x + (p/2 - a + dy - t)
-    diag = abs((p / 2 - a + dy - t) - (t + a)) / np.sqrt(2.0)
-    return p - 2.0 * a, diag, P.ACTIVE_EDGE
+    z0 = active_web_floor()
+    z1 = active_core_top()
+    span = P.ACTIVE_WEB_R * 2.0 * np.cos(np.pi / P.ACTIVE_WEB_SIDES)
+    out = []
+    for i in range(P.ACTIVE_WEBS):
+        zc = z0 + span * 0.5 + i * (span + P.ACTIVE_RIB)
+        if zc + span * 0.5 > z1 + 1e-9:
+            break
+        out += [(zc, True), (zc, False)]
+    return out
+
+
+def active_web_floor() -> float:
+    """Where the hollow core starts, and so where the lowest web can sit.
+
+    The core cannot begin until the socket's roof has closed, or the two
+    would run into each other and the piece would have a hole through the
+    middle of its own foot.
+    """
+    rs = P.PEG_SOCKET_D * 0.5
+    return P.PEG_SOCKET_DEPTH + rs + P.ACTIVE_WALL
+
+
+def active_core_top() -> float:
+    """Where the hollow core's pyramid roof starts.
+
+    The roof is what the top band of solid is FOR. A flat ceiling over the
+    core would be a bridge as wide as the core; a pyramid at 45 carries
+    itself, and costs half the core's width in height.
+    """
+    core = P.ACTIVE_SHAFT - 2.0 * P.ACTIVE_WALL
+    return P.ACTIVE_TOP_Z - core * 0.5
+
+
+def _web_cut(zc: float, along_x: bool) -> list[trimesh.Trimesh]:
+    """One web's cells, as prisms that bite through a single wall.
+
+    Cut from outside the face inward, stopping short of the core by nothing
+    at all -- the prism runs from beyond the outer surface to just inside the
+    core, so the cell is open at both ends of the wall and nothing is left
+    hanging in the cavity.
+    """
+    half = P.ACTIVE_SHAFT * 0.5
+    depth = P.ACTIVE_WALL + 1.0                    # over-cut into the cavity
+    out = []
+    for cell in web_cells():
+        m = trimesh.creation.extrude_polygon(cell, depth)
+        # the cell is drawn in (u, v); stand it up so v is z, then push it
+        # out to the wall it belongs to
+        m.apply_transform(trimesh.transformations.rotation_matrix(
+            np.pi / 2, (1.0, 0.0, 0.0)))
+        m.apply_translation((0.0, half + 0.5, zc))
+        if along_x:
+            m.apply_transform(trimesh.transformations.rotation_matrix(
+                np.pi / 2, (0.0, 0.0, 1.0)))
+        out.append(m)
+        mirror = out[-1].copy()
+        mirror.apply_transform(trimesh.transformations.rotation_matrix(
+            np.pi, (0.0, 0.0, 1.0)))
+        out.append(mirror)
+    return out
+
+
+def active_bridge() -> float:
+    """The longest horizontal ceiling anywhere in a web, in mm.
+
+    This is the number the flat-top octagon costs, and it is measured rather
+    than argued: take every cell, find its topmost edge, and if that edge is
+    horizontal, its length is a bridge the printer has to throw across. The
+    project's rule everywhere else is that there are none; here there are
+    sixteen, and this says how long the worst is.
+    """
+    worst = 0.0
+    for cell in web_cells():
+        xs, ys = cell.exterior.coords.xy
+        pts = np.column_stack([np.asarray(xs), np.asarray(ys)])
+        top = pts[:, 1].max()
+        for a, b in zip(pts, pts[1:]):
+            if abs(a[1] - top) < 1e-6 and abs(b[1] - top) < 1e-6:
+                worst = max(worst, abs(b[0] - a[0]))
+    return worst
+
+
+def active_core_void() -> trimesh.Trimesh:
+    """The hollow up the middle of the shaft: a box with a pyramid on top."""
+    a = (P.ACTIVE_SHAFT - 2.0 * P.ACTIVE_WALL) * 0.5
+    z0, z1 = active_web_floor(), active_core_top()
+    return S.union_all([
+        _sq_frustum(a, z0, a, z1),
+        _sq_frustum(a, z1, 0.02, z1 + a),
+    ])
 
 
 def active_socket_bridge() -> float:
     """Span of the flat left at the top of this piece's truncated roof."""
     rs = P.PEG_SOCKET_D * 0.5
-    z_roof = min(P.PEG_SOCKET_DEPTH + rs, P.ACTIVE_BASE_H - P.PEG_SOCKET_ROOF)
-    return 2.0 * max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
+    del rs
+    return 0.0
 
 
 def _socket_void(segs: int | None = None) -> trimesh.Trimesh:
@@ -790,8 +786,13 @@ def _socket_void(segs: int | None = None) -> trimesh.Trimesh:
     """
     rs = P.PEG_SOCKET_D * 0.5
     sc = P.PEG_SOCKET_CHAMFER
-    z_roof = min(P.PEG_SOCKET_DEPTH + rs, P.ACTIVE_BASE_H - P.PEG_SOCKET_ROOF)
-    r_flat = max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
+    # THE ROOF IS A WHOLE CONE NOW. On the old plinth it was truncated --
+    # the plinth was 6.40 tall and the cone wanted 6.72 -- and it bridged
+    # 2.24 mm. The shaft stands over the socket here rather than stopping
+    # beside it, so there is all the height the cone needs and the last
+    # bridge in the piece's body went with it.
+    z_roof = P.PEG_SOCKET_DEPTH + rs
+    r_flat = 0.0
     prof = [(0.0, -0.5), (rs + sc, -0.5), (rs + sc, 0.0), (rs, sc),
             (rs, P.PEG_SOCKET_DEPTH)]
     if r_flat > 1e-9:
@@ -801,24 +802,23 @@ def _socket_void(segs: int | None = None) -> trimesh.Trimesh:
 
 
 def build_active(segs: int | None = None) -> trimesh.Trimesh:
-    """Piece 6: the active player's marker. Square, latticed, and it takes no
-    stack -- a socket below and nothing on top.
+    """Piece 6: the active player's marker. Square, hollow, webbed, and the
+    only piece that takes no stack -- a socket below and nothing on top.
 
-    A tapered plinth with the socket in it, a tapering square spire above,
-    and hexagonal holes cut right through the spire in bands that climb and
-    shrink by phi.
+    A flared foot with the socket in it, a slim parallel shaft that is hollow
+    from above the socket roof up, and an orb web cut through each of the
+    shaft's four walls.
     """
     segs = segs or P.PEG_SEGS
-    z1 = P.ACTIVE_BASE_H
-    z2 = z1 + P.ACTIVE_SPIRE_H
     solid = S.union_all([
-        _sq_frustum(P.ACTIVE_BASE / 2, 0.0, P.ACTIVE_BASE_TOP / 2, z1),
-        _sq_frustum(P.ACTIVE_SPIRE_BASE / 2, z1, P.ACTIVE_SPIRE_TOP, z2),
-        _sq_frustum(P.ACTIVE_SPIRE_TOP, z2, 0.20, z2 + P.ACTIVE_FINIAL_H),
+        _sq_frustum(P.ACTIVE_BASE / 2, 0.0, P.ACTIVE_SHAFT / 2,
+                    P.ACTIVE_FOOT_H),
+        _sq_frustum(P.ACTIVE_SHAFT / 2, P.ACTIVE_FOOT_H,
+                    P.ACTIVE_SHAFT / 2, P.ACTIVE_TOP_Z),
     ])
-    cuts = [_socket_void(segs)]
-    cuts += [_cell_hole(z, off, P.ACTIVE_HOLE, along_x)
-             for z, off, along_x in active_lattice()]
+    cuts = [_socket_void(segs), active_core_void()]
+    for zc, along_x in active_webs():
+        cuts += _web_cut(zc, along_x)
     return trimesh.boolean.difference([solid] + cuts, engine="manifold")
 
 
@@ -993,17 +993,9 @@ def piece_profile_of(style: str):
         # tower. What the wall and overhang checks want from a "profile" is
         # the INSCRIBED half-width at each height, and for a square that is
         # exactly what half the side is.
-        z2 = P.ACTIVE_BASE_H + P.ACTIVE_SPIRE_H
         return [(P.ACTIVE_BASE / 2, 0.00),
-                (P.ACTIVE_BASE_TOP / 2, P.ACTIVE_BASE_H),
-                (P.ACTIVE_SPIRE_BASE / 2, P.ACTIVE_BASE_H),
-                (P.ACTIVE_SPIRE_TOP, z2),
-                # the finial, which the profile used to stop short of. It
-                # only ever narrows going up, so no overhang check was ever
-                # going to fail on it -- but a "profile" that leaves off the
-                # top 5 mm of the piece is a trap for the next thing that
-                # reads one, and piece_max_r and the height come from here.
-                (0.20, z2 + P.ACTIVE_FINIAL_H)]
+                (P.ACTIVE_SHAFT / 2, P.ACTIVE_FOOT_H),
+                (P.ACTIVE_SHAFT / 2, P.ACTIVE_TOP_Z)]
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
             "cog": P.COG_BODY_PROFILE,
             "runner": P.RUNNER_BODY_PROFILE}[style]

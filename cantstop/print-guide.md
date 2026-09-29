@@ -226,17 +226,26 @@ number: `test_fit.py` prints it and fails it past 4 mm.
 Do **not** print pieces upside down to "avoid" the socket. Inverted, the step
 from post to skirt becomes a flat overhang ring and genuinely needs support.
 
-**Piece 6's web needs no support either, and a slicer may disagree.** The
-tower is cut through with 16 hexagonal cells, and every one of them is
-*stretched* so its top two edges sit at exactly 45° — so each cell roofs
-itself. (A regular hexagon would not: vertex-up, its top edges are at 60°.)
-Some slicers flag a hole in a wall on principle. Ignore it — supports inside
-those cells would be unremovable, and the geometry does not want them.
+**Piece 6's webs need no support, and a slicer may disagree.** The shaft is a
+hollow square tube with an orb web cut through each of its four walls — eight
+webs, 64 cells. Most of a cell's ceiling is at 45° or steeper and carries
+itself. Some slicers flag a hole in a wall on principle; ignore it, because
+supports inside those cells would be unremovable.
 
-**Set the piece's wall count to 2, not 3.** Every rib in the web is 0.85 mm,
-which is exactly two 0.42 perimeters with no infill. Asking for three makes
-the slicer thin-wall the whole tower, and thin-walled single extrusions
-across a 21-cell web is a much worse print than two clean perimeters.
+**There are short bridges in this one piece, and they are deliberate.** Each
+octagon ring has a horizontal edge at its top, so the cell under it has a
+flat ceiling — the longest is **2.10 mm**. That is shorter than the socket
+roof this piece used to bridge, and no slicer will complain. Turning the
+octagons to put a vertex up would remove the bridges and replace them with
+67.5° overhangs, which is worse.
+
+**Set the piece's wall count to 2 or 3, not more.** Every line in the web is
+0.85 mm — two 0.42 perimeters with no infill — and the shaft's wall is 1.20.
+Four perimeters makes the slicer thin-wall the whole tower.
+
+**Do not let the slicer "fix" the hollow.** The shaft is deliberately empty
+from z7.9 to z25.1, closed at the top by a 45° pyramid so nothing bridges.
+Solid infill in there would fill the cavity you are meant to see through.
 
 ---
 
@@ -325,7 +334,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 129 checks, ~2 min
+python3 test_fit.py    # 130 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

@@ -808,121 +808,130 @@ COG_SLOT_W = 2.60    # 18.7 degrees of gap at the tip against 17.3 of tooth,
 # rotation. A square of side s covers that circle when s >= 2 *
 # SEAT_BOTTOM_R, which is 14.8. So this could come down to 15 if it ever
 # wanted to; below that it stops being able to sit on a crown at all.
-PHI = 1.6180339887
-ACTIVE_BASE    = 17.50    # the plinth at the bed
-ACTIVE_BASE_TOP = 14.20   # ...drawing in only a little, so it reads as a
-                          # base and not as the bottom of the spire
-ACTIVE_SPIRE_BASE = 12.60 # the spire starts narrower than the plinth ends,
-                          # which leaves a 1.10 mm ledge all round: the step
-                          # is what says "tower standing on a base" rather
-                          # than "one long obelisk"
-ACTIVE_BASE_H  = 6.40     # tall enough that the socket roof only has to
-                          # bridge 2.24 mm, less than a marker's 2.44
+# THE SILHOUETTE COMES FROM THE SKETCH, and it took a review to notice it
+# had drifted off it. The sketch is a section: a foot that FLARES from the
+# full width of a cell up into a slim shaft over about a sixth of the height,
+# a long parallel shaft, and a FLAT TOP. What had been built instead was a
+# 24%-tall plinth barely narrower at the top than the bottom, a shaft at 72%
+# of the base width, and a solid pyramid cap eating the top quarter.
+#
+# The fat shaft was the root of it, and it came from one assumption nobody
+# checked: that a row of the surface pattern needed three cells across, which
+# needs a face of at least 12.4 mm. It does not. The print this piece is
+# modelled on has narrow limbs carrying two cells, and a narrow face carries
+# them at a BETTER ratio of hole to rib than a wide one does.
+ACTIVE_BASE    = 17.50    # at the bed: the full width of a cell, same as
+                          # every other piece, because it still has to sit in
+                          # one. There is a hard floor at 2 * SEAT_BOTTOM_R =
+                          # 14.8, below which it cannot cover a crown's top.
+ACTIVE_FOOT_H  = 4.60     # the flare, 18% of the height. Its outside runs in
+                          # at 43 degrees from vertical -- and that is a face
+                          # sloping INWARD as it rises, which is not an
+                          # overhang at all, so the 45 rule is not what caps
+                          # it. What caps it is the socket underneath.
+ACTIVE_SHAFT   = 9.00     # the shaft, parallel all the way up. 51% of the
+                          # base against the sketch's 46%, and the 5% is
+                          # bought by the socket: the bore is 6.24 across, so
+                          # at 9.00 the wall beside it is 1.38 mm and at 8.00
+                          # it would be 0.88 -- one hair over two perimeters,
+                          # on the one part of this piece that takes a load.
+ACTIVE_TOP_Z   = 28.40    # the flat top. No cap, no finial, no point.
+                          #
+                          # THE HEIGHT IS AN OUTPUT, NOT A CHOICE. Two webs
+                          # and a rib between them need 17.15 mm of hollow
+                          # shaft; the hollow cannot start until the socket's
+                          # roof has closed at z7.92, and it has to end
+                          # 3.30 mm below the top so its own roof can be a
+                          # pyramid rather than a bridge. 7.92 + 17.15 + 3.30
+                          # is 28.37, and this is that rounded up.
+                          #
+                          # It is 3.4 times a marker's 8.45 and it is meant
+                          # to be: this is the piece that says whose turn it
+                          # is, from across a table.
 ACTIVE_BASE_R  = 1.20     # corner radius, so it is square and not sharp
 
-# THE TOWER IS A WEB: a tapering square spire with hexagonal cells cut right
-# through it, and between them nothing but ribs. The reference is a print
-# whose surface is the exposed perimeter of a hexagonal infill -- thin lines
-# with big openings between them, like a spider's web stretched over a
-# shape.
+# THE SHAFT IS HOLLOW, and that is what makes four webs possible at once.
 #
-# THE SHAFT DOES NOT TAPER, AND THAT IS THE WHOLE ARGUMENT OF THIS PIECE.
-# It ran 5.50 down to 2.10 of half-width, which is 1/phi^2 exactly, and it
-# was a nice fact that cost the piece the thing it was for.
+# Every version until now cut its pattern straight THROUGH the shaft, front
+# to back. That works for two faces and cannot work for four: a cut opening
+# the left and right faces at the same height as one opening the front and
+# back would cross it in the middle and take the shaft apart. The old piece
+# dodged it by alternating -- one row on the front and back, the next on the
+# left and right -- which means every face is blank at every other row, and
+# the web could never be continuous on any one of them.
 #
-# A cell can only sit where its whole width fits inside the face, and a row
-# holds three of them only while the face is at least
-#
-#     2 * (PITCH + HOLE/2 + EDGE)  =  12.4 mm
-#
-# So against a taper the face loses a cell every few millimetres, and the
-# rows run 3, 2, 1 up a spire that started wide enough for three. Worse, the
-# only way to keep three high up is to start very wide -- and then the
-# BOTTOM rows have a centimetre of bare face either side of them, because
-# the cells are on a fixed pitch and stop where the pitch stops. Blank strips
-# down both edges of every face is exactly what stopped this reading as a
-# web; it looked like an obelisk with some holes drilled in the middle of it.
-#
-# A parallel shaft has neither problem. Every row is the same width, so every
-# row holds three (or two, staggered), all the way up, with 0.10 mm of slack
-# beyond the edge rib rather than 0.74. The spire is 12.60 across and stays
-# there, and the POINT is a separate 45-degree pyramid on top of it -- which
-# is also what the sketch this came from shows: a flared foot, a straight
-# shaft, and a cap.
-ACTIVE_SPIRE_TOP = 6.30   # half-width at the top of the spire
-ACTIVE_SPIRE_H   = 14.30  # how far it rises above the plinth
+# A hollow shaft has no such problem. Each web is cut through ONE WALL, 1.20
+# mm deep, so the four of them never meet. What is left is a square tube with
+# a spider web in each of its four walls and four continuous corner posts
+# holding it up, and you see in through the near web and out through the far
+# one. That is the wireframe.
+ACTIVE_WALL    = 1.20     # about three perimeters. The webs are cut through
+                          # this and nothing deeper, so it is also how proud
+                          # the web reads.
+ACTIVE_CORE_ROOF = 45.0   # the hollow is closed at the top by a pyramid at
+                          # this angle rather than a flat ceiling, because a
+                          # flat one would be a 6.6 mm bridge over thin air.
+                          # It costs a solid band at the top half as deep as
+                          # the core is wide, and that band is the flat top.
 
-# THE WEB. Rows of hexagonal cells cut straight through the spire, every
-# ACTIVE_ROW_DZ up it, alternating axis row by row -- so one row opens the
-# left and right faces and the next the front and back.
+# THE WEB IS AN ORB WEB: concentric OCTAGON rings joined by radial spokes,
+# with a solid hub in the middle. Not a tiling of octagons -- a tiling has no
+# centre and no spokes, and that is the difference between a honeycomb and a
+# web. The cells are the gaps between two neighbouring rings and two
+# neighbouring spokes, and they are what gets cut; the rings and the spokes
+# are what is left.
 #
-# EVERY CELL IS A HEXAGON STRETCHED UNTIL IT PRINTS. A hole through a wall
-# has a ceiling, and a ceiling either holds itself up or it is a bridge. A
-# regular hexagon with a vertex at the top does NOT hold itself up, whatever
-# it looks like: its top edges run 0.866r across for 0.5r up, which is 60
-# degrees from vertical, half again past what the printer will carry. Put
-# the corners at (+-a, +-t) and (0, +-(t+a)) instead and the top two edges
-# run a across for a up -- 45 degrees exactly, whatever t is. The cell is a
-# pointy-top hexagon pulled taller, and the pull is the only thing between a
-# shape that prints and one that sags.
-#
-# A gable was tried in between -- vertical sides, a 45 degree roof, a flat
-# floor -- and it printed perfectly well. It was abandoned for looking like
-# what it was: a row of little houses. Six sides, all of them lines of the
-# net.
-ACTIVE_CELL_SIDE = 0.30   # t as a fraction of a: how much straight side the
-                          # hexagon keeps before the 45 degree roof starts.
-                          # 0 would be a diamond, 1/sqrt(3) would be a
-                          # regular hexagon's proportions everywhere but the
-                          # point. 0.30 makes the cell 1.3 times as tall as
-                          # it is wide, which still reads as a hexagon.
-
-# THE THREE RIBS, and the whole piece is sized off them rather than off the
-# cells. Every one is pinned at two 0.42 perimeters with no infill, which is
-# the thinnest thing worth asking a printer for, and the cell and the pitch
-# are then whatever is left over.
-#
-#   across a row      PITCH - HOLE
-#   between two rows  NOT the vertical gap. Two cells in adjacent rows of
-#                     one face are offset half a pitch sideways, so what
-#                     stands between them is the gap between one cell's
-#                     upper-right edge and the next one's lower-left edge --
-#                     parallel lines at 45 degrees. The rib is the
-#                     PERPENDICULAR distance between them, which is shorter
-#                     than either the vertical or the horizontal gap, and it
-#                     is the one that gets printed. board.active_web()
-#                     computes it; test_fit.py checks it.
-#   at the edge       ACTIVE_EDGE, which is the least obvious of the three.
-#                     It reads like a cosmetic margin -- how close a cell may
-#                     come to the edge of a face -- but a row's cells are cut
-#                     straight through the spire, so it really sets the
-#                     thickness of the slab left standing outboard of the
-#                     row, and the next row up cuts across that slab at right
-#                     angles.
-ACTIVE_ROW_DZ    = 1.5885 # rise between rows. NOT free: it is what makes the
-                          # diagonal rib come out at 0.85, and it is derived
-                          # rather than chosen --
-                          #     dz = (2t + a - g/2 + g*sqrt(2)) / 2
-                          # for a cell half-width a, side t and rib g. Two
-                          # rows of one face are 2*dz apart, and at that
-                          # spacing the cells INTERLOCK: a row sits down into
-                          # the notches of the one below it, which is what a
-                          # honeycomb does and what a stack of separate rows
-                          # does not.
-ACTIVE_EDGE      = 0.85   # rib left outboard of a row
-ACTIVE_HOLE_PITCH = 3.85  # across a row: 3.00 of cell and 0.85 of rib
-ACTIVE_HOLE       = 3.00  # cell width. Nearly twice what it was, and that is
-                          # the correction that mattered. The version before
-                          # this cut 1.10 mm cells on a 1.95 pitch -- small
-                          # and many, on the theory that the reference print
-                          # was a dense skin. It was not. Its openings are
-                          # several millimetres across and its lines are one
-                          # extrusion wide, and what makes a web look like a
-                          # web is that RATIO: roughly three of hole to one
-                          # of rib. Small cells with a fat rib between them
-                          # is not a web, it is a wall with holes in it, and
-                          # that is what the tower looked like.
-ACTIVE_FINIAL_H  = 6.30   # a little pyramid to finish it
+# THE RINGS ARE FLAT-TOP OCTAGONS, which is a deliberate choice against the
+# 45-degree rule and the only place on this project that gives ground to it.
+# A flat-top octagon has a horizontal edge at the top of every ring, so the
+# cell under it has a horizontal ceiling -- a bridge. Turning the octagon 22.5
+# degrees to put a vertex up does not help: the two edges meeting at that
+# vertex sit at 67.5 degrees from vertical, which is worse than the short
+# bridge and would actually droop. The bridges here are short, the board has
+# none at all, and this piece already accepts one at the socket roof.
+# test_fit.py measures the longest of them.
+ACTIVE_WEB_SIDES = 8      # octagons
+ACTIVE_WEB_R   = 4.411    # circumradius of the outer ring: 8.15 across the
+                          # flats on a 9.00 face.
+                          #
+                          # THE MARGIN IS PART OF THE OUTER RING, which is
+                          # not obvious until you measure one. What reads as
+                          # the ring is everything between the outermost CELL
+                          # and the edge of the face, and that is the margin
+                          # PLUS the half-rib the cell was pulled in by. So
+                          # pinning the margin to a full rib does not make
+                          # the ring match the other lines, it makes it one
+                          # and a half times them -- 1.28 against 0.85, which
+                          # is what a check caught after the comment here had
+                          # already claimed otherwise.
+                          #
+                          # The margin is half a rib, so:
+                          #     R = (SHAFT/2 - RIB/2) / cos(pi/8)
+                          # and every line on the piece is 0.85 wide.
+ACTIVE_WEB_RADII = (0.30, 1.00)
+                          # ring radii as fractions of ACTIVE_WEB_R: the hub,
+                          # which stays solid, then the outer ring. The gap
+                          # between them is the one band of cells, eight of
+                          # them, one per spoke.
+                          #
+                          # ONE BAND, NOT TWO, AND THE RIB IS WHY. A band has
+                          # to give up a whole rib's width to the rings that
+                          # bound it, so a cell is (band - 0.85) deep. Two
+                          # bands inside R3.85 leaves each one 1.4 mm wide
+                          # and each cell 0.55 -- slivers, and the web read
+                          # as a solid disc with scratches on it at 14% open.
+                          # One band is 2.70 wide, the cells are 1.85 deep,
+                          # and the web is 26% open.
+                          #
+                          # Two bands need R5.0, which needs an 11 mm shaft,
+                          # which is the fat shaft this piece just got rid
+                          # of. The rib does not scale down with the piece;
+                          # that is the whole tension in this design.
+ACTIVE_RIB     = 0.85     # every line in the web: two 0.42 perimeters and no
+                          # infill, which is the floor for the whole project.
+ACTIVE_WEBS    = 2        # stacked up each face. One 7.30 mm web on a 15 mm
+                          # run of shaft would leave half of it bare, and
+                          # three would be smaller than the rib is wide.
 
 ACTIVES = 4               # one per player
 

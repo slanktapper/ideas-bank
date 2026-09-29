@@ -602,66 +602,84 @@ def main():
           P.CROWN_SPIKE_AT - top >= 1.0,
           f"{P.CROWN_SPIKE_AT - top:.2f} mm of air between one knob and the "
           f"next, so the gaps are up where they read")
-    # The active piece's web is cells cut through a solid, not a profile, so
-    # the loop above cannot see it either -- and a hole has a CEILING, which
-    # is the overhang that matters. A regular hexagon with a vertex at the
-    # top looks like it should roof itself and does not: 0.866r of run for
-    # 0.5r of rise is 60 degrees. The cells are STRETCHED hexagons for that
-    # reason, and this is the check that would have caught it.
-    cells = B.active_lattice()
-    check("the web roofs its own cells",
-          B.active_cell_roof() <= 1.0 + 1e-9,
-          f"{np.degrees(np.arctan(B.active_cell_roof())):.0f} degrees from "
-          f"vertical on every one of {len(cells)} cells, so there is not a "
-          f"bridge in the tower")
-    # AND THE RIBS BETWEEN THE CELLS, which are what decide how big the cells
-    # can get. Widening a cell is free; the rib left between two of them is
-    # not, and the two move together.
-    #
-    # The rib between two rows of a face is the one worth computing rather
-    # than eyeballing, and board.active_web() does it: the rows are offset
-    # half a pitch, so what stands between them is the gap between two
-    # PARALLEL 45-degree edges, and the perpendicular distance across that is
-    # shorter than either the vertical or the horizontal gap. Taking
-    # 2*ROW_DZ - HOLE instead -- the vertical gap -- reads 1.4 mm where the
-    # printer sees 0.85, which is how a tower made of nothing gets signed off.
+    # THE ACTIVE PIECE'S WEB is cells cut through a wall, not a profile, so
+    # the loop above cannot see any of it. It gets its own block.
     LINE = 0.42                      # nozzle line width
-    rib_x, rib_d, rib_e = B.active_web()
-    check("the web leaves a rib the printer can actually lay down",
-          min(rib_x, rib_d, rib_e) >= 2 * LINE - 0.05,
-          f"{rib_x:.2f} mm across a row, {rib_d:.2f} mm between two rows of "
-          f"one face, {rib_e:.2f} at the edge -- two {LINE} perimeters and "
-          f"no infill is {2*LINE:.2f}")
-    # A WEB IS A RATIO, NOT A COUNT. Two versions failed this from opposite
-    # ends -- 1.60 mm cells on a fat rib, then 1.10 mm cells on a fatter one
-    # relative to them -- and both read as a wall with holes in it. The
-    # reference print's openings are millimetres across and its lines are one
-    # extrusion wide. Three of cell to one of rib is what looks like a web.
-    check("the cells are wide enough against their ribs to read as a web",
-          P.ACTIVE_HOLE / rib_x >= 2.0,
-          f"{P.ACTIVE_HOLE / rib_x:.1f} of cell to one of rib "
-          f"({P.ACTIVE_HOLE:.2f} mm across on a {rib_x:.2f} mm line)")
-    # IT HAS TO BE A HONEYCOMB ON EACH FACE, and for two versions it was a
-    # grid. The axis alternates every row, so a face only ever sees the even
-    # rows or only the odd ones -- which means keying the stagger on the row
-    # index gives every row of a given face the SAME offsets, and they stack
-    # up in columns. Nobody can see two adjacent rows at once, because they
-    # are on faces at right angles, so this is invisible in every view except
-    # the one that matters.
-    #
-    # The test is the property itself: down one face, rows must alternate
-    # between having a cell ON the axis and straddling it.
-    for name, want_x in (("front and back", True), ("left and right", False)):
-        rows: dict[float, list[float]] = {}
-        for z, off, along_x in cells:
-            if along_x == want_x:
-                rows.setdefault(z, []).append(off)
-        kinds = [any(abs(o) < 1e-9 for o in rows[z]) for z in sorted(rows)]
-        check(f"the {name} faces are a honeycomb, not a grid",
-              all(a != b for a, b in zip(kinds, kinds[1:])),
-              "rows alternate " +
-              " ".join("on" if k else "straddling" for k in kinds) +
-              " the axis, bottom to top")
+    from shapely.ops import unary_union as _uu
+    cells = B.web_cells()
+    webs = B.active_webs()
+
+    # EVERY LINE IN THE WEB IS ONE WIDTH, and it is the printer's floor. The
+    # cells are cut by pulling each ring-and-spoke quadrant in by HALF a rib
+    # all round, so the rib between any two neighbouring cells is a whole one
+    # by construction -- which is worth measuring rather than asserting,
+    # because a mitred buffer on an acute corner can eat more than it is
+    # asked for and leave the cell, not the rib, as the thin thing.
+    gaps = []
+    for i, a in enumerate(cells):
+        for b in cells[i + 1:]:
+            gaps.append(a.distance(b))
+    check("every rib in the web is one the printer can lay down",
+          min(gaps) >= 2 * LINE - 0.05,
+          f"{min(gaps):.2f} mm at the tightest of {len(gaps)} pairs of "
+          f"cells, against two {LINE} perimeters at {2*LINE:.2f}")
+
+    # THE MARGIN IS PART OF THE OUTER RING. What reads as the ring is
+    # everything between the outermost cell and the edge of the face, so if
+    # the margin runs wide the ring fattens with it and stops matching every
+    # other line on the piece. It also must not run NARROW, or the corner
+    # posts that hold the shaft up get cut into.
+    u = _uu(cells)
+    margin = P.ACTIVE_SHAFT / 2 - max(abs(v) for v in u.bounds)
+    check("the web's margin matches its own ribs, so the outer ring is a line",
+          2 * LINE - 0.05 <= margin <= P.ACTIVE_RIB + 0.35,
+          f"{margin:.2f} mm from the outermost cell to the edge of a "
+          f"{P.ACTIVE_SHAFT:.2f} mm face, against a {P.ACTIVE_RIB:.2f} rib")
+
+    # THE BRIDGES. This is the one place on the whole project that gives
+    # ground to the 45-degree rule, so it is measured and capped rather than
+    # waved through. A flat-top octagon has a horizontal edge at the top of
+    # every ring, and the cell under it has a horizontal ceiling. Turning the
+    # octagon 22.5 degrees to put a vertex up is WORSE, not better: the two
+    # edges meeting at that vertex lie at 67.5 degrees from vertical, which
+    # would actually droop where a short bridge will not.
+    check("no bridge in the web is longer than the socket roof used to be",
+          B.active_bridge() <= 2.24,
+          f"{B.active_bridge():.2f} mm at the longest, on "
+          f"{len(webs) * len(cells)} cells -- the board has none at all and "
+          f"this piece's own socket roof used to bridge 2.24")
+
+    # ALL FOUR FACES, AT EVERY HEIGHT. This is the thing the hollow shaft
+    # bought, and the reason it exists. Cut straight through a solid shaft,
+    # a web opening the front and back and one opening the left and right at
+    # the same height would cross in the middle and take the shaft apart --
+    # which is why the old honeycomb alternated, and why no face of it was
+    # ever webbed at more than every other row.
+    heights = sorted({round(z, 4) for z, _ in webs})
+    check("every height that carries a web carries it on all four faces",
+          all(sum(1 for z, _ in webs if abs(z - h) < 1e-3) == 2
+              for h in heights),
+          f"{len(heights)} webs up each face, {len(webs) * 2} in all, "
+          f"each cut {P.ACTIVE_WALL:.2f} mm into one wall so they never meet")
+
+    # THE HOLLOW HAS TO ROOF ITSELF, and a flat ceiling over it would be a
+    # bridge as wide as the core. The pyramid costs half the core's width in
+    # solid at the top, and that solid band IS the flat top.
+    core = P.ACTIVE_SHAFT - 2 * P.ACTIVE_WALL
+    check("the hollow shaft is roofed at 45, not bridged",
+          abs((P.ACTIVE_TOP_Z - B.active_core_top()) - core / 2) < 1e-6,
+          f"a {core:.2f} mm core closed by a {core/2:.2f} mm pyramid, so the "
+          f"top {P.ACTIVE_TOP_Z - B.active_core_top():.2f} mm is solid")
+
+    # AND THE WEB MUST CLEAR THE SOCKET. The core cannot start until the
+    # socket's roof has closed or the two run into each other, and the piece
+    # ends up with a hole through the middle of its own foot.
+    rs = P.PEG_SOCKET_D * 0.5
+    check("the hollow starts above the socket's roof, not through it",
+          B.active_web_floor() >= P.PEG_SOCKET_DEPTH + rs + 2 * LINE - 1e-9,
+          f"core floor at z{B.active_web_floor():.2f}, socket roof closes at "
+          f"z{P.PEG_SOCKET_DEPTH + rs:.2f}")
+
     check("nothing overhangs more than 45 degrees, so nothing needs support",
           worst_over <= 1.0 + 1e-9,
           f"steepest is the {who[0]} between z{who[1]:.2f} and z{who[2]:.2f}, "
