@@ -57,18 +57,26 @@ or the slicer rounds the border a layer thicker or thinner than asked; that is
 the one parameter here tied to a slicer setting, and `test_fit.py` checks it.
 
 **This started as a wireframe and stopped being one on the numbers.** The
-original brief asked for an open truss, and that is built and still selectable
-(`BOARD_STYLE = "lattice"`): rings tied by flat-bottomed struts with a diagonal
-per bay, braced out to the octagon by twenty-four spokes. The catch is that a
-lattice is nearly all perimeter — infill can reach 11% of a strut and 49% of a
-pad — so it cannot be lightened, and at 128 cm³ it came out at about 140 g and
-was still the floppiest option on the table. A slab's cost is its **skins**,
-which are a fixed 94 g over this octagon however thick it is, and everything
-between them is whatever the infill is set to. So 6 mm at 10% weighs 158 g —
-13% more than the lattice — and is roughly **twenty-three times** as stiff in
-bending (sandwich model: two 0.6 mm skins 5.4 mm apart plus a 10% core; 4 mm
-would be nine times, 10 mm seventy-six). That is the trade, and it is why the
-wireframe lost.
+original brief asked for an open truss, and one was built: rings tied by
+flat-bottomed struts with a diagonal per bay, braced out to the octagon by
+twenty-four spokes. The catch is that a lattice is nearly all perimeter —
+infill can reach 11% of a strut and 49% of a pad — so it cannot be lightened,
+and at 128 cm³ it came out at about 140 g and was still the floppiest option
+on the table. A slab's cost is its **skins**, which are a fixed 94 g over this
+octagon however thick it is, and everything between them is whatever the
+infill is set to. So 6 mm at 10% weighs 158 g — 13% more than the lattice —
+and is roughly **twenty-three times** as stiff in bending (sandwich model: two
+0.6 mm skins 5.4 mm apart plus a 10% core; 4 mm would be nine times, 10 mm
+seventy-six). That is the trade, and it is why the wireframe lost.
+
+**And it is deleted, not parked.** It stayed selectable as
+`BOARD_STYLE = "lattice"` long after the decision was made, and the cost of
+that was not the dead code: it was that every parameter, every branch and
+twenty-odd checks went on being carried and re-run against a board nobody was
+ever going to print. What it eventually produced was a *failing* check about a
+pad that does not exist, on a build of a board that does not exist. `git log`
+has it if it is ever wanted back. There is one board now, and every check in
+`test_fit.py` runs against it every time.
 
 **The interface runs male-up throughout.** The board offers a post; a piece has
 a socket underneath and a post of its own on top; so a piece drops onto the

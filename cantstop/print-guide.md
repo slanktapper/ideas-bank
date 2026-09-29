@@ -319,7 +319,3 @@ Look at `renders/03-surface-detail.png`, `renders/05-stacking-section.png`,
 `renders/06-assembly.png` and `renders/07-test-print.png` after any change. Those three catch the things the
 tests do not — the hidden-number defect was found in the assembly render, and
 only then written into the test suite.
-
-Switching back to the open truss is `BOARD_STYLE = "lattice"` in `params.py`.
-The tests and the renders follow it; this guide does not, and sections 3, 4
-and 5 would all need rereading.

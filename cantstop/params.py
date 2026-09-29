@@ -90,16 +90,14 @@ PITCH_Y = 18.0      # row pitch of the LONGEST column. Shorter columns get a
                     # has to be that wide as well as that tall.
 
 # --------------------------------------------------------------------------
-# Board style
+# The board: a 6 mm solid octagonal slab
 # --------------------------------------------------------------------------
-# "lattice"  the open wireframe truss: rings tied by flat-bottomed struts and
-#            braced out to the octagon. Light, but floppy.
-# "slab"     a solid octagonal plate with the posts standing on it. Nine to
-#            twenty times stiffer, and -- because a lattice is nearly all
-#            perimeter and cannot be hollowed -- no heavier, so long as the
-#            infill stays low.
-BOARD_STYLE = "slab"
-
+# There was a second board once -- an open wireframe truss of struts and
+# rings, with a round pad at every cell and an octagonal frame round the
+# outside. It is gone. It was abandoned in favour of the slab a long time ago
+# and then maintained anyway: every parameter, every branch and twenty of the
+# checks went on being carried, and the only thing that ever came of it was a
+# failing check about a pad no printed board has.
 SLAB_T = 6.0        # plate thickness
 SLAB_INFILL = 0.10  # what the slicer should be set to; the geometry does not
                     # care, but every mass figure in the build report assumes
@@ -132,15 +130,18 @@ RIM_CAP_H = 0.60    # 3 layers. 0 puts the whole lip in the body colour;
 # a socket underneath and a post of its own on top. So a piece drops onto the
 # board, and the next piece drops onto that one, with one geometry doing both.
 #
-# The pad is what a piece actually sits on. Its top face is an unobstructed
-# annulus from the post out past the piece's skirt, which is a far wider and
-# steadier seat than the rim of a ring.
-PAD_OD    = 13.8    # outer diameter of the pad
-PAD_H     = 4.00    # pad height; also the height of every seating face
+# The PLATE is what a piece sits on -- the whole top face of the slab, so the
+# seat is unobstructed from the post out past the piece's skirt wherever a
+# piece lands. There is no pad: the wireframe board had one at every cell and
+# the wireframe board is gone.
+PAD_OD    = 13.8    # the footprint a cell RESERVES. Nothing is built to this
+                    # any more; it is what content_points() hands the octagon
+                    # so the frame is sized against the cells and not against
+                    # bare post diameters.
 POST_D    = 5.90    # nominal 6.0 less 0.10 for FDM swell
-POST_H    = 3.20    # how far the post stands proud of its pad
+POST_H    = 3.20    # how far the post stands proud of the plate
 POST_CHAMFER = 0.60 # 45 deg lead-in at the top, so a piece self-centres
-CELL_SEGS = 48      # facets around a pad (export quality)
+CELL_SEGS = 48      # facets around a post (export quality)
 
 # The top of a post can print in the NUMBERS' colour instead of the board's,
 # which turns a field of 83 identical red dots into something with a rhythm
@@ -168,29 +169,11 @@ POST_CAP_H = 0.60   # 3 layers at 0.20, same as the cap on the lip. It lands
 # or a post.
 
 # --------------------------------------------------------------------------
-# The wireframe lattice
-# --------------------------------------------------------------------------
-# Struts are RECTANGULAR in section, not round, and their underside sits flat
-# on z = 0. That is the whole printability trick: a round rod spanning two
-# collars is a 3.2 mm unsupported overhang, a flat-bottomed bar is just a
-# wide extrusion. The entire board prints support-free.
-STRUT_W = 3.20      # width of a lattice strut
-STRUT_H = 3.40      # height; deliberately shorter than PAD_H so the pads
-                    # stand proud and the lattice reads as recessed webbing
-
-FRAME_W = 5.20      # the octagon runs thicker — it is what you pick the
-FRAME_H = 4.40      # board up by, and it is the only frame-section member
-
-# Staggered columns make the lattice triangular on their own: every cell ties
-# to the two nearest in each neighbouring column, which is already a braced
-# truss. There is no quad left to put a diagonal in.
-
-# --------------------------------------------------------------------------
 # The octagonal frame
 # --------------------------------------------------------------------------
 # A true octagon: a rectangle around everything with its four corners cut at
-# 45 degrees. The lattice is a lens and does not reach the corners, so the
-# cut-off triangles are where the number shields and the bracing spokes live.
+# 45 degrees. The cell field is a lens and does not reach the corners, so the
+# cut-off triangles are where the number boxes live.
 OCTAGON_MARGIN  = 6.0    # clear air between the content and the frame
 # A REGULAR octagon -- all eight edges the same length -- needs a square
 # bounding box (so the half-span is taken as the larger of the two) and a
@@ -215,8 +198,6 @@ OCTAGON_ACROSS  = 285.0   # pin the octagon to exactly this across the flats
                           # over becomes the margin the lip lives in, so
                           # test_fit.py checks it still clears RIM_W +
                           # RIM_CLEAR rather than trusting the number.
-OCTAGON_SPOKE_W = 3.20   # bracing struts from the lattice out to the frame
-OCTAGON_SPOKE_H = 3.40
 
 # --------------------------------------------------------------------------
 # Column number shields — at the TOP of each column, and playable
@@ -707,18 +688,6 @@ RUNNER_BODY_PROFILE = [
 PLAYERS            = 4
 MARKERS_PER_PLAYER = 11   # one per column
 RUNNERS            = 3    # shared, neutral colour
-
-# --------------------------------------------------------------------------
-# Lattice-to-collar weld radius
-# --------------------------------------------------------------------------
-# Struts are drawn between cell CENTRES, then trimmed back to this radius
-# before they are built. That matters: a strut run all the way to the centre
-# would plough straight through the bore and plug the hole. At 5.5 mm the
-# strut still bites 1.0 mm into the collar wall for a solid weld, while
-# There is no bore to protect any more -- the post starts at z = PAD_H and
-# every strut stops below that -- so struts can run well in under the pad and
-# weld properly instead of just grazing its edge.
-WELD_R = 4.00
 
 # --------------------------------------------------------------------------
 # Fit-test coupon

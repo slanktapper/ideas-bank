@@ -100,12 +100,6 @@ def base(col_index: int) -> tuple[float, float]:
     return cell_xy(col_index, 0)
 
 
-def lattice_centre() -> np.ndarray:
-    """Middle of the cell field. Shields lean away from here."""
-    pts = np.array([cell_xy(i, r) for i, r in all_cells()], dtype=float)
-    return pts.mean(axis=0)
-
-
 def shield_xy(col_index: int) -> tuple[float, float]:
     """Centre of a column's number box, which is its summit cell."""
     return summit(col_index)
@@ -125,22 +119,6 @@ def all_cells() -> list[tuple[int, int]]:
 
 def cell_exists(i: int, r: int) -> bool:
     return 0 <= i < len(P.ROWS) and 0 <= r < P.ROWS[i]
-
-
-def _trim(p0, p1, r0: float, r1: float):
-    """Pull a segment back by r0 at its start and r1 at its end.
-
-    Struts are specified centre-to-centre because that is how you think about
-    a lattice, but they must not reach the centre or they would fill the bore.
-    """
-    p0 = np.asarray(p0, dtype=float)
-    p1 = np.asarray(p1, dtype=float)
-    d = p1 - p0
-    L = float(np.linalg.norm(d))
-    if L <= r0 + r1 + 0.2:
-        return None
-    d /= L
-    return p0 + d * r0, p1 - d * r1
 
 
 # ---------------------------------------------------------------------------
@@ -188,11 +166,9 @@ def octagon() -> list[tuple[float, float]]:
     cx, cy = (lo + hi) * 0.5
     d = np.abs(pts - np.array([cx, cy]))
 
-    margin = P.OCTAGON_MARGIN
-    if P.BOARD_STYLE == "slab":
-        # the raised lip sits inside the outline, so the outline has to stand
-        # off far enough that the lip never lands on a pad
-        margin = max(margin, P.RIM_W + P.RIM_CLEAR)
+    # the raised lip sits inside the outline, so the outline has to stand off
+    # far enough that the lip never lands on a cell
+    margin = max(P.OCTAGON_MARGIN, P.RIM_W + P.RIM_CLEAR)
 
     if P.OCTAGON_REGULAR:
         # Equal edges need a chamfer of exactly 2/(2+sqrt2) of the half-span,
@@ -207,11 +183,8 @@ def octagon() -> list[tuple[float, float]]:
         # and test_fit.py measures what it actually came out as rather than
         # trusting the number that was typed in.
         if P.OCTAGON_ACROSS:
-            # the number means the BOARD's size. On a slab the outline is the
-            # board; on a lattice the frame is a strut straddling the outline,
-            # so half its width stands outside and has to come off first.
-            frame = 0.0 if P.BOARD_STYLE == "slab" else P.FRAME_W
-            a = b = (P.OCTAGON_ACROSS - frame) / 2.0
+            # the number means the BOARD's size, and the outline IS the board
+            a = b = P.OCTAGON_ACROSS / 2.0
         else:
             a = b = need + margin
         c = a * 2.0 / (2.0 + np.sqrt(2.0))
@@ -240,261 +213,13 @@ def octagon_centre() -> np.ndarray:
     return (lo + hi) * 0.5
 
 
-def _ray_hit(origin, direction, poly) -> np.ndarray | None:
-    """First point where a ray leaving `origin` crosses a closed polygon."""
-    o = np.asarray(origin, dtype=float)
-    d = np.asarray(direction, dtype=float)
-    d = d / np.linalg.norm(d)
-    best_t, best = np.inf, None
-    for j in range(len(poly)):
-        a = np.asarray(poly[j], dtype=float)
-        e = np.asarray(poly[(j + 1) % len(poly)], dtype=float) - a
-        m = np.array([[d[0], -e[0]], [d[1], -e[1]]])
-        if abs(np.linalg.det(m)) < 1e-12:
-            continue
-        t, s = np.linalg.solve(m, a - o)
-        if t > 1e-9 and -1e-9 <= s <= 1 + 1e-9 and t < best_t:
-            best_t, best = t, o + d * t
-    return best
-
-
-def _rect_exit(centre, w: float, h: float, direction, inset: float):
-    """Where a ray leaving a rectangle's centre crosses its edge, pulled in.
-
-    Spokes have to start on the edge of a number shield, not at its middle,
-    or they would be printed straight across the digit. `inset` keeps a little
-    overlap so the spoke still fuses into the shield.
-    """
-    c = np.asarray(centre, dtype=float)
-    d = np.asarray(direction, dtype=float)
-    d = d / np.linalg.norm(d)
-    ts = []
-    if abs(d[0]) > 1e-9:
-        ts.append(w * 0.5 / abs(d[0]))
-    if abs(d[1]) > 1e-9:
-        ts.append(h * 0.5 / abs(d[1]))
-    return c + d * (min(ts) - inset)
-
-
-# ---------------------------------------------------------------------------
-# struts
-# ---------------------------------------------------------------------------
-
-def _lattice_struts() -> list[tuple[tuple, tuple, bool]]:
-    """Every strut inside the lens, as (p0, p1, is_frame), centre to centre."""
-    out = []
-    ncol = len(P.ROWS)
-
-    # verticals, within a column. Nothing inside the lens runs at frame
-    # section: the octagon is the frame now, and a 5.2 mm chain strut leaving
-    # a summit at 42 degrees clips the bottom corner of that column's digit.
-    #
-    # Struts can run right under a number box without any special handling:
-    # they stand 3.4 mm tall and the box is 4.0 mm thick, so a strut that
-    # crosses a digit in plan is buried inside the plate, not printed across
-    # the number.
-    for i in range(ncol):
-        for r in range(P.ROWS[i] - 1):
-            out.append((cell_xy(i, r), cell_xy(i, r + 1), False))
-
-    # Columns need not share a row pitch, so nothing is guaranteed to be
-    # level and "horizontal" is not always a meaningful word. Two cases, and
-    # both have to be symmetric left-to-right or the board comes out lopsided:
-    #
-    #   columns that DO line up  -- a level strut at every shared row, plus
-    #       one diagonal per quad, herringboned by parity. This is the plain
-    #       square-grid bracing and it is what most of the board uses.
-    #   columns that do NOT     -- each cell links to the two nearest in the
-    #       other column, taken from BOTH sides and unioned, which is the
-    #       only way to keep the pattern the same on either side of the
-    #       middle.
-    for i in range(ncol - 1):
-        ya = [grid_y(i, r) for r in range(P.ROWS[i])]
-        yb = [grid_y(i + 1, s) for s in range(P.ROWS[i + 1])]
-        pairs = set()
-
-        def _nearest(vals, y):
-            return min(range(len(vals)), key=lambda k: abs(vals[k] - y))
-
-        # "Aligned" has to be a symmetric test, or a gap and its mirror take
-        # different branches and the board comes out lopsided. Equal pitches
-        # and centred columns line up exactly when their half-heights differ
-        # by a whole number of rows.
-        pa, pb = row_pitch(i), row_pitch(i + 1)
-        aligned = (abs(pa - pb) < 1e-6
-                   and abs((k_max(i) - k_max(i + 1)) % 1.0) < 1e-6)
-        if aligned:
-            # only the rows the two columns actually share; the cells beyond
-            # that are carried by their own column and by the edge chains
-            shared = sorted(((r, s) for r in range(len(ya))
-                             for s in range(len(yb))
-                             if abs(ya[r] - yb[s]) < 1e-6),
-                            key=lambda rs: ya[rs[0]])
-            pairs.update(shared)
-            for k in range(len(shared) - 1):
-                (r0, s0), (r1, s1) = shared[k], shared[k + 1]
-                # Herringbone, but mirrored about the middle of the board.
-                # Keyed on i alone the pattern is the same handedness all the
-                # way across, which reads as a lopsided board; keyed on the
-                # distance from the middle, and flipped on the right-hand
-                # side, the whole lattice comes out symmetric.
-                # Key the parity on the row's POSITION, not its index: a gap
-                # and its mirror share y values but number their rows
-                # differently, so an index-keyed herringbone comes out
-                # handed.
-                level = int(round(ya[r0] / pa))
-                near_mid = min(i, ncol - 2 - i)
-                rising = (near_mid + level) % 2 == 0
-                if i > (ncol - 2) / 2:
-                    rising = not rising
-                pairs.add((r0, s1) if rising else (r1, s0))
-        else:
-            for r, y in enumerate(ya):
-                for s in sorted(range(len(yb)),
-                                key=lambda s: abs(yb[s] - y))[:2]:
-                    pairs.add((r, s))
-            for s, y in enumerate(yb):
-                for r in sorted(range(len(ya)),
-                                key=lambda r: abs(ya[r] - y))[:2]:
-                    pairs.add((r, s))
-
-        for r, s in sorted(pairs):
-            out.append((cell_xy(i, r), cell_xy(i + 1, s), False))
-
-    # the stepped upper and lower edges of the lens
-    for i in range(ncol - 1):
-        out.append((summit(i), summit(i + 1), False))
-        out.append((base(i), base(i + 1), False))
-    return out
-
-
-def _spokes(poly) -> list[tuple[tuple, tuple]]:
-    """Bracing from the edge of the lens out to the octagonal frame.
-
-    Radial, from the frame's centre outward, so they fan into the corners the
-    lens cannot reach and tie the whole thing together. Spokes off the top of
-    a column start at the edge of its number shield rather than at the ring,
-    so that no strut is printed across a digit.
-    """
-    c = octagon_centre()
-    out = []
-
-    for i in range(len(P.ROWS)):
-        # up and out, from whatever is topmost in this column
-        sp = np.asarray(summit(i), dtype=float)
-        d = sp - c
-        if np.linalg.norm(d) < 1e-9:
-            d = np.array([0.0, 1.0])
-        d = d / np.linalg.norm(d)
-        start = _rect_exit(sp, P.PLAQUE_W, P.PLAQUE_H, d, inset=2.0)
-        hit = _ray_hit(start, d, poly)
-        if hit is not None:
-            out.append((tuple(start), tuple(hit)))
-
-        # down and out, from the bottom ring
-        bp = np.asarray(base(i), dtype=float)
-        d = bp - c
-        if np.linalg.norm(d) < 1e-9:
-            d = np.array([0.0, -1.0])
-        d = d / np.linalg.norm(d)
-        start = bp + d * P.WELD_R
-        hit = _ray_hit(start, d, poly)
-        if hit is not None:
-            out.append((tuple(start), tuple(hit)))
-
-    # sideways, off the middle cells of the two end columns
-    for i in (0, len(P.ROWS) - 1):
-        for r in range(1, P.ROWS[i] - 1):
-            pt = np.asarray(cell_xy(i, r), dtype=float)
-            d = pt - c
-            if np.linalg.norm(d) < 1e-9:
-                continue
-            d = d / np.linalg.norm(d)
-            start = pt + d * P.WELD_R
-            hit = _ray_hit(start, d, poly)
-            if hit is not None:
-                out.append((tuple(start), tuple(hit)))
-    return out
-
-
-def final_struts() -> list[tuple[tuple, tuple, float, float, str]]:
-    """Every strut actually built, trimmed, as (p0, p1, width, height, kind).
-
-    `kind` is "lattice" (both ends land in a collar), "frame" (the octagon
-    itself) or "spoke" (lens out to frame). build_board() consumes this list
-    verbatim, so a test that measures these is measuring the real board.
-    """
-    out = []
-    for p0, p1, is_frame in _lattice_struts():
-        t = _trim(p0, p1, P.WELD_R, P.WELD_R)
-        if t is None:
-            continue
-        w, h = (P.FRAME_W, P.FRAME_H) if is_frame else (P.STRUT_W, P.STRUT_H)
-        out.append((tuple(t[0]), tuple(t[1]), w, h, "lattice"))
-
-    poly = octagon()
-    for j in range(len(poly)):
-        out.append((poly[j], poly[(j + 1) % len(poly)],
-                    P.FRAME_W, P.FRAME_H, "frame"))
-
-    for p0, p1 in _spokes(poly):
-        out.append((p0, p1, P.OCTAGON_SPOKE_W, P.OCTAGON_SPOKE_H, "spoke"))
-    return out
-
-
-def strut_distance_to(point, p0, p1, width) -> float:
-    """Shortest distance in plan from `point` to a strut's rectangle.
-
-    Note this is NOT `weld_radius - width/2`: a strut is trimmed back along
-    its own axis, so the nearest part of it is the midpoint of its end face,
-    and the half-width runs perpendicular, away from the cell centre. Getting
-    that wrong is an easy way to talk yourself into a bore that is fine.
-    """
-    q = np.asarray(point, dtype=float)
-    a = np.asarray(p0, dtype=float)
-    b = np.asarray(p1, dtype=float)
-    d = b - a
-    L = float(np.linalg.norm(d))
-    d = d / L
-    n = np.array([-d[1], d[0]])
-    v = q - a
-    s = float(np.clip(v @ d, 0.0, L))
-    t = float(np.clip(v @ n, -width * 0.5, width * 0.5))
-    return float(np.linalg.norm(q - (a + s * d + t * n)))
-
-
 # ---------------------------------------------------------------------------
 # board
 # ---------------------------------------------------------------------------
 
-def build_cell(cx: float, cy: float, segs: int | None = None,
-               with_post: bool = True, part: str = "all") -> trimesh.Trimesh:
-    """An ordinary board cell: a round pad with a post standing on it.
-
-    A solid of revolution, so there is no boolean and no hole to protect. The
-    pad's top face is the seat; the post only locates. `part="stem"` stops
-    the post short of its accent cap, exactly as _post() does.
-    """
-    rp = P.PAD_OD * 0.5
-    rq = P.POST_D * 0.5
-    c = P.POST_CHAMFER
-    top = P.PAD_H + P.POST_H
-    prof = [(0.0, 0.0), (rp, 0.0), (rp, P.PAD_H)]
-    if with_post and part == "stem":
-        prof += [(rq, P.PAD_H), (rq, top - P.POST_CAP_H),
-                 (0.0, top - P.POST_CAP_H)]
-    elif with_post:
-        prof += [(rq, P.PAD_H), (rq, top - c), (rq - c, top), (0.0, top)]
-    else:
-        prof += [(0.0, P.PAD_H)]
-    m = S.lathe(prof, segs=segs or P.CELL_SEGS)
-    m.apply_translation((cx, cy, 0.0))
-    return m
-
-
 def seat_z() -> float:
     """Height of every seating face -- what a piece's skirt lands on."""
-    return P.SLAB_T if P.BOARD_STYLE == "slab" else P.PAD_H
+    return P.SLAB_T
 
 
 def rim_rings() -> tuple[list, list]:
@@ -545,16 +270,6 @@ def slab_plate() -> trimesh.Trimesh:
     if h > 1e-9:
         parts.append(_rim(P.SLAB_T, h))
     return S.union_all(parts)
-
-
-def build_summit_box(cx: float, cy: float) -> trimesh.Trimesh:
-    """A column's number box, which is also its summit pad.
-
-    Same thickness as the round pads, so every seating face on the board is at
-    one height and a piece sits the same whatever cell it is in.
-    """
-    return S.rounded_plate(cx, cy, P.PLAQUE_W, P.PLAQUE_H,
-                           P.PLAQUE_T, P.PLAQUE_FILLET)
 
 
 def post_capped(col_index: int, row: int) -> bool:
@@ -781,7 +496,6 @@ def build_board(numerals_only: bool = False, segs: int | None = None,
     what you mean.
     """
     segs = segs or P.CELL_SEGS
-    slab = P.BOARD_STYLE == "slab"
     cutters, accents, body_posts = _summit_parts(segs)
 
     def _post_part(i, r):
@@ -789,42 +503,22 @@ def build_board(numerals_only: bool = False, segs: int | None = None,
         # hands over its cap
         return "stem" if post_capped(i, r) else "all"
 
-
     if numerals_only:
-        if slab and P.RIM_CAP_H > 1e-9:
+        if P.RIM_CAP_H > 1e-9:
             accents = accents + [rim_cap()]
         accents = accents + post_caps(segs)
         return S.union_all(accents)
 
-    parts: list[trimesh.Trimesh] = []
-    if slab:
-        # with_numerals is the single-colour board, so it keeps the whole lip;
-        # the two-colour body hands the cap over to the numerals part
-        parts.append(slab_plate())
-
+    # the plate, then a post per cell standing on it. The body hands the lip's
+    # cap and the capped post tops over to the accent part.
+    parts: list[trimesh.Trimesh] = [slab_plate()]
     summit_n = 0
     for i, r in all_cells():
         x, y = cell_xy(i, r)
-        if P.BOARD_STYLE == "slab":
-            # the plate is the pad; only the post stands on it
-            parts.append(body_posts[summit_n] if is_summit(i, r)
-                         else _post(x, y, seat_z(), segs=segs,
-                                    part=_post_part(i, r)))
-            summit_n += is_summit(i, r)
-            continue
-        if is_summit(i, r):
-            # the box replaces the round pad, and the post on it is only the
-            # part the digit does not pass through -- the rest ships with the
-            # numbers so it prints in their colour
-            parts.append(build_summit_box(x, y))
-            parts.append(body_posts[summit_n])
-            summit_n += 1
-        else:
-            parts.append(build_cell(x, y, segs=segs, part=_post_part(i, r)))
-
-    if P.BOARD_STYLE != "slab":
-        for p0, p1, w, h, _kind in final_struts():
-            parts.append(S.strut(p0, p1, w, h))
+        parts.append(body_posts[summit_n] if is_summit(i, r)
+                     else _post(x, y, seat_z(), segs=segs,
+                                part=_post_part(i, r)))
+        summit_n += is_summit(i, r)
 
     if verbose:
         print(f"    fusing {len(parts)} solids ...", flush=True)
@@ -1152,10 +846,11 @@ def build_fit_coupon(segs: int | None = None) -> trimesh.Trimesh:
         x = x0 + k * pitch
         rq = dia * 0.5
         c = P.POST_CHAMFER
-        top = P.PAD_H + P.POST_H
+        # a post standing on the bar, exactly as one stands on the plate
+        top = P.FIT_COUPON_T + P.POST_H
         m = S.lathe([
-            (0.0, 0.0), (P.PAD_OD * 0.5, 0.0), (P.PAD_OD * 0.5, P.PAD_H),
-            (rq, P.PAD_H), (rq, top - c), (rq - c, top), (0.0, top),
+            (0.0, P.FIT_COUPON_T - 0.5), (rq, P.FIT_COUPON_T - 0.5),
+            (rq, top - c), (rq - c, top), (0.0, top),
         ], segs=segs)
         m.apply_translation((x, 0.0, 0.0))
         parts.append(m)

@@ -49,10 +49,9 @@ LAYER, LINE, WALLS, SKINS = P.LAYER_H, 0.42, 3, 3
 def _slab_filament(area: float, peri: float, n_posts: int) -> float:
     """cm3 of filament a slab of this plan shape eats: walls, skins, infill.
 
-    A lattice is nearly all perimeter, so quoting it at 100% infill is close
-    to the truth. A slab is not: its skins are a fixed 94 g over the full
-    octagon however thick it is, and everything between them is set by the
-    infill. Quoting a slab at 100% would overstate it by a factor of three.
+    A slab cannot be quoted at 100% infill: its skins are a fixed 94 g over
+    the full octagon however thick it is, and everything between them is set
+    by the infill. Quoting it solid would overstate it by a factor of three.
     """
     core = max(P.SLAB_T - 2 * SKINS * LAYER, 0.0)
     posts = n_posts * np.pi * (P.POST_D / 2) ** 2 * P.POST_H
@@ -131,11 +130,10 @@ def export_stls(verbose=True):
     board_body = B.build_board(verbose=verbose)
     numerals = B.build_board(numerals_only=True)
 
-    slab = P.BOARD_STYLE == "slab"
     note = (f"{P.SLAB_T:.0f} mm slab at {P.SLAB_INFILL:.0%} infill; "
-            f"load with numerals" if slab else "two-colour: load with numerals")
+            f"load with numerals")
     save(board_body, "board-body.stl", "PLA", note,
-         cm3=slab_filament() - numerals.volume / 1000.0 if slab else None)
+         cm3=slab_filament() - numerals.volume / 1000.0)
     save(numerals, "board-numerals.stl", "PLA",
          "two-colour: numbers, title, lip cap and the alternate post tops")
 
@@ -176,7 +174,7 @@ def export_stls(verbose=True):
     save(stub_body, "stub-board-body.stl", "PLA",
          f"TEST PRINT -- real board corner, {which}; load with "
          f"stub-board-numerals",
-         cm3=stub_filament() - stub_nums.volume / 1000.0 if slab else None)
+         cm3=stub_filament() - stub_nums.volume / 1000.0)
     save(stub_nums, "stub-board-numerals.stl", "PLA",
          "TEST PRINT -- the digits and their slice of each post")
     # one of each of the first STUB_PIECES shapes, so the test print checks
@@ -279,19 +277,12 @@ def export_renders(board_body, numerals, pieces, runner, stub_body,
     # 5 -- THE ONE THAT MATTERS: a collar, sectioned, with three pieces
     #      stacked on it. If the post/socket interface is wrong, it is wrong
     #      here and it costs nothing to find out.
-    if P.BOARD_STYLE == "slab":
-        collar = S.union_all([
-            S.rounded_plate(0.0, 0.0, 44.0, 22.0, P.SLAB_T, 2.0),
-            B._post(0.0, 0.0, P.SLAB_T),
-        ])
-    else:
-        collar = B.build_cell(0.0, 0.0)
-    rail = (S.strut((-19, 0), (19, 0), P.STRUT_W, P.STRUT_H)
-            if P.BOARD_STYLE != "slab" else None)
-    # Fuse before cutting. Sectioned separately they leave two cut faces on
-    # the same plane, which z-fights into speckle exactly where the render
-    # needs to be clearest.
-    board_bit = S.union_all([c for c in (collar, rail) if c is not None])
+    # a piece of plate with one post on it: the board, as far as a stack
+    # cares about it
+    board_bit = S.union_all([
+        S.rounded_plate(0.0, 0.0, 44.0, 22.0, P.SLAB_T, 2.0),
+        B._post(0.0, 0.0, P.SLAB_T),
+    ])
     stack_parts = []
     heights = [P.PEG_BODY_H, P.PEG_BODY_H, P.RUNNER_BODY_H]   # all equal
     for lvl, (mesh, col) in enumerate([(marker, C_PLAYERS[0]),
@@ -468,7 +459,7 @@ def _annotate_stack(img, cam, W, H):
         dict(at=(P.PAD_OD / 2 - 2.0, 0, B.seat_z()),
              to=(Rg, 0.90 * H), align="left",
              text="skirt seats on the %s face"
-                  % ("plate" if P.BOARD_STYLE == "slab" else "pad")),
+                  % "plate"),
         dict(at=(P.PEG_SOCKET_D / 2 - 0.4, 0, z0 + P.PEG_SOCKET_DEPTH * 0.45),
              to=(L, 0.66 * H), align="right",
              text=f"socket \u00d8{P.PEG_SOCKET_D:.2f} \u00d7 "
@@ -499,17 +490,15 @@ def _annotate_stack(img, cam, W, H):
 def _bed_fit_diagram(board_full):
     """Plan schematic of the board on the bed.
 
-    Drawn from the strut, cell and shield lists rather than from the mesh: a
-    dot scatter of 50k vertices looks like noise, whereas the lattice drawn as
-    lines and rings is something you can read a dimension off. On a slab there
-    is no lattice and no pad, so what is worth drawing is different: the
-    outline, the band the raised lip occupies, and where the posts stand.
+    Drawn from the cell and shield lists rather than from the mesh: a dot
+    scatter of 50k vertices looks like noise, whereas the outline, the band
+    the raised lip occupies and the posts standing on the plate are something
+    you can read a dimension off.
     """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle, Circle, Polygon
-    from matplotlib.collections import LineCollection
 
     lo, hi = board_full.bounds
     w, h = hi[0] - lo[0], hi[1] - lo[1]
@@ -525,47 +514,26 @@ def _bed_fit_diagram(board_full):
                          closed=True, facecolor="#e5e9f0", edgecolor="#4c566a",
                          lw=1.0, zorder=1))
 
-    slab = P.BOARD_STYLE == "slab"
-
-    if slab:
-        # the inside edge of the raised lip, drawn the way slab_plate() makes
-        # it: the outline scaled about its centre
-        poly = np.asarray(B.octagon(), dtype=float)
-        ctr = B.octagon_centre()
-        k = ((max(abs(poly - ctr).max(axis=1)) - P.RIM_W)
-             / max(abs(poly - ctr).max(axis=1)))
-        ax.add_patch(Polygon([(x + ox, y + oy)
-                              for x, y in (poly - ctr) * k + ctr],
-                             closed=True, facecolor="#eceff4",
-                             edgecolor="#4c566a", lw=0.8, ls=":", zorder=2))
-    else:
-        segs, widths = [], []
-        for p0, p1, sw, _sh, _kind in B.final_struts():
-            segs.append([(p0[0] + ox, p0[1] + oy), (p1[0] + ox, p1[1] + oy)])
-            widths.append(sw * 1.4)
-        ax.add_collection(LineCollection(segs, linewidths=widths,
-                                         colors="#3b4252", zorder=2))
+    # the inside edge of the raised lip, drawn the way slab_plate() makes
+    # it: the outline scaled about its centre
+    poly = np.asarray(B.octagon(), dtype=float)
+    ctr = B.octagon_centre()
+    k = ((max(abs(poly - ctr).max(axis=1)) - P.RIM_W)
+         / max(abs(poly - ctr).max(axis=1)))
+    ax.add_patch(Polygon([(x + ox, y + oy)
+                          for x, y in (poly - ctr) * k + ctr],
+                         closed=True, facecolor="#eceff4",
+                         edgecolor="#4c566a", lw=0.8, ls=":", zorder=2))
 
     for i in range(len(P.ROWS)):
         sx, sy = B.shield_xy(i)
-        if not slab:
-            ax.add_patch(Rectangle((sx + ox - P.PLAQUE_W / 2,
-                                    sy + oy - P.PLAQUE_H / 2),
-                                   P.PLAQUE_W, P.PLAQUE_H, facecolor="#3b4252",
-                                   edgecolor="none", zorder=3))
-        ax.text(sx + ox, sy + oy, str(P.COLUMNS[i]),
-                color="#eceff4" if slab else "#d08770", ha="center",
-                va="center", fontsize=6 if slab else 7, weight="bold",
-                zorder=6)
+        ax.text(sx + ox, sy + oy, str(P.COLUMNS[i]), color="#eceff4",
+                ha="center", va="center", fontsize=6, weight="bold", zorder=6)
 
     for i, r in B.all_cells():
         cx, cy = B.cell_xy(i, r)
-        if not slab:
-            ax.add_patch(Circle((cx + ox, cy + oy), P.PAD_OD / 2,
-                                facecolor="#3b4252", edgecolor="none", zorder=4))
         ax.add_patch(Circle((cx + ox, cy + oy), P.POST_D / 2,
-                            facecolor="#3b4252" if slab else "#eceff4",
-                            edgecolor="none", zorder=5))
+                            facecolor="#3b4252", edgecolor="none", zorder=5))
 
     bx, by = lo[0] + ox, lo[1] + oy
     ax.add_patch(Rectangle((bx, by), w, h, facecolor="none",
@@ -612,8 +580,7 @@ def print_report(rows, board_body):
              + sum(g[f"piece-{s}.stl"] for s in P.PLAYER_STYLES)
                * P.MARKERS_PER_PLAYER
              + g["piece-runner.stl"] * P.RUNNERS)
-    how = (f"board at {100*P.SLAB_INFILL:.0f}% infill, pieces solid"
-           if P.BOARD_STYLE == "slab" else "100% infill")
+    how = f"board at {100*P.SLAB_INFILL:.0f}% infill, pieces solid"
     print(f"full set, {how}: ~{total:.0f} g "
           f"(1 board + {P.MARKERS_PER_PLAYER} each of "
           f"{'/'.join(P.PLAYER_STYLES)} + {P.RUNNERS} runners)")

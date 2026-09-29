@@ -7,15 +7,14 @@ These are not unit tests of the code so much as design rules. Editing
 params.py is the whole point of this project, and most of the ways to get it
 wrong are silent: a socket that swallows its post, a strut standing proud of a
 seating face, a wall thinned to nothing, a board that has quietly grown past
-the bed, a lattice that has become two detached bodies, a raised lip that has
+the bed, a board that has quietly become two detached bodies, a lip that has
 crept in far enough to land on a pad, a number you cannot read once a piece is
 sitting on it. Each one costs a print to discover and nothing to check.
 
-The board has two styles and the checks follow whichever params.py selects.
-Some rules only exist for one of them -- there are no struts to keep clear of
-a number box on a slab, and no lip to measure on a lattice -- so those are
-gated rather than deleted. Everything about the ladder, the post/socket
-interface, the pieces and the octagon is common to both and always runs.
+There used to be two boards -- this slab and an open wireframe truss -- and
+every check that only applied to one of them was gated rather than deleted.
+The truss is gone, and so are the gates: there is one board, and every check
+in here runs against it every time.
 """
 
 from __future__ import annotations
@@ -33,7 +32,6 @@ import solids as S
 FAILS: list[str] = []
 CHECKS = 0
 
-SLAB = P.BOARD_STYLE == "slab"
 SEAT_Z = B.seat_z()          # height of every seating face, whichever style
 
 
@@ -237,13 +235,7 @@ def stub_checks(brd, body_only, accent):
     stub_body = B.build_board_stub(body_only)
     stub_n = B.build_board_stub(accent)
     lo, hi = stub.bounds
-    if not SLAB:
-        check("the stub is a solid piece of board",
-              stub_body.is_watertight and stub_body.is_winding_consistent,
-              f"{len(stub_body.faces)} triangles, "
-              f"{stub_body.body_count} bodies")
-    else:
-        check("the stub's body is a watertight single solid",
+    check("the stub's body is a watertight single solid",
               stub_body.is_watertight and stub_body.is_winding_consistent
               and stub_body.body_count == 1,
               f"{len(stub_body.faces)} triangles, {stub_body.body_count} body;"
@@ -262,19 +254,17 @@ def stub_checks(brd, body_only, accent):
           and abs(stub_n.bounds[1][2] - (SEAT_Z + P.POST_H)) < 1e-6,
           "body and accent split each summit post here too")
 
-    if SLAB:
-        # One side of the stub has to be real board edge, or it tests
-        # everything about the board except the lip.
-        # measured off the stub's own outer edge, not off the knife: the top
-        # side of the box is out in open air, and what bounds the stub there
-        # is the octagon
-        z = P.SLAB_T + P.RIM_H / 2
-        band = np.asarray([(x, hi[1] - P.RIM_W / 2, z)
-                           for x in np.linspace(lo[0] + 15, hi[0] - 15, 9)])
-        check("one side of the stub is real board edge, lip and all",
-              stub.contains(band).all(),
-              f"{int(stub.contains(band).sum())}/9 points land in the lip "
-              f"along the top edge")
+    # One side of the stub has to be real board edge, or it tests everything
+    # about the board except the lip. Measured off the stub's own outer edge,
+    # not off the knife: the top side of the box is out in open air, and what
+    # bounds the stub there is the octagon.
+    z = P.SLAB_T + P.RIM_H / 2
+    band = np.asarray([(x, hi[1] - P.RIM_W / 2, z)
+                       for x in np.linspace(lo[0] + 15, hi[0] - 15, 9)])
+    check("one side of the stub is real board edge, lip and all",
+          stub.contains(band).all(),
+          f"{int(stub.contains(band).sum())}/9 points land in the lip "
+          f"along the top edge")
 
 
 def main():
@@ -357,11 +347,8 @@ def main():
           f"socket {P.PEG_SOCKET_DEPTH:.2f} vs posts "
           f"{P.POST_H:.2f}/{P.PEG_POST_H:.2f}")
 
-    # What a piece actually stands on: the whole skirt on a slab, or as much
-    # of it as the pad is wide on a lattice. The rule is that the CONTACT is
-    # wide, not that the skirt is wholly supported -- a skirt that overhangs
-    # its pad a little still sits on a generous annulus.
-    # FIVE shapes, so every one of these is the worst of the five -- the
+    # What a piece actually stands on. FIVE shapes, so every one of these is
+    # the worst of the five -- the
     # runner included, which is the whole point of reading B.PIECE_STYLES
     # here rather than P.PLAYER_STYLES. The widest is what has to clear a
     # neighbour; the narrowest BASE is what has to seat, and they are not the
@@ -369,27 +356,13 @@ def main():
     skirt_r = max(B.piece_max_r(s) for s in B.PIECE_STYLES)
     worst = min(B.PIECE_STYLES, key=B.piece_seat_r)
     base_r = B.piece_seat_r(worst)
-    seat_r = base_r if SLAB else min(base_r, P.PAD_OD / 2)
+    seat_r = base_r
     check("the seat is a wide annulus, not a rim",
           seat_r - P.POST_D / 2 >= 3.0,
           f"{P.POST_D/2:.2f} to {seat_r:.2f} mm contact ring on the {worst}, "
           f"which is the narrowest based of the four")
-    if not SLAB:
-        check("a piece does not overhang its pad far enough to teeter",
-              skirt_r - P.PAD_OD / 2 <= 2.0,
-              f"skirt r{skirt_r:.2f} on pad r{P.PAD_OD/2:.2f}: "
-              f"{max(0.0, skirt_r - P.PAD_OD/2):.2f} mm of air")
 
     print("\nprintability")
-    if not SLAB:
-        check("struts stay below every seating face, so nothing fouls a piece "
-              "and no strut can touch a post",
-              max(P.STRUT_H, P.OCTAGON_SPOKE_H) < P.PAD_H,
-              f"struts {max(P.STRUT_H, P.OCTAGON_SPOKE_H):.2f} vs pad "
-              f"{P.PAD_H:.2f}")
-        check("number shields sit flush with the pads",
-              P.PLAQUE_T <= P.PAD_H,
-              f"shield {P.PLAQUE_T:.2f} vs pad {P.PAD_H:.2f}")
     # THE SOCKET ROOF, measured on the profile rather than asserted from the
     # parameters. It closes the socket over thin air, printed the right way
     # up, so it is the one surface in a piece that could need support. The
@@ -603,13 +576,9 @@ def main():
               pitch - 2 * skirt_r >= P.PIECE_GAP_MIN - 1e-9,
               f"{pitch - 2*skirt_r:.2f} mm gap, against "
               f"{P.PIECE_GAP_MIN:.1f} asked for")
-    if SLAB:
-        check("posts clear each other up a column", P.PITCH_Y - P.POST_D >= 3.0,
-              f"{P.PITCH_Y - P.POST_D:.2f} mm gap; on a slab the plate is the "
-              f"pad, so only the posts stand apart")
-    else:
-        check("pads clear each other up a column", P.PITCH_Y - P.PAD_OD >= 3.0,
-              f"{P.PITCH_Y - P.PAD_OD:.2f} mm gap")
+    check("posts clear each other up a column", P.PITCH_Y - P.POST_D >= 3.0,
+          f"{P.PITCH_Y - P.POST_D:.2f} mm gap; the plate is the seat, so only "
+          f"the posts have to stand apart")
 
     print("\ngeometry (building meshes)")
     marker = B.build_marker()
@@ -682,7 +651,6 @@ def main():
           f"{len(probes)} probe points, {int(inside.sum())} obstructed")
 
     print("\ncolumn numbers")
-    struts = [] if SLAB else B.final_struts()
     check("every number is in line with its column, not off to the side",
           all(abs(B.numeral_xy(i)[0] - B.summit(i)[0]) < 1e-9
               for i in range(len(P.ROWS))),
@@ -786,12 +754,7 @@ def main():
         check("no two letters run into each other",
               min(gaps) >= 3.0, f"tightest is {min(gaps):.1f} mm")
 
-    if not SLAB:
-        check("a piece fits on the box it has to stand on",
-              2 * skirt <= min(P.PLAQUE_W, P.PLAQUE_H),
-              f"piece {2*skirt:.1f} mm on a {P.PLAQUE_W:.0f} x "
-              f"{P.PLAQUE_H:.0f} mm box")
-    plate_t = P.SLAB_T if SLAB else P.PLAQUE_T
+    plate_t = P.SLAB_T
     check("the digit is inlaid, not embossed, so a piece cannot rock on it",
           0 < P.NUMERAL_DEPTH < plate_t - 1.0,
           f"{P.NUMERAL_DEPTH:.2f} mm deep in a {plate_t:.2f} mm plate")
@@ -806,7 +769,7 @@ def main():
     # Asked of the mesh, not of its body count: how many separate bodies the
     # accent part comes out as depends on which glyphs their post happens to
     # cut in two, and widening the two-digit numbers changed that.
-    if SLAB and P.RIM_CAP_H > 1e-9:
+    if P.RIM_CAP_H > 1e-9:
         poly_ = np.asarray(B.octagon(), dtype=float)
         ctr_ = B.octagon_centre()
         mid = (poly_[0] + poly_[1]) / 2
@@ -867,45 +830,6 @@ def main():
           worst_gap < 0.01,
           f"worst mismatch {100*worst_gap:.3f}% (the {worst_num}); "
           f"{sorted(untouched)} are missed by their post entirely")
-
-    # Only members taller than a box matter: a strut is 3.4 mm and a box is
-    # 4.0 mm thick, so anything running under one is buried inside it.
-    tall = [s for s in struts if s[3] > P.PLAQUE_T] if not SLAB else []
-    if tall:
-        bx = np.linspace(-P.PLAQUE_W / 2, P.PLAQUE_W / 2, 13)
-        by = np.linspace(-P.PLAQUE_H / 2, P.PLAQUE_H / 2, 15)
-        clear, clear_col = np.inf, None
-        for i in range(len(P.ROWS)):
-            sx, sy = B.numeral_xy(i)
-            dd = min(B.strut_distance_to((sx + dx, sy + dy), p0, p1, w_)
-                     for dx in bx for dy in by
-                     for p0, p1, w_, _h, _k in tall)
-            if dd < clear:
-                clear, clear_col = dd, P.COLUMNS[i]
-        check("nothing standing proud of a box goes anywhere near one",
-              clear > 1.0,
-              f"{len(tall)} struts taller than {P.PLAQUE_T:.1f} mm (the "
-              f"octagon); nearest is {clear:.1f} mm off column "
-              f"{clear_col}'s box")
-
-    if struts:
-        print("\nthe board is symmetric")
-        cx = (len(P.ROWS) - 1) * P.PITCH_X / 2
-
-        def _key(a, b_):
-            return tuple(sorted([(round(a[0], 3), round(a[1], 3)),
-                                 (round(b_[0], 3), round(b_[1], 3))]))
-
-        have = {_key(s[0], s[1]) for s in struts}
-        mirrored = {_key((2 * cx - s[0][0], s[0][1]),
-                         (2 * cx - s[1][0], s[1][1])) for s in struts}
-        # Easy to break and hard to see: the herringbone diagonals are chosen
-        # by a parity, and keying that on a row INDEX rather than its position
-        # makes a gap and its mirror disagree, because the two number their
-        # rows differently. The board then comes out visibly handed.
-        check("every strut has a mirror twin across the centreline",
-              have == mirrored,
-              f"{len(have)} struts, {len(have ^ mirrored)} unmatched")
 
     # WHAT THE SLICER WILL SEE. An STL has no notion of separate bodies: it
     # is a bag of triangles, and every loader welds coincident vertices on
@@ -1034,13 +958,7 @@ def main():
           not outside,
           "72 pads + 11 boxes" if not outside
           else f"{sorted(set(outside))} pokes out")
-    if not SLAB:
-        check("the lens is braced out to the frame on every edge",
-              len([s for s in struts if s[4] == "spoke"]) >= 2 * len(P.ROWS),
-              f"{len([s for s in struts if s[4] == 'spoke'])} spokes")
-
-    if SLAB:
-        slab_checks(brd, poly, ctr, skirt_r)
+    slab_checks(brd, poly, ctr, skirt_r)
 
     stub_checks(brd, body_only, accent)
 
