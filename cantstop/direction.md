@@ -336,55 +336,69 @@ nothing about either.
   with a web in each wall and four continuous corner posts holding it up, and
   you see in through the near web and out through the far one.
 
-  **The web is an orb web, not a tiling.** Concentric octagon rings joined by
-  radial spokes, with a solid hub. A tiling has no centre and no spokes, and
-  that is exactly the difference between a honeycomb and a web. The cells are
-  the gaps between two neighbouring rings and two neighbouring spokes, and
-  they are what gets cut; the rings and the spokes are what is left, so
-  neither ever has to be drawn.
+  **The web is a cobweb, and it is drawn by not drawing it.** Seed points are
+  scattered over each face, their Voronoi diagram is taken, and every cell is
+  cut away — so what is left is the *edges* of that diagram, which is a web.
+  No line is ever drawn; the lines are what the cuts leave between them. Two
+  rounds of Lloyd relaxation settle the seeds: none at all leaves slivers
+  that the rib eats into bald patches, too many converges on a honeycomb,
+  which is precisely the thing this is not. The seed is fixed, so the same
+  commit gives the same STL.
 
-  **The margin is part of the outer ring**, which is not obvious until you
-  measure one. What reads as the ring is everything between the outermost
-  *cell* and the edge of the face — the margin **plus** the half-rib the cell
-  was pulled in by. Pinning the margin to a full rib therefore does not make
-  the ring match the other lines, it makes it one and a half times them:
-  1.28 mm against 0.85. A check caught that after the comment in `params.py`
-  had already claimed otherwise. The margin is half a rib now, so
-  `ACTIVE_WEB_R = (SHAFT/2 − RIB/2) / cos(π/8)` and every line is 0.85.
+  An **orb web** came before it — concentric octagon rings and radial
+  spokes — and it was wrong for a reason worth keeping: a regular figure at
+  this size cannot be open enough. See below.
 
-  **One ring band, not two, and the rib is why.** A band gives up a whole
-  rib's width to the rings bounding it, so a cell is (band − 0.85) deep. Two
-  bands inside this web leave each one 1.4 mm wide and each cell 0.55 —
-  slivers, and the web read as a solid disc with scratches on it, 14% open.
-  One band is 2.7 wide, the cells are 1.85 deep, and the web is 25% open.
-  Two bands want R5.0, which wants an 11 mm shaft, which is the fat shaft
-  this piece just got rid of.
+  **THE RIB IS ONE EXTRUSION, NOT TWO, AND THAT BREAKS A PROJECT-WIDE RULE.**
+  Everywhere else 0.85 mm is the floor, because everywhere else the thin
+  thing is a **wall** — something that holds a shape, takes a load, or has to
+  look solid, and a wall one bead wide is a defect. A web is not a wall. Its
+  ribs are *struts*, laid as a single extrusion path: exactly what a slicer
+  lays for infill, and what the print in `reference/` is made of.
 
-  **25% is the ceiling here, and it is worth knowing why.** The rib does not
-  scale down with the piece. On a 9 mm face a 0.85 mm rib is 12% of the web's
-  diameter, and eight spokes spend 43% of the hub's circumference on line
-  rather than air. Letting the web overrun the face edges was tried and buys
-  openness by destroying the thing asked for: past R3.95 the octagon's
-  outline falls outside the face entirely and the cells end up bounded by a
-  square, so the rings stop being octagons. The only real lever is a wider
-  shaft.
+  The arithmetic leaves no choice. A net of line *w* and cell *d* is
+  (d/(d+w))² open. The drawing in `reference/active-web-wanted.png` measures
+  **73% open with lines 3% of the shaft's width**. To reach 73% at w = 0.85
+  you need 5 mm cells — one and a half of them across a 9 mm face. At
+  w = 0.45 you need 2.5 mm cells, which is three and a half. **Two perimeters
+  cannot make a web at this size**; they can only make a wall with holes in
+  it, which is what three consecutive versions were, and why each one was
+  rejected. This one is 65% open.
 
-  **The bridges are the one place this project gives ground to the 45° rule.**
-  A flat-top octagon has a horizontal edge at the top of every ring, so the
-  cell under it has a horizontal ceiling. Turning the octagon 22.5° to put a
-  vertex up is *worse*, not better: the two edges meeting at that vertex lie
-  at 67.5° from vertical, which would actually droop where a 2.10 mm bridge
-  will not. The board has no bridges at all; this piece used to have one at
-  its socket roof, at 2.24 mm, and that one is now **gone** — the shaft
-  stands over the socket rather than stopping beside it, so the roof cone has
-  all the height it needs. `test_fit.py` caps the longest web bridge at the
-  2.24 the socket used to cost.
+  **The 45° rule does not apply to a strut, and that is the only reason an
+  irregular web prints at all.** The rule is about *surfaces*: a sloping face
+  whose outer edge has nothing underneath it. A rib is not a face — each of
+  its layers only has to land on the one below, and it has the rib's whole
+  **width** to do that in. At half a rib of overlap the limit is
+  arctan(rib/2 / layer): **62° at a 0.45 rib and a 0.12 mm layer**, against
+  the 45° a surface gets. The same rib at 0.20 mm layers only reaches 48°,
+  which is why this piece is sliced fine and the print guide says so.
 
-  **The height is an output, not a choice.** Two webs and a rib need 17.15 mm
-  of hollow shaft; the hollow cannot start until the socket roof closes at
-  z7.92, and must end 3.30 mm below the top so its own roof can be a pyramid
-  rather than a 6.6 mm bridge. 7.92 + 17.15 + 3.30 is 28.37, rounded to 28.40.
-  That solid top band is the flat top.
+  **The shaft is hollow, and that is what makes four webs possible at once.**
+  Every version before this cut its pattern straight *through* the shaft.
+  That works for two faces and cannot work for four: a cut opening the left
+  and right at the same height as one opening the front and back crosses it
+  in the middle and takes the shaft apart. The honeycomb dodged it by
+  alternating — one row front and back, the next left and right — which is
+  why no face was ever continuously webbed. Each web is cut through **one
+  wall**, 1.20 mm deep, so the four never meet. Four faces, four different
+  webs, four continuous corner posts, and you see in through the near web and
+  out through the far one.
+
+  **The 0.90 mm frame** round each face is the only part of a wall that is
+  not web, and it is what ties the web into those corner posts. It is two
+  perimeters where the ribs inside it are one.
+
+  **Two bridges, both deliberate, and the piece used to have a third.** An
+  irregular web has cells that come to a peak and cells with a flat top; the
+  flat ones are bridges, and the widest measures 2.66 mm. The **top plate**
+  is the other: it spans the 6.60 mm core, anchored on all four walls, and it
+  is the trade for having the web run to the top. The 45° pyramid that used
+  to roof the core bridged nothing and cost a solid band a third of the
+  shaft's height. The third bridge was at the socket roof — 2.24 mm — and
+  that one is simply **gone**, because the shaft stands over the socket
+  rather than stopping beside it, so the roof cone has all the height it
+  needs.
 
   **Square is safe, and it is checked rather than hoped.** Columns are
   22.0 mm apart and the tightest row pitch is 19.58, and two axis-aligned
@@ -622,7 +636,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 130 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 132 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

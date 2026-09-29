@@ -226,26 +226,46 @@ number: `test_fit.py` prints it and fails it past 4 mm.
 Do **not** print pieces upside down to "avoid" the socket. Inverted, the step
 from post to skirt becomes a flat overhang ring and genuinely needs support.
 
-**Piece 6's webs need no support, and a slicer may disagree.** The shaft is a
-hollow square tube with an orb web cut through each of its four walls — eight
-webs, 64 cells. Most of a cell's ceiling is at 45° or steeper and carries
-itself. Some slicers flag a hole in a wall on principle; ignore it, because
-supports inside those cells would be unremovable.
+**Piece 6 is the exception on this board, and it needs its own profile.**
+Everything else here is designed so a default profile cannot get it wrong.
+This one is a hollow square tube with an irregular web cut through all four
+walls — 92 cells, ribs one extrusion wide — and it wants three changes:
 
-**There are short bridges in this one piece, and they are deliberate.** Each
-octagon ring has a horizontal edge at its top, so the cell under it has a
-flat ceiling — the longest is **2.10 mm**. That is shorter than the socket
-roof this piece used to bridge, and no slicer will complain. Turning the
-octagons to put a vertex up would remove the bridges and replace them with
-67.5° overhangs, which is worse.
+| Setting | Piece 6 | Everything else |
+| --- | --- | --- |
+| Layer height | **0.12 mm** | 0.20 mm |
+| Wall loops | **2** | 3 |
+| Supports | **off** | off |
 
-**Set the piece's wall count to 2 or 3, not more.** Every line in the web is
-0.85 mm — two 0.42 perimeters with no infill — and the shaft's wall is 1.20.
-Four perimeters makes the slicer thin-wall the whole tower.
+**Slice it at 0.12 mm, not 0.20.** This is the one that matters. A sloping
+*face* droops past 45°, but a *rib* is not a face: each of its layers only
+has to land on the one below, and it has the rib's whole width to do it in.
+The limit is arctan(rib/2 ÷ layer) — **62° at 0.12 mm, and only 48° at
+0.20**. An irregular web has ribs at every angle, so the coarse layer will
+drop the shallow ones and the fine one will not.
 
-**Do not let the slicer "fix" the hollow.** The shaft is deliberately empty
-from z7.9 to z25.1, closed at the top by a 45° pyramid so nothing bridges.
-Solid infill in there would fill the cavity you are meant to see through.
+**Ribs are 0.45 mm — one bead — and that is on purpose.** Two perimeters is
+the floor everywhere else on this board, because everywhere else the thin
+thing is a wall. A web is struts. Do not "fix" it by raising the wall count;
+four loops on a 0.45 mm rib makes the slicer thin-wall the whole tower.
+
+**Supports off, and ignore the warning.** Some slicers flag a hole in a wall
+on principle. Supports inside those cells would be unremovable.
+
+**Do not let it fill the hollow.** The shaft is deliberately empty from z7.9
+to z27.2, and that cavity is what you see through. If the slicer shows solid
+infill in there, the model has been repaired by something on the way in.
+
+**Two bridges, both fine.** The widest cell ceiling is 2.66 mm, and the top
+plate spans the 6.60 mm core anchored on all four walls. The board itself has
+no bridges at all; these are the only ones in the set.
+
+**It is the most fragile piece here** — 0.45 × 1.20 mm ribs in PLA, handled
+every turn. The four corner posts carry it, and the frame ties the web into
+them, but a dropped one will lose ribs where a counter would just bounce.
+Print the four together so a reprint is cheap, and if it turns out too
+delicate in the hand, `ACTIVE_RIB` takes it back to 0.85 at the cost of the
+look — see `direction.md` for what that trade actually costs.
 
 ---
 
@@ -334,7 +354,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 130 checks, ~2 min
+python3 test_fit.py    # 132 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

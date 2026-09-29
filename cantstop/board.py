@@ -627,148 +627,205 @@ def _sq_frustum(a0: float, z0: float, a1: float, z1: float) -> trimesh.Trimesh:
     return m
 
 
-def _web_octagon(r: float) -> np.ndarray:
-    """The vertices of one ring: a FLAT-TOP octagon of circumradius r.
+def _voronoi_polys(w: float, h: float, seed: int) -> list:
+    """The cells of a Voronoi diagram over a w x h rectangle, as polygons.
 
-    Flat-top means a horizontal edge at the top and the bottom and a vertical
-    one at each side, which is the orientation a drawn web has. The
-    alternative -- turned 22.5 degrees, vertex up -- is worse for printing,
-    not better: the two edges meeting at that vertex lie at 67.5 degrees from
-    vertical, where the flat top is a short bridge.
+    Seed points are scattered at random and then relaxed towards the centres
+    of their own cells (Lloyd), which is what turns a random scatter into
+    something that reads as a web rather than as a mess. None at all leaves
+    slivers -- cells so thin that thickening the rib eats them and the web
+    grows bald patches. Too many converges on a honeycomb, which is exactly
+    the thing this is not.
+
+    The points are mirrored across all four edges before each diagram is
+    taken, so every cell that matters comes out bounded. Without that the
+    outer cells run to infinity and scipy hands back open regions.
     """
-    n = P.ACTIVE_WEB_SIDES
-    a = np.pi / n + np.arange(n) * 2.0 * np.pi / n     # 22.5, 67.5, ...
-    return np.column_stack([r * np.cos(a), r * np.sin(a)])
+    from scipy.spatial import Voronoi
+    from shapely.geometry import Polygon, box
+    rng = np.random.default_rng(seed)
+    n = max(4, int(round(w * h / (P.ACTIVE_WEB_CELL ** 2 * 0.866))))
+    pts = rng.random((n, 2)) * (w, h) - (w / 2, h / 2)
+    rect = box(-w / 2, -h / 2, w / 2, h / 2)
 
-
-def web_cells(scale: float = 1.0) -> list:
-    """The open cells of one orb web, in its own plane, centred on (0, 0).
-
-    A cell is bounded by two neighbouring rings and two neighbouring spokes:
-    a straight-sided trapezoid, because one ring's edge between two spokes IS
-    a straight octagon edge. Build the trapezoid, then pull it in by half a
-    rib all round, and what is left uncut between the cells is the web --
-    rings and spokes of one even thickness, without either ever having to be
-    drawn.
-
-    The innermost radius is the hub and stays solid. Everything outside the
-    outer ring is the face the web sits on.
-    """
-    from shapely.geometry import Polygon
-    rr = [f * P.ACTIVE_WEB_R * scale for f in P.ACTIVE_WEB_RADII]
-    half_rib = P.ACTIVE_RIB * 0.5
-    out = []
-    for ra, rb in zip(rr, rr[1:]):
-        va, vb = _web_octagon(ra), _web_octagon(rb)
-        n = len(va)
-        for k in range(n):
-            j = (k + 1) % n
-            quad = Polygon([va[k], va[j], vb[j], vb[k]])
-            cell = quad.buffer(-half_rib, join_style=2)     # mitred
-            if cell.is_empty or cell.area < 0.02:
+    for _ in range(P.ACTIVE_WEB_RELAX + 1):
+        mirrored = [pts]
+        for sx, sy, ox, oy in ((-1, 1, -w, 0), (-1, 1, w, 0),
+                               (1, -1, 0, -h), (1, -1, 0, h)):
+            q = pts * (sx, sy) + (ox, oy)
+            mirrored.append(q)
+        vor = Voronoi(np.vstack(mirrored))
+        cells = []
+        for i in range(len(pts)):
+            region = vor.regions[vor.point_region[i]]
+            if not region or -1 in region:
+                cells.append(None)
                 continue
-            out.append(cell)
-    return out
+            cells.append(Polygon(vor.vertices[region]).intersection(rect))
+        # relax: move each seed to the centroid of its own cell
+        moved = []
+        for pt, cell in zip(pts, cells):
+            if cell is None or cell.is_empty or cell.area < 1e-9:
+                moved.append(pt)
+            else:
+                moved.append([cell.centroid.x, cell.centroid.y])
+        pts = np.asarray(moved)
+    return [c for c in cells if c is not None and not c.is_empty]
+
+
+@lru_cache(maxsize=8)
+def web_cells(face: int = 0) -> tuple:
+    """The open cells of one face's web: what gets cut away.
+
+    Every cell of the Voronoi diagram is pulled in by half a rib, so the rib
+    left between any two neighbours is a whole one -- the lines of the web
+    are never drawn, they are what the cuts do not take. The whole thing is
+    then clipped to the face less its frame, which is what ties the web into
+    the four corner posts.
+
+    Each face gets its own seed, so no two sides of the piece are the same
+    web. It is still deterministic: the same commit gives the same STL.
+    """
+    from shapely.geometry import box
+    w = P.ACTIVE_SHAFT - 2.0 * P.ACTIVE_WEB_FRAME
+    h = active_core_top() - active_web_floor() - 2.0 * P.ACTIVE_WEB_FRAME
+    inner = box(-w / 2, -h / 2, w / 2, h / 2)
+    out = []
+    for cell in _voronoi_polys(w, h, P.ACTIVE_WEB_SEED + face * 977):
+        c = cell.buffer(-P.ACTIVE_RIB / 2, join_style=2).intersection(inner)
+        if c.is_empty or c.area < P.ACTIVE_RIB ** 2:
+            continue
+        if c.geom_type == "MultiPolygon":
+            out += [g for g in c.geoms if g.area >= P.ACTIVE_RIB ** 2]
+        else:
+            out.append(c)
+    return tuple(out)
+
+
+def active_web_open() -> float:
+    """What fraction of a face is air. The drawing is 0.73."""
+    from shapely.ops import unary_union
+    w = P.ACTIVE_SHAFT - 2.0 * P.ACTIVE_WEB_FRAME
+    h = active_core_top() - active_web_floor() - 2.0 * P.ACTIVE_WEB_FRAME
+    return unary_union(list(web_cells(0))).area / (w * h)
+
+
+def active_rib_min() -> float:
+    """The thinnest rib anywhere in a face's web, measured on the polygons.
+
+    Pulling every cell in by half a rib SHOULD leave a whole one between any
+    two of them, but a mitred buffer on an acute corner can take more than it
+    is asked for, and two cells that meet at a sharp vertex can end up
+    further apart than that while a third pair ends up closer. Measured, not
+    assumed.
+    """
+    cells = web_cells(0)
+    worst = 1e9
+    for i, a in enumerate(cells):
+        for bb in cells[i + 1:]:
+            d = a.distance(bb)
+            if d < worst:
+                worst = d
+    return worst
+
+
+def active_bridge() -> float:
+    """The longest flat ceiling in a web -- the worst bridge on the piece.
+
+    A cell's ceiling is whatever the printer has to throw across when it
+    reaches the top of that opening. Take a horizontal slice just under each
+    cell's highest point and measure how wide the cell is there: a cell that
+    comes to a peak gives almost nothing, and one with a flat top gives its
+    full width. An irregular web has some of both.
+    """
+    from shapely.geometry import box as _box
+    worst = 0.0
+    for cell in web_cells(0):
+        x0, y0, x1, y1 = cell.bounds
+        cut = cell.intersection(_box(x0 - 1, y1 - 0.15, x1 + 1, y1 + 1))
+        if not cut.is_empty:
+            b = cut.bounds
+            worst = max(worst, b[2] - b[0])
+    return worst
+
+
+def active_strut_lean(layer: float = 0.12) -> float:
+    """How far a rib may lean before its layers stop overlapping, in degrees.
+
+    THE 45-DEGREE RULE DOES NOT APPLY TO A STRUT, and that is the only reason
+    an irregular web prints at all. The rule is about SURFACES: a sloping
+    face whose outer edge has nothing underneath it. A rib is not a face --
+    each of its layers only has to land on the one below, and it has the
+    rib's whole WIDTH to do that in. At half a rib of overlap the limit is
+    arctan(rib / 2 / layer), which is 62 degrees at a 0.45 rib and a 0.12 mm
+    layer, against the 45 a surface gets.
+
+    That is also why this piece wants a fine layer: the same rib at 0.20 mm
+    layers only reaches 48 degrees.
+    """
+    return float(np.degrees(np.arctan(P.ACTIVE_RIB / 2.0 / layer)))
 
 
 def active_webs() -> list[tuple[float, bool]]:
-    """(z of the web's centre, does it face +-x?) for every web on the piece.
+    """(z of the web's centre, does it face +-x?) for all four faces.
 
-    All four faces carry the same webs at the same heights -- which is only
-    possible because each cut stops at the wall. The flag says which pair of
-    walls a given cut belongs to, and both pairs get a web at every height.
+    All four carry a web over the same run of shaft, which is only possible
+    because each cut stops at the wall. Cut straight through instead and the
+    front-to-back cuts would cross the left-to-right ones in the middle and
+    take the shaft apart -- which is what every earlier version was working
+    around.
     """
-    z0 = active_web_floor()
-    z1 = active_core_top()
-    span = P.ACTIVE_WEB_R * 2.0 * np.cos(np.pi / P.ACTIVE_WEB_SIDES)
-    out = []
-    for i in range(P.ACTIVE_WEBS):
-        zc = z0 + span * 0.5 + i * (span + P.ACTIVE_RIB)
-        if zc + span * 0.5 > z1 + 1e-9:
-            break
-        out += [(zc, True), (zc, False)]
-    return out
+    zc = (active_web_floor() + active_core_top()) * 0.5
+    return [(zc, True), (zc, False)]
 
 
 def active_web_floor() -> float:
-    """Where the hollow core starts, and so where the lowest web can sit.
+    """Where the hollow core starts, and so where the web starts.
 
-    The core cannot begin until the socket's roof has closed, or the two
-    would run into each other and the piece would have a hole through the
-    middle of its own foot.
+    The core cannot begin until the socket's roof has closed, or the two run
+    into each other and the piece has a hole through the middle of its foot.
     """
     rs = P.PEG_SOCKET_D * 0.5
     return P.PEG_SOCKET_DEPTH + rs + P.ACTIVE_WALL
 
 
 def active_core_top() -> float:
-    """Where the hollow core's pyramid roof starts.
-
-    The roof is what the top band of solid is FOR. A flat ceiling over the
-    core would be a bridge as wide as the core; a pyramid at 45 carries
-    itself, and costs half the core's width in height.
-    """
-    core = P.ACTIVE_SHAFT - 2.0 * P.ACTIVE_WALL
-    return P.ACTIVE_TOP_Z - core * 0.5
+    """The underside of the top plate -- where the hollow ends."""
+    return P.ACTIVE_TOP_Z - P.ACTIVE_TOP_T
 
 
 def _web_cut(zc: float, along_x: bool) -> list[trimesh.Trimesh]:
-    """One web's cells, as prisms that bite through a single wall.
-
-    Cut from outside the face inward, stopping short of the core by nothing
-    at all -- the prism runs from beyond the outer surface to just inside the
-    core, so the cell is open at both ends of the wall and nothing is left
-    hanging in the cavity.
-    """
+    """One face-pair's web, as prisms that bite through a single wall."""
     half = P.ACTIVE_SHAFT * 0.5
     depth = P.ACTIVE_WALL + 1.0                    # over-cut into the cavity
     out = []
-    for cell in web_cells():
-        m = trimesh.creation.extrude_polygon(cell, depth)
-        # the cell is drawn in (u, v); stand it up so v is z, then push it
-        # out to the wall it belongs to
-        m.apply_transform(trimesh.transformations.rotation_matrix(
-            np.pi / 2, (1.0, 0.0, 0.0)))
-        m.apply_translation((0.0, half + 0.5, zc))
-        if along_x:
+    for side, face in ((1.0, 0 if along_x else 2), (-1.0, 1 if along_x else 3)):
+        for cell in web_cells(face):
+            m = trimesh.creation.extrude_polygon(cell, depth)
             m.apply_transform(trimesh.transformations.rotation_matrix(
-                np.pi / 2, (0.0, 0.0, 1.0)))
-        out.append(m)
-        mirror = out[-1].copy()
-        mirror.apply_transform(trimesh.transformations.rotation_matrix(
-            np.pi, (0.0, 0.0, 1.0)))
-        out.append(mirror)
+                np.pi / 2, (1.0, 0.0, 0.0)))
+            m.apply_translation((0.0, half + 0.5, zc))
+            if side < 0:
+                m.apply_transform(trimesh.transformations.rotation_matrix(
+                    np.pi, (0.0, 0.0, 1.0)))
+            if along_x:
+                m.apply_transform(trimesh.transformations.rotation_matrix(
+                    np.pi / 2, (0.0, 0.0, 1.0)))
+            out.append(m)
     return out
 
 
-def active_bridge() -> float:
-    """The longest horizontal ceiling anywhere in a web, in mm.
-
-    This is the number the flat-top octagon costs, and it is measured rather
-    than argued: take every cell, find its topmost edge, and if that edge is
-    horizontal, its length is a bridge the printer has to throw across. The
-    project's rule everywhere else is that there are none; here there are
-    sixteen, and this says how long the worst is.
-    """
-    worst = 0.0
-    for cell in web_cells():
-        xs, ys = cell.exterior.coords.xy
-        pts = np.column_stack([np.asarray(xs), np.asarray(ys)])
-        top = pts[:, 1].max()
-        for a, b in zip(pts, pts[1:]):
-            if abs(a[1] - top) < 1e-6 and abs(b[1] - top) < 1e-6:
-                worst = max(worst, abs(b[0] - a[0]))
-    return worst
-
-
 def active_core_void() -> trimesh.Trimesh:
-    """The hollow up the middle of the shaft: a box with a pyramid on top."""
+    """The hollow up the middle of the shaft: a plain box.
+
+    It used to be closed at the top by a 45-degree pyramid so that nothing
+    bridged, and that cost a solid band a third of the shaft's height. The
+    web is supposed to run to the top plate, so the pyramid is gone and the
+    plate bridges the core -- anchored on all four walls, which is the easy
+    kind.
+    """
     a = (P.ACTIVE_SHAFT - 2.0 * P.ACTIVE_WALL) * 0.5
-    z0, z1 = active_web_floor(), active_core_top()
-    return S.union_all([
-        _sq_frustum(a, z0, a, z1),
-        _sq_frustum(a, z1, 0.02, z1 + a),
-    ])
+    return _sq_frustum(a, active_web_floor(), a, active_core_top())
 
 
 def active_socket_bridge() -> float:

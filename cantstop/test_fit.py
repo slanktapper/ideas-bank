@@ -603,77 +603,90 @@ def main():
           f"{P.CROWN_SPIKE_AT - top:.2f} mm of air between one knob and the "
           f"next, so the gaps are up where they read")
     # THE ACTIVE PIECE'S WEB is cells cut through a wall, not a profile, so
-    # the loop above cannot see any of it. It gets its own block.
+    # the loop above cannot see any of it. It gets its own block, and it is
+    # the one part of this project that does not obey the 45-degree rule.
     LINE = 0.42                      # nozzle line width
-    from shapely.ops import unary_union as _uu
-    cells = B.web_cells()
-    webs = B.active_webs()
+    FINE_LAYER = 0.12                # what piece 6 is sliced at
 
-    # EVERY LINE IN THE WEB IS ONE WIDTH, and it is the printer's floor. The
-    # cells are cut by pulling each ring-and-spoke quadrant in by HALF a rib
-    # all round, so the rib between any two neighbouring cells is a whole one
-    # by construction -- which is worth measuring rather than asserting,
-    # because a mitred buffer on an acute corner can eat more than it is
-    # asked for and leave the cell, not the rib, as the thin thing.
-    gaps = []
-    for i, a in enumerate(cells):
-        for b in cells[i + 1:]:
-            gaps.append(a.distance(b))
-    check("every rib in the web is one the printer can lay down",
-          min(gaps) >= 2 * LINE - 0.05,
-          f"{min(gaps):.2f} mm at the tightest of {len(gaps)} pairs of "
-          f"cells, against two {LINE} perimeters at {2*LINE:.2f}")
+    # EVERY RIB IS ONE EXTRUSION, NOT TWO, and that is deliberate. Everywhere
+    # else on this project 0.85 is the floor, because everywhere else the
+    # thin thing is a WALL. A web is not a wall: its ribs are struts, laid as
+    # a single bead, which is what a slicer lays for infill and what the
+    # print in reference/ is made of. Measured on the polygons rather than
+    # assumed, because a mitred buffer on an acute corner can take more than
+    # it was asked for.
+    check("every rib in the web is a bead the printer can lay",
+          B.active_rib_min() >= LINE - 0.01,
+          f"{B.active_rib_min():.2f} mm at the tightest, against one {LINE} "
+          f"line. Two perimeters is the floor everywhere else on this board; "
+          f"a web is struts, not wall")
 
-    # THE MARGIN IS PART OF THE OUTER RING. What reads as the ring is
-    # everything between the outermost cell and the edge of the face, so if
-    # the margin runs wide the ring fattens with it and stops matching every
-    # other line on the piece. It also must not run NARROW, or the corner
-    # posts that hold the shaft up get cut into.
-    u = _uu(cells)
-    margin = P.ACTIVE_SHAFT / 2 - max(abs(v) for v in u.bounds)
-    check("the web's margin matches its own ribs, so the outer ring is a line",
-          2 * LINE - 0.05 <= margin <= P.ACTIVE_RIB + 0.35,
-          f"{margin:.2f} mm from the outermost cell to the edge of a "
-          f"{P.ACTIVE_SHAFT:.2f} mm face, against a {P.ACTIVE_RIB:.2f} rib")
+    # AND THE REASON THAT IS SAFE: a strut is not a surface. A sloping FACE
+    # has nothing under its outer edge and droops past 45 degrees. A rib's
+    # layers only have to land on the one below, and they have the rib's
+    # whole width to do it in -- arctan(rib/2 / layer), which is 62 degrees
+    # at 0.12 mm layers and only 48 at 0.20. That is why this piece is
+    # sliced fine, and it is the whole reason an irregular web prints.
+    check("a rib may lean further than a face may, and this says how far",
+          B.active_strut_lean(FINE_LAYER) >= 55.0,
+          f"{B.active_strut_lean(FINE_LAYER):.0f} degrees from vertical at a "
+          f"{FINE_LAYER} mm layer, against the 45 a surface gets "
+          f"({B.active_strut_lean(0.20):.0f} at 0.20 -- slice this one fine)")
 
-    # THE BRIDGES. This is the one place on the whole project that gives
-    # ground to the 45-degree rule, so it is measured and capped rather than
-    # waved through. A flat-top octagon has a horizontal edge at the top of
-    # every ring, and the cell under it has a horizontal ceiling. Turning the
-    # octagon 22.5 degrees to put a vertex up is WORSE, not better: the two
-    # edges meeting at that vertex lie at 67.5 degrees from vertical, which
-    # would actually droop where a short bridge will not.
-    check("no bridge in the web is longer than the socket roof used to be",
-          B.active_bridge() <= 2.24,
-          f"{B.active_bridge():.2f} mm at the longest, on "
-          f"{len(webs) * len(cells)} cells -- the board has none at all and "
-          f"this piece's own socket roof used to bridge 2.24")
+    # THE WEB HAS TO BE MOSTLY AIR or it is not a web. The drawing this is
+    # taken from measures 73% open with lines 3% of the shaft's width, and
+    # the arithmetic is unforgiving: a net of line w and cell d is
+    # (d/(d+w))^2 open, so 73% at a 0.85 rib needs 5 mm cells -- one and a
+    # half across a 9 mm face. Three versions failed on exactly this and all
+    # three came out a wall with holes in it.
+    check("the web is mostly air, the way the drawing is",
+          B.active_web_open() >= 0.60,
+          f"{100*B.active_web_open():.0f}% of a face is open, against the "
+          f"drawing's 73% -- {len(B.web_cells(0))} cells on a "
+          f"{P.ACTIVE_WEB_CELL:.2f} mm pitch with a {P.ACTIVE_RIB:.2f} rib")
 
-    # ALL FOUR FACES, AT EVERY HEIGHT. This is the thing the hollow shaft
-    # bought, and the reason it exists. Cut straight through a solid shaft,
-    # a web opening the front and back and one opening the left and right at
-    # the same height would cross in the middle and take the shaft apart --
-    # which is why the old honeycomb alternated, and why no face of it was
-    # ever webbed at more than every other row.
-    heights = sorted({round(z, 4) for z, _ in webs})
-    check("every height that carries a web carries it on all four faces",
-          all(sum(1 for z, _ in webs if abs(z - h) < 1e-3) == 2
-              for h in heights),
-          f"{len(heights)} webs up each face, {len(webs) * 2} in all, "
-          f"each cut {P.ACTIVE_WALL:.2f} mm into one wall so they never meet")
+    # THE BRIDGES. An irregular web has some cells that come to a peak and
+    # some with a flat top, and the flat ones are bridges. They are short and
+    # anchored at both ends, which is the easy kind, but they are measured
+    # rather than waved through because this is the only place on the project
+    # that has any at all.
+    check("no bridge in the web is longer than a nozzle can throw",
+          B.active_bridge() <= 3.0,
+          f"{B.active_bridge():.2f} mm at the widest cell ceiling, on "
+          f"{4*len(B.web_cells(0))} cells")
 
-    # THE HOLLOW HAS TO ROOF ITSELF, and a flat ceiling over it would be a
-    # bridge as wide as the core. The pyramid costs half the core's width in
-    # solid at the top, and that solid band IS the flat top.
+    # ALL FOUR FACES, AND A DIFFERENT WEB ON EACH. This is what the hollow
+    # shaft bought and the reason it exists: cut straight through a solid
+    # shaft and a web opening the front and back would cross one opening the
+    # left and right and take the shaft apart, which is why every earlier
+    # version had to alternate and why no face of one was ever fully webbed.
+    faces = [B.web_cells(i) for i in range(4)]
+    check("all four faces are webbed, and no two the same",
+          all(len(f) > 4 for f in faces)
+          and len({tuple(round(c.area, 6) for c in f) for f in faces}) == 4,
+          f"{[len(f) for f in faces]} cells, each cut "
+          f"{P.ACTIVE_WALL:.2f} mm into one wall so they never meet")
+
+    # THE FRAME is the only part of a wall that is not web, and it is what
+    # ties the web into the four corner posts. Undersize it and the tube
+    # unzips at the corners.
+    check("the web is framed, so the corner posts are not cut into",
+          P.ACTIVE_WEB_FRAME >= 2 * LINE - 0.05,
+          f"{P.ACTIVE_WEB_FRAME:.2f} mm of solid round every face, which is "
+          f"two {LINE} perimeters where the ribs inside it are one")
+
+    # THE TOP PLATE bridges the hollow. This one is deliberate and it is the
+    # trade for having the web run all the way up: the old pyramid roof
+    # bridged nothing and cost a solid band a third of the shaft's height.
     core = P.ACTIVE_SHAFT - 2 * P.ACTIVE_WALL
-    check("the hollow shaft is roofed at 45, not bridged",
-          abs((P.ACTIVE_TOP_Z - B.active_core_top()) - core / 2) < 1e-6,
-          f"a {core:.2f} mm core closed by a {core/2:.2f} mm pyramid, so the "
-          f"top {P.ACTIVE_TOP_Z - B.active_core_top():.2f} mm is solid")
+    check("the top plate bridges the core, anchored on all four walls",
+          core <= 7.0 and P.ACTIVE_TOP_T >= 3 * 0.20,
+          f"{core:.2f} mm across a {P.ACTIVE_TOP_T:.2f} mm plate -- the one "
+          f"bridge left in the piece, and it is closed on every side")
 
     # AND THE WEB MUST CLEAR THE SOCKET. The core cannot start until the
-    # socket's roof has closed or the two run into each other, and the piece
-    # ends up with a hole through the middle of its own foot.
+    # socket's roof has closed or the two run into each other and the piece
+    # has a hole through the middle of its own foot.
     rs = P.PEG_SOCKET_D * 0.5
     check("the hollow starts above the socket's roof, not through it",
           B.active_web_floor() >= P.PEG_SOCKET_DEPTH + rs + 2 * LINE - 1e-9,

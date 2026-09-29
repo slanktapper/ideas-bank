@@ -868,70 +868,54 @@ ACTIVE_BASE_R  = 1.20     # corner radius, so it is square and not sharp
 ACTIVE_WALL    = 1.20     # about three perimeters. The webs are cut through
                           # this and nothing deeper, so it is also how proud
                           # the web reads.
-ACTIVE_CORE_ROOF = 45.0   # the hollow is closed at the top by a pyramid at
-                          # this angle rather than a flat ceiling, because a
-                          # flat one would be a 6.6 mm bridge over thin air.
-                          # It costs a solid band at the top half as deep as
-                          # the core is wide, and that band is the flat top.
+# The hollow used to be closed by a 45-degree pyramid to avoid bridging, at
+# the cost of a solid band at the top a third the height of the shaft. The
+# drawing has the web running all the way to the top plate, so the pyramid is
+# gone and the plate bridges the core instead. See ACTIVE_TOP_T.
 
-# THE WEB IS AN ORB WEB: concentric OCTAGON rings joined by radial spokes,
-# with a solid hub in the middle. Not a tiling of octagons -- a tiling has no
-# centre and no spokes, and that is the difference between a honeycomb and a
-# web. The cells are the gaps between two neighbouring rings and two
-# neighbouring spokes, and they are what gets cut; the rings and the spokes
-# are what is left.
+# THE WEB IS A COBWEB: an irregular net of thin lines, edge to edge, with
+# nothing behind it. It is drawn by scattering seed points over the face,
+# taking their Voronoi diagram, and cutting every cell out -- so what is left
+# is the EDGES of that diagram, which is a web. Nothing is ever drawn as a
+# line; the lines are what the cuts leave between them.
 #
-# THE RINGS ARE FLAT-TOP OCTAGONS, which is a deliberate choice against the
-# 45-degree rule and the only place on this project that gives ground to it.
-# A flat-top octagon has a horizontal edge at the top of every ring, so the
-# cell under it has a horizontal ceiling -- a bridge. Turning the octagon 22.5
-# degrees to put a vertex up does not help: the two edges meeting at that
-# vertex sit at 67.5 degrees from vertical, which is worse than the short
-# bridge and would actually droop. The bridges here are short, the board has
-# none at all, and this piece already accepts one at the socket roof.
-# test_fit.py measures the longest of them.
-ACTIVE_WEB_SIDES = 8      # octagons
-ACTIVE_WEB_R   = 4.411    # circumradius of the outer ring: 8.15 across the
-                          # flats on a 9.00 face.
-                          #
-                          # THE MARGIN IS PART OF THE OUTER RING, which is
-                          # not obvious until you measure one. What reads as
-                          # the ring is everything between the outermost CELL
-                          # and the edge of the face, and that is the margin
-                          # PLUS the half-rib the cell was pulled in by. So
-                          # pinning the margin to a full rib does not make
-                          # the ring match the other lines, it makes it one
-                          # and a half times them -- 1.28 against 0.85, which
-                          # is what a check caught after the comment here had
-                          # already claimed otherwise.
-                          #
-                          # The margin is half a rib, so:
-                          #     R = (SHAFT/2 - RIB/2) / cos(pi/8)
-                          # and every line on the piece is 0.85 wide.
-ACTIVE_WEB_RADII = (0.30, 1.00)
-                          # ring radii as fractions of ACTIVE_WEB_R: the hub,
-                          # which stays solid, then the outer ring. The gap
-                          # between them is the one band of cells, eight of
-                          # them, one per spoke.
-                          #
-                          # ONE BAND, NOT TWO, AND THE RIB IS WHY. A band has
-                          # to give up a whole rib's width to the rings that
-                          # bound it, so a cell is (band - 0.85) deep. Two
-                          # bands inside R3.85 leaves each one 1.4 mm wide
-                          # and each cell 0.55 -- slivers, and the web read
-                          # as a solid disc with scratches on it at 14% open.
-                          # One band is 2.70 wide, the cells are 1.85 deep,
-                          # and the web is 26% open.
-                          #
-                          # Two bands need R5.0, which needs an 11 mm shaft,
-                          # which is the fat shaft this piece just got rid
-                          # of. The rib does not scale down with the piece;
-                          # that is the whole tension in this design.
-ACTIVE_RIB     = 0.85     # every line in the web: two 0.42 perimeters and no
-                          # infill, which is the floor for the whole project.
-ACTIVE_WEBS    = 2        # stacked up each face. One 7.30 mm web on a 15 mm
-                          # run of shaft would leave half of it bare, and
-                          # three would be smaller than the rib is wide.
+# THE RIB IS ONE EXTRUSION WIDE, NOT TWO, AND THAT IS A DELIBERATE BREAK
+# WITH THE REST OF THE PROJECT. Everywhere else 0.85 is the floor, because
+# everywhere else the thin thing is a WALL: something that has to hold a
+# shape, take a load, or look solid, and a wall one extrusion wide is a
+# defect. A web is not a wall. Its ribs are struts, laid as a single
+# extrusion path -- exactly what a slicer lays for infill, and what the
+# reference print in reference/ is made of.
+#
+# The arithmetic says there is no choice about it. A net of line w and cell d
+# is (d/(d+w))^2 open. The drawing in reference/active-web-wanted.png is 73%
+# open with lines 3% of the shaft's width. To reach 73% at w=0.85 you need
+# 5 mm cells, which is one and a half of them across a 9 mm face. At w=0.45
+# you need 2.5 mm cells, which is three and a half. Two perimeters cannot
+# make a web at this size; they can only make a wall with holes in it, which
+# is what the last three versions were.
+ACTIVE_RIB     = 0.45     # one 0.42 line plus a hair, so the slicer lays a
+                          # single bead and does not try to fit two.
+ACTIVE_WEB_CELL = 2.50    # the target size of one opening. With a 0.45 rib
+                          # this is 73% open, which is the drawing.
+ACTIVE_WEB_FRAME = 0.90   # the border left round each face's web. Two ribs,
+                          # not one: it ties the web into the corner posts
+                          # and it is the only part of a wall that is not
+                          # web, so it is what stops the tube unzipping.
+ACTIVE_WEB_RELAX = 2      # rounds of Lloyd relaxation on the seed points.
+                          # None at all leaves slivers -- cells so thin the
+                          # rib eats them and the web grows bald patches.
+                          # Too many and it converges on a honeycomb, which
+                          # is the thing this is not. Two is organic and
+                          # even at the same time.
+ACTIVE_WEB_SEED = 20260929
+                          # the RNG seed. The web is random but it is not
+                          # arbitrary: this is fixed so the same STL comes
+                          # out of the same commit, and so a print that went
+                          # wrong can be looked at again.
+ACTIVE_TOP_T   = 1.20     # the top plate. It bridges the hollow -- see
+                          # direction.md; this is the one bridge left in the
+                          # piece and it is anchored on all four walls.
 
 ACTIVES = 4               # one per player
 
