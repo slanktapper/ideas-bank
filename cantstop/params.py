@@ -477,6 +477,22 @@ PEG_SEGS = 64
 # whatever their depth.
 PLAYER_STYLES = ["counter", "crown", "saucer", "cog"]
 PLAYER_LABELS = ["A", "B", "C", "D"]   # what the printable sets are called
+
+# THE PIECE NUMBERS. Every piece has one, and it is its position in this list:
+#
+#   1  counter   player A      2  crown   player B      3  saucer  player C
+#   4  cog       player D      5  runner  shared, neutral
+#
+# They exist so a piece can be named in one character in conversation, a
+# render, a print note or a commit message, without "the round one" having to
+# do the work. The order is the order the shapes were designed in and it is
+# FIXED: a number, once given out, stays with its shape. A new shape takes the
+# next free number; a retired one leaves a hole rather than letting everything
+# below it shuffle up and silently rename four pieces that are already printed
+# and sitting on somebody's table.
+#
+# renders/09-piece-catalogue.png is this list, drawn.
+PIECE_STYLES = PLAYER_STYLES + ["runner"]
 PEG_MAX_R = 7.25          # half of 14.5; the skirt, and nothing wider.
                           # 16.5 was asked for and built, and it is what put
                           # a square board 6 mm over the bed. 14.5 is the

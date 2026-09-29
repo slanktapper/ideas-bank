@@ -970,7 +970,27 @@ def build_player_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
 # obeys the same envelope rules as a marker, so it belongs in the same list
 # -- the checks that read this are the ones that would have caught it being
 # 2 mm wider and 2 mm taller than everything else for as long as it was.
-PIECE_STYLES = list(P.PLAYER_STYLES) + ["runner"]
+# The order is the piece NUMBERING; params.py owns it.
+PIECE_STYLES = list(P.PIECE_STYLES)
+
+
+def piece_number(style: str) -> int:
+    """A piece's reference number: 1-4 the player shapes, 5 the runner."""
+    return PIECE_STYLES.index(style) + 1
+
+
+def piece_of_number(n: int) -> str:
+    """The inverse. Raises rather than guessing if the number is not one."""
+    if not 1 <= n <= len(PIECE_STYLES):
+        raise ValueError(f"no piece {n}; they run 1-{len(PIECE_STYLES)}")
+    return PIECE_STYLES[n - 1]
+
+
+def piece_role(style: str) -> str:
+    """Who owns it: a player's letter, or the shared pool."""
+    i = PIECE_STYLES.index(style)
+    return (f"player {P.PLAYER_LABELS[i]}" if i < len(P.PLAYER_LABELS)
+            else "shared")
 
 
 def piece_profile_of(style: str):

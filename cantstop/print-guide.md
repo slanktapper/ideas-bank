@@ -92,11 +92,30 @@ What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
 | `board-body.stl` + `board-numerals.stl` | 1 | PLA red + jade white | the board; two files, one object |
-| `game-pieces-A.stl` | 1 | PLA | player A — 11 counters |
-| `game-pieces-B.stl` | 1 | PLA | player B — 11 crowns |
-| `game-pieces-C.stl` | 1 | PLA | player C — 11 saucers |
-| `game-pieces-D.stl` | 1 | PLA | player D — 11 cogs |
-| `plate-runners-x3.stl` | 1 | PLA or PETG | the shared neutral runners |
+| `game-pieces-A.stl` | 1 | PLA | **piece 1** — player A, 11 counters |
+| `game-pieces-B.stl` | 1 | PLA | **piece 2** — player B, 11 crowns |
+| `game-pieces-C.stl` | 1 | PLA | **piece 3** — player C, 11 saucers |
+| `game-pieces-D.stl` | 1 | PLA | **piece 4** — player D, 11 cogs |
+| `plate-runners-x3.stl` | 1 | PLA or PETG | **piece 5** — the shared neutral runners |
+
+### The piece numbers
+
+Every piece has a number, and it is the same number in conversation, in the
+report `build.py` prints, in the STL notes and in the catalogue render. See
+`renders/09-piece-catalogue.png`, or `renders/piece-<n>-<style>.png` for one
+on its own.
+
+| # | Shape | Whose | One piece | The printable set |
+| --- | --- | --- | --- | --- |
+| **1** | counter | player A | `piece-counter.stl` | `game-pieces-A.stl` |
+| **2** | crown | player B | `piece-crown.stl` | `game-pieces-B.stl` |
+| **3** | saucer | player C | `piece-saucer.stl` | `game-pieces-C.stl` |
+| **4** | cog | player D | `piece-cog.stl` | `game-pieces-D.stl` |
+| **5** | runner | shared | `piece-runner.stl` | `plate-runners-x3.stl` |
+
+All five are 14.5 mm across and 8.45 mm tall, to the micron, and any of them
+stacks on any other adding exactly 6.30 mm. A number stays with its shape: a
+new shape takes the next free number rather than shuffling these.
 
 and, for the test print above:
 
@@ -285,7 +304,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 101 checks, ~90 s
+python3 test_fit.py    # 105 checks, ~90 s
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

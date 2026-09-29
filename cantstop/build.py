@@ -144,15 +144,23 @@ def export_stls(verbose=True):
     pieces = [B.build_player_piece(s) for s in P.PLAYER_STYLES]
     marker = pieces[0]
     runner = B.build_runner()
-    for k, (style, m) in enumerate(zip(P.PLAYER_STYLES, pieces), start=1):
-        save(m, f"piece-{style}.stl", "PLA", f"player {k}: one {style}")
-    save(runner, "piece-runner.stl", "PLA", "one neutral runner")
+    # Every note leads with the piece NUMBER, so a line in this report, a
+    # panel in 09-piece-catalogue.png and a sentence in conversation are all
+    # naming the same thing the same way.
+    for style, m in zip(P.PLAYER_STYLES, pieces):
+        save(m, f"piece-{style}.stl", "PLA",
+             f"piece {B.piece_number(style)} -- one {style}, "
+             f"{B.piece_role(style)}")
+    save(runner, "piece-runner.stl", "PLA",
+         f"piece {B.piece_number('runner')} -- one neutral runner, shared")
     for lab, style, m in zip(P.PLAYER_LABELS, P.PLAYER_STYLES, pieces):
         save(B.build_plate(m, P.MARKERS_PER_PLAYER),
              f"game-pieces-{lab}.stl", "PLA",
-             f"player {lab}: {P.MARKERS_PER_PLAYER} {style}s, one per column")
+             f"piece {B.piece_number(style)} -- player {lab}: "
+             f"{P.MARKERS_PER_PLAYER} {style}s, one per column")
     save(B.build_plate(runner, P.RUNNERS), "plate-runners-x3.stl",
-         "PLA", f"the shared runners ({P.RUNNERS})")
+         "PLA", f"piece {B.piece_number('runner')} -- the shared runners "
+         f"({P.RUNNERS})")
 
     save(B.build_fit_coupon(), "fit-test-coupon.stl", "PLA",
          "PRINT THIS FIRST -- bore fit check")
@@ -184,7 +192,8 @@ def export_stls(verbose=True):
              [R.placed(m, (k * spacing, 0, 0))
               for k, m in enumerate(plate)]),
          f"stub-pieces-x{len(want)}.stl", "PLA",
-         "TEST PRINT -- one of each: " + ", ".join(want)
+         "TEST PRINT -- one of each: "
+         + ", ".join(f"{B.piece_number(s)} {s}" for s in want)
          + " -- to seat and to stack")
 
     return (board_body, numerals, pieces, runner, stub_body, stub_nums, rows)
@@ -360,6 +369,90 @@ def export_renders(board_body, numerals, pieces, runner, stub_body,
     _bed_fit_diagram(board_body)
     if verbose:
         print("  08-bed-fit.png")
+
+    # 9 -- THE PIECE CATALOGUE: every shape, in its own colour, numbered.
+    #      One panel per piece, each with its own camera, so every shape is
+    #      drawn as large as its panel allows instead of five of them sharing
+    #      one wide frame and coming out too small to tell apart. The cameras
+    #      are identical in angle and in ORTHOGRAPHIC scale, so the panels
+    #      still compare like with like -- which is the one thing a catalogue
+    #      must not get wrong.
+    panel = 360 if fast else 560
+    sheet = _piece_catalogue(pieces, runner, panel, fast, verbose)
+    sheet.save(RENDER_DIR / "09-piece-catalogue.png")
+    if verbose:
+        print("  09-piece-catalogue.png")
+
+
+def _piece_catalogue(pieces, runner, panel, fast=False, verbose=True):
+    """One labelled panel per piece, side by side on one sheet.
+
+    Also writes each panel on its own as piece-<n>-<style>.png, because the
+    single most common thing to want from this is a picture of one piece.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    from matplotlib import font_manager
+
+    def face(weight, size):
+        try:
+            path = font_manager.findfont(
+                font_manager.FontProperties(family="DejaVu Sans",
+                                            weight=weight))
+            return ImageFont.truetype(path, size)
+        except Exception:
+            return ImageFont.load_default()
+
+    # One scale for all five: the widest piece plus a little air, held
+    # constant so a bigger number on the page means a bigger piece in the
+    # hand. It does not, today -- they are all the same size, which is the
+    # rule -- and this is what would show it if that ever stopped being true.
+    span = 2 * P.PEG_MAX_R * 1.42
+    band = int(panel * 0.58)                       # the caption strip below
+    ss = 1 if fast else 2
+
+    panels = []
+    for k, style in enumerate(B.PIECE_STYLES):
+        mesh = runner if style == "runner" else pieces[k]
+        colour = C_RUNNER if style == "runner" else C_PLAYERS[k]
+        lo, hi = mesh.bounds
+        target = tuple((lo + hi) * 0.5)
+        cam = {"eye": R.orbit_eye(np.asarray(target), span * 4.0, -90.0, 20.0),
+               "target": target, "ortho_height": span}
+        img = R.render([{"mesh": mesh, "color": colour}],
+                       width=panel, height=panel, supersample=ss,
+                       edges=0.45, **cam)
+        img.save(RENDER_DIR / f"piece-{B.piece_number(style)}-{style}.png")
+        panels.append(img)
+        if verbose:
+            print(f"  piece-{B.piece_number(style)}-{style}.png")
+
+    W = panel * len(panels)
+    sheet = Image.new("RGB", (W, panel + band), (246, 247, 249))
+    for k, img in enumerate(panels):
+        sheet.paste(img, (k * panel, 0))
+
+    big = face("bold", int(panel * 0.16))
+    mid = face("bold", int(panel * 0.075))
+    small = face("normal", int(panel * 0.052))
+    tiny = face("normal", int(panel * 0.048))
+    d = ImageDraw.Draw(sheet)
+    for k, style in enumerate(B.PIECE_STYLES):
+        cx = int((k + 0.5) * panel)
+        if k:
+            d.line([(k * panel, panel), (k * panel, panel + int(panel * 0.45))],
+                   fill=(222, 226, 232), width=2)
+        d.text((cx, panel + int(panel * 0.010)), str(B.piece_number(style)),
+               font=big, fill=(26, 30, 40), anchor="ma")
+        d.text((cx, panel + int(panel * 0.230)), style,
+               font=mid, fill=(26, 30, 40), anchor="ma")
+        d.text((cx, panel + int(panel * 0.350)), B.piece_role(style),
+               font=small, fill=(110, 118, 132), anchor="ma")
+    d.text((W // 2, panel + int(panel * 0.480)),
+           f"every piece {2 * P.PEG_MAX_R:.1f} mm across and "
+           f"{P.PEG_BODY_H + P.PEG_POST_H:.2f} mm tall  \u00b7  "
+           f"{P.MARKERS_PER_PLAYER} of each marker, {P.RUNNERS} runners",
+           font=tiny, fill=(110, 118, 132), anchor="ma")
+    return sheet
 
 
 def _annotate_stack(img, cam, W, H):

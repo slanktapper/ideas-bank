@@ -85,6 +85,25 @@ can be only 2 to 3 mm long.
 
 **Five shapes, one interface, one envelope.** Each player gets a different
 piece — a counter, a crown, a saucer and a cog — and the runner is the fifth.
+
+Each carries a **number**, which is its position in `PIECE_STYLES`:
+
+| # | Shape | Whose |
+| --- | --- | --- |
+| 1 | counter | player A |
+| 2 | crown | player B |
+| 3 | saucer | player C |
+| 4 | cog | player D |
+| 5 | runner | shared |
+
+The numbers exist so a piece can be named in one character — in conversation,
+in a render, in a print note, in a commit message — instead of "the round
+one" having to do that work. They are fixed: a number, once given out, stays
+with its shape, and a new shape takes the next free one rather than shuffling
+everything below it and silently renaming four pieces that are already
+printed. `test_fit.py` spells the mapping out literally so a reordering fails
+loudly instead of being agreed with. `renders/09-piece-catalogue.png` is the
+table drawn, and `renders/piece-<n>-<style>.png` is each one on its own.
 What none of them may change is the socket underneath, the post on top, the
 skirt that seats and the 6.30 mm body: player A stacks on player B, so every
 piece has to accept every other one and add exactly the same height doing it.
@@ -328,7 +347,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **203 g** — 158 g of board at 10% infill plus 45 g of solid pieces.
 
-`test_fit.py` passes 101 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 105 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

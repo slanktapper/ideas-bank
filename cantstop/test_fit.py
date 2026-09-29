@@ -981,6 +981,34 @@ def main():
     check("one marker per column per player",
           P.MARKERS_PER_PLAYER == len(P.COLUMNS))
 
+    print("\nthe piece numbers")
+    # WRITTEN OUT LITERALLY, ON PURPOSE. A number is a promise that outlives
+    # the code: it goes in conversation, in renders, in print notes, and onto
+    # pieces already sitting on a table. Deriving this from PIECE_STYLES would
+    # make the check agree with any reordering, which is exactly the mistake
+    # it exists to catch. If a shape is ever renamed or retired, this line is
+    # meant to fail and be argued with, not quietly updated.
+    EXPECTED = {1: "counter", 2: "crown", 3: "saucer", 4: "cog", 5: "runner"}
+    actual = {B.piece_number(s): s for s in B.PIECE_STYLES}
+    check("the pieces are numbered as they always have been",
+          actual == EXPECTED,
+          "  ".join(f"{n} {actual.get(n, '-')}" for n in sorted(EXPECTED))
+          if actual == EXPECTED else f"{actual} against {EXPECTED}")
+    check("every piece has exactly one number, running 1 upward with no gaps",
+          sorted(actual) == list(range(1, len(B.PIECE_STYLES) + 1))
+          and len(actual) == len(B.PIECE_STYLES),
+          f"1-{len(B.PIECE_STYLES)}")
+    check("a number round-trips back to its own piece",
+          all(B.piece_of_number(B.piece_number(s)) == s
+              for s in B.PIECE_STYLES))
+    check("pieces 1 to 4 are the players', in player order",
+          [B.piece_of_number(n) for n in range(1, len(P.PLAYER_LABELS) + 1)]
+          == list(P.PLAYER_STYLES)
+          and all(B.piece_role(s) == f"player {lab}" for s, lab
+                  in zip(P.PLAYER_STYLES, P.PLAYER_LABELS)),
+          ", ".join(f"{B.piece_number(s)}={lab}" for s, lab
+                    in zip(P.PLAYER_STYLES, P.PLAYER_LABELS)))
+
     print()
     if FAILS:
         print(f"{len(FAILS)} of {CHECKS} checks FAILED:")
