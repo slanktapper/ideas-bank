@@ -79,8 +79,8 @@ height is exactly 6.30 mm per piece, every time.
 
 Two things follow from male-up that were not obvious going in. The board has
 **no through-holes at all**, which retires a whole class of defect. And the
-seat is a 3.0-to-8.3 mm annulus rather than the rim of a ring, which is a far
-steadier thing for a 14.5 mm piece to stand on — which in turn is why the posts
+seat is a wide annulus rather than the rim of a ring, which is a far
+steadier thing for a 17.5 mm piece to stand on — which in turn is why the posts
 can be only 2 to 3 mm long.
 
 **Five shapes, one interface, one envelope.** Each player gets a different
@@ -109,36 +109,109 @@ skirt that seats and the 6.30 mm body: player A stacks on player B, so every
 piece has to accept every other one and add exactly the same height doing it.
 `test_fit.py` builds all twenty-five pairings and measures the rise.
 
-**And none of them may change its size.** Every piece is 14.5 mm across and
+**And none of them may change its size.** Every piece is 17.5 mm across and
 8.45 mm tall, to the micron. That is a rule rather than a ceiling, and the
 difference matters: a ceiling is passed just as happily by a piece 2 mm short
 of it, which is exactly how the runner stayed 16.5 x 10.45 through a resize
-that took every marker down to 14.5 x 8.45. Nothing caught it, because every
-piece rule in `test_fit.py` was written over the four player styles and the
-runner is not one of them. The checks now run over `B.PIECE_STYLES`, all five,
-and they measure the SPREAD of width and height rather than their maximum.
+that took every marker down. Nothing caught it, because every piece rule in
+`test_fit.py` was written over the four player styles and the runner is not
+one of them. The checks now run over `B.PIECE_STYLES`, all five, and they
+measure the SPREAD of width and height rather than their maximum.
 
-What that leaves free is the silhouette, and it is less than it looks:
+**17.5 mm, and 20 does not exist.** 20 was asked for. The tightest spacing on
+the board is column 7, whose thirteen cells sit 19.58 mm apart centre to
+centre, so two 20 mm pieces in adjacent cells of that column would intersect
+by 0.42 mm. Buying it means 22 mm of row pitch there, which is 29 mm more
+lens than the board has and a roughly 304 mm octagon against a 300 mm
+dual-nozzle bed. 17.5 is what the 19.58 allows with 2.08 mm of air left
+between two pieces and 4.5 mm along a row — a 21% jump on 14.5 with nothing
+on the board moving at all. The cells have not shifted; the pieces have grown
+into space that was already there.
 
-- the top face is what the **next** piece stands on, so it cannot taper away
-  to a point. It has to keep an unbroken seating ring 3 mm wide, which puts a
-  floor of about 6 mm on the top radius. No cones, no spires — the saucer's
-  dome is shallow because 7.25 down to 5.95 is the whole budget;
-- nothing may exceed 7.25 mm of radius, or pieces touch in adjacent cells;
+That did cost one rule. Neighbour clearance was 3.0 mm, which is what held
+the pieces to 16.5; it is `PIECE_GAP_MIN` now and it is 2.0. The printed
+board is what argued it down.
+
+### The seat contract
+
+What that leaves free is the silhouette, and it is less than it looks. Two
+faces have to agree for a stack to sit straight — the bottom of the piece
+going on, and the top of the piece underneath — and `params.py` states that
+agreement once rather than letting each shape happen to have it:
+
+- **`SEAT_MIN_FRAC` = 42%** of the seat annulus, at the top *and* the bottom
+  of every piece. This replaced "an unbroken ring 3 mm wide", which was one
+  way of making a seat mistaken for the requirement: it ruled out a crown
+  with open points and a saucer on raised lugs, both of which carry a piece
+  perfectly well.
+- **`SEAT_CORE_R` = 4.80** — something has to be continuous, or two gappy
+  faces could meet gap to gap and rock. Every piece is solid from the axis to
+  here on both faces whatever it does further out. That ring is guaranteed at
+  every rotation; `test_fit.py` proves it by stacking all twenty-five
+  pairings at seventy-two relative rotations each and taking the worst
+  contact it can find. It was 5.60 and came down: 5.60 forced the crown's
+  centre boss to 11.6 mm, which swallowed the open middle a crown is
+  supposed to have. 4.80 buys a 10 mm boss and a trough half again as wide,
+  and the ring it guarantees is still 1.18 mm of continuous annulus.
+- **`SEAT_SECTORS` = 6** — what is out beyond the core has to be spread, so
+  every 60° sector carries its share and nothing is held up on one side.
+- **`BOTTOM_FLAT_H` = 0.40** — the bottom is *flat*: one plane at z = 0 with
+  vertical walls above it. No knife edges, no taper running out to nothing,
+  and a first layer that is the face the piece will stand on for the rest of
+  its life.
+- nothing may exceed `PEG_MAX_R`, or pieces touch in adjacent cells;
 - printed flat with no supports, so no surface may overhang more than 45
   degrees. A profile may widen going up by at most a millimetre of radius per
-  millimetre of height, and the saucer's brim sits exactly on that line.
+  millimetre of height, and the saucer's underside sits on that line.
 
-Anything beyond the lathe is **cut, never added**. The crown's points are six
-45-degree cones taken out of its rim, and the cog's flutes are ten vertical
-cylinders taken out of its side: both leave a part that narrows all the way
-up, which is the condition for printing without support. The saucer's base is
-6.10 where the others are 7.25, because a brim has to stand proud of what it
-sits on or the thing reads as a bell. The runner is the one piece that needs
-no cutting at all: three square-edged tiers and two deep grooves, all of it
-turned, with the flares at 43.5 degrees so they carry themselves.
+All of it is measured by **area, on the finished meshes** — the crown's
+points and the saucer's lugs appear after the lathe, so a profile knows
+nothing about either.
 
-**The pieces are counters, not pegs.** 14.5 mm across and 8.45 mm tall: a
+### What each shape does with that
+
+- **1 counter** — the plain waisted spool. Nothing to explain.
+- **2 crown** — a central boss carrying the post, a trough 1.7 mm wide and
+  3.7 mm deep around it, and six points standing up at the rim with **flat
+  tops dead level at 6.30**. The old one was a disc with shallow V notches
+  nicked out of the edge and it read as a gear; what makes a crown a crown is
+  that the top is mostly air. The flat tops are the other half of it — a V
+  notch tapers to a tip and so can carry nothing, where six pads and a boss
+  carry the next piece between them. The boss is as small as the seat
+  contract allows and not a millimetre larger; see `SEAT_CORE_R` above for
+  what that cost.
+- **3 saucer** — a flying one. A whole disc base on the ground, four square
+  landing tubes standing on it with daylight between them, a hull sweeping
+  out to a thin brim at the full radius, a domed top, and six rectangular
+  pads on the dome for the next piece to stand on. The legs and the pads are
+  *added*, not cut: four vertical tubes and six flat bars, none of which is a
+  surface of revolution, and pretending otherwise is what produced the two
+  versions before this one.
+
+  The height budget is the whole difficulty and it shows. A brim can only
+  flare at 45 degrees, so the hull's underside is at 44.8 and there is no
+  curvature left to spend down there — the curve that survives is on the
+  dome, which goes up and IN and so can bend as it likes. Lifting the hull
+  high enough for the legs to read as legs costs the dome its height: what is
+  there is 1.45 mm of it. Everything on this piece is a trade against the
+  same 6.30 mm.
+- **4 cog** — ten vertical flutes, and they run **right off the bottom**
+  now. They used to start 1.40 up the skirt, which left a collar round the
+  base that made the piece look like it was standing in a saucer.
+- **5 runner** — three square-edged tiers and two deep grooves, all turned,
+  with the flares at 44 degrees so they carry themselves.
+
+Anything beyond the lathe is **cut where cutting works and added where it
+does not**. A vertical cylinder taken out of the side is self-supporting
+whatever its depth and the floor it leaves is an upward face, which is why
+the crown's gaps and the cog's flutes are cuts. Cutting the saucer's legs
+out of a solid ring was tried and abandoned: the gap wants a *ceiling*, and
+a ceiling is either a bridge or an overhang. Four tubes standing on the base
+are neither — they are vertical walls from the first layer up, welded into
+the hull at the top. Same for the six pads: a bar sitting on the dome is
+four vertical walls and a flat top.
+
+**The pieces are counters, not pegs.** 17.5 mm across and 8.45 mm tall: a
 squat disc you pick up with two fingers and can see past. The first version
 was 13.2 x 12.6 — taller than it was wide — and read as a peg standing on the
 board rather than a counter sitting in it. A third off the height and a
@@ -345,7 +418,7 @@ the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
 285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
-**203 g** — 158 g of board at 10% infill plus 45 g of solid pieces.
+**221 g** — 158 g of board at 10% infill plus 63 g of solid pieces.
 
 `test_fit.py` passes 105 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's

@@ -934,6 +934,90 @@ def _v_notches(n: int, at_r: float, z_apex: float, z_top: float,
     return out
 
 
+def _roofed_cuts(n: int, at_r: float, r: float, z_lo: float, z_hi: float,
+                 segs: int | None = None) -> list[trimesh.Trimesh]:
+    """n cylinders capped with a cone, for cutting a gap that has a CEILING.
+
+    A plain scallop is open at the top, so what it leaves behind is a vertical
+    wall and nothing has to span anything. Cutting a window -- material below
+    it, material above it, air between -- is a different problem: the ceiling
+    of that window is a downward-facing surface the printer has to produce out
+    of mid-air.
+
+    So the cut is not a cylinder but a cylinder with a 45 degree cone on top
+    of it. The ceiling it leaves is that cone, inverted: the material closes
+    back in at 45 degrees instead of bridging flat across the gap. It is the
+    same trick as the socket roof, pointed sideways.
+    """
+    out = []
+    for a in np.linspace(0, 2 * np.pi, n, endpoint=False):
+        m = S.lathe([(0.0, z_lo), (r, z_lo), (r, z_hi), (0.0, z_hi + r)],
+                    segs=segs or P.PEG_SEGS)
+        m.apply_translation((at_r * np.cos(a), at_r * np.sin(a), 0.0))
+        out.append(m)
+    return out
+
+
+def _arc(r0: float, z0: float, r1: float, z1: float, bulge: float,
+         n: int = 10) -> list[tuple[float, float]]:
+    """A curved run of profile points from (r0, z0) to (r1, z1).
+
+    `bulge` picks the shape: 0 is the straight line, positive eases the START
+    (so the curve leaves (r0, z0) steep in z and flattens), negative eases the
+    end. The point of having it as a parameter rather than an arc is the 45
+    degree rule -- every segment's dr/dz has to stay under 1.0, and what that
+    costs is exactly the curvature, so the curve has to be tunable against it
+    rather than assumed.
+
+    The first point is left out: whatever it is appended to already ends there.
+    """
+    u = np.linspace(0.0, 1.0, n + 1)[1:]
+    s = u + bulge * u * (1.0 - u)
+    return [(float(r0 + (r1 - r0) * t), float(z0 + (z1 - z0) * v))
+            for t, v in zip(u, s)]
+
+
+def _saucer_profile() -> list[tuple[float, float]]:
+    """The UFO's hull: base, column, swept underside, brim, dome.
+
+    A lathe. The landing gear and the pads are added on top of this, because
+    four legs and six bars are not surfaces of revolution and pretending
+    otherwise is what produced the last two versions.
+    """
+    p = [(P.SAUCER_BASE_R, 0.00),
+         (P.SAUCER_BASE_R, P.SAUCER_BASE_H),
+         (P.SAUCER_WAIST_R, P.SAUCER_BASE_H + 0.30),
+         (P.SAUCER_WAIST_R, P.SAUCER_WAIST_Z)]
+    p += _arc(P.SAUCER_WAIST_R, P.SAUCER_WAIST_Z, P.PEG_MAX_R, P.SAUCER_BRIM_Z,
+              bulge=P.SAUCER_UNDER_BULGE, n=14)
+    # the edge, then a flat shelf inward: without the shelf the dome starts
+    # at the widest point and the brim stops being a brim
+    p.append((P.PEG_MAX_R, P.SAUCER_BRIM_Z + P.SAUCER_BRIM_T))
+    z_shelf = P.SAUCER_BRIM_Z + P.SAUCER_BRIM_T + P.SAUCER_SHELF_DZ
+    p.append((P.SAUCER_SHELF_R, z_shelf))
+    p += _arc(P.SAUCER_SHELF_R, z_shelf, P.SAUCER_DOME_R, P.PEG_BODY_H,
+              bulge=P.SAUCER_DOME_BULGE, n=14)
+    return p
+
+
+def _saucer_gear(segs: int | None = None) -> list[trimesh.Trimesh]:
+    """Four square landing tubes and six rectangular landing pads."""
+    segs = segs or P.PEG_SEGS
+    out = []
+    for a in np.linspace(0, 2 * np.pi, P.SAUCER_LEGS, endpoint=False):
+        out.append(S.tube(P.SAUCER_LEG_AT * np.cos(a),
+                          P.SAUCER_LEG_AT * np.sin(a),
+                          P.SAUCER_LEG_R, 0.0,
+                          P.SAUCER_BASE_H - 0.10, P.SAUCER_LEG_Z1, segs=4))
+    for a in np.linspace(0, 2 * np.pi, P.SAUCER_PADS, endpoint=False):
+        c, s = np.cos(a), np.sin(a)
+        out.append(S.strut((P.SAUCER_PAD_R0 * c, P.SAUCER_PAD_R0 * s),
+                           (P.SAUCER_PAD_R1 * c, P.SAUCER_PAD_R1 * s),
+                           P.SAUCER_PAD_W,
+                           P.PEG_BODY_H - P.SAUCER_PAD_Z, P.SAUCER_PAD_Z))
+    return out
+
+
 def piece_seat_r(style: str) -> float:
     """Radius of the face a piece stands on -- its profile at z = 0."""
     return piece_profile_of(style)[0][0]
@@ -945,25 +1029,54 @@ def piece_max_r(style: str) -> float:
 
 def build_player_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
     """One player's marker. Same interface as every other; different shape."""
+    segs = segs or P.PEG_SEGS
     top = P.PEG_BODY_H + P.PEG_POST_H
     if style == "counter":
         return build_marker(segs)
-    if style == "saucer":
-        return S.lathe(_piece_profile(P.SAUCER_BODY_PROFILE, P.PEG_BODY_H),
-                       segs=segs or P.PEG_SEGS)
+
     if style == "crown":
         body = S.lathe(_piece_profile(P.CROWN_BODY_PROFILE, P.PEG_BODY_H),
-                       segs=segs or P.PEG_SEGS)
-        cut = _v_notches(P.CROWN_POINTS, P.CROWN_CUT_AT, P.CROWN_CUT_Z,
-                         top + 1.0, segs)
+                       segs=segs)
+        # the trough first: one ring taken out of the top face, leaving the
+        # boss inside it and the rim outside it
+        cut = [S.tube(0.0, 0.0, P.CROWN_TROUGH_R1, P.CROWN_TROUGH_R0,
+                      P.CROWN_TROUGH_Z, top + 1.0, segs=segs)]
+        # then the gaps, which go through the rim and give it its points
+        cut += _scallops(P.CROWN_POINTS, P.CROWN_CUT_AT, P.CROWN_CUT_R,
+                         P.CROWN_TROUGH_Z, top + 1.0, segs)
         return trimesh.boolean.difference([body] + cut, engine="manifold")
+
+    if style == "saucer":
+        body = S.lathe(_piece_profile(_saucer_profile(), P.PEG_BODY_H),
+                       segs=segs)
+        return S.union_all([body] + _saucer_gear(segs))
+
     if style == "cog":
         body = S.lathe(_piece_profile(P.COG_BODY_PROFILE, P.PEG_BODY_H),
-                       segs=segs or P.PEG_SEGS)
+                       segs=segs)
         cut = _scallops(P.COG_FLUTES, P.COG_CUT_AT, P.COG_CUT_R,
                         P.COG_CUT_Z, top + 1.0, segs)
         return trimesh.boolean.difference([body] + cut, engine="manifold")
     raise ValueError(style)
+
+
+def piece_profile_of(style: str):
+    """The lathe profile behind a style, for the printability checks.
+
+    The saucer's is computed rather than typed, because its underside and its
+    dome are curves; everything else is a handful of corners in params.py.
+    """
+    if style == "saucer":
+        return _saucer_profile()
+    return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
+            "cog": P.COG_BODY_PROFILE,
+            "runner": P.RUNNER_BODY_PROFILE}[style]
+
+
+def build_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
+    """Any piece by name: the four player shapes, or the runner."""
+    return (build_runner(segs) if style == "runner"
+            else build_player_piece(style, segs))
 
 
 # Every piece on the board, not just the four a player owns. The runner
@@ -991,19 +1104,6 @@ def piece_role(style: str) -> str:
     i = PIECE_STYLES.index(style)
     return (f"player {P.PLAYER_LABELS[i]}" if i < len(P.PLAYER_LABELS)
             else "shared")
-
-
-def piece_profile_of(style: str):
-    """The lathe profile behind a style, for the printability checks."""
-    return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
-            "saucer": P.SAUCER_BODY_PROFILE, "cog": P.COG_BODY_PROFILE,
-            "runner": P.RUNNER_BODY_PROFILE}[style]
-
-
-def build_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
-    """Any piece by name: the four player shapes, or the runner."""
-    return (build_runner(segs) if style == "runner"
-            else build_player_piece(style, segs))
 
 
 def build_marker(segs: int | None = None) -> trimesh.Trimesh:

@@ -113,7 +113,7 @@ on its own.
 | **4** | cog | player D | `piece-cog.stl` | `game-pieces-D.stl` |
 | **5** | runner | shared | `piece-runner.stl` | `plate-runners-x3.stl` |
 
-All five are 14.5 mm across and 8.45 mm tall, to the micron, and any of them
+All five are 17.5 mm across and 8.45 mm tall, to the micron, and any of them
 stacks on any other adding exactly 6.30 mm. A number stays with its shape: a
 new shape takes the next free number rather than shuffling these.
 
@@ -168,9 +168,9 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **203 g**: ~158 g board, body and numerals together
+A full set is roughly **221 g**: ~158 g board, body and numerals together
 (6 mm slab at 10% infill),
-~42 g of markers (11 each of four shapes), ~3 g of runners (3). A marker is 14.5 mm across and
+~58 g of markers (11 each of four shapes), ~5 g of runners (3). A marker is 17.5 mm across and
 8.45 mm tall and so is a runner — every piece on this board is the same size
 to the micron — and every stacked piece adds exactly 6.30 mm. The board is
 285.0 × 285.0 × 9.2 mm. Note that the board is a **two-filament** part, so
@@ -201,7 +201,8 @@ interchangeable in every way that matters: any one stacks on any other and
 adds the same 6.30 mm.
 
 **Pieces print the right way up — skirt down, post up.** The first layer is
-the full 14.5 mm skirt, which is a generous footprint, so no brim is needed.
+the full 17.5 mm bottom face — flat by rule, with vertical walls for the
+first 0.40 mm — which is a generous footprint, so no brim is needed.
 
 The socket faces downward and is closed by a **45° cone**, not a flat ceiling.
 That is deliberate: a flat roof would be a 6.24 mm bridge over thin air part
@@ -227,7 +228,7 @@ from post to skirt becomes a flat overhang ring and genuinely needs support.
 | Walls | 3 | 3 |
 | Top/bottom layers | 3 | 3 |
 | Infill | **10%** | 20% |
-| Brim | see below | none needed — 14.5 mm skirt |
+| Brim | see below | none needed — 17.5 mm flat bottom |
 | Supports | **none** | **none** |
 
 **The 10% is the design, not a suggestion.** A solid plate's cost is its

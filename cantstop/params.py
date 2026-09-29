@@ -337,7 +337,7 @@ TITLE_FOLLOW = 1.0   # 1 = each letter hangs under its own column and the
                      # title follows the underside of the lens; 0 = one
                      # straight baseline. See board.title_letters(): a level
                      # title is worth 78 mm of extra frame on an octagon.
-TITLE_GAP   = 18.75  # from the bottom cell's centre to the letter's centre.
+TITLE_GAP   = 19.30  # from the bottom cell's centre to the letter's centre.
                      # A piece on that cell reaches 8.25 mm and a letter
                      # reaches 10, so this leaves about 6 mm of plate between
                      # the two.
@@ -425,23 +425,59 @@ PEG_SOCKET_ROOF  = 0.80   # solid above the socket roof; 4 layers at 0.20
 PEG_BODY_H = 6.30         # skirt to top face. This is also the stack pitch:
                           # each piece stacked adds exactly this much height.
 
-# 16.5 mm across. The width buys two things -- something to actually grip,
+# 17.5 mm across. The width buys two things -- something to actually grip,
 # and a wide skirt, which is what lets the post be short: the skirt does the
-# work of keeping a piece upright, so the post only has to locate it. At this
-# width the skirt is wider than the lattice board's 13.8 mm pads, so a piece
-# overhangs one by 1.35 mm; the seat is still a 4 mm annulus and that is what
-# matters. On the slab -- which is what is printed -- the plate is the pad and
-# the question does not arise.
+# work of keeping a piece upright, so the post only has to locate it.
 PEG_BODY_PROFILE = [
-    (7.25, 0.00),
-    (7.25, 0.75),
-    (6.29, 2.20),
-    (5.91, 3.60),
-    (6.29, 5.10),
-    (6.49, 5.85),
-    (6.49, 6.30),
+    (8.75, 0.00),
+    (8.75, 0.75),
+    (7.59, 2.20),
+    (7.13, 3.60),
+    (7.59, 5.10),
+    (7.83, 5.85),
+    (7.83, 6.30),
 ]
 PEG_SEGS = 64
+
+# --------------------------------------------------------------------------
+# The seat: what a piece stands on, and what stands on it
+# --------------------------------------------------------------------------
+# Two faces have to agree for a stack to sit straight: the BOTTOM of the piece
+# going on, and the TOP of the piece underneath. This is the contract between
+# them, and it is written once here rather than being a property each
+# silhouette happens to have.
+#
+# The nominal seat is the annulus from the socket mouth out to PEG_MAX_R --
+# everything a bottom face could touch. Against that:
+#
+#   SEAT_MIN_FRAC   every piece must carry at least this fraction of it, at
+#                   the top AND at the bottom. Not "an unbroken 3 mm ring",
+#                   which was the old rule: a ring is one way to make a seat
+#                   and it rules out a crown with open points or a saucer on
+#                   raised lugs, both of which seat perfectly well.
+#   SEAT_CORE_R     ...but SOMETHING has to be continuous, or two pieces with
+#                   gappy faces could meet gap-to-gap and rock. So every piece
+#                   is solid from the axis out to here on both faces, whatever
+#                   it does further out. That ring alone is 29% of the seat,
+#                   and it is guaranteed at every rotation.
+#   SEAT_SECTORS    and what IS out beyond the core has to be spread: every
+#                   60 degree sector carries its share, so nothing is
+#                   supported on one side only.
+#   BOTTOM_FLAT_H   the bottom is FLAT -- one plane at z = 0 with vertical
+#                   walls above it for this height. No knife edges, no taper
+#                   running out to nothing, and a first layer that is what the
+#                   piece will actually stand on.
+SEAT_MIN_FRAC = 0.42
+SEAT_CORE_R   = 4.80
+SEAT_SECTORS  = 6
+BOTTOM_FLAT_H = 0.40
+
+# How much air is left between two pieces in neighbouring cells. It was 3.0,
+# which is what held the pieces to 16.5 mm; the tightest spacing on the board
+# is column 7's 19.58 mm and 3.0 of that is a fifth of the piece. The printed
+# board says there is more room than that rule believed, so it comes down to
+# 2.0 -- still a fingernail's width, and it is what buys 17.5 mm pieces.
+PIECE_GAP_MIN = 2.0
 
 # --------------------------------------------------------------------------
 # Four pieces, one interface
@@ -455,8 +491,8 @@ PEG_SEGS = 64
 # and it is less than it looks:
 #
 #   - the top face is what the NEXT piece stands on, so it cannot taper away
-#     to a point. It has to keep a seating annulus 3 mm wide, which puts a
-#     floor of about 6 mm on the top radius. No cones, no spires.
+#     to a point. It has to meet the seat contract above: solid to
+#     SEAT_CORE_R, SEAT_MIN_FRAC of the annulus in total, spread evenly.
 #   - nothing may exceed PEG_MAX_R, or pieces touch in adjacent cells.
 #   - printed flat with no supports, so no surface may overhang more than 45
 #     degrees: a profile may widen going up by at most one millimetre of
@@ -493,71 +529,149 @@ PLAYER_LABELS = ["A", "B", "C", "D"]   # what the printable sets are called
 #
 # renders/09-piece-catalogue.png is this list, drawn.
 PIECE_STYLES = PLAYER_STYLES + ["runner"]
-PEG_MAX_R = 7.25          # half of 14.5; the skirt, and nothing wider.
-                          # 16.5 was asked for and built, and it is what put
-                          # a square board 6 mm over the bed. 14.5 is the
-                          # largest that lets a 285 mm regular octagon keep
-                          # the title and the level spacing.
-
-# crown -- a cup that flares to a straight rim, with V notches taken out of it
-CROWN_BODY_PROFILE = [
-    (7.25, 0.00),
-    (7.25, 0.80),
-    (6.05, 1.80),
-    (6.05, 2.60),
-    (7.15, 4.00),   # flares out at 38 degrees, and is done flaring before
-    (7.15, 6.30),   # the notches start, so they cut a vertical wall
-]
-CROWN_POINTS = 6          # V notches, leaving 6 points
-CROWN_CUT_AT = 8.30       # how far out each notch's axis sits: at the top
-                          # face it has cut in to r6.10, which still leaves a
-                          # 3.15 mm seating ring for whatever stacks on it
-CROWN_CUT_Z  = 4.00       # the apex of the V, level with the top of the
-                          # flare, so the notches bite exactly where the rim
-                          # goes vertical and nothing is removed below it
+PEG_MAX_R = 8.75          # half of 17.5; the skirt, and nothing wider.
                           #
-                          # The notch is a CONE, apex down, opening upward at
-                          # 45 degrees -- so the points taper to a tip rather
-                          # than standing square like castle merlons, and the
-                          # piece narrows all the way up, which is what makes
-                          # it printable without support. At the top face it
-                          # has cut in to about r6.4, which still leaves a
-                          # 3.4 mm seating ring for whatever stacks on it.
+                          # 20 mm was asked for and 20 mm does not exist. The
+                          # tightest spacing on the board is column 7, whose
+                          # cells are 19.58 mm apart centre to centre, so two
+                          # 20 mm pieces in adjacent cells of that column
+                          # would INTERSECT by 0.42 mm. Buying it would mean
+                          # 22 mm of row pitch there, which is 29 mm more lens
+                          # than the board has, and a ~304 mm octagon against
+                          # a 300 mm dual-nozzle bed.
+                          #
+                          # 17.5 is what the 19.58 allows with 2.08 mm left
+                          # between two pieces, and 4.5 mm along a row. It is
+                          # the board that sets this number now, not the bed:
+                          # the cells have not moved, the pieces have grown
+                          # into the space that was already there.
 
-# saucer -- a narrow base, a brim that overhangs it, a shallow dome on top.
-# The base is 6.60 where every other piece is 8.25: the brim has to stand
-# PROUD of what it sits on or the thing reads as a bell. It still seats on a
-# 3.65 mm annulus, which is what the rule actually asks for -- the rule is
-# about the width of the CONTACT, not about matching the others.
+# crown -- an open cup: a central boss with the post on it, a deep annular
+# trough round that, and six square points standing up at the rim.
 #
-# The dome is shallow and there is no helping it. A saucer wants to taper to
-# a point and the top face is what the next piece stands on, so it cannot go
-# below about r6 without losing the 3 mm seating ring. 8.25 down to 6.10 is
-# the whole budget.
-SAUCER_BODY_PROFILE = [
-    (6.10, 0.00),   # the base cannot shrink with the rest: 6.10 is what
-    (6.10, 0.50),   # keeps a 3.15 mm seating ring, and the ring is the rule
-    (5.40, 1.00),
-    (5.40, 1.30),
-    (7.25, 3.15),   # the underside of the brim, at 45 degrees exactly
-    (7.25, 3.45),   # the brim edge, 0.30 thick and 1.15 proud of the base
-    (6.30, 4.10),
-    (6.00, 6.30),   # the dome, such as there is room for
+# The old one was a disc with shallow V notches nicked out of the edge, and it
+# read as a gear. What makes a crown a crown is that the top is mostly AIR:
+# points round an open middle, with the band between them recessed. So the
+# trough is 1.7 mm wide and 3.7 mm deep, and the points stand 3.7 mm proud of
+# its floor.
+#
+# The points have FLAT TOPS, dead level at PEG_BODY_H. That is the whole
+# difference from V notches, which tapered to a tip and so could not carry
+# anything: the next piece now stands on six pads and on the boss, and
+# test_fit.py measures that against the seat contract rather than looking for
+# a continuous ring. The post protrudes from the boss exactly as it does on
+# every other piece, and the socket below is untouched -- same bore, same
+# depth, same roof.
+CROWN_BODY_PROFILE = [
+    (8.75, 0.00),
+    (8.75, 1.00),   # a full skirt: the bottom stays flat and whole
+    (8.30, 2.20),
+    (8.30, 4.20),
+    (8.75, 5.40),   # flares back out at 21 degrees to thicken the rim
+    (8.75, 6.30),
 ]
+CROWN_POINTS    = 6
+CROWN_TROUGH_R0 = 5.00    # just OUTSIDE SEAT_CORE_R, not on it. The cut is
+                          # a polygon inscribed in that radius, so its facet
+                          # midpoints sit a hundredth inside the number typed
+                          # here -- put it on the core exactly and the boss
+                          # loses it by 7 microns in six places, which the
+                          # seat check duly caught.
+                          #
+                          # This is as far in as the boss can be trimmed. It
+                          # is what SEAT_CORE_R is for, and SEAT_CORE_R came
+                          # down from 5.60 to 4.80 to let it come this far --
+                          # a 10 mm boss instead of a 11.6 mm one, and a
+                          # trough half again as wide.
+CROWN_TROUGH_R1 = 6.80    # leaves a 1.95 mm rim for the points to stand on
+CROWN_TROUGH_Z  = 2.60    # floor of the trough
+CROWN_CUT_AT    = 9.20    # six vertical cylinders, cutting in to r6.80 --
+CROWN_CUT_R     = 2.40    # past the rim's inner face, so the gaps go right
+                          # through and the points really are separate. A
+                          # vertical cut is self-supporting whatever its
+                          # depth, and its floor is an upward face, so the
+                          # whole thing prints without a scrap of support.
 
-# cog -- a barrel with vertical flutes cut round it
+# saucer -- a flying one. A landing pad on the ground, four struts holding the
+# hull up off it, a hull whose underside sweeps out to a thin brim at the full
+# radius, a domed top curving back in to the post, and six raised lugs round
+# the dome for the next piece to stand on.
+#
+# The old one was a bell with a lip. Three things make this one read as a
+# saucer instead: the brim is at the WIDEST point of the piece with air above
+# and below it, the underside sweeping up to it is curved rather than a
+# straight cone, and the hull is lifted clear of the ground on legs.
+#
+# The height budget is the whole difficulty. The body is 6.30 mm and a brim
+# can only flare at 45 degrees or the printer has nothing to lay it on, so
+# every millimetre the brim stands out costs a millimetre of height, and the
+# legs and the dome want that height too. What follows is that budget spent:
+# 0.95 on legs, 2.35 sweeping out to the brim, 0.40 of brim edge, 2.60 of
+# dome. There is no slack in it anywhere.
+SAUCER_BODY_PROFILE = None   # built as a curve; see board.py:_saucer_profile
+SAUCER_BASE_R     = 7.80     # a WHOLE base, not a windowed one: the bottom
+SAUCER_BASE_H     = 0.40     # face is a plain disc, 70% of the seat annulus,
+                             # and the landing gear stands on top of it
+SAUCER_WAIST_R    = 5.90     # the hull column the legs stand beside
+SAUCER_WAIST_Z    = 1.50
+SAUCER_BRIM_Z     = 4.45     # the swept underside meets the brim edge here
+SAUCER_BRIM_T     = 0.25     # and the edge is this thick
+SAUCER_SHELF_R    = 7.70     # the brim's top is a flat shelf in to here, so
+SAUCER_SHELF_DZ   = 0.10     # the brim reads as a disc and not as the start
+                             # of the dome
+SAUCER_DOME_R     = 5.60     # where the dome flattens into its collar
+SAUCER_UNDER_BULGE = 0.03    # how much the underside curves. The straight
+SAUCER_DOME_BULGE  = 0.70    # line from waist to brim is already at 44
+                             # degrees, so there is almost nothing left to
+                             # spend on curvature down there; the dome above
+                             # goes up and IN and can curve as it likes.
+
+# LANDING GEAR. Four square tubes standing on the base, beside the hull
+# column, reaching up into the underside. Square because a square tube is
+# four vertical walls and prints without a thought, and because that is what
+# the reference actually looks like. They are ADDED, not cut: everything
+# about them is vertical or welded into something above, so nothing
+# overhangs and nothing bridges.
+SAUCER_LEGS       = 4
+SAUCER_LEG_AT     = 6.80     # centre radius: outside the column, flush with
+SAUCER_LEG_R      = 0.85     # the rim of the base. Half-diagonal, so the
+                             # tube is 1.41 mm square.
+SAUCER_LEG_Z1     = 2.60     # runs up past the hull's underside and welds in
+
+# The six pads the next piece stands on: RECTANGLES lying on the dome, not a
+# ring with bites taken out of it. A bar is what it looks like it is -- a
+# landing pad -- and it puts its area where the seat contract wants it,
+# out beyond the collar rather than smeared across the whole dome.
+SAUCER_PADS       = 6
+SAUCER_PAD_R0     = 5.40     # bar runs from here to here, radially
+SAUCER_PAD_R1     = 7.60
+SAUCER_PAD_W      = 3.00
+SAUCER_PAD_Z      = 5.00     # rises from inside the dome to a flat top dead
+                             # level at PEG_BODY_H
+
+# cog -- a barrel with vertical flutes cut round it, all the way down
 COG_BODY_PROFILE = [
-    (7.25, 0.00),
-    (7.25, 1.20),   # the skirt stays a whole ring; the flutes start above it
-    (6.85, 1.90),
-    (6.85, 5.40),
-    (7.15, 6.00),
-    (7.15, 6.30),
+    (8.75, 0.00),
+    (8.75, 1.20),
+    (8.27, 1.90),
+    (8.27, 5.40),
+    (8.63, 6.00),
+    (8.63, 6.30),
 ]
 COG_FLUTES = 10
-COG_CUT_R  = 1.55
-COG_CUT_AT = 7.65         # cuts in to r6.10
-COG_CUT_Z  = 1.40
+COG_CUT_R  = 1.87
+COG_CUT_AT = 9.23         # cuts in to r7.36
+COG_CUT_Z  = -0.50        # BELOW the bed, so the flutes run right off the
+                          # bottom rather than stopping on a lip. The skirt
+                          # used to stay a whole ring and the flutes began
+                          # 1.40 up it, which left a collar round the base
+                          # that made the piece look like it was standing in
+                          # a saucer. The bottom face is a fluted annulus now
+                          # and still 85% solid, so the seat contract is met
+                          # with room to spare -- the flute is vertical, so
+                          # what it takes at the top it takes at the bottom
+                          # and the first layer is the same shape as the
+                          # last.
 
 # The runner (the shared neutral marker you advance during a turn, before you
 # decide to bank) uses the identical pin/socket interface so it still stacks,
@@ -574,17 +688,17 @@ COG_CUT_Z  = 1.40
 # five pieces.
 RUNNER_BODY_H = PEG_BODY_H    # the rule, in the one place it could be broken
 RUNNER_BODY_PROFILE = [
-    (7.25, 0.00),
-    (7.25, 0.75),   # tier 1 is the skirt
-    (6.30, 1.35),   # groove, 0.95 deep -- the same relief the old bands had
-    (6.30, 1.70),
-    (7.25, 2.70),   # tier 2, flaring at 43.5 degrees so it self-supports
-    (7.25, 3.25),
-    (6.30, 3.85),   # groove
-    (6.30, 4.20),
-    (7.25, 5.20),   # tier 3, the same flare
-    (7.25, 5.75),
-    (6.45, 6.30),   # in to the top face, which stays a 3.50 mm seating ring
+    (8.75, 0.00),
+    (8.75, 0.75),   # tier 1 is the skirt
+    (7.60, 1.40),   # groove, 1.15 deep
+    (7.60, 1.75),
+    (8.75, 2.95),   # tier 2, flaring at 44 degrees so it self-supports
+    (8.75, 3.45),
+    (7.60, 4.05),   # groove
+    (7.60, 4.35),
+    (8.75, 5.55),   # tier 3, the same flare
+    (8.75, 5.95),
+    (7.79, 6.30),   # in to the top face
 ]
 
 # --------------------------------------------------------------------------

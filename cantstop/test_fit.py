@@ -478,29 +478,95 @@ def main():
           max(wide.values()) - min(wide.values()) < 1e-6
           and abs(max(wide.values()) - 2 * P.PEG_MAX_R) < 1e-6,
           f"{max(wide.values()):.2f} mm across, all {len(wide)} of them")
-    # Measured on the mesh, not on the profile: the crown's notches are cut
-    # into its top face after the lathe, so the profile says r8.10 and the
-    # UNBROKEN ring is a good deal less than that. What the next piece stands
-    # on is the ring that goes all the way round.
-    rings = {}
-    for s, m in built.items():
-        z = P.PEG_BODY_H - 0.05
-        rr = np.linspace(P.PEG_POST_D / 2 + 0.05, B.piece_max_r(s), 60)
-        worst_r = np.inf
-        for a in np.linspace(0, 2 * np.pi, 36, endpoint=False):
-            pts = np.column_stack([rr * np.cos(a), rr * np.sin(a),
-                                   np.full_like(rr, z)])
-            solid = m.contains(pts)
-            k = int(np.argmin(solid)) if not solid.all() else len(rr)
-            worst_r = min(worst_r, rr[k - 1] if k else 0.0)
-        rings[s] = float(worst_r)
-    thin = min(rings, key=rings.get)
-    check("every shape keeps an unbroken seating ring for what stacks on it",
-          rings[thin] - P.PEG_POST_D / 2 >= 3.0,
-          "rings out to "
-          + ", ".join(f"{s} r{rings[s]:.2f}" for s in B.PIECE_STYLES)
-          + f"; tightest is the {thin} at "
-          f"{rings[thin] - P.PEG_POST_D/2:.2f} mm wide")
+    # THE SEAT CONTRACT
+    #
+    # Measured on the finished meshes and by AREA, not on the profiles and not
+    # as a ring. The old rule -- an unbroken annulus 3 mm wide -- was one way
+    # of building a seat mistaken for the requirement itself, and it ruled out
+    # a crown with open points and a saucer on raised lugs, both of which
+    # carry a piece perfectly well. What actually matters is how much contact
+    # there is, that it is spread round the axis, and that something is
+    # continuous so two gappy faces cannot meet gap to gap.
+    print("\nthe seat contract  (params.py: SEAT_*)")
+    # A POLAR GRID, not a random cloud: rotating one piece against another is
+    # then a np.roll along the angle axis, which is what lets the pairing
+    # check below try every relative rotation instead of the one the meshes
+    # happen to have been built at. Radii are spaced so every sample stands
+    # for the same area, so a mean over the grid IS the solid fraction.
+    r_mouth = P.PEG_SOCKET_D / 2 + P.PEG_SOCKET_CHAMFER
+    annulus = np.pi * (P.PEG_MAX_R ** 2 - r_mouth ** 2)
+    NR, NA = 48, 360
+    rr_s = np.sqrt(r_mouth ** 2 + (np.arange(NR) + 0.5) / NR
+                   * (P.PEG_MAX_R ** 2 - r_mouth ** 2))
+    th_s = (np.arange(NA) + 0.5) * 2 * np.pi / NA
+    RR, TH = np.meshgrid(rr_s, th_s, indexing="ij")
+    xy = np.column_stack([(RR * np.cos(TH)).ravel(), (RR * np.sin(TH)).ravel()])
+    N = NR * NA
+    sect = np.tile((np.arange(NA) // (NA // P.SEAT_SECTORS)), NR)
+    core = np.repeat(rr_s <= P.SEAT_CORE_R, NA)
+
+    def face_at(m, z):
+        return m.contains(np.column_stack([xy, np.full(N, z)]))
+
+    tops = {s: face_at(m, P.PEG_BODY_H - 0.05) for s, m in built.items()}
+    bots = {s: face_at(m, 0.05) for s, m in built.items()}
+    deep = {s: face_at(m, P.BOTTOM_FLAT_H - 0.05) for s, m in built.items()}
+
+    for s in B.PIECE_STYLES:
+        t, b = tops[s].mean(), bots[s].mean()
+        check(f"{s}: both faces carry their share of the seat",
+              min(t, b) >= P.SEAT_MIN_FRAC,
+              f"top {t*100:.0f}%, bottom {b*100:.0f}% of a "
+              f"{annulus:.0f} mm2 annulus, against {P.SEAT_MIN_FRAC*100:.0f}%")
+    worst = min(B.PIECE_STYLES,
+                key=lambda s: min(tops[s][core].mean(), bots[s][core].mean()))
+    check("every piece is solid to SEAT_CORE_R on both faces, so no two can "
+          "meet gap to gap",
+          all(tops[s][core].all() and bots[s][core].all()
+              for s in B.PIECE_STYLES),
+          f"r{P.SEAT_CORE_R:.2f} core = "
+          f"{np.pi*(P.SEAT_CORE_R**2 - r_mouth**2)/annulus*100:.0f}% of the "
+          f"seat, guaranteed at any rotation; thinnest is the {worst}")
+    spread = {}
+    for s in B.PIECE_STYLES:
+        spread[s] = min(tops[s][sect == k].mean() for k in range(P.SEAT_SECTORS))
+    lop = min(spread, key=spread.get)
+    check("the support is spread, not all down one side",
+          min(spread.values()) >= P.SEAT_MIN_FRAC,
+          f"leanest {P.SEAT_SECTORS}th is the {lop}'s at "
+          f"{spread[lop]*100:.0f}%")
+
+    # THE BOTTOM IS FLAT. Not "ends at z = 0" -- flat, with vertical walls
+    # above it, so the first layer is the face the piece will stand on for the
+    # rest of its life and not a knife edge that happens to touch the bed.
+    for s in B.PIECE_STYLES:
+        check(f"{s}: the bottom is flat and stays flat for "
+              f"{P.BOTTOM_FLAT_H:.2f} mm",
+              abs(bots[s].mean() - deep[s].mean()) < 0.01
+              and abs(built[s].bounds[0][2]) < 1e-9,
+              f"{bots[s].mean()*100:.0f}% at the bed, "
+              f"{deep[s].mean()*100:.0f}% at z{P.BOTTOM_FLAT_H:.2f}")
+
+    # and the thing the contract is FOR: contact, for every pairing, at the
+    # worst rotation. Two faces with 45% each could in principle interleave
+    # and touch nowhere; the core is what stops that, so this is the check
+    # that proves the core is doing its job.
+    pair_min, pair_who = 1.0, None
+    turns = [np.roll(np.arange(NA), k) for k in range(0, NA, 5)]
+    for a in B.PIECE_STYLES:
+        ta = tops[a].reshape(NR, NA)
+        for b in B.PIECE_STYLES:
+            bb = bots[b].reshape(NR, NA)
+            for idx in turns:
+                f = float((ta & bb[:, idx]).mean())
+                if f < pair_min:
+                    pair_min, pair_who = f, (b, a)
+    check("any piece on any piece, at any rotation, lands on a real seat",
+          pair_min >= np.pi * (P.SEAT_CORE_R ** 2 - r_mouth ** 2) / annulus
+          - 0.02,
+          f"worst of {len(B.PIECE_STYLES)**2} pairings is a {pair_who[0]} on "
+          f"a {pair_who[1]} at {pair_min*100:.0f}% "
+          f"({pair_min*annulus:.0f} mm2)")
 
     # PRINTED FLAT, NO SUPPORTS. A profile that widens going up is an
     # overhang, and the angle from vertical is atan(dr/dz) -- so a
@@ -533,8 +599,10 @@ def main():
     print("\nneighbours do not touch")
     narrow = min(B.row_pitch(i) for i in range(len(P.ROWS)))
     for axis, pitch in [("along a row", P.PITCH_X), ("up a column", narrow)]:
-        check(f"pieces clear each other {axis}", pitch - 2 * skirt_r >= 3.0,
-              f"{pitch - 2*skirt_r:.2f} mm gap")
+        check(f"pieces clear each other {axis}",
+              pitch - 2 * skirt_r >= P.PIECE_GAP_MIN - 1e-9,
+              f"{pitch - 2*skirt_r:.2f} mm gap, against "
+              f"{P.PIECE_GAP_MIN:.1f} asked for")
     if SLAB:
         check("posts clear each other up a column", P.PITCH_Y - P.POST_D >= 3.0,
               f"{P.PITCH_Y - P.POST_D:.2f} mm gap; on a slab the plate is the "
