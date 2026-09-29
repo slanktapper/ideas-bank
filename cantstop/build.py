@@ -142,6 +142,7 @@ def export_stls(verbose=True):
     pieces = [B.build_player_piece(s) for s in P.PLAYER_STYLES]
     marker = pieces[0]
     runner = B.build_runner()
+    active = B.build_active()
     # Every note leads with the piece NUMBER, so a line in this report, a
     # panel in 09-piece-catalogue.png and a sentence in conversation are all
     # naming the same thing the same way.
@@ -151,6 +152,9 @@ def export_stls(verbose=True):
              f"{B.piece_role(style)}")
     save(runner, "piece-runner.stl", "PLA",
          f"piece {B.piece_number('runner')} -- one neutral runner, shared")
+    save(active, "piece-active.stl", "PLA",
+         f"piece {B.piece_number('active')} -- one active-player marker; "
+         f"no post on top, so nothing stacks on it")
     for lab, style, m in zip(P.PLAYER_LABELS, P.PLAYER_STYLES, pieces):
         save(B.build_plate(m, P.MARKERS_PER_PLAYER),
              f"game-pieces-{lab}.stl", "PLA",
@@ -159,6 +163,10 @@ def export_stls(verbose=True):
     save(B.build_plate(runner, P.RUNNERS), "plate-runners-x3.stl",
          "PLA", f"piece {B.piece_number('runner')} -- the shared runners "
          f"({P.RUNNERS})")
+    save(B.build_plate(active, P.ACTIVES, spacing=2 * P.PEG_MAX_R + 6.0),
+         f"plate-active-x{P.ACTIVES}.stl", "PLA",
+         f"piece {B.piece_number('active')} -- one per player "
+         f"({P.ACTIVES}), print each in that player's colour")
 
     save(B.build_fit_coupon(), "fit-test-coupon.stl", "PLA",
          "PRINT THIS FIRST -- bore fit check")
@@ -185,6 +193,9 @@ def export_stls(verbose=True):
     if P.STUB_RUNNER:
         want.append("runner")
         plate.append(runner)
+    if P.STUB_ACTIVE:
+        want.append("active")
+        plate.append(active)
     spacing = max(m.extents[0] for m in plate) + 4.0   # widest piece, 4 mm gap
     save(trimesh.util.concatenate(
              [R.placed(m, (k * spacing, 0, 0))
@@ -194,14 +205,15 @@ def export_stls(verbose=True):
          + ", ".join(f"{B.piece_number(s)} {s}" for s in want)
          + " -- to seat and to stack")
 
-    return (board_body, numerals, pieces, runner, stub_body, stub_nums, rows)
+    return (board_body, numerals, pieces, runner, active,
+            stub_body, stub_nums, rows)
 
 
 # ---------------------------------------------------------------------------
 # renders
 # ---------------------------------------------------------------------------
 
-def export_renders(board_body, numerals, pieces, runner, stub_body,
+def export_renders(board_body, numerals, pieces, runner, active, stub_body,
                    stub_nums, fast=False, verbose=True):
     marker = pieces[0]
     RENDER_DIR.mkdir(exist_ok=True)
@@ -369,13 +381,13 @@ def export_renders(board_body, numerals, pieces, runner, stub_body,
     #      still compare like with like -- which is the one thing a catalogue
     #      must not get wrong.
     panel = 360 if fast else 560
-    sheet = _piece_catalogue(pieces, runner, panel, fast, verbose)
+    sheet = _piece_catalogue(pieces, runner, active, panel, fast, verbose)
     sheet.save(RENDER_DIR / "09-piece-catalogue.png")
     if verbose:
         print("  09-piece-catalogue.png")
 
 
-def _piece_catalogue(pieces, runner, panel, fast=False, verbose=True):
+def _piece_catalogue(pieces, runner, active, panel, fast=False, verbose=True):
     """One labelled panel per piece, side by side on one sheet.
 
     Also writes each panel on its own as piece-<n>-<style>.png, because the
@@ -397,14 +409,20 @@ def _piece_catalogue(pieces, runner, panel, fast=False, verbose=True):
     # constant so a bigger number on the page means a bigger piece in the
     # hand. It does not, today -- they are all the same size, which is the
     # rule -- and this is what would show it if that ever stopped being true.
-    span = 2 * P.PEG_MAX_R * 1.42
+    # one scale for the whole sheet, and it has to hold the TALLEST piece
+    # now, not just the widest -- piece 6 is 20.8 mm and would run off the
+    # top of its panel at the markers' scale.
+    span = max(2 * P.PEG_MAX_R, B.build_active().bounds[1][2]) * 1.30
     band = int(panel * 0.58)                       # the caption strip below
     ss = 1 if fast else 2
 
     panels = []
     for k, style in enumerate(B.PIECE_STYLES):
-        mesh = runner if style == "runner" else pieces[k]
-        colour = C_RUNNER if style == "runner" else C_PLAYERS[k]
+        mesh = {"runner": runner, "active": active}.get(style)
+        if mesh is None:
+            mesh = pieces[k]
+        colour = {"runner": C_RUNNER, "active": C_PLAYERS[0]}.get(
+            style, C_PLAYERS[k if k < len(C_PLAYERS) else 0])
         lo, hi = mesh.bounds
         target = tuple((lo + hi) * 0.5)
         cam = {"eye": R.orbit_eye(np.asarray(target), span * 4.0, -90.0, 20.0),
@@ -438,10 +456,14 @@ def _piece_catalogue(pieces, runner, panel, fast=False, verbose=True):
                font=mid, fill=(26, 30, 40), anchor="ma")
         d.text((cx, panel + int(panel * 0.350)), B.piece_role(style),
                font=small, fill=(110, 118, 132), anchor="ma")
+    tallest = max(B.build_piece(s).bounds[1][2] for s in P.TERMINAL_STYLES)
     d.text((W // 2, panel + int(panel * 0.480)),
-           f"every piece {2 * P.PEG_MAX_R:.1f} mm across and "
-           f"{P.PEG_BODY_H + P.PEG_POST_H:.2f} mm tall  \u00b7  "
-           f"{P.MARKERS_PER_PLAYER} of each marker, {P.RUNNERS} runners",
+           f"all {len(B.PIECE_STYLES)} are {2 * P.PEG_MAX_R:.1f} mm across  "
+           f"\u00b7  1-{len(P.STACKING_STYLES)} stack at "
+           f"{P.PEG_BODY_H + P.PEG_POST_H:.2f} mm tall, "
+           f"{len(P.STACKING_STYLES) + 1} stands {tallest:.1f} and takes no "
+           f"stack  \u00b7  {P.MARKERS_PER_PLAYER} of each marker, "
+           f"{P.RUNNERS} runners, {P.ACTIVES} active",
            font=tiny, fill=(110, 118, 132), anchor="ma")
     return sheet
 
@@ -579,11 +601,13 @@ def print_report(rows, board_body):
     total = (g["board-body.stl"] + g["board-numerals.stl"]
              + sum(g[f"piece-{s}.stl"] for s in P.PLAYER_STYLES)
                * P.MARKERS_PER_PLAYER
-             + g["piece-runner.stl"] * P.RUNNERS)
+             + g["piece-runner.stl"] * P.RUNNERS
+             + g["piece-active.stl"] * P.ACTIVES)
     how = f"board at {100*P.SLAB_INFILL:.0f}% infill, pieces solid"
     print(f"full set, {how}: ~{total:.0f} g "
           f"(1 board + {P.MARKERS_PER_PLAYER} each of "
-          f"{'/'.join(P.PLAYER_STYLES)} + {P.RUNNERS} runners)")
+          f"{'/'.join(P.PLAYER_STYLES)} + {P.RUNNERS} runners "
+          f"+ {P.ACTIVES} active)")
     print(f"board envelope: {hi[0]-lo[0]:.1f} x {hi[1]-lo[1]:.1f} x {hi[2]-lo[2]:.1f} mm "
           f"(dual-nozzle bed {P.BED_X_DUAL:.0f} x {P.BED_Y_DUAL:.0f} x "
           f"{P.BED_Z:.0f}; {P.BED_X_DUAL-(hi[0]-lo[0]):.0f} spare in X, "
@@ -601,12 +625,12 @@ def main(argv=None):
     do_ren = a.renders or not a.stl
 
     t0 = time.time()
-    (board_body, numerals, pieces, runner,
+    (board_body, numerals, pieces, runner, active,
      stub_body, stub_nums, rows) = export_stls(verbose=do_stl)
     if do_ren:
         print("rendering ...")
-        export_renders(board_body, numerals, pieces, runner, stub_body,
-                       stub_nums, fast=a.fast)
+        export_renders(board_body, numerals, pieces, runner, active,
+                       stub_body, stub_nums, fast=a.fast)
     if do_stl:
         print_report(rows, board_body)
     print(f"\ndone in {time.time() - t0:.1f}s")

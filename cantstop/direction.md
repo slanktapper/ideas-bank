@@ -91,18 +91,20 @@ seat is a wide annulus rather than the rim of a ring, which is a far
 steadier thing for a 17.5 mm piece to stand on — which in turn is why the posts
 can be only 2 to 3 mm long.
 
-**Five shapes, one interface, one envelope.** Each player gets a different
-piece — a counter, a crown, a saucer and a cog — and the runner is the fifth.
+**Six shapes, one interface, one envelope.** Each player gets a different
+piece — a counter, a crown, a saucer and a cog — the runner is the fifth, and
+the active-player marker is the sixth.
 
 Each carries a **number**, which is its position in `PIECE_STYLES`:
 
-| # | Shape | Whose |
-| --- | --- | --- |
-| 1 | counter | player A |
-| 2 | crown | player B |
-| 3 | saucer | player C |
-| 4 | cog | player D |
-| 5 | runner | shared |
+| # | Shape | Whose | Stacks? |
+| --- | --- | --- | --- |
+| 1 | counter | player A | yes |
+| 2 | crown | player B | yes |
+| 3 | saucer | player C | yes |
+| 4 | cog | player D | yes |
+| 5 | runner | shared | yes |
+| 6 | active | one each | **no** |
 
 The numbers exist so a piece can be named in one character — in conversation,
 in a render, in a print note, in a commit message — instead of "the round
@@ -117,8 +119,18 @@ skirt that seats and the 6.30 mm body: player A stacks on player B, so every
 piece has to accept every other one and add exactly the same height doing it.
 `test_fit.py` builds all twenty-five pairings and measures the rise.
 
-**And none of them may change its size.** Every piece is 17.5 mm across and
-8.45 mm tall, to the micron. That is a rule rather than a ceiling, and the
+**Terminal pieces are exempt from the stacking rules, and only those.**
+Piece 6 has no post: nothing lands on it, it is the end of a stack by
+construction. So it owes nothing to a seat above it and it is free of the
+8.45 mm that makes stack pitch exact — holding it to that number would be
+cargo cult. What it still owes is everything on the way *in*: the same
+socket, the same whole flat bottom, the same 17.5 mm footprint, because it
+sits in a cell like anything else. `params.py` splits `PIECE_STYLES` into
+`STACKING_STYLES` and `TERMINAL_STYLES`, and `test_fit.py` is careful about
+which rule asks which list.
+
+**And none of the stacking ones may change its size.** Every piece is 17.5 mm
+across and 8.45 mm tall, to the micron. That is a rule rather than a ceiling, and the
 difference matters: a ceiling is passed just as happily by a piece 2 mm short
 of it, which is exactly how the runner stayed 16.5 x 10.45 through a resize
 that took every marker down. Nothing caught it, because every piece rule in
@@ -241,6 +253,18 @@ nothing about either.
   seat contract promises.
 - **5 runner** — three square-edged tiers and two deep grooves, all turned,
   with the flares at 44 degrees so they carry themselves.
+- **6 active** — the active player's marker, and the first piece that does
+  not stack. A flared foot, a slender shaft, and a head of three tiers of
+  spikes that shrink and rotate as they climb, with a finial on the axis.
+  20.8 mm tall against a marker's 8.45, one per player, in their colour.
+
+  The tiers are the same spike at 0.70 the size each time, each rotated half
+  a step off the one below so nothing lines up and it reads as intricate from
+  every side. That is as fractal as an 0.4 mm nozzle allows — a real
+  branching tree at this scale ends in twigs thinner than a line width, and
+  they snap. Each tier stands on a flat ledge of the lathe: the first version
+  had them floating in mid-air, which the "one watertight solid" check caught
+  as thirteen separate bodies.
 
 Anything beyond the lathe is **cut where cutting works and added where it
 does not**, and the line between the two turned out to be sharper than it
@@ -461,9 +485,9 @@ the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
 285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
-**219 g** — 158 g of board at 10% infill plus 61 g of solid pieces.
+**224 g** — 158 g of board at 10% infill plus 66 g of solid pieces.
 
-`test_fit.py` passes 115 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 119 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same
@@ -504,14 +528,16 @@ coming off a printer. There are two test prints for that, in order:
 - `fit-test-coupon.stl` — five posts either side of nominal, ~12 minutes. It
   carries **posts, not bores**, because the board is male: you try a real
   piece over each one.
-- `stub-board-*.stl` plus `stub-pieces-x5.stl` — about three quarters of an
-  hour. The stub is a 22 x 55 mm strip of the **real board**, cut from the
-  finished mesh rather than built to resemble it, so the slab, the lip, the
-  engraved digits and the split posts are all exactly what the full board
-  would print. It takes the top of column 7: the number, two posts at the
-  board's tightest row pitch, and the stretch of lip that comes closest to a
-  pad. One of every piece comes with it — the four markers and a runner — so
-  every shape gets seated and every pairing gets stacked.
+- `stub-board-*.stl` plus `stub-pieces-x6.stl` — about an hour. The stub is a
+  22 x 55 mm strip of the **real board**, cut from the finished mesh rather
+  than built to resemble it, so the slab, the lip, the engraved digits and
+  the split posts are all exactly what the full board would print. It takes
+  the top of column 7: the number, two posts at the board's tightest row
+  pitch, and the stretch of lip that comes closest to a pad. One of every
+  piece comes with it — the four markers, the runner and the active marker —
+  so every shape gets seated and every pairing gets stacked. The active
+  marker earns its place on that plate twice over: it shares the socket, and
+  its weight sits further from the joint than anything else's.
 
   It used to take columns 6 and 7 together, to get a red post and a
   white-capped one onto one part. That has been printed and it works, so the

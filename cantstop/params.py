@@ -510,6 +510,7 @@ PLAYER_LABELS = ["A", "B", "C", "D"]   # what the printable sets are called
 #
 #   1  counter   player A      2  crown   player B      3  saucer  player C
 #   4  cog       player D      5  runner  shared, neutral
+#   6  active    one per player: whose turn it is
 #
 # They exist so a piece can be named in one character in conversation, a
 # render, a print note or a commit message, without "the round one" having to
@@ -517,10 +518,23 @@ PLAYER_LABELS = ["A", "B", "C", "D"]   # what the printable sets are called
 # FIXED: a number, once given out, stays with its shape. A new shape takes the
 # next free number; a retired one leaves a hole rather than letting everything
 # below it shuffle up and silently rename four pieces that are already printed
-# and sitting on somebody's table.
+# and sitting on somebody's table. 6 is the first number this rule has had to
+# hand out, and it went on the end exactly as promised.
 #
 # renders/09-piece-catalogue.png is this list, drawn.
-PIECE_STYLES = PLAYER_STYLES + ["runner"]
+PIECE_STYLES = PLAYER_STYLES + ["runner", "active"]
+
+# ...but 1 to 5 STACK and 6 does not, and most of the rules in here are about
+# stacking. A piece with no post on top is the end of a stack by construction:
+# nothing lands on it, so it owes nothing to a seat above, and the height that
+# makes stack pitch exact is a number it has no use for. What it still owes is
+# everything on the way IN -- the same socket, the same flat whole bottom, the
+# same 17.5 mm footprint, because it sits in a cell like anything else.
+#
+# So the envelope rules run over STACKING_STYLES and the interface rules run
+# over all of PIECE_STYLES, and test_fit.py is careful about which is which.
+STACKING_STYLES = PIECE_STYLES[:5]
+TERMINAL_STYLES = PIECE_STYLES[5:]
 PEG_MAX_R = 8.75          # half of 17.5; the skirt, and nothing wider.
                           #
                           # 20 mm was asked for and 20 mm does not exist. The
@@ -690,6 +704,65 @@ COG_ROOT_R = 7.45    # how deep the slots go: 1.30 mm of tooth, which is a
 COG_SLOT_W = 2.60    # 18.7 degrees of gap at the tip against 17.3 of tooth,
                      # so the two read as the same size
 
+# active -- THE ACTIVE PLAYER'S PIECE, and the first one that does not stack.
+#
+# It marks whose turn it is, so it wants to be seen across the table and it
+# wants to be unmistakable from the markers: tall where they are squat, and
+# open where they are solid. One per player, in their colour.
+#
+# No post on top. Nothing lands on it -- it is the end of a stack by
+# construction -- so it owes nothing to a seat above it and it is free of the
+# 8.45 mm height that makes stack pitch exact. It keeps everything on the way
+# IN: the same socket, the same whole flat bottom, the same 17.5 mm footprint.
+#
+# Shape: a flared foot, a slender shaft, and a head of three tiers of spikes
+# that shrink and rotate as they climb, with a finial on the axis. The tiers
+# are the same shape at 0.70 the size each time, which is the nearest thing
+# to a fractal that survives an 0.4 mm nozzle -- a real branching tree at this
+# scale ends in twigs thinner than a line width, and they snap.
+ACTIVE_H = 20.00          # 2.4 times a marker. It is meant to stand out.
+# The lathe is a stepped SPIRE: foot, shaft, head, and then three columns
+# each narrower than the last, with a flat ledge at every step. Each ledge is
+# what a tier of spikes stands on -- a spike has to land on something or the
+# union leaves it floating in the air, which is exactly what the first
+# version did.
+ACTIVE_BODY_PROFILE = [
+    (8.75, 0.00),
+    (8.75, 0.70),   # the foot: full width, and the flat bottom the contract
+    (7.40, 1.50),   # wants. Narrowing upward the whole way, so no support.
+    (4.70, 2.90),
+    (4.70, 4.30),
+    (3.60, 6.60),   # the shaft. 3.60 keeps 1.20 of wall round the socket
+    (3.60, 11.40),  # roof on the way past it.
+    (6.60, 14.60),  # flaring back out at 43 degrees to carry the head
+    (6.60, 15.20),  # the head's rim
+    (4.30, 15.20),  # ledge -- tier 1 stands on this
+    (4.30, 17.00),
+    (2.60, 17.00),  # ledge -- tier 2
+    (2.60, 18.40),
+    (1.30, 18.40),  # ledge -- tier 3
+    (1.30, 19.10),  # and the finial caps it
+]
+ACTIVE_TIERS = [
+    # (ring radius, spikes, spike scale, z of the ledge it stands on)
+    (5.20, 8, 1.00, 15.20),
+    (3.40, 6, 0.70, 17.00),
+    (1.90, 5, 0.49, 18.40),
+]
+ACTIVE_SPIKE = [          # (r, z) of one spike at scale 1, from its own floor
+    (0.95, 0.00),         # -- the crown's cone on a cone, shrunk
+    (0.42, 1.55),
+    (0.72, 2.40),
+    (0.66, 2.90),
+]
+ACTIVE_FINIAL = [         # the tip, on the axis
+    (1.30, 0.00),
+    (0.55, 0.90),
+    (0.95, 1.45),
+    (0.00, 1.70),
+]
+ACTIVES = 4               # one per player
+
 # The runner (the shared neutral marker you advance during a turn, before you
 # decide to bank) uses the identical pin/socket interface so it still stacks,
 # and now the identical envelope as well: it is a marker's size to the micron.
@@ -772,6 +845,9 @@ STUB_PIECES  = 4          # full pieces printed alongside the stub: ONE OF
                           # EACH shape, so the test print checks that every
                           # shape seats and that any of them stacks on any
                           # other. Lower it to 2 for a quicker fit check.
+STUB_ACTIVE  = True       # and one active-player piece: it is the only other
+                          # thing on the board with this socket, and the one
+                          # whose weight is furthest from the joint
 STUB_RUNNER  = True       # add one neutral runner to that plate. It carries
                           # the same socket as a marker, so a fit judged on
                           # the markers alone would be assumed rather than

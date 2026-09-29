@@ -44,7 +44,7 @@ Only then print the board.
 
 ```
 stub-board-body.stl + stub-board-numerals.stl   ~4 g,  ~20 min   two colours
-stub-pieces-x5.stl                              ~6 g,  ~25 min   one of every piece
+stub-pieces-x6.stl                              ~8 g,  ~35 min   one of every piece
 ```
 
 The coupon answers one question. The stub answers the rest of them, and it
@@ -97,6 +97,7 @@ What the stub cannot tell you is whether 310 mm of flat PLA warps. Nothing
 | `game-pieces-C.stl` | 1 | PLA | **piece 3** — player C, 11 saucers |
 | `game-pieces-D.stl` | 1 | PLA | **piece 4** — player D, 11 cogs |
 | `plate-runners-x3.stl` | 1 | PLA or PETG | **piece 5** — the shared neutral runners |
+| `plate-active-x4.stl` | 1 | PLA | **piece 6** — one active-player marker each; print each in that player's colour |
 
 ### The piece numbers
 
@@ -112,17 +113,22 @@ on its own.
 | **3** | saucer | player C | `piece-saucer.stl` | `game-pieces-C.stl` |
 | **4** | cog | player D | `piece-cog.stl` | `game-pieces-D.stl` |
 | **5** | runner | shared | `piece-runner.stl` | `plate-runners-x3.stl` |
+| **6** | active | one each | `piece-active.stl` | `plate-active-x4.stl` |
 
-All five are 17.5 mm across and 8.45 mm tall, to the micron, and any of them
-stacks on any other adding exactly 6.30 mm. A number stays with its shape: a
-new shape takes the next free number rather than shuffling these.
+Pieces 1 to 5 are 17.5 mm across and 8.45 mm tall, to the micron, and any of
+them stacks on any other adding exactly 6.30 mm. **Piece 6 is the odd one
+out on purpose**: 20.8 mm tall, no post on top, so nothing stacks on it. It
+takes the same socket and the same 17.5 mm footprint, so it drops onto a
+board post or onto a marker like anything else — it is just the end of the
+stack. A number stays with its shape: a new shape takes the next free number
+rather than shuffling these, which is exactly what 6 did.
 
 and, for the test print above:
 
 | File | Qty | Material | Notes |
 | --- | --- | --- | --- |
 | `stub-board-body.stl` + `stub-board-numerals.stl` | 1 | PLA red + jade white | a 22 x 55 mm strip of the real board, top of column 7 |
-| `stub-pieces-x5.stl` | 1 | PLA | one of every piece — four markers and a runner — to seat and to stack |
+| `stub-pieces-x6.stl` | 1 | PLA | one of every piece — four markers, a runner and the active marker — to seat and to stack |
 
 **The board is two files and needs both.** There is no single-colour version
 any more: the numbers, the title, the border and the alternating post tops
@@ -168,7 +174,7 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **219 g**: ~158 g board, body and numerals together
+A full set is roughly **224 g**: ~158 g board, body and numerals together
 (6 mm slab at 10% infill),
 ~58 g of markers (11 each of four shapes), ~5 g of runners (3). A marker is 17.5 mm across and
 8.45 mm tall and so is a runner — every piece on this board is the same size
@@ -305,7 +311,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 115 checks, ~2 min
+python3 test_fit.py    # 119 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

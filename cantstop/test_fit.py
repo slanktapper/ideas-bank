@@ -427,11 +427,27 @@ def main():
     print(f"\n{len(B.PIECE_STYLES)} shapes, one interface, ONE ENVELOPE")
     built = {s: B.build_piece(s) for s in B.PIECE_STYLES}
     tall = {s: m.bounds[1][2] - m.bounds[0][2] for s, m in built.items()}
-    check("every piece is the same height, to the micron",
-          max(tall.values()) - min(tall.values()) < 1e-6
-          and abs(min(tall.values()) - (P.PEG_BODY_H + P.PEG_POST_H)) < 1e-6,
-          f"{min(tall.values()):.2f} mm each: {P.PEG_BODY_H:.2f} of body and "
-          f"{P.PEG_POST_H:.2f} of post")
+    # HEIGHT IS A STACKING RULE, so it is asked of the pieces that stack. A
+    # terminal piece has no post, nothing lands on it, and the number that
+    # makes stack pitch exact is one it has no use for -- holding it to 8.45
+    # would be cargo cult.
+    st = {s: tall[s] for s in P.STACKING_STYLES}
+    check("every STACKING piece is the same height, to the micron",
+          max(st.values()) - min(st.values()) < 1e-6
+          and abs(min(st.values()) - (P.PEG_BODY_H + P.PEG_POST_H)) < 1e-6,
+          f"{min(st.values()):.2f} mm each: {P.PEG_BODY_H:.2f} of body and "
+          f"{P.PEG_POST_H:.2f} of post; "
+          + ", ".join(f"{s} {tall[s]:.2f}" for s in P.TERMINAL_STYLES)
+          + " stands alone")
+    for s in P.TERMINAL_STYLES:
+        top = built[s].bounds[1][2]
+        socket = B.socket_probe_depth(built[s])
+        check(f"{s}: no post on top, and the socket below is the same one",
+              not B.piece_stacks(s) and socket >= P.PEG_SOCKET_DEPTH - 0.01
+              and tall[s] > P.PEG_BODY_H + P.PEG_POST_H,
+              f"{tall[s]:.2f} mm tall against a marker's "
+              f"{P.PEG_BODY_H + P.PEG_POST_H:.2f}, socket {socket:.2f} mm "
+              f"deep; nothing can be stacked on it and nothing needs to be")
     for s, m in built.items():
         check(f"{s}: one watertight solid, flat on the bed",
               m.is_watertight and m.is_winding_consistent
@@ -464,7 +480,11 @@ def main():
     # check try every relative rotation rather than the one the meshes happen
     # to have been built at. Radii are spaced so every sample stands for the
     # same area, so a mean over the grid IS the solid fraction.
-    NR, NA = 48, 360
+    # 36 x 240 and not 48 x 360. The grid is only ever averaged, so this is
+    # worth about half a percent of resolution on a fraction -- and piece 6
+    # is 12k triangles, where a 17k-point containment test against six of
+    # those at three heights each was enough to have the container killed.
+    NR, NA = 36, 240
     rr_s = np.sqrt(r_mouth ** 2 + (np.arange(NR) + 0.5) / NR
                    * (P.SEAT_BAND_R ** 2 - r_mouth ** 2))
     th_s = (np.arange(NA) + 0.5) * 2 * np.pi / NA
@@ -474,9 +494,16 @@ def main():
     radius = RR.ravel()
 
     def face_at(m, z):
-        return m.contains(np.column_stack([xy, np.full(N, z)]))
+        out = np.empty(N, dtype=bool)
+        for k in range(0, N, 4000):          # chunked, for the same reason
+            sl = slice(k, min(k + 4000, N))
+            out[sl] = m.contains(
+                np.column_stack([xy[sl], np.full(sl.stop - sl.start, z)]))
+        return out
 
-    tops = {s: face_at(m, P.PEG_BODY_H - 0.05) for s, m in built.items()}
+    # only the pieces that stack have a seat up there to measure
+    tops = {s: face_at(built[s], P.PEG_BODY_H - 0.05)
+            for s in P.STACKING_STYLES}
     bots = {s: face_at(m, 0.05) for s, m in built.items()}
     deep = {s: face_at(m, P.BOTTOM_FLAT_H - 0.05) for s, m in built.items()}
 
@@ -496,7 +523,7 @@ def main():
 
     # TOPS CARRY ENOUGH, FAR ENOUGH OUT, ON EVERY SIDE.
     sect = np.tile(np.arange(NA) // (NA // P.SEAT_SECTORS), NR)
-    for s in B.PIECE_STYLES:
+    for s in P.STACKING_STYLES:
         f = tops[s].mean()
         arm = (radius[tops[s]].mean() if tops[s].any() else 0.0)
         lean = min(tops[s][sect == k].mean() for k in range(P.SEAT_SECTORS))
@@ -513,9 +540,9 @@ def main():
     # proves it rather than assuming it.
     pair_min, pair_who = 1.0, None
     turns = [np.roll(np.arange(NA), k) for k in range(0, NA, 5)]
-    for a in B.PIECE_STYLES:
+    for a in P.STACKING_STYLES:          # only these can be UNDERNEATH
         ta = tops[a].reshape(NR, NA)
-        for b in B.PIECE_STYLES:
+        for b in B.PIECE_STYLES:         # anything with a socket can be on top
             bb = bots[b].reshape(NR, NA)
             for idx in turns:
                 f = float((ta & bb[:, idx]).mean())
@@ -523,7 +550,7 @@ def main():
                     pair_min, pair_who = f, (b, a)
     check("any piece on any piece, at any rotation, lands on a real seat",
           pair_min >= P.SEAT_MIN_FRAC - 0.005,
-          f"worst of {len(B.PIECE_STYLES)**2} pairings at "
+          f"worst of {len(P.STACKING_STYLES)*len(B.PIECE_STYLES)} pairings at "
           f"{len(turns)} rotations each is a {pair_who[0]} on a "
           f"{pair_who[1]} at {pair_min*100:.0f}% ({pair_min*band:.0f} mm2)")
 
@@ -545,8 +572,8 @@ def main():
 
     # and the thing all of that is for: any of them on any of them
     heights = []
-    for a in B.PIECE_STYLES:
-        for b in B.PIECE_STYLES:
+    for a in P.STACKING_STYLES:
+        for b in P.STACKING_STYLES:
             lower = built[a].copy()
             upper = R_placed(built[b], P.PEG_BODY_H)
             heights.append(upper.bounds[1][2] - lower.bounds[1][2])
@@ -960,7 +987,8 @@ def main():
     # make the check agree with any reordering, which is exactly the mistake
     # it exists to catch. If a shape is ever renamed or retired, this line is
     # meant to fail and be argued with, not quietly updated.
-    EXPECTED = {1: "counter", 2: "crown", 3: "saucer", 4: "cog", 5: "runner"}
+    EXPECTED = {1: "counter", 2: "crown", 3: "saucer", 4: "cog", 5: "runner",
+                6: "active"}
     actual = {B.piece_number(s): s for s in B.PIECE_STYLES}
     check("the pieces are numbered as they always have been",
           actual == EXPECTED,

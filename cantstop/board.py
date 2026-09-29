@@ -589,6 +589,62 @@ def _piece_profile(body_profile, body_h: float) -> list[tuple[float, float]]:
     return prof
 
 
+def _terminal_profile(body_profile) -> list[tuple[float, float]]:
+    """Closed (r, z) profile for a piece with a socket below and NO post.
+
+    Same socket, same 45 degree roof, same everything on the way in -- and
+    then the top simply closes to the axis, because nothing lands on it. A
+    tall piece also gets the full cone the markers cannot afford: the roof
+    only has to stop PEG_SOCKET_ROOF short of the top face, and up here that
+    is room to spare, so the apex comes to a point and nothing is bridged.
+    """
+    rs = P.PEG_SOCKET_D * 0.5
+    sc = P.PEG_SOCKET_CHAMFER
+    z_top = body_profile[-1][1]
+    z_roof = min(P.PEG_SOCKET_DEPTH + rs, z_top - P.PEG_SOCKET_ROOF)
+    r_flat = max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
+
+    prof = [(rs + sc, 0.0), (body_profile[0][0], 0.0)]
+    prof += [(r, dz) for r, dz in body_profile[1:]]
+    prof += [(0.0, z_top), (0.0, z_roof)]
+    if r_flat > 1e-9:
+        prof.append((r_flat, z_roof))
+    prof += [(rs, P.PEG_SOCKET_DEPTH), (rs, sc)]
+    return prof
+
+
+def _spike(prof, scale: float, at_r: float, angle: float, z0: float,
+           segs: int | None = None) -> trimesh.Trimesh:
+    """One waisted spike from a (r, z) profile, scaled and placed."""
+    pts = [(r * scale, z0 + z * scale) for r, z in prof]
+    z_lo, z_hi = pts[0][1], pts[-1][1]
+    m = S.lathe(pts + [(0.0, z_hi), (0.0, z_lo)], segs=segs or P.PEG_SEGS)
+    m.apply_translation((at_r * np.cos(angle), at_r * np.sin(angle), 0.0))
+    return m
+
+
+def build_active(segs: int | None = None) -> trimesh.Trimesh:
+    """Piece 6: the active player's marker. Socket below, no post above.
+
+    The head is three tiers of the same spike at 0.70 the size each time,
+    each tier rotated half a step off the one below so nothing lines up and
+    the thing reads as intricate from every side. That is as fractal as an
+    0.4 mm nozzle allows -- a real branching tree at this scale ends in twigs
+    thinner than a line width, and they snap.
+    """
+    segs = segs or P.PEG_SEGS
+    parts = [S.lathe(_terminal_profile(P.ACTIVE_BODY_PROFILE), segs=segs)]
+    turn = 0.0
+    for at_r, n, scale, z0 in P.ACTIVE_TIERS:
+        for k in range(n):
+            a = turn + k * 2.0 * np.pi / n
+            parts.append(_spike(P.ACTIVE_SPIKE, scale, at_r, a, z0, segs))
+        turn += np.pi / n          # half a step, so no tier lines up
+    parts.append(_spike(P.ACTIVE_FINIAL, 1.0, 0.0, 0.0,
+                        P.ACTIVE_BODY_PROFILE[-1][1], segs))
+    return S.union_all(parts)
+
+
 def socket_bridge() -> float:
     """Span of the flat left at the top of the truncated socket roof."""
     rs = P.PEG_SOCKET_D * 0.5
@@ -749,14 +805,17 @@ def piece_profile_of(style: str):
     if style == "saucer":
         return _saucer_profile()
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
-            "cog": P.COG_BODY_PROFILE,
-            "runner": P.RUNNER_BODY_PROFILE}[style]
+            "cog": P.COG_BODY_PROFILE, "runner": P.RUNNER_BODY_PROFILE,
+            "active": P.ACTIVE_BODY_PROFILE}[style]
 
 
 def build_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
-    """Any piece by name: the four player shapes, or the runner."""
-    return (build_runner(segs) if style == "runner"
-            else build_player_piece(style, segs))
+    """Any piece by name: the four player shapes, the runner, the active."""
+    if style == "runner":
+        return build_runner(segs)
+    if style == "active":
+        return build_active(segs)
+    return build_player_piece(style, segs)
 
 
 # Every piece on the board, not just the four a player owns. The runner
@@ -780,10 +839,36 @@ def piece_of_number(n: int) -> str:
 
 
 def piece_role(style: str) -> str:
-    """Who owns it: a player's letter, or the shared pool."""
+    """Who owns it: a player's letter, the shared pool, or all four."""
     i = PIECE_STYLES.index(style)
-    return (f"player {P.PLAYER_LABELS[i]}" if i < len(P.PLAYER_LABELS)
-            else "shared")
+    if i < len(P.PLAYER_LABELS):
+        return f"player {P.PLAYER_LABELS[i]}"
+    return "one each" if style in P.TERMINAL_STYLES else "shared"
+
+
+def socket_probe_depth(mesh, step: float = 0.05) -> float:
+    """How far a POST of the real diameter fits into a piece's underside.
+
+    Measured on the finished solid rather than read off the parameter that
+    was meant to produce it, and measured at the post's own radius rather
+    than up the axis -- on the axis the cone roof runs on for millimetres
+    past where anything with a diameter could follow it.
+    """
+    r = P.POST_D * 0.5
+    zs = np.arange(step, P.PEG_SOCKET_DEPTH * 2.0, step)
+    worst = float(zs[-1])
+    for a in np.linspace(0, 2 * np.pi, 8, endpoint=False):
+        pts = np.column_stack([np.full_like(zs, r * np.cos(a)),
+                               np.full_like(zs, r * np.sin(a)), zs])
+        inside = mesh.contains(pts)
+        k = int(np.argmax(inside)) if inside.any() else len(zs)
+        worst = min(worst, float(zs[k - 1]) if k else 0.0)
+    return worst
+
+
+def piece_stacks(style: str) -> bool:
+    """Whether anything can be stacked ON this piece -- i.e. it has a post."""
+    return style not in P.TERMINAL_STYLES
 
 
 def build_marker(segs: int | None = None) -> trimesh.Trimesh:
