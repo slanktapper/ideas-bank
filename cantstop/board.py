@@ -708,13 +708,20 @@ def _crown_points(segs: int | None = None) -> list[trimesh.Trimesh]:
     both the shape half the drawn crowns have and the only thing on this
     piece a finger can get hold of.
     """
-    segs = segs or P.PEG_SEGS
     prof = list(P.CROWN_SPIKE_PROFILE)
     z0, z1 = prof[0][1], prof[-1][1]
     closed = prof + [(0.0, z1), (0.0, z0)]
+    sx, sy = P.CROWN_SPIKE_SQUASH
+    squash = np.diag([sx, sy, 1.0, 1.0])
     out = []
     for a in np.linspace(0, 2 * np.pi, P.CROWN_POINTS, endpoint=False):
-        m = S.lathe(closed, segs=segs)
+        m = S.lathe(closed, segs=P.CROWN_SPIKE_SEGS)
+        # squash in the spike's OWN frame -- x through the wall, y along the
+        # rim -- and only then swing it round to its place, so the thin axis
+        # stays radial wherever the point ends up
+        m.apply_transform(squash)
+        m.apply_transform(trimesh.transformations.rotation_matrix(
+            a, (0.0, 0.0, 1.0)))
         m.apply_translation((P.CROWN_SPIKE_AT * np.cos(a),
                              P.CROWN_SPIKE_AT * np.sin(a), 0.0))
         out.append(m)

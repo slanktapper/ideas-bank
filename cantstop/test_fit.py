@@ -565,6 +565,19 @@ def main():
         for (r0, z0), (r1, z1) in zip(prof, prof[1:]):
             if r1 > r0 and z1 > z0 and (r1 - r0) / (z1 - z0) > worst_over:
                 worst_over, who = (r1 - r0) / (z1 - z0), (s, z0, z1)
+    # The crown's points are a profile too, and one the loop above cannot see:
+    # they are turned and THEN squashed, and the squash multiplies whatever
+    # the profile does. A blade 1.34 times wider along the rim overhangs 1.34
+    # times as steeply there.
+    sp = P.CROWN_SPIKE_PROFILE
+    spike_over = max(max(P.CROWN_SPIKE_SQUASH) * (r1 - r0) / (z1 - z0)
+                     for (r0, z0), (r1, z1) in zip(sp, sp[1:])
+                     if r1 > r0 and z1 > z0)
+    check("the crown's points do not overhang either, squash and all",
+          spike_over <= 1.0 + 1e-9,
+          f"steepest {np.degrees(np.arctan(spike_over)):.0f} degrees from "
+          f"vertical, on a profile that is {max(P.CROWN_SPIKE_SQUASH):.2f} "
+          f"times wider along the rim than it was turned")
     check("nothing overhangs more than 45 degrees, so nothing needs support",
           worst_over <= 1.0 + 1e-9,
           f"steepest is the {who[0]} between z{who[1]:.2f} and z{who[2]:.2f}, "

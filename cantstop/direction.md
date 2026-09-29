@@ -208,19 +208,33 @@ nothing about either.
   wall but it cannot turn the wall into six separate things standing up**. So
   the points are added, like the saucer's legs and for the same reason.
 
-  **Each point is a cone on a cone**: it narrows to a 1.56 mm waist and flares
-  back out to a knob. That is the shape half the drawn crowns have, and more
-  usefully it is the only thing on this piece a finger can get hold of — a
-  plain taper gives you nothing to pinch, it just slides. A waist with a knob
-  over it lets a nail get under the knob, and six of them round the rim means
-  one is always where your fingers are.
+  **Each point is a pyramid on a pyramid, and a blade rather than a bollard.**
+  It narrows to a waist and flares back out to a knob — the shape half the
+  drawn crowns have, and the only thing on this piece a finger can get hold
+  of, since a plain taper just slides out from between two fingertips.
 
-  The flare is 23° from vertical, well inside the 45 the printer will carry,
-  and the knobs have flat tops dead level at 6.30 because the next piece
-  stands on them and on nothing else. Six 2.70 mm pads is 34.4 mm², a quarter
-  of the seat band against the 18% the contract asks for — so the knob pays
-  for the grip twice over. The plain tapered points it replaced measured
-  18.1%, a tenth of a percent clear of failing.
+  A lathe makes a spike with a *circular* section, as wide through the wall
+  as it is along the rim, and six of those read as a ring of little posts
+  whatever their profile does. A drawn crown's points are flat: wide along
+  the band, thin through it, standing right out at the edge. So the section
+  is squashed after it is turned — 0.62 through the wall, 1.34 along the rim
+  — and cut to four facets rather than sixty-four, which is crisper, closer
+  to the drawn ones, and the easiest thing a printer ever laid.
+
+  The flare is 37° from vertical after the squash multiplies it, inside the
+  45 the printer will carry — and `test_fit.py` checks that separately,
+  because the points are turned and *then* squashed and the ordinary
+  overhang loop reads profiles, which know nothing about it.
+
+  The knobs have flat tops dead level at 6.30 because the next piece stands
+  on them and on nothing else. Six 1.92 × 4.15 mm diamonds is 24.0 mm², a
+  whisker over the 18% the contract asks for. That is tight on purpose and
+  the crown is what made it tight: a blade puts a third less area up there
+  than a round spike did. What it buys back is **reach** — r6.60, the longest
+  arm of any piece — which is what actually stops a stack leaning.
+  `SEAT_BAND_R` went 7.30 → 7.40 to meet it, which costs nothing: every
+  bottom is whole out to the cog's 7.45 root anyway, and that is the number
+  that caps it.
 - **3 saucer** — a flying one. A whole disc base on the ground, four square
   landing tubes standing on it with daylight between them, a hull sweeping
   out to a thin brim at the full radius, a domed top, and six rectangular
@@ -485,9 +499,9 @@ the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
 285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
-**224 g** — 158 g of board at 10% infill plus 66 g of solid pieces.
+**223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 119 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 120 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

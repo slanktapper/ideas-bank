@@ -457,8 +457,8 @@ PEG_SEGS = 64
 # next to a disc of their own height. Six pads out at r7 hold a piece far
 # more steadily than a narrow ring at r4 does anyway, which the arm floor
 # below is there to say out loud.
-SEAT_BAND_R   = 7.30
-SEAT_BOTTOM_R = 7.30
+SEAT_BAND_R   = 7.40
+SEAT_BOTTOM_R = 7.40
 SEAT_MIN_FRAC = 0.18
 SEAT_MIN_ARM  = 4.80
 SEAT_SECTORS  = 6
@@ -592,7 +592,20 @@ CROWN_BODY_PROFILE = [
     (3.40, 6.30),   # in the middle is barely wider than the post itself
 ]
 CROWN_POINTS   = 6
-CROWN_SPIKE_AT = 6.30     # centre radius of each point
+CROWN_SPIKE_AT = 6.55     # centre radius of each point
+
+# A POINT IS A BLADE, NOT A BOLLARD. The lathe makes a spike with a circular
+# section -- as wide through the wall as it is along the rim -- and six of
+# those round the rim read as a ring of little posts, whatever their profile
+# does. A drawn crown's points are flat: wide along the band, thin through
+# it, and standing right out at the edge.
+#
+# So the section is squashed after it is turned: radially by the first of
+# these, tangentially by the second. Four facets rather than sixty-four, so
+# it is a pyramid on a pyramid and not a cone on a cone -- crisper, closer to
+# the drawn ones, and a flat facet is the easiest thing a printer ever laid.
+CROWN_SPIKE_SEGS   = 4
+CROWN_SPIKE_SQUASH = (0.62, 1.34)   # (through the wall, along the rim)
 
 # A POINT IS A CONE ON A CONE. It narrows to a waist and then flares back out
 # to a knob, which is the shape a crown point has in half the drawn ones --
@@ -608,11 +621,19 @@ CROWN_SPIKE_AT = 6.30     # centre radius of each point
 CROWN_SPIKE_PROFILE = [
     (2.05, 1.75),   # the foot, buried in the cup floor so there is no seam
     (0.78, 3.95),   # the waist: 1.56 mm across, and the thing you grip
-    (1.40, 5.40),   # out to the knob at 23 degrees
-    (1.35, 6.30),   # 2.70 mm of flat top. Six of those is 34.4 mm2, a
-                    # quarter of the seat band, against the 18% asked for --
-                    # so the knob pays for the grip twice over and the
-                    # points could in principle go slimmer again.
+    (1.60, 5.40),   # out to the knob
+    (1.55, 6.30),   # the flat top. Squashed, each is a 1.92 x 4.15 mm
+                    # diamond and six of them is 24.0 mm2, a
+                    # whisker over the 18% asked for.
+                    #
+                    # That is tight on purpose and it is the crown that made
+                    # it tight: a blade is thin through the wall, so it puts
+                    # a third less area up there than a round spike did. What
+                    # it buys back is REACH -- r6.60, the longest arm of any
+                    # piece -- which is what actually stops a stack leaning.
+                    # SEAT_BAND_R went 7.30 -> 7.40 to meet it, which costs
+                    # nothing: every bottom is whole out to the cog's 7.45
+                    # root anyway, and that is the number that caps it.
 ]
 
 # saucer -- a flying one. A landing pad on the ground, four struts holding the
