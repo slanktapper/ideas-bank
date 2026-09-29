@@ -578,14 +578,31 @@ def main():
           f"steepest {np.degrees(np.arctan(spike_over)):.0f} degrees from "
           f"vertical, on a profile that is {max(P.CROWN_SPIKE_SQUASH):.2f} "
           f"times wider along the rim than it was turned")
-    # The active piece's tower is bars in space, not a profile, so the loop
-    # above cannot see it either. A leg leans in as it rises and the lean IS
-    # the overhang.
-    check("the tower's legs lean less than the printer minds",
-          B.active_leg_lean() <= 1.0 + 1e-9,
-          f"{np.degrees(np.arctan(B.active_leg_lean())):.0f} degrees from "
-          f"vertical, and the widest frame it has to bridge is "
-          f"{2 * B.active_tiers()[0][0]:.1f} mm")
+    # The active piece's lattice is holes cut through a solid, not a profile,
+    # so the loop above cannot see it either -- and a hole has a CEILING,
+    # which is the overhang that matters. A regular hexagon with a vertex at
+    # the top looks like it should roof itself and does not: 0.866r of run
+    # for 0.5r of rise is 60 degrees. The cells are gables for that reason,
+    # and this is the check that would have caught it.
+    check("the lattice roofs its own holes",
+          B.active_cell_roof() <= 1.0 + 1e-9,
+          f"{np.degrees(np.arctan(B.active_cell_roof())):.0f} degrees from "
+          f"vertical on every one of {len(B.active_lattice())} cells, so "
+          f"there is not a bridge in the tower")
+    # AND THE WEB BETWEEN THE HOLES, which is what actually decides how small
+    # the cells can get. Shrinking a cell is free; shrinking the wall left
+    # between two of them is not, and the two move together. A face only gets
+    # a row every OTHER row, so what stands between two holes up a face is
+    # twice ROW_DZ less the hole -- not ROW_DZ less the hole, which is the
+    # easy way to talk yourself into a tower made of nothing.
+    LINE = 0.42                      # nozzle line width
+    web_x = P.ACTIVE_HOLE_PITCH - P.ACTIVE_HOLE
+    web_z = 2 * P.ACTIVE_ROW_DZ - P.ACTIVE_HOLE
+    check("the lattice leaves a web the printer can actually lay down",
+          min(web_x, web_z, P.ACTIVE_EDGE) >= 2 * LINE - 0.05,
+          f"{web_x:.2f} mm across a row, {web_z:.2f} mm up a face, "
+          f"{P.ACTIVE_EDGE:.2f} at the edge -- two {LINE} perimeters and no "
+          f"infill is {2*LINE:.2f}")
     check("nothing overhangs more than 45 degrees, so nothing needs support",
           worst_over <= 1.0 + 1e-9,
           f"steepest is the {who[0]} between z{who[1]:.2f} and z{who[2]:.2f}, "
@@ -616,7 +633,7 @@ def main():
     # axis clears, which is what saves it -- columns are 22.0 apart and the
     # tightest row pitch is 19.58, and no two cells are closer than that in
     # both at once. Measured rather than argued.
-    sq = P.ACTIVE_PLATE
+    sq = P.ACTIVE_BASE
     pts_ = np.array([B.cell_xy(i, r) for i, r in B.all_cells()])
     dd = np.abs(pts_[:, None, :] - pts_[None, :, :])
     np.fill_diagonal(dd[:, :, 0], 1e9)
@@ -701,7 +718,7 @@ def main():
     # corner landing on the raised lip would rock the piece.
     from shapely.geometry import Polygon as _Poly, Point as _Pt
     _inner = _Poly(B.octagon()).buffer(-P.RIM_W, join_style=2)
-    _h = P.ACTIVE_PLATE / 2
+    _h = P.ACTIVE_BASE / 2
     _worst, _who = 1e9, None
     for i, r in B.all_cells():
         cx, cy = B.cell_xy(i, r)

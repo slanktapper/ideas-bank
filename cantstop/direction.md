@@ -217,18 +217,27 @@ nothing about either.
   as it is along the rim, and six of those read as a ring of little posts
   whatever their profile does. A drawn crown's points are flat: wide along
   the band, thin through it, standing right out at the edge. So the section
-  is squashed after it is turned — 0.62 through the wall, 1.34 along the rim
-  — and cut to four facets rather than sixty-four, which is crisper, closer
-  to the drawn ones, and the easiest thing a printer ever laid.
+  is squashed after it is turned — 0.62 through the wall, **1.72 along the
+  rim** — and cut to four facets rather than sixty-four, which is crisper,
+  closer to the drawn ones, and the easiest thing a printer ever laid.
 
-  The flare is 37° from vertical after the squash multiplies it, inside the
-  45 the printer will carry — and `test_fit.py` checks that separately,
-  because the points are turned and *then* squashed and the ordinary
-  overhang loop reads profiles, which know nothing about it.
+  **The points touch at the foot.** At 1.72 the feet are 7.05 mm wide on a
+  6.55 mm spacing, so each one overlaps its neighbours by half a millimetre
+  and the six of them fuse into a continuous scalloped band before they part
+  company and rise as six separate blades. That is both what a drawn crown
+  looks like and what makes them strong: a blade standing on its own at this
+  scale is a thing waiting to snap off a game piece that lives in a box, and
+  now none of them stands on its own.
+
+  The flare is 38° from vertical after the squash multiplies it, inside the
+  45 the printer will carry — the waist dropped to z 3.60 to keep it there,
+  since widening the point steepened the flare. `test_fit.py` checks it
+  separately, because the points are turned and *then* squashed and the
+  ordinary overhang loop reads profiles, which know nothing about it.
 
   The knobs have flat tops dead level at 6.30 because the next piece stands
-  on them and on nothing else. Six 1.92 × 4.15 mm diamonds is 24.0 mm², a
-  whisker over the 18% the contract asks for. That is tight on purpose and
+  on them and on nothing else. Six of them is 31 mm², 24% of the band and
+  comfortably over the 18% the contract asks for. That is tight on purpose and
   the crown is what made it tight: a blade puts a third less area up there
   than a round spike did. What it buys back is **reach** — r6.60, the longest
   arm of any piece — which is what actually stops a stack leaning.
@@ -269,39 +278,64 @@ nothing about either.
   with the flares at 44 degrees so they carry themselves.
 - **6 active** — the active player's marker, and the only piece that does not
   stack. Everything else on this board is round, squat and solid; this is
-  **square, tall and open**. A full-width plate, a block on it holding the
-  socket, and a wireframe tower. 23.0 mm against a marker's 8.45, one per
-  player, in their colour.
+  **square, tall and open**. A tapered plinth with the socket in it, a ledge,
+  and a latticed spire. 21.6 mm against a marker's 8.45, one per player, in
+  their colour.
 
-  **The tower is a golden-ratio frame.** Four legs rise from the block's
-  corners, tied by a square frame at every stage, and each stage is the one
-  below divided by φ — in width *and* in height, so every stage is the same
-  shape as the last and the whole thing is one form repeated four times at
-  61.8% each time.
+  **The tower is a lattice.** Rows of holes cut straight through the spire,
+  alternating axis row by row — one row opens the left and right faces, the
+  next the front and back, so every face gets holes on every other row, and
+  the rows straddle each other so the pattern is a honeycomb and not a grid.
+  Thirty-three cells.
 
-  That ratio is also what makes it printable, which is the happy part. The
-  legs lean in by (1 − 1/φ) of their half-diagonal over 1.6 times their
-  half-width, which is **18.7° from vertical** — less than half what the
-  printer would refuse. And the frames span 2a, which shrinks by φ as well,
-  so the widest bridge in the tower is the bottom one at 8.4 mm.
+  **Each cell is a gable, not a hexagon.** Vertical sides up to a shoulder,
+  then two edges at exactly 45° to a ridge, and a flat floor. A hole through
+  a wall has a *ceiling*, and a ceiling either holds itself up or it is a
+  bridge. The first version used regular hexagons with a vertex at the top,
+  on the belief that a vertex-up hexagon roofs itself. **It does not** — its
+  top edges run 0.866r across for 0.5r up, which is 60° from vertical, half
+  again past what the printer will carry, and the tower would have come off
+  the bed with twenty-one sagging ceilings in it. The gable is the shape that
+  actually does the job. `test_fit.py` measures the angle rather than taking
+  anyone's word for it.
 
-  **Square is safe, and it is worth saying why rather than hoping.** Columns
-  are 22.0 mm apart and the tightest row pitch is 19.58, so two cells are
-  never closer than that — and an axis-aligned 17.5 mm square clears both,
-  because two squares miss each other when *either* axis clears. What a
-  square does reach further into is the corner: 12.37 mm from the cell centre
-  against a circle's 8.75. So `test_fit.py` puts the footprint on all 83
-  cells and checks the corners stay off the raised lip (5.40 mm to spare at
-  the tightest) as well as off each other (2.08 mm, the same as any two
-  markers).
+  **The web sets the cell size, not the other way round.** The first pass cut
+  a 1.60 mm hole on a 2.20 mm pitch and the tower read as a solid obelisk
+  with a few slots punched in it. Widening the cell is the obvious fix and it
+  is the wrong one: the face is only 11 mm across, and what limits a row is
+  where the outermost hole's *centre* can sit, so a bigger cell buys fewer of
+  them. Going the other way worked — cells small and many, at a 1.10 mm hole
+  on a 1.95 mm pitch, with the web pinned at two 0.42 perimeters (0.85 across
+  a row, 1.00 up a face) and the pitch derived from that floor.
 
-  It replaced a round version with three tiers of shrinking spikes, which
-  was fractal in the same sense but read as a pine cone. Two things that
-  version taught, both kept: every member has to *land* on something or the
-  union leaves it floating — the first attempt was thirteen separate bodies
-  — and a member that stops exactly on the face of the one it meets leaves
-  the boolean a tangent and a handful of sliver triangles, so every joint
-  here overlaps by a bar's width.
+  `ACTIVE_EDGE` is the one that is easy to get wrong. It reads like a
+  cosmetic margin — how close a hole may come to the edge of a face — but a
+  row's tunnels run the full depth of the spire, so what it really sets is
+  the **thickness of the slab left standing at the outside of the row**, and
+  the next row up cuts across that slab at right angles. It is held to the
+  same two-perimeter floor as the rest of the web, and checked there.
+
+  **The golden ratio sets the taper, not the holes.** The spire runs 5.50 →
+  2.10 of half-width, which is 1/φ² exactly. An earlier version put φ into
+  the *hole spacing* instead, subdividing the height by the golden section
+  each time — and a golden subdivision crowds everything into the last two
+  millimetres, which is a fact about the ratio rather than about the piece.
+  The lattice is an even honeycomb; the silhouette is golden.
+
+  **Square is safe, and it is checked rather than hoped.** Columns are
+  22.0 mm apart and the tightest row pitch is 19.58, and two axis-aligned
+  squares miss each other when *either* axis clears — so a 17.5 mm square is
+  fine on both. What a square does reach further into is the corner: 12.37 mm
+  from the cell centre against a circle's 8.75, which every radius-based
+  check in the suite is blind to. So `test_fit.py` puts the footprint on all
+  83 cells: 2.08 mm to the nearest neighbour, and 5.40 mm of flat between a
+  corner and the raised lip.
+
+  It stays 17.5 wide, which keeps every piece in the set the same width — the
+  one envelope rule it still owes, since it sits in a cell like anything
+  else. What it lost was the flange, not the footprint. The floor under that
+  is 14.8: a square of side s covers the seat band when s ≥ 2 ×
+  `SEAT_BOTTOM_R`, and below that it stops being able to sit on a crown.
 
 Anything beyond the lathe is **cut where cutting works and added where it
 does not**, and the line between the two turned out to be sharper than it
@@ -524,7 +558,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 123 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 124 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

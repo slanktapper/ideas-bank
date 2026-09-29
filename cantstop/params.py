@@ -605,7 +605,19 @@ CROWN_SPIKE_AT = 6.55     # centre radius of each point
 # it is a pyramid on a pyramid and not a cone on a cone -- crisper, closer to
 # the drawn ones, and a flat facet is the easiest thing a printer ever laid.
 CROWN_SPIKE_SEGS   = 4
-CROWN_SPIKE_SQUASH = (0.62, 1.34)   # (through the wall, along the rim)
+CROWN_SPIKE_SQUASH = (0.62, 1.72)   # (through the wall, along the rim)
+                                    #
+                                    # 1.34 left 1.06 mm of air between one
+                                    # point's foot and the next, which is a
+                                    # gap you can see and a neck you can
+                                    # snap. At 1.72 the feet are 6.97 mm
+                                    # across on a 6.55 mm spacing, so they
+                                    # MEET and weld into one band -- the way
+                                    # drawn crowns have their points rising
+                                    # out of a rim rather than standing on
+                                    # it. The knobs still clear each other
+                                    # by 1.3 mm, so the gaps are up where
+                                    # they read.
 
 # A POINT IS A CONE ON A CONE. It narrows to a waist and then flares back out
 # to a knob, which is the shape a crown point has in half the drawn ones --
@@ -620,7 +632,12 @@ CROWN_SPIKE_SQUASH = (0.62, 1.34)   # (through the wall, along the rim)
 # PEG_BODY_H because the next piece stands on it.
 CROWN_SPIKE_PROFILE = [
     (2.05, 1.75),   # the foot, buried in the cup floor so there is no seam
-    (0.78, 3.95),   # the waist: 1.56 mm across, and the thing you grip
+    (0.78, 3.60),   # the waist: 1.56 mm across, and the thing you grip.
+                    # Dropped 0.35 when the squash went to 1.72: the flare
+                    # above it is multiplied by the squash, and at the old
+                    # height it came out at 44.2 degrees -- inside the 45,
+                    # but not by enough to want to print. The longer rise
+                    # puts it back to 38.
     (1.60, 5.40),   # out to the knob
     (1.55, 6.30),   # the flat top. Squashed, each is a 1.92 x 4.15 mm
                     # diamond and six of them is 24.0 mm2, a
@@ -742,30 +759,103 @@ COG_SLOT_W = 2.60    # 18.7 degrees of gap at the tip against 17.3 of tooth,
 # clears both. What a square DOES reach further into is the corner: 12.37 mm
 # from the cell centre against a circle's 8.75, which is why test_fit.py puts
 # the footprint on all 83 cells and checks the corners stay off the lip.
-ACTIVE_PLATE   = 17.50    # the base: a full-width plate...
-ACTIVE_PLATE_H = 1.60
-ACTIVE_PLATE_R = 1.20     # corner radius, so it is square and not sharp
-ACTIVE_BLOCK   = 11.00    # ...and a block on it holding the socket. 5.50 of
-ACTIVE_BLOCK_H = 6.00     # half-width against a 3.12 bore is 2.38 of wall.
-
-# THE TOWER IS A GOLDEN-RATIO WIREFRAME. Four legs rising from the block's
-# corners, tied by a square frame at every stage, and each stage is the one
-# below divided by phi -- in width AND in height, so every stage is the same
-# shape as the last and the whole thing is one form repeated five times at
-# 61.8% each time.
+# NO FLANGE. The first square version had a full-width 17.5 x 1.6 plate with
+# a block sitting on it, and the plate read as a washer somebody had left
+# under the piece. It is one tapered plinth now, drawing in as it rises.
 #
-# That ratio is also what makes it printable, which is the happy part. The
-# legs lean inward by (1 - 1/phi) of their half-diagonal over ACTIVE_RISE
-# times their half-width, which comes out at 22 degrees from vertical -- half
-# of what the printer would refuse. And the frames span 2a, which shrinks by
-# phi as well: the widest bridge in the tower is the bottom one at 5.7 mm,
-# against the 3.0 mm the socket roof already bridges on this same piece.
-PHI            = 1.6180339887
-ACTIVE_TOWER_A = 4.20     # half-width of the bottom frame
-ACTIVE_TIERS   = 4        # frames, each 1/phi the one below
-ACTIVE_RISE    = 1.60     # a stage rises this many times its own half-width
-ACTIVE_BAR     = 1.20     # square section of every leg and every frame bar
-ACTIVE_FINIAL_H = 1.40    # a little pyramid to finish it
+# It stays 17.5 at the bed, which keeps every piece in the set the same width
+# -- the one envelope rule this piece does still owe, since it has to sit in
+# a cell like anything else. What it lost is the FLANGE, not the footprint.
+#
+# There is a hard floor under this as well, and it is worth knowing where.
+# The seat contract says every bottom is a WHOLE flat annulus out to
+# SEAT_BOTTOM_R, which is what lets a gappy top -- the crown's six blades,
+# the saucer's six pads -- be certain of landing on something at any
+# rotation. A square of side s covers that circle when s >= 2 *
+# SEAT_BOTTOM_R, which is 14.8. So this could come down to 15 if it ever
+# wanted to; below that it stops being able to sit on a crown at all.
+PHI = 1.6180339887
+ACTIVE_BASE    = 17.50    # the plinth at the bed
+ACTIVE_BASE_TOP = 14.20   # ...drawing in only a little, so it reads as a
+                          # base and not as the bottom of the spire
+ACTIVE_SPIRE_BASE = 11.00 # the spire starts narrower than the plinth ends,
+                          # which leaves a 1.25 mm ledge all round: the step
+                          # is what says "tower standing on a base" rather
+                          # than "one long obelisk"
+ACTIVE_BASE_H  = 6.40     # tall enough that the socket roof only has to
+                          # bridge 2.24 mm, less than a marker's 2.44
+ACTIVE_BASE_R  = 1.20     # corner radius, so it is square and not sharp
+
+# THE TOWER IS A LATTICE: a tapering square spire with cells cut right
+# through it, and between them the spire is a web -- the surface this was
+# asked to look like.
+#
+# THE GOLDEN RATIO SETS THE TAPER, NOT THE CELLS. It was in the cell spacing
+# first, subdividing the spire's height by the golden section each time, and
+# that crowds every cell after the second into the last two millimetres --
+# which is a fact about the ratio and not about the piece. The taper carries
+# it instead: 5.50 down to 2.10 of half-width is 1/phi^2 exactly. The cells
+# are an even honeycomb; the silhouette is golden.
+ACTIVE_SPIRE_TOP = 2.10   # half-width at the top of the spire. 5.50 / phi^2
+                          # exactly -- the taper is the golden one, which is
+                          # where that ratio earns its keep on this piece
+                          # rather than in the hole spacing, where it only
+                          # ever crowded everything into the last 2 mm.
+ACTIVE_SPIRE_H   = 13.60  # how far it rises above the plinth
+
+# THE LATTICE. Rows of hexagonal holes cut straight through the spire, every
+# ACTIVE_ROW_DZ up it, alternating axis row by row -- so one row opens the
+# left and right faces, the next the front and back, and every face ends up
+# with holes at every other row. Offset half a pitch as they alternate, which
+# makes the pattern a honeycomb rather than a grid.
+#
+# Each cell is a GABLE: vertical sides up to a shoulder, then two edges at
+# exactly 45 degrees to a ridge, and a flat floor. That is the whole reason
+# this prints. A hole through a wall has a ceiling, and a ceiling is either
+# self-supporting or it is a bridge.
+#
+# It was a regular hexagon with a vertex at the top first, on the belief that
+# a vertex-up hex roofs itself. IT DOES NOT: its top edges run 0.866r across
+# for 0.5r up, which is 60 degrees from vertical -- half again past what the
+# printer will carry, and the tower would have come out with twenty-one
+# sagging ceilings in it. The gable is the shape that actually does the job,
+# and test_fit.py measures the angle rather than taking anyone's word.
+#
+# THE NUMBERS HERE ARE SET BY THE WEB, NOT THE HOLE. The first pass left a
+# 1.60 mm hole on a 2.20 mm pitch: a small window in a fat wall, so the tower
+# read as a solid obelisk with a few slots punched in it. Widening the cell
+# was the obvious fix and it is the wrong one -- the face is only 11 mm
+# across, and what limits a row is where the outermost hole's CENTRE can sit
+# (half the face, less the edge web, less half the hole). At a 2.70 pitch
+# that bought three big holes a row and the tower still read solid.
+#
+# So the cells went the other way: small and many, like the print this is
+# modelled on. The web is pinned at two perimeters (0.85 across, 0.95 up)
+# because that is the floor, and the pitch and the hole follow from it. Five
+# holes on a bottom row instead of three, a dozen rows instead of nine, and
+# about forty cells in the tower against twenty-one.
+ACTIVE_ROW_DZ    = 1.05   # rise between rows
+ACTIVE_EDGE      = 0.85   # web left at the edge of a face
+ACTIVE_HOLE_PITCH = 1.95  # across a row
+ACTIVE_CELL_SHOULDER = 0.30  # where the gable starts, as a fraction of the
+                          # cell's half-width
+ACTIVE_HOLE       = 1.10  # hole size, leaving 0.85 of web between them
+                          # across a row and 1.00 up the face -- a face only
+                          # gets every other row, so the rise between its own
+                          # holes is twice ROW_DZ. Both are two perimeters at
+                          # 0.42 and no infill, which is the thinnest thing
+                          # worth asking the printer for.
+                          #
+                          # ACTIVE_EDGE is held to the same floor and it is
+                          # the one that is easy to get wrong. It reads like
+                          # a cosmetic margin -- how close a hole may come to
+                          # the edge of a face -- but a row's tunnels run the
+                          # full depth of the spire, so what it really sets
+                          # is the thickness of the slab left standing at the
+                          # outside of the row. At 0.40 that slab is one
+                          # extrusion wide, and the next row up cuts across
+                          # it at right angles.
+ACTIVE_FINIAL_H  = 1.60   # a little pyramid to finish it
 
 ACTIVES = 4               # one per player
 

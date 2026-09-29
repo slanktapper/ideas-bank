@@ -613,48 +613,119 @@ def _terminal_profile(body_profile) -> list[tuple[float, float]]:
     return prof
 
 
-def _bar(p0, p1, w: float, over: float = 0.0) -> trimesh.Trimesh:
-    """A square-section bar between two points in space, any lean.
+def _sq_frustum(a0: float, z0: float, a1: float, z1: float) -> trimesh.Trimesh:
+    """A square frustum: half-width a0 at z0 drawing to a1 at z1.
 
-    `over` runs it past both ends. Members that stop exactly ON the face of
-    the member they meet leave the boolean a tangent contact and a handful of
-    sliver triangles floating free of the solid; a millimetre of overlap and
-    the union is one body.
+    A four-sided lathe puts its corners on the axes, so it is turned 45
+    degrees to make the FACES face the axes -- which is what makes the piece
+    sit square on the board and what the footprint checks assume.
     """
-    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
-    d = p1 - p0
-    length = float(np.linalg.norm(d))
-    if over:
-        u = d / length
-        p0, p1 = p0 - u * over, p1 + u * over
-        length += 2.0 * over
-    m = trimesh.creation.box(extents=(w, w, length))
-    m.apply_transform(trimesh.geometry.align_vectors([0.0, 0.0, 1.0],
-                                                     d / length))
-    m.apply_translation((p0 + p1) * 0.5)
+    r0, r1 = a0 * np.sqrt(2.0), a1 * np.sqrt(2.0)
+    m = S.lathe([(r0, z0), (r1, z1), (0.0, z1), (0.0, z0)], segs=4)
+    m.apply_transform(trimesh.transformations.rotation_matrix(
+        np.pi / 4, (0.0, 0.0, 1.0)))
     return m
 
 
-def active_tiers() -> list[tuple[float, float]]:
-    """(half-width, z) of every frame in the tower, bottom to top.
+def _cell_hole(z: float, off: float, across: float, along_x: bool,
+               reach: float = 30.0) -> trimesh.Trimesh:
+    """One lattice cell, cut straight through: a gabled hole, roof at 45.
 
-    Each stage is the one below divided by phi, in width and in height, so
-    the whole tower is one shape repeated at 61.8% a stage.
+    THE ROOF ANGLE IS THE WHOLE POINT. A hole through a wall has a ceiling,
+    and a ceiling is either self-supporting or it is a bridge. The first
+    attempt used a regular hexagon with a vertex at the top, on the belief
+    that a vertex-up hex roofs itself. It does not: its top edges run 0.866r
+    across for 0.5r up, which is 60 degrees from vertical -- half again past
+    what the printer will carry.
+
+    So the cell is a gable instead: vertical sides up to a shoulder, then two
+    edges at exactly 45 degrees to a ridge. The floor is flat, which is an
+    upward-facing surface and free. It reads as a hexagon and it prints as a
+    house.
     """
-    a, z = P.ACTIVE_TOWER_A, P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H
-    out = [(a, z)]
-    for _ in range(P.ACTIVE_TIERS - 1):
-        z += a * P.ACTIVE_RISE
-        a /= P.PHI
-        out.append((a, z))
+    from shapely.geometry import Polygon
+    w = across * 0.5
+    sh = w * P.ACTIVE_CELL_SHOULDER
+    poly = Polygon([(-w, -w), (w, -w), (w, sh), (0.0, sh + w), (-w, sh)])
+    m = trimesh.creation.extrude_polygon(poly, 2.0 * reach)
+    # extruded along +z from 0: lay it on its side, so the section becomes
+    # the hole's profile and the extrusion becomes the bore
+    m.apply_translation((0.0, 0.0, -reach))
+    m.apply_transform(trimesh.transformations.rotation_matrix(
+        np.pi / 2, (0.0, 1.0, 0.0)))
+    m.apply_transform(trimesh.transformations.rotation_matrix(
+        np.pi / 2, (1.0, 0.0, 0.0)))
+    m.apply_translation((0.0, off, 0.0))
+    if not along_x:
+        m.apply_transform(trimesh.transformations.rotation_matrix(
+            np.pi / 2, (0.0, 0.0, 1.0)))
+    m.apply_translation((0.0, 0.0, z))
+    return m
+
+
+def active_cell_roof() -> float:
+    """The lattice roof's slope, dr/dz. 1.0 is 45 degrees, which is the
+    limit -- the gable is built to sit exactly on it."""
+    w = P.ACTIVE_HOLE * 0.5
+    return w / w
+
+
+def active_lattice() -> list[tuple[float, float, bool]]:
+    """(z, y-offset, along x?) for every hole in the spire's lattice.
+
+    Rows climb by ACTIVE_ROW_DZ and alternate axis, so one row opens the left
+    and right faces and the next the front and back -- every face gets holes
+    on every other row. Alternate rows are offset half a pitch, which is what
+    makes it a honeycomb and not a grid. A row carries as many holes as the
+    spire is wide enough for at that height, so the lattice thins out as the
+    tower does without anything having to say so.
+    """
+    z0 = P.ACTIVE_BASE_H
+    h = P.ACTIVE_SPIRE_H
+    a0, a1 = P.ACTIVE_SPIRE_BASE / 2, P.ACTIVE_SPIRE_TOP
+    out = []
+    k = 0
+    z = z0 + P.ACTIVE_ROW_DZ * 0.4
+    while z < z0 + h - P.ACTIVE_ROW_DZ * 0.4:
+        half = a0 + (a1 - a0) * (z - z0) / h
+        # work out the WIDEST offset a hole can sit at and fill in from
+        # there, rather than picking a count and throwing away what does not
+        # fit -- that gave rows of 4, 3, 2, 2, 3, 2 up the same tower
+        far = half - P.ACTIVE_EDGE - P.ACTIVE_HOLE / 2
+        if far > 0:
+            pitch = P.ACTIVE_HOLE_PITCH
+            # BUILD EACH ROW OUT FROM THE MIDDLE, not by centring a span and
+            # then nudging it. Offsetting a centred row by half a pitch walks
+            # its far end past the edge, the filter drops that one hole and
+            # the row comes out lopsided -- three on the left and two on the
+            # right of the same face. An even row puts a hole ON the axis and
+            # pairs off either side of it; an odd row straddles the axis with
+            # a pair at half a pitch. Both are symmetric by construction, and
+            # the two together are the honeycomb.
+            if k % 2 == 0:
+                offs = [0.0]
+                j = 1
+                while j * pitch <= far + 1e-9:
+                    offs += [-j * pitch, j * pitch]
+                    j += 1
+            else:
+                offs = []
+                j = 0
+                while (j + 0.5) * pitch <= far + 1e-9:
+                    offs += [-(j + 0.5) * pitch, (j + 0.5) * pitch]
+                    j += 1
+            for off in sorted(offs):
+                out.append((z, off, k % 2 == 0))
+        k += 1
+        z += P.ACTIVE_ROW_DZ
     return out
 
 
-def active_leg_lean() -> float:
-    """Steepest lean of a tower leg, as dr/dz -- the overhang it leaves."""
-    tiers = active_tiers()
-    return max(abs(a1 - a0) * np.sqrt(2.0) / (z1 - z0)
-               for (a0, z0), (a1, z1) in zip(tiers, tiers[1:]))
+def active_socket_bridge() -> float:
+    """Span of the flat left at the top of this piece's truncated roof."""
+    rs = P.PEG_SOCKET_D * 0.5
+    z_roof = min(P.PEG_SOCKET_DEPTH + rs, P.ACTIVE_BASE_H - P.PEG_SOCKET_ROOF)
+    return 2.0 * max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
 
 
 def _socket_void(segs: int | None = None) -> trimesh.Trimesh:
@@ -665,64 +736,36 @@ def _socket_void(segs: int | None = None) -> trimesh.Trimesh:
     """
     rs = P.PEG_SOCKET_D * 0.5
     sc = P.PEG_SOCKET_CHAMFER
-    top = P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H
-    z_roof = min(P.PEG_SOCKET_DEPTH + rs, top - P.PEG_SOCKET_ROOF)
+    z_roof = min(P.PEG_SOCKET_DEPTH + rs, P.ACTIVE_BASE_H - P.PEG_SOCKET_ROOF)
     r_flat = max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
     prof = [(0.0, -0.5), (rs + sc, -0.5), (rs + sc, 0.0), (rs, sc),
             (rs, P.PEG_SOCKET_DEPTH)]
     if r_flat > 1e-9:
         prof.append((r_flat, z_roof))
-    prof += [(0.0, z_roof)]
+    prof.append((0.0, z_roof))
     return S.lathe(prof, segs=segs or P.PEG_SEGS)
 
 
-def active_socket_bridge() -> float:
-    """Span of the flat left at the top of this piece's truncated roof."""
-    rs = P.PEG_SOCKET_D * 0.5
-    top = P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H
-    z_roof = min(P.PEG_SOCKET_DEPTH + rs, top - P.PEG_SOCKET_ROOF)
-    return 2.0 * max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
-
-
 def build_active(segs: int | None = None) -> trimesh.Trimesh:
-    """Piece 6: the active player's marker. Square, open, and it takes no
+    """Piece 6: the active player's marker. Square, latticed, and it takes no
     stack -- a socket below and nothing on top.
 
-    A plate, a block with the socket in it, and a wireframe tower: four legs
-    leaning in from the block's corners, tied by a square frame at every
-    stage, each stage 1/phi of the one below in width and in height.
+    A tapered plinth with the socket in it, a tapering square spire above,
+    and hexagonal holes cut right through the spire in bands that climb and
+    shrink by phi.
     """
     segs = segs or P.PEG_SEGS
-    w, b = P.ACTIVE_BAR, P.ACTIVE_BAR
-    parts = [
-        S.rounded_plate(0.0, 0.0, P.ACTIVE_PLATE, P.ACTIVE_PLATE,
-                        P.ACTIVE_PLATE_H, P.ACTIVE_PLATE_R),
-        S.rounded_plate(0.0, 0.0, P.ACTIVE_BLOCK, P.ACTIVE_BLOCK,
-                        P.ACTIVE_BLOCK_H, P.ACTIVE_PLATE_R,
-                        z0=P.ACTIVE_PLATE_H),
-    ]
-    corners = [(1, 1), (1, -1), (-1, -1), (-1, 1)]
-    tiers = active_tiers()
-    # frames centred ON the tier height, legs run a bar's width past both
-    # ends, so every joint is an overlap and never a tangent
-    for a, z in tiers:
-        for k in range(4):
-            sx, sy = corners[k]
-            tx, ty = corners[(k + 1) % 4]
-            parts.append(_bar((sx * a, sy * a, z), (tx * a, ty * a, z), w))
-    for (a0, z0), (a1, z1) in zip(tiers, tiers[1:]):
-        for sx, sy in corners:
-            parts.append(_bar((sx * a0, sy * a0, z0),
-                              (sx * a1, sy * a1, z1), w, over=b))
-    # the finial: a little pyramid capping the top frame
-    a_top, z_top = tiers[-1]
-    z_cap = z_top + b / 2
-    parts.append(S.lathe([(a_top + b / 2, z_cap - b / 2),
-                          (0.0, z_cap + P.ACTIVE_FINIAL_H),
-                          (0.0, z_cap - b / 2)], segs=4))
-    solid = S.union_all(parts)
-    return trimesh.boolean.difference([solid, _socket_void(segs)],
-                                      engine="manifold")
+    z1 = P.ACTIVE_BASE_H
+    z2 = z1 + P.ACTIVE_SPIRE_H
+    solid = S.union_all([
+        _sq_frustum(P.ACTIVE_BASE / 2, 0.0, P.ACTIVE_BASE_TOP / 2, z1),
+        _sq_frustum(P.ACTIVE_SPIRE_BASE / 2, z1, P.ACTIVE_SPIRE_TOP, z2),
+        _sq_frustum(P.ACTIVE_SPIRE_TOP, z2, 0.20, z2 + P.ACTIVE_FINIAL_H),
+    ])
+    cuts = [_socket_void(segs)]
+    cuts += [_cell_hole(z, off, P.ACTIVE_HOLE, along_x)
+             for z, off, along_x in active_lattice()]
+    return trimesh.boolean.difference([solid] + cuts, engine="manifold")
 
 
 def socket_bridge() -> float:
@@ -896,10 +939,10 @@ def piece_profile_of(style: str):
         # tower. What the wall and overhang checks want from a "profile" is
         # the INSCRIBED half-width at each height, and for a square that is
         # exactly what half the side is.
-        return [(P.ACTIVE_PLATE / 2, 0.00),
-                (P.ACTIVE_PLATE / 2, P.ACTIVE_PLATE_H),
-                (P.ACTIVE_BLOCK / 2, P.ACTIVE_PLATE_H),
-                (P.ACTIVE_BLOCK / 2, P.ACTIVE_PLATE_H + P.ACTIVE_BLOCK_H)]
+        return [(P.ACTIVE_BASE / 2, 0.00),
+                (P.ACTIVE_BASE_TOP / 2, P.ACTIVE_BASE_H),
+                (P.ACTIVE_SPIRE_BASE / 2, P.ACTIVE_BASE_H),
+                (P.ACTIVE_SPIRE_TOP, P.ACTIVE_BASE_H + P.ACTIVE_SPIRE_H)]
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
             "cog": P.COG_BODY_PROFILE,
             "runner": P.RUNNER_BODY_PROFILE}[style]
