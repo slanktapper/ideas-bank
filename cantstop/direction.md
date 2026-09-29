@@ -194,15 +194,21 @@ nothing about either.
   Square merlons round an open trough read as a castle turret. Cones cut into
   a thick rim read as dimples drilled in a bowl — **a cut can put holes in a
   wall but it cannot turn the wall into six separate things standing up**. So
-  the points are added, like the saucer's legs and for the same reason:
-  frusta 4.10 mm across at the foot and 2.20 at the top, narrowing the whole
-  way, which is the printable direction and the crown-shaped one at once.
+  the points are added, like the saucer's legs and for the same reason.
 
-  They still have flat tops dead level at 6.30, because the next piece stands
-  on them and on nothing else. 2.20 mm is as slim as they go: six pads of it
-  is 22.8 mm², which is 18.1% of the seat band against the 18% the contract
-  asks for. The shape wants them slimmer and the contract will not have it —
-  the right way round for that argument to be settled.
+  **Each point is a cone on a cone**: it narrows to a 1.56 mm waist and flares
+  back out to a knob. That is the shape half the drawn crowns have, and more
+  usefully it is the only thing on this piece a finger can get hold of — a
+  plain taper gives you nothing to pinch, it just slides. A waist with a knob
+  over it lets a nail get under the knob, and six of them round the rim means
+  one is always where your fingers are.
+
+  The flare is 23° from vertical, well inside the 45 the printer will carry,
+  and the knobs have flat tops dead level at 6.30 because the next piece
+  stands on them and on nothing else. Six 2.70 mm pads is 34.4 mm², a quarter
+  of the seat band against the 18% the contract asks for — so the knob pays
+  for the grip twice over. The plain tapered points it replaced measured
+  18.1%, a tenth of a percent clear of failing.
 - **3 saucer** — a flying one. A whole disc base on the ground, four square
   landing tubes standing on it with daylight between them, a hull sweeping
   out to a thin brim at the full radius, a domed top, and six rectangular

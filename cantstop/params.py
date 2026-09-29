@@ -578,23 +578,28 @@ CROWN_BODY_PROFILE = [
     (3.40, 6.30),   # in the middle is barely wider than the post itself
 ]
 CROWN_POINTS   = 6
-CROWN_SPIKE_AT = 6.30     # centre radius of each spike
-CROWN_SPIKE_R0 = 2.05     # 4.10 mm across at the foot, welded into the cup
-CROWN_SPIKE_R1 = 1.15     # 2.30 mm across at the top. This is as slim as the
-                          # points can be: six pads of it is 19.0% of the
-                          # seat band against the 18% SEAT_MIN_FRAC asks for.
-                          # The shape wants them slimmer and the contract
-                          # will not have it, which is the right way round
-                          # for that argument to be settled.
-                          #
-                          # 1.10 was tried and measured 17.9%, not the 18.1%
-                          # the arithmetic promised: the pad is a 64-sided
-                          # polygon INSCRIBED in this radius, so it is a fifth
-                          # of a percent smaller than the circle it is named
-                          # after. Worth knowing before setting any of these
-                          # numbers exactly on a limit.
-CROWN_SPIKE_Z0 = 1.75     # starts just below the floor so there is no seam
-                          # at the weld
+CROWN_SPIKE_AT = 6.30     # centre radius of each point
+
+# A POINT IS A CONE ON A CONE. It narrows to a waist and then flares back out
+# to a knob, which is the shape a crown point has in half the drawn ones --
+# and, more to the point here, it is something to PICK UP BY. A plain taper
+# gives a finger nothing: pinch it and it slides. A waist with a knob over it
+# lets a nail get under the knob, and six of them round the rim means one is
+# always where your fingers are.
+#
+# (r, z) up the outside of one point; the lathe closes it across the top and
+# the bottom. The flare out of the waist is 20 degrees from vertical, well
+# inside the 45 the printer will carry, and the knob's top is FLAT at
+# PEG_BODY_H because the next piece stands on it.
+CROWN_SPIKE_PROFILE = [
+    (2.05, 1.75),   # the foot, buried in the cup floor so there is no seam
+    (0.78, 3.95),   # the waist: 1.56 mm across, and the thing you grip
+    (1.40, 5.40),   # out to the knob at 23 degrees
+    (1.35, 6.30),   # 2.70 mm of flat top. Six of those is 34.4 mm2, a
+                    # quarter of the seat band, against the 18% asked for --
+                    # so the knob pays for the grip twice over and the
+                    # points could in principle go slimmer again.
+]
 
 # saucer -- a flying one. A landing pad on the ground, four struts holding the
 # hull up off it, a hull whose underside sweeps out to a thin brim at the full

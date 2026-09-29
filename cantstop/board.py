@@ -648,16 +648,17 @@ def _crown_points(segs: int | None = None) -> list[trimesh.Trimesh]:
     Frusta, not cut cones. Three earlier crowns were made by cutting into a
     solid rim, and a cut cannot turn a wall into six separate things standing
     up -- it can only put holes in it. Added, each point is a thing in its own
-    right: 4.00 mm across at the foot, 2.30 at the top, narrowing the whole
-    way, which is the printable direction and the crown-shaped one at once.
+    right: a cone up to a waist, then a cone back out to a knob, which is
+    both the shape half the drawn crowns have and the only thing on this
+    piece a finger can get hold of.
     """
     segs = segs or P.PEG_SEGS
+    prof = list(P.CROWN_SPIKE_PROFILE)
+    z0, z1 = prof[0][1], prof[-1][1]
+    closed = prof + [(0.0, z1), (0.0, z0)]
     out = []
     for a in np.linspace(0, 2 * np.pi, P.CROWN_POINTS, endpoint=False):
-        m = S.lathe([(P.CROWN_SPIKE_R0, P.CROWN_SPIKE_Z0),
-                     (P.CROWN_SPIKE_R1, P.PEG_BODY_H),
-                     (0.0, P.PEG_BODY_H),
-                     (0.0, P.CROWN_SPIKE_Z0)], segs=segs)
+        m = S.lathe(closed, segs=segs)
         m.apply_translation((P.CROWN_SPIKE_AT * np.cos(a),
                              P.CROWN_SPIKE_AT * np.sin(a), 0.0))
         out.append(m)
