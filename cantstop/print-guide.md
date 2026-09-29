@@ -168,7 +168,7 @@ piece seats on the plate where the number is, and a raised digit is what it
 would rest on. Printed single-colour from `board.stl` the pockets are left
 empty and the numbers read as engraved.
 
-A full set is roughly **218 g**: ~158 g board, body and numerals together
+A full set is roughly **219 g**: ~158 g board, body and numerals together
 (6 mm slab at 10% infill),
 ~58 g of markers (11 each of four shapes), ~5 g of runners (3). A marker is 17.5 mm across and
 8.45 mm tall and so is a runner — every piece on this board is the same size

@@ -653,29 +653,37 @@ SAUCER_PAD_W      = 3.00
 SAUCER_PAD_Z      = 5.00     # rises from inside the dome to a flat top dead
                              # level at PEG_BODY_H
 
-# cog -- a barrel with vertical flutes cut round it, all the way down
+# cog -- a gear: a straight cylinder with square slots milled out of its rim.
+#
+# It was a barrel with ten ROUND flutes cut into it, and round flutes leave
+# teeth with hollow flanks, which reads as a fluted column and not as a gear.
+# It also flared at both ends -- the body went 8.75, in to 8.27, back out to
+# 8.63 -- so every tooth had a lip top and bottom and none of them stood
+# straight.
+#
+# Both are gone. The body is one straight cylinder, top to bottom, no taper
+# and no flare anywhere, and the gaps are cut with straight radial BARS
+# rather than cylinders. A bar leaves what a milling cutter leaves: flat
+# flanks, a flat root, an arc tip, and square ends at the top and the bottom.
+# Ten of them and the thing is a spur gear.
+#
+# Cutting the gaps rather than adding the teeth is right here, where it was
+# wrong for the crown and the saucer: a gear tooth is not a thing standing on
+# a surface, it is what is LEFT of the rim once the gaps are taken out, and
+# cutting it that way keeps the tips on the piece's own 8.75 circle instead
+# of poking past it at the corners.
 COG_BODY_PROFILE = [
     (8.75, 0.00),
-    (8.75, 1.20),
-    (8.27, 1.90),
-    (8.27, 5.40),
-    (8.63, 6.00),
-    (8.63, 6.30),
+    (8.75, 6.30),
 ]
-COG_FLUTES = 10
-COG_CUT_R  = 1.87
-COG_CUT_AT = 9.23         # cuts in to r7.36
-COG_CUT_Z  = -0.50        # BELOW the bed, so the flutes run right off the
-                          # bottom rather than stopping on a lip. The skirt
-                          # used to stay a whole ring and the flutes began
-                          # 1.40 up it, which left a collar round the base
-                          # that made the piece look like it was standing in
-                          # a saucer. The bottom face is a fluted annulus now
-                          # and still 85% solid, so the seat contract is met
-                          # with room to spare -- the flute is vertical, so
-                          # what it takes at the top it takes at the bottom
-                          # and the first layer is the same shape as the
-                          # last.
+COG_TEETH  = 10
+COG_ROOT_R = 7.45    # how deep the slots go: 1.30 mm of tooth, which is a
+                     # sixth of the radius and chunkier than a real gear of
+                     # this tooth count. It cannot go deeper -- the root has
+                     # to stay outside SEAT_BOTTOM_R or the bottom face stops
+                     # being the whole annulus the seat contract promises.
+COG_SLOT_W = 2.60    # 18.7 degrees of gap at the tip against 17.3 of tooth,
+                     # so the two read as the same size
 
 # The runner (the shared neutral marker you advance during a turn, before you
 # decide to bank) uses the identical pin/socket interface so it still stacks,

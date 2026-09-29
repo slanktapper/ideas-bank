@@ -596,67 +596,13 @@ def socket_bridge() -> float:
     return 2.0 * max(rs - (z_roof - P.PEG_SOCKET_DEPTH), 0.0)
 
 
-def _scallops(n: int, at_r: float, r: float, z0: float, z1: float,
-              segs: int | None = None) -> list[trimesh.Trimesh]:
-    """n vertical cylinders spaced round the axis, to be cut away.
-
-    A scallop is the one decoration that costs nothing to print: the cut face
-    is vertical however deep it goes, so there is no overhang to support and
-    no bridge to span.
-    """
-    return [S.tube(at_r * np.cos(a), at_r * np.sin(a), r, 0.0, z0, z1,
-                   segs=segs or P.PEG_SEGS)
-            for a in np.linspace(0, 2 * np.pi, n, endpoint=False)]
-
-
-def _v_notches(n: int, at_r: float, z_apex: float, z_top: float,
-               slope: float = 1.0,
-               segs: int | None = None) -> list[trimesh.Trimesh]:
-    """n cones, apex down, opening upward at atan(slope) from vertical.
-
-    Cut away, they leave a valley that is narrow at the bottom and wide at
-    the top -- so the points between them TAPER, which is the difference
-    between a crown and a castle. The piece narrows the whole way up as a
-    result, which is also exactly the condition for printing without support.
-
-    `slope` is dr/dz and must stay at or under 1.0, which is 45 degrees: past
-    that the wall the notch leaves behind leans out further than the printer
-    can lay it. Under it the notch is narrower and the points are fatter, and
-    that is the only dial between "reads as a crown" and "carries the next
-    piece" -- both of which it has to do.
-    """
-    out = []
-    for a in np.linspace(0, 2 * np.pi, n, endpoint=False):
-        m = S.lathe([(0.0, z_apex),
-                     (slope * (z_top - z_apex), z_top),
-                     (0.0, z_top)], segs=segs or P.PEG_SEGS)
-        m.apply_translation((at_r * np.cos(a), at_r * np.sin(a), 0.0))
-        out.append(m)
-    return out
-
-
-def _roofed_cuts(n: int, at_r: float, r: float, z_lo: float, z_hi: float,
-                 segs: int | None = None) -> list[trimesh.Trimesh]:
-    """n cylinders capped with a cone, for cutting a gap that has a CEILING.
-
-    A plain scallop is open at the top, so what it leaves behind is a vertical
-    wall and nothing has to span anything. Cutting a window -- material below
-    it, material above it, air between -- is a different problem: the ceiling
-    of that window is a downward-facing surface the printer has to produce out
-    of mid-air.
-
-    So the cut is not a cylinder but a cylinder with a 45 degree cone on top
-    of it. The ceiling it leaves is that cone, inverted: the material closes
-    back in at 45 degrees instead of bridging flat across the gap. It is the
-    same trick as the socket roof, pointed sideways.
-    """
-    out = []
-    for a in np.linspace(0, 2 * np.pi, n, endpoint=False):
-        m = S.lathe([(0.0, z_lo), (r, z_lo), (r, z_hi), (0.0, z_hi + r)],
-                    segs=segs or P.PEG_SEGS)
-        m.apply_translation((at_r * np.cos(a), at_r * np.sin(a), 0.0))
-        out.append(m)
-    return out
+# There were three cutting helpers here -- vertical cylinders for scallops,
+# 45-degree cones for V notches, cone-topped cylinders for windows with a
+# ceiling. Every one of them has been tried on one of these pieces and every
+# one lost to adding the feature instead: the crown's points and the saucer's
+# legs and pads are solids that stand up, and a cut can only take away. The
+# cog is the one shape a cut still makes, and it uses a straight bar rather
+# than any of the three. See _cog_slots.
 
 
 def _arc(r0: float, z0: float, r1: float, z1: float, bulge: float,
@@ -676,6 +622,24 @@ def _arc(r0: float, z0: float, r1: float, z1: float, bulge: float,
     s = u + bulge * u * (1.0 - u)
     return [(float(r0 + (r1 - r0) * t), float(z0 + (z1 - z0) * v))
             for t, v in zip(u, s)]
+
+
+def _cog_slots() -> list[trimesh.Trimesh]:
+    """The gaps between a gear's teeth: straight radial bars, full height.
+
+    A bar and not a cylinder. A cylinder leaves teeth with hollow flanks,
+    which is a fluted column; a bar leaves what a cutter leaves -- flat
+    flanks, a flat root and an arc tip. Run from below the bed to above the
+    post, so the tooth has square ends and the same section at every height.
+    """
+    out = []
+    for a in np.linspace(0, 2 * np.pi, P.COG_TEETH, endpoint=False):
+        c, s = np.cos(a), np.sin(a)
+        out.append(S.strut((P.COG_ROOT_R * c, P.COG_ROOT_R * s),
+                           ((P.PEG_MAX_R + 4.0) * c, (P.PEG_MAX_R + 4.0) * s),
+                           P.COG_SLOT_W,
+                           P.PEG_BODY_H + P.PEG_POST_H + 2.0, -1.0))
+    return out
 
 
 def _crown_points(segs: int | None = None) -> list[trimesh.Trimesh]:
@@ -770,9 +734,8 @@ def build_player_piece(style: str, segs: int | None = None) -> trimesh.Trimesh:
     if style == "cog":
         body = S.lathe(_piece_profile(P.COG_BODY_PROFILE, P.PEG_BODY_H),
                        segs=segs)
-        cut = _scallops(P.COG_FLUTES, P.COG_CUT_AT, P.COG_CUT_R,
-                        P.COG_CUT_Z, top + 1.0, segs)
-        return trimesh.boolean.difference([body] + cut, engine="manifold")
+        return trimesh.boolean.difference([body] + _cog_slots(),
+                                          engine="manifold")
     raise ValueError(style)
 
 

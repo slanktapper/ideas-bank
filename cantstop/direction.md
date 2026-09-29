@@ -218,9 +218,21 @@ nothing about either.
   high enough for the legs to read as legs costs the dome its height: what is
   there is 1.45 mm of it. Everything on this piece is a trade against the
   same 6.30 mm.
-- **4 cog** — ten vertical flutes, and they run **right off the bottom**
-  now. They used to start 1.40 up the skirt, which left a collar round the
-  base that made the piece look like it was standing in a saucer.
+- **4 cog** — a spur gear: one straight cylinder, no taper and no flare
+  anywhere, with ten square slots milled out of the rim. It was a barrel with
+  ten *round* flutes cut into it, and a round flute leaves teeth with hollow
+  flanks, which reads as a fluted column and not as a gear; the body also
+  flared at both ends, so every tooth had a lip top and bottom and none of
+  them stood straight. A straight radial **bar** leaves what a cutter leaves:
+  flat flanks, a flat root, an arc tip, square ends.
+
+  Cutting is right here where it was wrong for the crown and the saucer. A
+  gear tooth is not a thing standing on a surface — it is what is *left* of
+  the rim once the gaps are taken out, and cutting it that way keeps the tips
+  on the piece's own 8.75 circle instead of poking past it at the corners.
+  The teeth are 1.30 mm deep and cannot be deeper: the root has to stay
+  outside `SEAT_BOTTOM_R` or the bottom stops being the whole annulus the
+  seat contract promises.
 - **5 runner** — three square-edged tiers and two deep grooves, all turned,
   with the flares at 44 degrees so they carry themselves.
 
@@ -443,7 +455,7 @@ the split posts and the white cap on the lip all read as intended. The board
 itself has not been printed. It is
 285.0 × 285.0 × 9.2 mm, which fits the H2D's **dual-nozzle** envelope of
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
-**218 g** — 158 g of board at 10% infill plus 60 g of solid pieces.
+**219 g** — 158 g of board at 10% infill plus 61 g of solid pieces.
 
 `test_fit.py` passes 115 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
