@@ -229,7 +229,7 @@ from post to skirt becomes a flat overhang ring and genuinely needs support.
 **Piece 6 is the exception on this board, and it needs its own profile.**
 Everything else here is designed so a default profile cannot get it wrong.
 This one is a hollow square tube with an irregular web cut through all four
-walls — 92 cells, ribs one extrusion wide — and it wants three changes:
+walls — 92 cells, ribs one extrusion wide, under an octagonal cap — and it wants three changes:
 
 | Setting | Piece 6 | Everything else |
 | --- | --- | --- |
@@ -252,8 +252,8 @@ four loops on a 0.45 mm rib makes the slicer thin-wall the whole tower.
 **Supports off, and ignore the warning.** Some slicers flag a hole in a wall
 on principle. Supports inside those cells would be unremovable.
 
-**Do not let it fill the hollow.** The shaft is deliberately empty from z7.9
-to z27.2, and that cavity is what you see through. If the slicer shows solid
+**Do not let it fill the hollow.** The shaft is deliberately empty from z4.6
+to z24.0, and that cavity is what you see through. If the slicer shows solid
 infill in there, the model has been repaired by something on the way in.
 
 **Two bridges, both fine.** The widest cell ceiling is 2.66 mm, and the top
@@ -354,7 +354,7 @@ the board will be.
 ## 7. If you change anything
 
 ```bash
-python3 test_fit.py    # 132 checks, ~2 min
+python3 test_fit.py    # 135 checks, ~2 min
 python3 build.py       # regenerate STLs and renders, ~50 s
 ```
 

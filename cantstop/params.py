@@ -835,7 +835,11 @@ ACTIVE_SHAFT   = 9.00     # the shaft, parallel all the way up. 51% of the
                           # at 9.00 the wall beside it is 1.38 mm and at 8.00
                           # it would be 0.88 -- one hair over two perimeters,
                           # on the one part of this piece that takes a load.
-ACTIVE_TOP_Z   = 28.40    # the flat top. No cap, no finial, no point.
+ACTIVE_TOP_Z   = 24.95    # where the SHAFT stops. The octagon cap sits on
+                          # top of it and the piece finishes at 28.40, which
+                          # is where it finished before the cap existed --
+                          # the height the cap costs was taken back off the
+                          # shaft rather than added to the piece.
                           #
                           # THE HEIGHT IS AN OUTPUT, NOT A CHOICE. Two webs
                           # and a rib between them need 17.15 mm of hollow
@@ -913,9 +917,36 @@ ACTIVE_WEB_SEED = 20260929
                           # arbitrary: this is fixed so the same STL comes
                           # out of the same commit, and so a print that went
                           # wrong can be looked at again.
-ACTIVE_TOP_T   = 1.20     # the top plate. It bridges the hollow -- see
-                          # direction.md; this is the one bridge left in the
-                          # piece and it is anchored on all four walls.
+ACTIVE_TOP_T   = 1.20     # the plate that closes the hollow. It bridges the
+                          # core -- see direction.md; this is the one bridge
+                          # left in the piece, anchored on all four walls.
+
+# THE CAP IS AN OCTAGON, like the board it is played on. The shaft is square
+# and the cap has to cover it, which is what fixes the size: a square of half
+# width 4.50 has its corners 6.364 out, so an octagon turned to put a VERTEX
+# at 45 degrees needs a circumradius of at least that, or the shaft's corners
+# poke out past it and the top stops being an octagon. Turned the other way,
+# flat side at 45, it would need 6.88 and come out a 13.8 mm cap.
+ACTIVE_CAP_R   = 6.60     # 13.20 across the vertices: clears the shaft's
+                          # corners by 0.24 mm and overhangs its flats by
+                          # 2.10. At 6.40 it cleared them by 0.036, which
+                          # passes and is no place for a number to sit -- the
+                          # cap's vertices would have been tangent to the
+                          # shaft's corners, and any later nudge to
+                          # ACTIVE_SHAFT would have put them inside it.
+ACTIVE_CAP_RISE = 2.25    # how far the cap flares out over. The flare is the
+                          # CONVEX HULL of the shaft's square top and the
+                          # cap's octagon, which is the one construction that
+                          # gets this right: both outlines are convex, so
+                          # their hull is exactly the solid between them. Its
+                          # steepest face runs from the middle of a square
+                          # edge to the octagon vertex above it -- 2.10 out
+                          # over 2.25 up, which is 43.0 degrees, and every
+                          # other direction is shallower. At a rise of 2.10
+                          # that face would be 45.0 exactly: passing, and
+                          # sitting on the limit, which is never where a
+                          # number belongs.
+ACTIVE_CAP_T   = 1.20     # the flat octagonal top itself
 
 ACTIVES = 4               # one per player
 

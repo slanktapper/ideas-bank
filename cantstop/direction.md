@@ -389,16 +389,44 @@ nothing about either.
   not web, and it is what ties the web into those corner posts. It is two
   perimeters where the ribs inside it are one.
 
-  **Two bridges, both deliberate, and the piece used to have a third.** An
-  irregular web has cells that come to a peak and cells with a flat top; the
-  flat ones are bridges, and the widest measures 2.66 mm. The **top plate**
-  is the other: it spans the 6.60 mm core, anchored on all four walls, and it
-  is the trade for having the web run to the top. The 45° pyramid that used
-  to roof the core bridged nothing and cost a solid band a third of the
-  shaft's height. The third bridge was at the socket roof — 2.24 mm — and
-  that one is simply **gone**, because the shaft stands over the socket
-  rather than stopping beside it, so the roof cone has all the height it
-  needs.
+  **The web runs the whole shaft, and getting it there cost the socket's
+  roof.** The hollow used to wait for the socket's roof cone to close at
+  z6.72, which left four millimetres of bare shaft under the web — the blank
+  band this design kept being judged on. It does not have to wait: the core
+  is a 3.30 half-width box and the cone at the foot's own top is only r2.12,
+  so there is 1.18 mm of floor between them. The core simply swallows the
+  roof, and the bore opens into the hollow instead of being capped.
+
+  Nothing is lost by that. A piece seats on the **top face of the one below
+  it**, never on the inside of its own socket, and an open bore has no
+  ceiling to bridge — so the piece went from three bridges to two by
+  extending the web, which is not the usual direction of travel.
+
+  **The cap is an octagon, like the board.** The shaft is square and the cap
+  has to cover it, which is what fixes the size: a square of half-width 4.50
+  has its corners 6.364 out, so an octagon turned to put a **vertex** at 45°
+  needs a circumradius of at least that, or the shaft's corners poke out past
+  it and the top stops being an octagon. Turned the other way — flat side at
+  45° — it would need 6.88 and come out a 13.8 mm cap. It is 6.60, clearing
+  the corners by 0.24 mm; at 6.40 it cleared them by 0.036, which passes and
+  is no place for a number to sit.
+
+  The flare under it is the **convex hull** of the shaft's square top and the
+  cap's octagon, which is the one construction that gets this right: both
+  outlines are convex, so their hull is exactly the solid between them. Its
+  steepest face runs from the middle of a square edge to the octagon vertex
+  above it — 2.10 out over 2.25 up, 43.0° — and every other direction is
+  shallower.
+
+  The height the cap costs was taken back off the shaft rather than added to
+  the piece, so it still finishes at 28.40.
+
+  **Two bridges, both deliberate.** An irregular web has cells that come to a
+  peak and cells with a flat top; the flat ones are bridges, and the widest
+  measures 2.66 mm. The **top plate** is the other: it spans the 6.60 mm
+  core, anchored on all four walls, and it is the trade for having the web
+  run to the top. The 45° pyramid that used to roof the core bridged nothing
+  and cost a solid band a third of the shaft's height.
 
   **Square is safe, and it is checked rather than hoped.** Columns are
   22.0 mm apart and the tightest row pitch is 19.58, and two axis-aligned
@@ -636,7 +664,7 @@ itself has not been printed. It is
 300 × 320 mm with 15 mm spare in X and 35 mm in Y. A full set is about
 **223 g** — 158 g of board at 10% infill plus 65 g of solid pieces.
 
-`test_fit.py` passes 132 checks. The ones that earn their keep are the ones that
+`test_fit.py` passes 135 checks. The ones that earn their keep are the ones that
 touch the fused mesh rather than the parameters: a probe of every cell's
 seating annulus, a check that every square millimetre the post covers comes
 back in the number's colour, and — for the slab — that the lip is the same

@@ -684,14 +684,42 @@ def main():
           f"{core:.2f} mm across a {P.ACTIVE_TOP_T:.2f} mm plate -- the one "
           f"bridge left in the piece, and it is closed on every side")
 
-    # AND THE WEB MUST CLEAR THE SOCKET. The core cannot start until the
-    # socket's roof has closed or the two run into each other and the piece
-    # has a hole through the middle of its own foot.
-    rs = P.PEG_SOCKET_D * 0.5
-    check("the hollow starts above the socket's roof, not through it",
-          B.active_web_floor() >= P.PEG_SOCKET_DEPTH + rs + 2 * LINE - 1e-9,
-          f"core floor at z{B.active_web_floor():.2f}, socket roof closes at "
-          f"z{P.PEG_SOCKET_DEPTH + rs:.2f}")
+    # THE WEB RUNS THE WHOLE SHAFT, which it only can because the hollow
+    # starts at the FOOT. It used to wait for the socket's roof cone to close
+    # at z6.72, and that left four millimetres of bare shaft under the web --
+    # the blank band this design kept being judged on. The core swallows the
+    # roof instead, so the bore opens into the hollow, and what has to be
+    # checked is the floor the core leaves round it.
+    check("the hollow starts at the foot, so the web runs the whole shaft",
+          abs(B.active_web_floor() - P.ACTIVE_FOOT_H) < 1e-9,
+          f"core floor at z{B.active_web_floor():.2f}, the same height the "
+          f"shaft starts, against a socket roof that closes at "
+          f"z{P.PEG_SOCKET_DEPTH + P.PEG_SOCKET_D/2:.2f}")
+    check("the core leaves a floor round the socket, not a knife edge",
+          B.active_core_floor_ledge() >= 2 * LINE - 0.05,
+          f"{B.active_core_floor_ledge():.2f} mm of floor between the "
+          f"socket's cone and the core's wall, at the tightest")
+
+    # THE CAP. It flares OUTWARD as it rises, which is the one part of this
+    # piece the ordinary overhang loop has business with -- and it is in the
+    # profile, so that loop does see it. This measures the same thing from
+    # the parameters, because the profile is an inscribed half-width and the
+    # cap's steepest face is not on an axis.
+    check("the octagon cap carries itself",
+          B.active_cap_overhang() <= 0.97,
+          f"{np.degrees(np.arctan(B.active_cap_overhang())):.1f} degrees from "
+          f"vertical on the steepest face of the flare -- square edge to the "
+          f"octagon vertex above it, {P.ACTIVE_CAP_R - P.ACTIVE_SHAFT/2:.2f} "
+          f"out over {P.ACTIVE_CAP_RISE:.2f} up")
+    # AND IT HAS TO COVER THE SHAFT, or the top is not an octagon: a square
+    # of half width a has its corners a*sqrt(2) out, and an octagon only
+    # reaches that far along the diagonal at a VERTEX.
+    corner = P.ACTIVE_SHAFT / 2 * np.sqrt(2.0)
+    check("the cap covers the square shaft's corners, so the top is an octagon",
+          P.ACTIVE_CAP_R >= corner,
+          f"a {P.ACTIVE_CAP_R:.2f} circumradius against corners {corner:.3f} "
+          f"out -- {P.ACTIVE_CAP_R - corner:.3f} mm to spare, with a vertex "
+          f"turned to 45 degrees to get it")
 
     check("nothing overhangs more than 45 degrees, so nothing needs support",
           worst_over <= 1.0 + 1e-9,

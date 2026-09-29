@@ -782,11 +782,64 @@ def active_webs() -> list[tuple[float, bool]]:
 def active_web_floor() -> float:
     """Where the hollow core starts, and so where the web starts.
 
-    The core cannot begin until the socket's roof has closed, or the two run
-    into each other and the piece has a hole through the middle of its foot.
+    THE FOOT, not the top of the socket's roof. It used to wait for the roof
+    cone to close at z6.72, which left four millimetres of bare shaft under
+    the web -- the blank band the whole design was being judged on. It does
+    not have to wait: the core is a 3.30 half-width box and the cone at the
+    foot's own top is only r2.12, so there is 1.18 mm of floor between them.
+
+    What it costs is the socket's roof, which the core simply swallows: the
+    bore now opens into the hollow instead of being capped. Nothing is lost
+    by that. A piece seats on the top face of the one below it, never on the
+    inside of its own socket, and an open bore has no ceiling to bridge.
     """
+    return P.ACTIVE_FOOT_H
+
+
+def active_core_floor_ledge() -> float:
+    """The narrowest part of the floor the core leaves round the socket."""
     rs = P.PEG_SOCKET_D * 0.5
-    return P.PEG_SOCKET_DEPTH + rs + P.ACTIVE_WALL
+    cone = rs - (P.ACTIVE_FOOT_H - P.PEG_SOCKET_DEPTH)
+    return (P.ACTIVE_SHAFT - 2.0 * P.ACTIVE_WALL) * 0.5 - max(cone, 0.0)
+
+
+def _cap_octagon(r: float) -> np.ndarray:
+    """The cap's plan: an octagon with a VERTEX at 45 degrees.
+
+    That orientation is not decoration. The shaft is square, and a square of
+    half width a has its corners a*sqrt(2) out; an octagon only covers them
+    if it reaches that far along the diagonal, which it does at a vertex and
+    not at a flat. Turned the other way it would have to be 8% bigger.
+    """
+    a = np.arange(8) * np.pi / 4.0
+    return np.column_stack([r * np.cos(a), r * np.sin(a)])
+
+
+def active_cap() -> trimesh.Trimesh:
+    """The octagonal cap: a flare off the shaft's square top, then a plate.
+
+    The flare is the CONVEX HULL of the square and the octagon rather than a
+    lofted frustum, which is the one construction that gets it right -- both
+    outlines are convex, so their hull is exactly the solid between them,
+    and its steepest face is the one running from the middle of a square edge
+    to the octagon vertex above it.
+    """
+    a = P.ACTIVE_SHAFT * 0.5
+    z0 = P.ACTIVE_TOP_Z
+    z1 = z0 + P.ACTIVE_CAP_RISE
+    square = [(-a, -a), (a, -a), (a, a), (-a, a)]
+    oct8 = _cap_octagon(P.ACTIVE_CAP_R)
+    pts = [(x, y, z0) for x, y in square] + [(x, y, z1) for x, y in oct8]
+    flare = trimesh.Trimesh(vertices=np.asarray(pts, dtype=float)).convex_hull
+    from shapely.geometry import Polygon
+    plate = trimesh.creation.extrude_polygon(Polygon(oct8), P.ACTIVE_CAP_T)
+    plate.apply_translation((0.0, 0.0, z1))
+    return S.union_all([flare, plate])
+
+
+def active_cap_overhang() -> float:
+    """dr/dz of the steepest face on the cap's flare. 1.0 would be 45."""
+    return (P.ACTIVE_CAP_R - P.ACTIVE_SHAFT * 0.5) / P.ACTIVE_CAP_RISE
 
 
 def active_core_top() -> float:
@@ -873,6 +926,7 @@ def build_active(segs: int | None = None) -> trimesh.Trimesh:
         _sq_frustum(P.ACTIVE_SHAFT / 2, P.ACTIVE_FOOT_H,
                     P.ACTIVE_SHAFT / 2, P.ACTIVE_TOP_Z),
     ])
+    solid = S.union_all([solid, active_cap()])
     cuts = [_socket_void(segs), active_core_void()]
     for zc, along_x in active_webs():
         cuts += _web_cut(zc, along_x)
@@ -1050,9 +1104,15 @@ def piece_profile_of(style: str):
         # tower. What the wall and overhang checks want from a "profile" is
         # the INSCRIBED half-width at each height, and for a square that is
         # exactly what half the side is.
+        z1 = P.ACTIVE_TOP_Z + P.ACTIVE_CAP_RISE
         return [(P.ACTIVE_BASE / 2, 0.00),
                 (P.ACTIVE_SHAFT / 2, P.ACTIVE_FOOT_H),
-                (P.ACTIVE_SHAFT / 2, P.ACTIVE_TOP_Z)]
+                (P.ACTIVE_SHAFT / 2, P.ACTIVE_TOP_Z),
+                # the cap flares OUTWARD as it rises, which is the only part
+                # of this piece the ordinary overhang loop has any business
+                # with -- so it belongs in the profile and not in a note.
+                (P.ACTIVE_CAP_R, z1),
+                (P.ACTIVE_CAP_R, z1 + P.ACTIVE_CAP_T)]
     return {"counter": P.PEG_BODY_PROFILE, "crown": P.CROWN_BODY_PROFILE,
             "cog": P.COG_BODY_PROFILE,
             "runner": P.RUNNER_BODY_PROFILE}[style]
