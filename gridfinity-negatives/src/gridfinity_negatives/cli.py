@@ -344,16 +344,21 @@ def cmd_layout(a: argparse.Namespace) -> int:
               f"bins (\u2713).  Still to print: {', '.join(todo) or 'none'}")
 
     for nm, caps in seen_cap.items():
-        want = next(i.wanted() for i in items if i.name == nm)
+        item = next(i for i in items if i.name == nm)
         total = sum(caps)
-        if total < want:
-            shortfalls.append(f"{nm}: bins hold {total}, you have {want}")
+        if total < item.wanted():
+            # Say which model the number came from. A loose heap is measured
+            # by volume and a packing factor; everything else by square
+            # packing. Calling both "packed square" misreports half of them.
+            how = "by volume" if item.loose else "packed square"
+            shortfalls.append(
+                f"{nm}: bins hold {total}, you have {item.wanted()} ({how})")
     if shortfalls:
         print()
         for line in shortfalls:
-            print(f"note: {line} packed square")
-        print("      (square packing is a lower bound -- long items often go "
-              "in diagonally)")
+            print(f"note: {line}")
+        print("      (both are lower bounds -- long items often go in "
+              "diagonally, and a heap settles)")
 
     unmeasured = {i.name for i in items if not i.measured}
     if unmeasured:

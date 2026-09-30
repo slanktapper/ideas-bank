@@ -1,0 +1,107 @@
+# KSL1W1T — kitchen, south wall, lower section, 1st west column, 1st from top
+# Drawer 533 x 444 mm internal. 533 is the LEFT-RIGHT axis (confirmed
+# 2026-09-30), so the grid is 12 columns x 10 rows and the slack falls as a
+# 29.0 mm strip down the LEFT and a 24.0 mm strip across the FRONT.
+# Grid in the BACK-RIGHT corner. Columns A-L from the left, rows 1-10 with
+# row 1 at the FRONT.
+#
+# BIN HEIGHT IS 3U AND LOCKED. 24.8 mm tall, 14 mm usable depth.
+# Shallower than KWL1N1T's 5U on purpose: this is a flat-contents drawer and
+# shallow bins let you see the whole of it at once. Anything thicker than
+# 14 mm stands proud of the rim — see the tape and knife notes below.
+#
+# Row 1 reaches 24.0 mm forward to the drawer front.
+# The leftmost bin in every band reaches 29.0 mm left to the wall.
+# Bin 1 is the corner bin: it reaches both ways.
+#
+# EVERY SIZE IN THIS FILE IS A PLACEHOLDER. Nothing here has been measured.
+# The bins are plain rectangles so the parts cannot be wrong in themselves,
+# but whether the contents suit them is unverified. Measure before printing.
+
+defaults:
+  bin_height_u: 3
+  # NO PRINTED LABEL SHELF, EVER, IN THE KITCHEN. Clip-on labels only, added
+  # later if wanted. Same rule as KWL1N1T.
+  label_shelf: false
+
+items:
+  # --- row 1, the front: 1 unit deep + 24.0 mm to the drawer front ---
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: A1, extend_front_mm: 24.0, extend_left_mm: 29.0}
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: D1, extend_front_mm: 24.0}
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: G1, extend_front_mm: 24.0}
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: J1, extend_front_mm: 24.0}
+
+  # --- rows 2-3 ---
+  - name: Clips
+    size: [32, 20, 10]
+    bin_size: 2x2
+    at: A2
+    extend_left_mm: 29.0
+    loose: true
+    qty_max: 60
+    measured: false
+    note: Binder and bulldog clips, tipped in rather than laid out. Assumed size.
+
+  - name: Twist ties
+    size: [100, 4, 4]
+    bin_size: 3x2
+    at: C2
+    loose: true
+    qty_max: 80
+    measured: false
+    note: Loose in a heap. Assumed size.
+
+  - name: Scotch tape
+    size: [75, 75, 30]
+    bin_size: 3x2
+    at: F2
+    qty_max: 4
+    measured: false
+    note: >
+      Assumed to be handheld dispensers. At 3U the bin is 14 mm deep, so a
+      dispenser stands well proud of the rim. Fine in a drawer with headroom,
+      but it will not sit below the line. Measure yours.
+
+  - {name: Spare, size: [0, 0], bin_size: 4x2, at: I2}
+
+  # --- rows 4-5 ---
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: A4, extend_left_mm: 29.0}
+
+  - name: Scissors
+    size: [210, 55, 12]
+    bin_size: 6x2
+    at: C4
+    qty_max: 4
+    measured: false
+    note: >
+      Kitchen shears CLOSED, handles included — 55 mm is the handle bow, not
+      the open blade spread. Six units is 246.7 mm inside, so the length is
+      comfortable; the depth is what limits how many lie side by side. At 3U
+      nothing stacks below the rim, so four pairs will sit proud. Assumed size.
+
+  - {name: Spare, size: [0, 0], bin_size: 4x2, at: I4}
+
+  # --- rows 6-7 ---
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: A6, extend_left_mm: 29.0}
+
+  - name: Utility knife
+    size: [160, 30, 20]
+    bin_size: 5x2
+    at: C6
+    qty_max: 4
+    measured: false
+    note: >
+      Retractable knives. 20 mm thick against 14 mm of bin, so they sit about
+      6 mm proud. Assumed size.
+
+  - {name: Spare, size: [0, 0], bin_size: 5x2, at: H6}
+
+  # --- rows 8-9 ---
+  - {name: Spare, size: [0, 0], bin_size: 2x2, at: A8, extend_left_mm: 29.0}
+  - {name: Spare, size: [0, 0], bin_size: 4x2, at: C8}
+  - {name: Spare, size: [0, 0], bin_size: 6x2, at: G8}
+
+  # --- row 10, the back: 1 unit deep, against the back wall ---
+  - {name: Spare, size: [0, 0], bin_size: 3x1, at: A10, extend_left_mm: 29.0}
+  - {name: Spare, size: [0, 0], bin_size: 4x1, at: D10}
+  - {name: Spare, size: [0, 0], bin_size: 5x1, at: H10}

@@ -314,7 +314,7 @@ corners — add a brim if it does.
 ## Tests
 
 ```bash
-pytest -q      # 211 tests
+pytest -q      # 212 tests
 ```
 
 The `test_model.py` contract tests pin down cq-gridfinity's coordinate system

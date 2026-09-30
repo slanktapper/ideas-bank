@@ -72,11 +72,12 @@ across the bin where it would fall into the gap.
 | Code | Location | W × D × H (mm) | Grid | Positions | Margins | Bin height | Bins printed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `KWL1N1T` | kitchen, west wall, lower, 1st north column, 1st from top | **533 × 328.5 × 63** | 12 × 7 | 84 | 29.0 left / 34.5 front | 5U | **1 of 15** |
-| `KSL1W1T` | kitchen, south wall, lower, 1st west column, 1st from top | **533 × 444 × ?** | 12 × 10 | 120 | 29.0 left / 24.0 front | — | 0 of — |
+| `KSL1W1T` | kitchen, south wall, lower, 1st west column, 1st from top | **533 × 444 × ?** | 12 × 10 | 120 | 29.0 left / 24.0 front | 3U | 0 of 20 |
 
 `KWL1N1T` measured 2026-09-25 MDT; its left gap corrected 2026-09-26.
-`KSL1W1T` measured 2026-09-28 MDT — **height not yet taken**, so no bin
-height can be set for it.
+`KSL1W1T` measured 2026-09-28 MDT, laid out 2026-09-30. Its **internal
+height is still not taken** — 3U was chosen for the contents, not fitted to
+the drawer, so nothing confirms the headroom for items standing proud.
 
 ### `KWL1N1T` — kitchen, west wall, lower section, 1st north column, 1st from top
 
@@ -391,11 +392,8 @@ remainder. Anything built to reach that wall — the `+29L` bins, the gauges —
 is the same part in both drawers. The front gap differs: 24.0 mm here against
 34.5 mm there.
 
-**Which axis is which is assumed, not confirmed.** 533 is taken as the
-left-right span, because that is what it was for `KWL1N1T`. If the drawer is
-actually 444 wide and 533 deep the grid is unchanged at 12 × 10, but the gaps
-swap: 24.0 mm left, 29.0 mm front, and the extended bins would be built the
-other way round. Confirm before generating any bin.
+**533 is the left-right axis — confirmed 2026-09-30.** So the gaps fall as
+above: 29.0 mm down the left, 24.0 mm across the front.
 
 #### Baseplate: 3 plates, not 4
 
@@ -416,12 +414,79 @@ distinct sizes.
 choose the split by plate count rather than by symmetry is a change worth
 making before this baseplate is printed.
 
+#### 3U, locked in 2026-09-30
+
+24.8 mm tall with the lip, **14 mm usable depth**. Two units shallower than
+`KWL1N1T`, chosen for the contents rather than fitted to the drawer.
+
+**At 3U a bin is a tray, not a tub: nothing stacks below the rim.** Each bin
+holds one layer. That is the point — the whole drawer reads at a glance —
+but it decides what "fits":
+
+| Item | Assumed thickness | At 3U |
+| --- | --- | --- |
+| Scissors | 12 mm | lie flat, one layer |
+| Utility knives | 20 mm | sit ~6 mm proud |
+| Scotch tape | 30 mm | sits ~16 mm proud |
+| Clips, twist ties | loose | a heap deeper than 14 mm spills |
+
+Standing proud is fine given headroom, and **the headroom is unmeasured**.
+That is the one open measurement on this drawer.
+
+#### Layout as directed
+
+Five named categories, 2026-09-30 MDT: clips, utility knives, scissors,
+twist ties, scotch tape. **120 of 120 units, 20 bins, ~1081 g.**
+
+| # | Cells | Bin | Printed mm | Item |
+| --- | --- | --- | --- | --- |
+| 1 | A1:C1 | 3×1 **+29L +24F** | 154.5 × 65.5 | Spare — corner bin |
+| 2 | D1:F1 | 3×1 +24F | 125.5 × 65.5 | Spare |
+| 3 | G1:I1 | 3×1 +24F | 125.5 × 65.5 | Spare |
+| 4 | J1:L1 | 3×1 +24F | 125.5 × 65.5 | Spare |
+| 5 | A2:B3 | 2×2 **+29L** | 112.5 × 83.5 | **Clips** |
+| 6 | C2:E3 | 3×2 | 125.5 × 83.5 | **Twist ties** |
+| 7 | F2:H3 | 3×2 | 125.5 × 83.5 | **Scotch tape** |
+| 8 | I2:L3 | 4×2 | 167.5 × 83.5 | Spare |
+| 9 | A4:B5 | 2×2 **+29L** | 112.5 × 83.5 | Spare |
+| 10 | C4:H5 | 6×2 | 251.5 × 83.5 | **Scissors** |
+| 11 | I4:L5 | 4×2 | 167.5 × 83.5 | Spare |
+| 12 | A6:B7 | 2×2 **+29L** | 112.5 × 83.5 | Spare |
+| 13 | C6:G7 | 5×2 | 209.5 × 83.5 | **Utility knives** |
+| 14 | H6:L7 | 5×2 | 209.5 × 83.5 | Spare |
+| 15 | A8:B9 | 2×2 **+29L** | 112.5 × 83.5 | Spare |
+| 16 | C8:F9 | 4×2 | 167.5 × 83.5 | Spare |
+| 17 | G8:L9 | 6×2 | 251.5 × 83.5 | Spare |
+| 18 | A10:C10 | 3×1 **+29L** | 154.5 × 41.5 | Spare |
+| 19 | D10:G10 | 4×1 | 167.5 × 41.5 | Spare |
+| 20 | H10:L10 | 5×1 | 209.5 × 41.5 | Spare |
+
+**Thirteen spares.** Five categories do not fill 120 positions, and an empty
+bin is easier to re-cut than a wrong one. Say what else lives in this drawer
+and they become real bins.
+
+**Nine bins meet a wall**: the four front-row bins reach 24.0 mm forward, and
+the leftmost of every band — 1, 5, 9, 12, 15, 18 — reaches 29.0 mm left.
+Bin 1 is the corner and reaches both ways. **The 29.0 mm left reach is
+identical to `KWL1N1T`'s**, because both drawers are 533 mm wide.
+
+#### Every item size here is a placeholder
+
+Nothing in `items-KSL1W1T.yml` has been measured. The bins are plain
+rectangles, so the parts cannot be wrong in themselves — but the `holds`
+figures are only as good as the guesses, and five bins (5, 6, 7, 10, 13) are
+sized on them. The other fifteen carry no assumption at all.
+
+The scissors placeholder is worth naming: it was first entered as 200 × 75,
+which is the **open** blade spread. Closed, handles included, is about
+210 × 55 × 12, and that is what the file now says.
+
 #### Open
 
-- **Internal height**, measured at the base. Nothing about bin height can be
-  decided without it.
-- **Contents.** No item list yet.
-- **Which axis is 533** — see above.
+- **Internal height**, measured at the base — the only thing that confirms
+  whether the proud items clear the drawer above.
+- **The five item sizes**, measured rather than assumed.
+- **What else lives here**, to turn spares into bins.
 
 ## Notes on measuring
 

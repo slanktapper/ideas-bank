@@ -226,6 +226,16 @@ class Item:
                + self.extend_front_mm)
         ih = max(0.0, (self.height_units() - 1) * 7.0)
 
+        # A loose item is sized by volume with a packing factor, so report it
+        # the same way. Counting a heap of twist ties by square packing says
+        # 57 where the model that chose the bin says 45 -- two answers to one
+        # question, from the same object.
+        if self.loose:
+            one = self.width_mm * self.depth_mm * max(self.height_mm, 1.0)
+            if one <= 0:
+                return 0
+            return int(iw * idp * ih * self.packing_factor // one)
+
         best = 0
         for a, b in ((self.width_mm, self.depth_mm), (self.depth_mm, self.width_mm)):
             if a <= 0 or b <= 0:

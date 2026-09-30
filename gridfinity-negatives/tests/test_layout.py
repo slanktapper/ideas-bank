@@ -521,3 +521,24 @@ def test_bin_15_is_printed():
         for _, p in numbered(layout) if p.item.printed
     }
     assert printed == {"J6:L7"}
+
+
+def test_loose_capacity_uses_the_model_that_sized_the_bin():
+    """Sizing and reporting must not disagree about the same heap.
+
+    A loose item picks its bin by volume and a packing factor. Reporting its
+    capacity by square packing gave a second, larger answer for the same
+    object -- the bin was chosen on one basis and judged on another.
+    """
+    heap = Item("ties", 100, 4, 4, qty_max=80, loose=True, bin_size="3x2",
+                bin_height_u=3)
+    iw = 3 * 42 - 0.5 - 4.8
+    idp = 2 * 42 - 0.5 - 4.8
+    expected = int(iw * idp * 14.0 * heap.packing_factor // (100 * 4 * 4))
+    assert heap.capacity() == expected
+
+    laid_out = Item("ties", 100, 4, 4, qty_max=80, bin_size="3x2",
+                    bin_height_u=3)
+    assert laid_out.capacity() > heap.capacity(), (
+        "square packing should still be the answer for a non-loose item"
+    )
