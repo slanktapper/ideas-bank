@@ -98,8 +98,13 @@ GROOVE_PAD_OUT = _pad(R_PIN_OUT)                   # ~3.7 deg
 # the jaws -- now blades, not bars
 # ---------------------------------------------------------------------------
 
-JAW_W = 13.0                           # width across, in its slot
-SLOT_W = JAW_W + 2 * FIT_SLIDE         # 13.7
+JAW_W = 26.0                           # width across, in its slot. Two of
+                                       # these cover about 160 degrees of the
+                                       # bore's circumference between them,
+                                       # against 80 at half the width, so a
+                                       # finger is held on nearly half its
+                                       # perimeter rather than a quarter.
+SLOT_W = JAW_W + 2 * FIT_SLIDE         # 26.7
 FACE_T = 3.5                           # thickness of the face plate itself
 RIB_W = 5.0                            # the web joining the two arms
 ARM_H = 6.0                            # the arms that carry the pins
@@ -111,6 +116,14 @@ PIN_OFFSET = R_PIN_IN                  # 29.4 -- the pin sits this far behind
 JAW_TAIL = PIN_D / 2 + 2.0
 JAW_L = PIN_OFFSET + JAW_TAIL          # 33.9
 JAW_TAIL_R_MAX = BORE_D / 2 + JAW_L    # 53.9 at full open
+
+# AND THE TAIL IS CUT TO THAT RADIUS, not left square. A blade is a
+# rectangle, so its outer corners sit further from the axis than the middle
+# of its end does -- at 26 mm wide that is 55.4 mm against 53.9, and the
+# corners foul the shell wall at full open. Widening the shell to clear them
+# would cost 3 mm of diameter for two corners nobody wants; trimming the end
+# to an arc about the axis costs 1.6 mm off each corner and nothing else.
+# parts.jaw() does the cut, so it follows JAW_W automatically.
 
 # ---------------------------------------------------------------------------
 # the body: a tube, not a plate

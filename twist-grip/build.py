@@ -87,7 +87,11 @@ def _callouts(img, cam, w, h, items):
     cx, cy = w / 2.0, h / 2.0
     notes = []
     for (x, y), it in zip(px, items):
-        dx, dy = float(x) - cx, float(y) - cy
+        # A caller can name the direction instead. Features on the axis --
+        # two blade faces meeting on it -- have no direction from the centre
+        # of the shot to take, and two that nearly share one put their
+        # labels on top of each other.
+        dx, dy = it.get("dir", (float(x) - cx, float(y) - cy))
         n = math.hypot(dx, dy) or 1.0
         push = it.get("push", 0.30 * min(w, h))
         tx, ty = float(x) + dx / n * push, float(y) + dy / n * push
@@ -188,6 +192,47 @@ def render_section(phi: float, name: str, fast: bool):
     _save(img, name)
 
 
+def render_down_the_bore(phi: float, name: str, fast: bool):
+    """Straight down the axis, into the hole, which is how you meet it.
+
+    Hand-aimed rather than framed automatically: frame() fits the bounding
+    sphere, and from overhead that pushes the camera back until the object
+    is a small disc in the middle. Here the rim just fills the frame, so the
+    bore does too.
+
+    Lit flatter than the other shots on purpose. Looking down a 100 mm tube
+    at a default key light from above, everything past the first 20 mm is
+    black, and the blades are the point of the picture.
+    """
+    w, h, ss = _size(fast)
+    st = P.STACK
+    ps = T.assembly(phi)
+
+    dist = 190.0
+    half = P.OVERALL_D / 2 * 1.04
+    fov = 2.0 * math.degrees(math.atan(half / dist))
+    cam = {"eye": (0.0, 0.0, st.cap_top + dist), "target": (0.0, 0.0, 0.0),
+           "fov_deg": fov}
+    img = R.render(ps, width=w, height=h, supersample=ss,
+                   ambient=0.62, key=0.42, fill=0.30, spec=0.10, edges=0.42,
+                   **cam)
+    if fast:
+        _save(img, name)
+        return
+
+    r_face = S.jaw_face_radius(phi)
+    mid = st.jaw_0 + P.GRIP_L * 0.5
+    _callouts(img, cam, w, h, [
+        {"at": (r_face + 0.2, 0.0, mid), "dir": (1, 0), "push": 0.20 * w,
+         "text": f"blade: {P.JAW_W:.0f} mm wide, {P.GRIP_L:.0f} mm deep"},
+        {"at": (-(r_face + 0.2), 0.0, mid), "dir": (-1, 0), "push": 0.20 * w,
+         "text": f"gap {S.gap(phi):.0f} mm"},
+        {"at": (0.0, -P.BORE_D / 2, mid), "dir": (0, 1), "push": 0.16 * h,
+         "text": f"{P.BORE_D:.0f} mm bore"},
+    ])
+    _save(img, name)
+
+
 def render_parts(name: str, fast: bool):
     """The four printed parts, as they are oriented on the bed."""
     w, h, ss = _size(fast)
@@ -244,6 +289,11 @@ def main(argv=None):
         render_section(P.TWIST_SWEEP, "06-section-shut.png", a.fast)
         render_parts("07-printed-parts.png", a.fast)
         render_coupon("08-fit-coupon.png", a.fast)
+        render_down_the_bore(0.0, "09-down-the-bore-open.png", a.fast)
+        render_down_the_bore(S.phi_for_gap(17.0),
+                             "10-down-the-bore-on-a-finger.png", a.fast)
+        render_down_the_bore(P.TWIST_SWEEP, "11-down-the-bore-shut.png",
+                             a.fast)
 
     print("\n" + "-" * 78)
     print(S.summary())

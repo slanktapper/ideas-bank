@@ -7,15 +7,16 @@ not experience with this part.
 ## Print the coupon first
 
 ```
-stl/coupon-shell.stl   50° wedge, 25 mm grip   14 g
-stl/coupon-body.stl                             2 g
-stl/coupon-cap.stl                              8 g
-stl/coupon-jaw.stl                             10 g
+stl/coupon-shell.stl   120° wedge, 25 mm grip   33 g
+stl/coupon-body.stl                              5 g
+stl/coupon-cap.stl                              20 g
+stl/coupon-jaw.stl                              17 g
 ```
 
-About 34 g all told, against **364 g and the better part of a day** for the
+About 76 g all told, against **370 g and the better part of a day** for the
 real set. It is the same mechanism with the grip cut from 90 mm to 25 and a
-50° wedge taken out of it — cut from the finished meshes rather than modelled
+120° wedge taken out of it — wide enough to take in a slot WALL and not just
+the slot, because a 26 mm blade's slot is 84° of the bore on its own — cut from the finished meshes rather than modelled
 to resemble them, so the walls, the groove floor and every overhang are
 exactly what the full part would print.
 

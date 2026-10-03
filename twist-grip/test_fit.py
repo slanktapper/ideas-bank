@@ -189,15 +189,33 @@ def wall_checks():
           2 * P.CAP_HOOK_R_IN >= P.BORE_D,
           f"cap opening {2 * P.CAP_HOOK_R_IN:.1f} mm")
 
-    # The top lugs have to sit on material. At the top of the tube there is
-    # none at 0 and 180 -- that is where the jaw slots are.
-    half = math.degrees(math.asin(P.SLOT_W / 2 / P.SKIRT_OD * 2))
-    clear = min(min(abs(((a - s + 180) % 360) - 180)
-                    for s in (0.0, 180.0)) for a in P.TOP_LUG_ANGLES)
-    check("the top lugs stand clear of the jaw slots",
-          clear > half + P.LUG_ARC / 2,
-          f"nearest is {clear:.0f} deg from a slot edge at "
-          f"{half:.0f} deg, lug half-width {P.LUG_ARC / 2:.0f} deg")
+    # The slots are the big hole in the body, and 26 mm wide ones take 84
+    # degrees out of it at the bore. What keeps the tube a tube is that they
+    # stop short at both ends: the skirt below them and the neck above are
+    # closed rings, and both lug sets sit on those rather than on the slotted
+    # part. Check the ends, and check what is left between the slots.
+    st = P.STACK
+    check("the slots stop below the neck, so the top stays a closed hoop",
+          st.arc_top <= st.topring_0 and st.topring_0 > st.arc_top,
+          f"slots end at z={st.arc_top:.1f}, the top ring starts at "
+          f"{st.topring_0:.1f}")
+    check("and stop above the skirt, which is a closed ring too",
+          P.STACK.ring_top > 0.0,
+          f"slots start at z={st.ring_top:.1f}, above the skirt's full height")
+
+    arc = 180.0 - 2 * math.degrees(math.asin(P.SLOT_W / 2 / (P.BORE_D / 2)))
+    check("what is left between the slots is a wall, not a strap",
+          arc > 60.0,
+          f"{arc:.0f} deg of arc each side at the bore, "
+          f"{P.BODY_WALL:.1f} mm thick")
+
+    # A flat face on a round bore is tangent to it, so the corners sit
+    # further out than the middle. They have to stay inside the slot.
+    corner = math.hypot(P.BORE_D / 2, P.JAW_W / 2)
+    check("the corners of a full-open blade stay inside its slot",
+          P.JAW_W / 2 < P.SLOT_W / 2 and corner < P.BODY_ARC_R_OUT,
+          f"corner reaches r={corner:.2f}, slot half-width "
+          f"{P.SLOT_W / 2:.2f}, tube OD r={P.BODY_ARC_R_OUT:.2f}")
 
 
 def keying_checks():
@@ -265,6 +283,17 @@ def assembly_checks():
           at_open < TOUCHING,
           f"{at_open:.3f} mm3 in the way — deliberate, this is how it "
           f"assembles")
+
+    # The blade's real outer radius, measured on the solid. A rectangle's
+    # corners reach further than its end does, and at 26 mm wide that was
+    # 1.5 mm past the shell wall until the tail was trimmed to an arc.
+    jo = T.jaw(0.0, 0)
+    r_max = float(np.max(np.hypot(jo.vertices[:, 0], jo.vertices[:, 1])))
+    check("no corner of a full-open blade reaches the shell wall",
+          r_max < P.WALL_ID / 2,
+          f"widest point r={r_max:.2f}, wall starts at {P.WALL_ID / 2:.2f} "
+          f"(a square tail would have been "
+          f"{math.hypot(P.JAW_TAIL_R_MAX, P.JAW_W / 2):.2f})")
 
     # A blade held at one end only would cock. Both pins have to be engaged.
     j = T.jaw(90.0, 0)

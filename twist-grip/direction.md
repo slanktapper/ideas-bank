@@ -7,7 +7,9 @@
 A fidget that traps a finger. A 40 mm hole runs straight through a 115 mm
 cylinder; twist the fluted outside and two blades come in from opposite sides
 and close on whatever is in the hole, gripping **90 mm of it** — the whole
-length of a finger, not a band round it. Twist it all the way and the two
+length of a finger, not a band round it. Each blade is **26 mm wide**, so
+between them they wrap about 160° of the bore's circumference: a finger is
+held on nearly half its perimeter. Twist it all the way and the two
 faces meet on the axis. Twist it back and they retreat flush with the bore,
 leaving a clean 40 mm circle.
 
@@ -185,6 +187,12 @@ Defects the checks caught, none of which a drawing would have shown:
   angles, and hence 120° being in the test list.
 - **A clearance derived twice disagreed with itself**, giving a blade 0.6 mm
   of float where 0.3 was meant.
+- **The blade's corners, once it was widened to 26 mm.** A blade is a
+  rectangle, so its outer corners sit further from the axis than the middle
+  of its end does — 55.4 mm against 53.9 — and they fouled the shell wall at
+  full open. The tail is now trimmed to an arc about the axis, which costs
+  1.6 mm off each corner rather than 3 mm of overall diameter, and follows
+  the blade width automatically.
 - **A check that lied.** The one asserting a blade's two pins share an axis
   failed on a correct part: slicing exactly on a face leaves zero-volume
   slivers in the boolean, and `.centroid` is area-weighted, so the slivers
@@ -194,9 +202,12 @@ Defects the checks caught, none of which a drawing would have shown:
 What software cannot tell us is the fit. Everything that slides here is
 plastic on plastic at a clearance that is currently a guess. `stl/coupon-*`
 is the same mechanism with the grip cut to 25 mm and a 50° wedge taken out of
-it — 34 g against 364 — carrying every fit at once: pin in groove at both
+it — 76 g against 370 — carrying every fit at once: pin in groove at both
 ends, blade in slot, lugs under both hooks, body turning in the shell's bore.
-Print that first.
+Print that first. The wedge is 120° rather than something narrower because a
+26 mm blade's slot is 84° of the bore on its own: a narrow wedge centred on
+it contains no slot WALL at all, and a coupon with nothing to hold the blade
+sideways tests nothing.
 
 ## Open questions
 

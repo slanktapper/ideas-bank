@@ -283,6 +283,14 @@ def jaw(phi=0.0, index=0, st=None):
         post(P.PIN_D, st.pin_bot_0, st.jaw_0, at_r=P.PIN_OFFSET),
         post(P.PIN_D, st.jaw_top, st.pin_top_1, at_r=P.PIN_OFFSET))
 
+    # Trim the tail to an arc about the axis, as it would be at full open.
+    # A wide blade's square corners reach further out than its end does and
+    # would otherwise clip the shell wall. Cutting it here rather than in
+    # the assembled frame means the trim travels inward with the blade.
+    solid = keep_both(solid, post(
+        2 * P.JAW_TAIL_R_MAX, st.pin_bot_0 - 1.0, st.pin_top_1 + 1.0,
+        at_r=P.BORE_D / 2, angle_deg=180.0, sections=FACETS))
+
     solid.apply_translation((r_face, 0.0, 0.0))
     return spun(solid, S.JAW_ANGLES[index])
 
@@ -327,7 +335,11 @@ def printable(st=None):
 # the fit-test coupon
 # ---------------------------------------------------------------------------
 
-COUPON_ARC = 50.0
+# Wide enough to take in a slot WALL, not just the slot. A 26 mm blade's
+# slot is 84 degrees of the bore on its own, so a narrow wedge centred on it
+# contains no slot wall at all -- and a coupon with nothing to hold the
+# blade sideways tests nothing, and falls into two pieces besides.
+COUPON_ARC = 120.0
 COUPON_GRIP = 25.0         # a short-grip version of the whole mechanism
 
 
