@@ -1,0 +1,26 @@
+# 3d-tools — shared rendering helpers for the projects in this repository.
+# Python 3.10+.  Install with:  python3 -m pip install -r requirements.txt
+#
+# This list was established by installing into an empty virtualenv and adding
+# packages until test_render.py passed, not by copying a sibling project's
+# list. Everything here is needed; nothing here is needed only by cantstop.
+
+numpy>=1.26            # the z-buffer, the projection, all of the arithmetic
+pillow>=10.0           # PNG output and the supersample downscale
+trimesh>=4.0           # the Trimesh meshes render() is handed, and the slicer
+
+# section() only. trimesh's slice_mesh_plane(cap=True) reaches for a KD-tree,
+# shapely polygons and a triangulation engine to cap the cut face. Drop any
+# one of these three and sectioning raises; the rest of the module is fine.
+scipy>=1.11
+shapely>=2.0
+mapbox_earcut>=1.0
+
+# OPTIONAL — annotate() only, to find a scalable TrueType font on disk.
+# Without it labels fall back to PIL's built-in bitmap font: smaller, but the
+# module works. Install it if a render carries dimensioned callouts.
+# matplotlib>=3.8
+
+# NOT NEEDED. cantstop's requirements listed networkx and rtree "used only by
+# the renders"; the renders do not use them. Verified by running the full
+# check suite in a virtualenv without either.
