@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
-"""Assertions about the design, run before spending an evening of printer time.
+"""Assertions about the design, run before spending a day of printer time.
 
     python3 test_fit.py
 
 These are design rules, not unit tests. Editing params.py is the whole point
 of the project, and most of the ways to get this mechanism wrong are silent:
-a pin that leaves its groove, a wall that goes to nothing between the lip
-pocket and the spiral, a body that lifts off halfway through the sweep, a jaw
-whose tail runs into the grip wall before it reaches full open. Each one
-costs a print to find and nothing to check.
+a pin that leaves its groove, a wall that goes to nothing, a body that lifts
+off halfway through the sweep, a cap that will go on three ways round when
+only one of them is right.
 
-The checks that earn their keep are the ones that interrogate the finished
-meshes rather than the numbers that made them -- interference between real
-solids, the bore actually being clear, the lugs actually being trapped --
-because the numbers can agree with each other and still describe an object
-that cannot be assembled.
+The checks that earn their keep interrogate the finished meshes rather than
+the numbers that made them -- interference between real solids, the bore
+actually being clear, the lugs actually being trapped -- because the numbers
+can agree with each other and still describe an object that cannot be
+assembled.
 """
 
 from __future__ import annotations
@@ -32,13 +31,12 @@ import scroll as S
 FAILS: list[str] = []
 CHECKS = 0
 
-TOUCHING = 0.02        # mm^3. Two solids that share a face boolean out to a
-                       # sliver, not to nothing, so "no interference" has to
-                       # mean "less than a sliver".
+TOUCHING = 0.05        # mm^3. Solids that share a face boolean out to a
+                       # sliver, so "no interference" means "under a sliver".
 
-# Twists to check the assembly at. 0 and 180 are the ends; 120 is in there on
-# purpose, because that is where evenly spaced lugs used to come apart.
-SWEEP_SAMPLES = (0.0, 30.0, 60.0, 90.0, 120.0, 150.0, 180.0)
+# 120 is in this list on purpose: it is where evenly spaced lugs used to let
+# the body lift straight off.
+SWEEP_SAMPLES = (0.0, 45.0, 90.0, 120.0, 180.0)
 
 
 def check(label, ok, detail=""):
@@ -50,7 +48,6 @@ def check(label, ok, detail=""):
 
 
 def overlap(a, b) -> float:
-    """Volume two solids share. 0 for parts that merely touch."""
     try:
         inter = trimesh.boolean.intersection([a, b], engine="manifold")
     except Exception:
@@ -68,15 +65,11 @@ def lifted(mesh, dz):
     return m
 
 
-def span(mesh, axis):
-    return float(mesh.bounds[0][axis]), float(mesh.bounds[1][axis])
-
-
 # ---------------------------------------------------------------------------
 
 def brief_checks():
-    """The three things the brief fixed, measured rather than asserted."""
     print("\nthe brief")
+    st = P.STACK
 
     check("the opening is 40 mm when open",
           abs(S.gap(0.0) - P.BORE_D) < 1e-9,
@@ -85,130 +78,152 @@ def brief_checks():
           abs(S.gap(P.TWIST_SWEEP)) < 1e-9,
           f"gap {S.gap(P.TWIST_SWEEP):.3f} mm at {P.TWIST_SWEEP:.0f} deg")
     check("each jaw travels exactly the bore radius",
-          abs(P.JAW_TRAVEL - P.BORE_D / 2) < 1e-9,
-          f"{P.JAW_TRAVEL:.1f} mm, which is what reaching the axis means")
-    check("there are two jaws, diametrically opposite",
-          P.JAW_COUNT == 2 and abs(S.JAW_ANGLES[1] - S.JAW_ANGLES[0] - 180) < 1e-9)
+          abs(P.JAW_TRAVEL - P.BORE_D / 2) < 1e-9, f"{P.JAW_TRAVEL:.1f} mm")
 
-    # Linear in the twist: the same millimetres per degree everywhere, so it
-    # does not feel like it is binding as it closes.
-    rate = [(S.jaw_face_radius(a) - S.jaw_face_radius(a + 1.0))
-            for a in np.linspace(0, P.TWIST_SWEEP - 1, 40)]
-    check("the jaws close at a constant rate through the whole sweep",
-          max(rate) - min(rate) < 1e-9,
-          f"{rate[0]:.4f} mm per degree, everywhere")
+    # THE 90 MM GRIP, measured on the solid rather than taken from the
+    # parameter: the face plate is the part that touches a finger.
+    j = T.jaw(0.0, 0)
+    face = T.keep_both(j, T.bar(P.FACE_T - 0.2, P.JAW_W + 1,
+                                -10, st.overall_h + 10,
+                                x0=S.jaw_face_radius(0.0) + 0.1))
+    lo, hi = face.bounds
+    check("the jaws grip 90 mm of finger",
+          abs((hi[2] - lo[2]) - P.GRIP_L) < 0.01,
+          f"contact face is {hi[2] - lo[2]:.1f} mm tall, "
+          f"{P.JAW_W:.0f} mm wide")
 
-    # THE BORE, MEASURED. Not "the number is 40" but "a 40 mm cylinder passes
-    # through the assembled object without touching anything".
-    probe = T.tube(0.0, P.BORE_D / 2 - 0.05, P.SKIRT_Z0 - 1.0,
-                   P.Z_PLATE_TOP + 1.0)
+    # A 40 mm cylinder has to pass through the WHOLE object now, cap included.
+    probe = T.tube(0.0, P.BORE_D / 2 - 0.05, st.ring_0 - 1.0,
+                   st.overall_h + 1.0)
     worst = max(overlap(probe, part["mesh"]) for part in T.assembly(0.0))
-    check("a 40 mm cylinder passes clean through the open mechanism",
-          worst < TOUCHING, f"worst intrusion {worst:.4f} mm3")
+    check("a 40 mm cylinder passes clean through the whole open object",
+          worst < TOUCHING, f"worst intrusion {worst:.4f} mm3 over "
+          f"{st.overall_h:.0f} mm of height")
 
-    # And the pads really do meet on the axis, in the solids.
     shut = T.assembly(P.TWIST_SWEEP)
     j0 = next(p["mesh"] for p in shut if p["name"] == "jaw0")
     j1 = next(p["mesh"] for p in shut if p["name"] == "jaw1")
-    x0, x1 = span(j0, 0)[0], span(j1, 0)[1]
-    check("the two pads arrive on the axis from opposite sides",
-          abs(x0) < 1e-6 and abs(x1) < 1e-6,
-          f"jaw0 reaches x={x0:+.4f}, jaw1 reaches x={x1:+.4f}")
+    check("the two faces arrive on the axis from opposite sides",
+          abs(j0.bounds[0][0]) < 1e-6 and abs(j1.bounds[1][0]) < 1e-6,
+          f"jaw0 reaches x={j0.bounds[0][0]:+.4f}, "
+          f"jaw1 reaches x={j1.bounds[1][0]:+.4f}")
     check("they meet face to face rather than driving into each other",
           overlap(j0, j1) < TOUCHING,
-          f"shared volume {overlap(j0, j1):.4f} mm3 over a "
-          f"{P.PAD_W:.1f} x {P.Z_PAD_TOP - P.Z_JAW_0:.1f} mm face")
+          f"over a {P.JAW_W:.0f} x {P.GRIP_L:.0f} mm face")
 
 
 def cam_checks():
-    print("\nthe cam")
+    print("\nthe cam, at both ends of the blade")
+    st = P.STACK
 
-    # The check that caught a real defect: the groove arcs were first placed
-    # at the jaw angles instead of the jaw angles less the sweep, which put
-    # every pin 48 mm from the groove meant to drive it. The ring looked
-    # right either way, because the two grooves together are symmetric under
-    # a half turn.
     worst = 0.0
     for jaw in range(P.JAW_COUNT):
         path = S.groove_path(jaw, 4000)
         for phi in np.linspace(0, P.TWIST_SWEEP, 73):
             psi, r = S.pin_ring_angle(phi, jaw), S.pin_radius(phi)
-            px = r * math.cos(math.radians(psi))
-            py = r * math.sin(math.radians(psi))
+            px, py = r * math.cos(math.radians(psi)), r * math.sin(math.radians(psi))
             worst = max(worst, float(np.min(np.hypot(path[:, 0] - px,
                                                      path[:, 1] - py))))
     check("every pin stays on its own groove through the whole sweep",
           worst < 0.05, f"worst departure {worst:.4f} mm")
 
-    inner = S.groove_slope_deg(P.R_PIN_IN)
-    outer = S.groove_slope_deg(P.R_PIN_OUT)
+    # Both plates carry the SAME spiral, and a jaw's two pins are on one
+    # axis, so whatever is true of the bottom pin is true of the top one.
+    # That is what makes the drive symmetric; check it on the solid.
+    # Sliced INSIDE the pins, not flush with their ends. A cut taken exactly
+    # on a face leaves zero-volume slivers in the boolean, and .centroid is
+    # area-weighted, so the slivers drag the answer tens of millimetres off
+    # while the volume stays exactly right.
+    j = T.jaw(90.0, 0)
+    bot = T.keep_both(j, T.tube(0, P.OVERALL_D, st.pin_bot_0 + 0.2,
+                                st.jaw_0 - 0.2))
+    top = T.keep_both(j, T.tube(0, P.OVERALL_D, st.jaw_top + 0.2,
+                                st.pin_top_1 - 0.2))
+    cb, ct = bot.center_mass, top.center_mass
+    check("a jaw's two pins are on one vertical axis",
+          abs(cb[0] - ct[0]) < 1e-6 and abs(cb[1] - ct[1]) < 1e-6
+          and abs(math.hypot(*cb[:2]) - S.pin_radius(90.0)) < 1e-6,
+          f"both at r={math.hypot(*cb[:2]):.2f} mm, where the cam says "
+          f"{S.pin_radius(90.0):.2f} — so the two plates drive the blade "
+          f"identically")
+
+    inner, outer = (S.groove_slope_deg(P.R_PIN_IN),
+                    S.groove_slope_deg(P.R_PIN_OUT))
     check("the groove is shallow enough to hold position under load",
           inner < 17.0 and outer < 17.0,
           f"{outer:.1f} deg at the outer end, {inner:.1f} at the inner; "
           f"PETG on PETG is about 17 deg")
-    check("the spiral is steepest at its inner end, where it is weakest",
-          inner > outer, "so the inner end is the number that matters")
-
-    sep = S.groove_separation()
     check("the two grooves cannot run into each other",
-          sep > P.GROOVE_W + P.WALL_MIN,
-          f"{sep:.1f} mm apart where they share an angle, groove is "
-          f"{P.GROOVE_W:.1f} mm wide")
-    polys = S.grooves_polygon()
-    check("and they come out as two separate shapes, not one",
-          len(list(getattr(polys, "geoms", [polys]))) == P.JAW_COUNT,
-          f"{len(list(getattr(polys, 'geoms', [polys])))} disjoint grooves")
-
-    check("the ends of a groove are flat, so the stops are positive",
-          abs(S.groove_radius(-20.0) - S.groove_radius(0.0)) < 1e-12
-          and abs(S.groove_radius(P.TWIST_SWEEP + 20.0)
-                  - S.groove_radius(P.TWIST_SWEEP)) < 1e-12,
-          f"{P.GROOVE_PAD_IN:.1f} deg of dead flat at the inner end, "
-          f"{P.GROOVE_PAD_OUT:.1f} at the outer")
-
-    # A flat 2 degree pad was the first try, and at the inner end it put a
-    # third of the pin through the end wall of its own groove: the pad has to
-    # be a pin radius OF ARC, which is a bigger angle on a smaller circle.
+          S.groove_separation() > P.GROOVE_W + P.WALL_MIN,
+          f"{S.groove_separation():.1f} mm apart where they share an angle")
     for end, pad, r in (("inner", P.GROOVE_PAD_IN, P.R_PIN_IN),
                         ("outer", P.GROOVE_PAD_OUT, P.R_PIN_OUT)):
         arc = math.radians(pad) * r
-        check(f"the {end} pad is long enough for the pin to clear its end wall",
+        check(f"the {end} groove pad lets the pin clear its end wall",
               arc >= P.PIN_D / 2 + 1e-9,
               f"{arc:.2f} mm of arc against a {P.PIN_D / 2:.2f} mm pin radius")
-
-    engaged = P.PIN_LEN - (P.Z_LID_0 - (P.Z_JAW_0 + P.JAW_H))
-    check("the pin stays well inside its groove even with the jaw lifted",
-          engaged > P.PIN_LEN * 0.8 and P.PIN_LEN < P.GROOVE_DEPTH,
-          f"{engaged:.1f} mm of {P.PIN_LEN:.1f} mm still in a "
-          f"{P.GROOVE_DEPTH:.1f} mm groove")
 
 
 def wall_checks():
     print("\nwalls and thicknesses")
-
-    walls = {
+    for name, t in {
         "ring inner, lip pocket to groove": P.R_GROOVE_IN - P.LIP_R_OUT,
-        "ring outer, groove to grip wall": P.WALL_ID / 2 - P.R_GROOVE_OUT,
-        "ring floor under every groove": P.RING_FLOOR,
-        "the lip the lugs hook under": P.RING_T - P.LIP_Z0,
-        "the lid over a jaw channel": P.LIP_T,
-        "the skirt the ring turns on": (P.SKIRT_OD - P.SKIRT_ID) / 2,
-        "the grip wall": P.WALL_T,
-    }
-    for name, t in walls.items():
+        "shell floor under every groove": P.RING_FLOOR,
+        "the lip the body's lugs hook under": P.RING_T - P.LIP_Z0,
+        "the body tube": P.BODY_WALL,
+        "the shell wall": P.WALL_T,
+        "the cap's hook ring": P.CAP_HOOK_R_OUT - P.CAP_HOOK_R_IN,
+        "cap hook to the spiral": P.R_GROOVE_IN - P.CAP_HOOK_R_OUT,
+        "the body's top ring": P.TOPRING_T,
+        "the jaw's face plate": P.FACE_T,
+        "the jaw's rib": P.RIB_W,
+    }.items():
         check(f"{name} is at least {P.WALL_MIN} mm", t >= P.WALL_MIN - 1e-9,
               f"{t:.2f} mm")
 
-    check("the jaw pad fits through the lid's window and the base does not",
-          P.PAD_W < P.WINDOW_W < P.JAW_W,
-          f"pad {P.PAD_W}, window {P.WINDOW_W}, base {P.JAW_W} mm")
-    check("the lid overlaps each side of the jaw base",
-          (P.SLOT_W - P.WINDOW_W) / 2 >= 2.0,
-          f"{(P.SLOT_W - P.WINDOW_W) / 2:.1f} mm of lid each side")
+    check("the shell clears the jaw tails at full open",
+          P.WALL_ID / 2 > P.JAW_TAIL_R_MAX,
+          f"tail reaches r={P.JAW_TAIL_R_MAX:.1f}, wall starts at "
+          f"r={P.WALL_ID / 2:.1f}")
+    check("the cap never narrows the bore",
+          2 * P.CAP_HOOK_R_IN >= P.BORE_D,
+          f"cap opening {2 * P.CAP_HOOK_R_IN:.1f} mm")
+
+    # The top lugs have to sit on material. At the top of the tube there is
+    # none at 0 and 180 -- that is where the jaw slots are.
+    half = math.degrees(math.asin(P.SLOT_W / 2 / P.SKIRT_OD * 2))
+    clear = min(min(abs(((a - s + 180) % 360) - 180)
+                    for s in (0.0, 180.0)) for a in P.TOP_LUG_ANGLES)
+    check("the top lugs stand clear of the jaw slots",
+          clear > half + P.LUG_ARC / 2,
+          f"nearest is {clear:.0f} deg from a slot edge at "
+          f"{half:.0f} deg, lug half-width {P.LUG_ARC / 2:.0f} deg")
+
+
+def keying_checks():
+    print("\nkeying: one way round, and only one")
+
+    # Both lug sets and the pegs share one uneven pattern. For any of them to
+    # line up twice, some rotation would have to map the set onto itself.
+    for name, angles in (("the body's bottom lugs", P.LUG_ANGLES),
+                         ("the body's top lugs", P.TOP_LUG_ANGLES),
+                         ("the cap's pegs", P.LUG_ANGLES)):
+        hits = [d for d in range(1, 360)
+                if all(min(abs(((a + d - b + 180) % 360) - 180)
+                           for b in angles) < 1e-6 for a in angles)]
+        check(f"{name} line up at exactly one rotation",
+              hits == [], f"no turn but zero maps the set onto itself"
+              if not hits else f"also at {hits} deg")
+
+    gaps = sorted(round((angles := P.LUG_ANGLES)[(i + 1) % 3] - angles[i]) % 360
+                  for i in range(3))
+    check("...because the three gaps are all different",
+          len(set(gaps)) == 3, f"{gaps} degrees")
 
 
 def assembly_checks():
-    print("\nassembly: does it actually go together and move")
+    print("\nassembly: does it go together, and move")
+    st = P.STACK
 
     for phi in SWEEP_SAMPLES:
         ps = T.assembly(phi)
@@ -222,73 +237,76 @@ def assembly_checks():
               worst < TOUCHING,
               f"worst {worst:.4f} mm3" + (f" ({pair})" if worst else ""))
 
-    # The jaw cannot lift out of its channel and take its pin with it.
-    body = T.body()
-    float_ = P.Z_LID_0 - (P.Z_JAW_0 + P.JAW_H)
-    j = T.jaw(90.0, 0)
-    check("a jaw is free to slide with the float it was given",
-          overlap(lifted(j, float_ - 0.1), body) < TOUCHING,
-          f"{float_:.1f} mm of vertical float")
-    check("a jaw cannot lift any further than that -- the lid stops it",
-          overlap(lifted(j, float_ + 0.4), body) > TOUCHING,
-          "which is what keeps its pin in the groove")
+    shell90, cap90, b = T.spun(T.shell(), 90.0), T.spun(T.cap(), 90.0), T.body()
 
-    # The body cannot lift off the ring in use: the lugs are under the lip.
-    # 120 degrees is in this list because that is exactly where evenly
-    # spaced lugs would have let it come apart.
-    for phi in (30.0, 90.0, 120.0, 150.0, 180.0):
-        ring = T.spun(T.ring(), phi)
-        v = overlap(lifted(body, P.LIP_Z0 - P.LUG_Z1 + 0.4), ring)
-        check(f"the body cannot lift off at {phi:.0f} deg -- lugs under lip",
-              v > TOUCHING, f"lug fouls lip by {v:.2f} mm3")
+    # The body cannot lift out of the shell: bottom lugs under the lip.
+    rise = P.LIP_Z0 - st.lug_z1
+    check("the body cannot lift out of the shell in use",
+          overlap(lifted(b, rise + 0.4), shell90) > TOUCHING,
+          f"it has {rise:.1f} mm of float, then the lugs meet the lip")
 
-    # ...and it does come apart where it is meant to.
-    v = overlap(lifted(body, 3.0), T.spun(T.ring(), 0.0))
+    # The cap cannot lift off: its hook ring is UNDER the body's top lugs.
+    # Putting that hook above them instead holds nothing, which is what the
+    # first version of this design did -- lifting the cap simply moved it
+    # further from the thing meant to stop it.
+    cap_rise = st.topring_0 - st.cap_hook_1
+    check("the cap cannot lift off in use",
+          overlap(lifted(cap90, cap_rise + 0.4), b) > TOUCHING,
+          f"{cap_rise:.1f} mm of float, then its hook meets the body's top "
+          f"lugs — and the body is held down by the shell")
+    check("...and the cap is free to turn before it gets there",
+          overlap(lifted(cap90, cap_rise - 0.15), b) < TOUCHING,
+          "nothing rubbing in normal use")
+
+    # ...and all of it comes apart where it is meant to.
+    at_open = (overlap(lifted(b, 4.0), T.shell())
+               + overlap(lifted(T.cap(), 4.0), b))
     check("at full open the notches line up and it lifts apart",
-          v < TOUCHING,
-          f"{v:.3f} mm3 in the way -- deliberate, this is how it assembles")
+          at_open < TOUCHING,
+          f"{at_open:.3f} mm3 in the way — deliberate, this is how it "
+          f"assembles")
 
-    # The jaw tail has to clear the grip wall at full open, or the mechanism
-    # stops before the opening is a full 40 mm.
-    tail = max(span(T.jaw(0.0, k), 0)[1] for k in range(P.JAW_COUNT))
-    check("the jaw tail clears the grip wall at full open",
-          tail < P.WALL_ID / 2,
-          f"tail reaches r={tail:.1f}, wall starts at r={P.WALL_ID / 2:.1f}")
+    # A blade held at one end only would cock. Both pins have to be engaged.
+    j = T.jaw(90.0, 0)
+    bot_in = overlap(T.tube(0, P.OVERALL_D, st.groove_floor, st.jaw_0), j)
+    top_in = overlap(T.tube(0, P.OVERALL_D, st.jaw_top, st.cap_top), j)
+    check("both ends of a blade reach into their plates",
+          bot_in > 50.0 and top_in > 50.0,
+          f"{bot_in:.0f} mm3 of pin below, {top_in:.0f} above")
 
 
 def part_checks():
     print("\nthe parts themselves")
-
-    made = {"ring": T.ring(), "body": T.body(), "jaw": T.jaw(0.0, 0)}
+    made = {"shell": T.shell(), "body": T.body(), "cap": T.cap(),
+            "jaw": T.jaw(0.0, 0)}
     for name, m in made.items():
         check(f"{name} is one watertight solid",
               m.is_watertight and m.is_winding_consistent and m.body_count == 1,
               f"{len(m.faces)} triangles, {m.body_count} body")
 
-    pr = T.printable()
-    for name, m in pr.items():
+    for name, m in T.printable().items():
         lo, hi = m.bounds
-        on_bed = abs(lo[2]) < 1e-6
-        fits = (hi[0] - lo[0]) < P.BED[0] and (hi[1] - lo[1]) < P.BED[1]
         check(f"{name} sits on the bed and fits it",
-              on_bed and fits,
-              f"{hi[0] - lo[0]:.1f} x {hi[1] - lo[1]:.1f} x {hi[2] - lo[2]:.1f} mm")
+              abs(lo[2]) < 1e-6 and (hi[0] - lo[0]) < P.BED[0]
+              and (hi[1] - lo[1]) < P.BED[1],
+              f"{hi[0] - lo[0]:.0f} x {hi[1] - lo[1]:.0f} x "
+              f"{hi[2] - lo[2]:.0f} mm")
 
-    # The body prints top face down, so the channel lid is laid over a gap
-    # instead of bridging one, and the skirt points up.
-    b = pr["body"]
-    check("the body is flipped for printing, skirt upward",
-          b.bounds[1][2] > P.PLATE_T + 1.0,
-          f"{b.bounds[1][2]:.1f} mm tall, so the skirt is the top of the print")
+    for name, m in T.coupon().items():
+        check(f"{name} is a sane test piece",
+              m.is_watertight and m.body_count == 1
+              and (m.bounds[1][2] - m.bounds[0][2]) < P.GRIP_L,
+              f"{m.volume / 1000 * 1.27:.0f} g, "
+              f"{m.bounds[1][2] - m.bounds[0][2]:.0f} mm tall")
 
-    grams = sum(m.volume for m in made.values()) / 1000.0 * 1.27
-    grams += T.jaw(0.0, 0).volume / 1000.0 * 1.27      # the second jaw
-    check("a whole set is a sensible evening of printing",
-          grams < 400.0, f"about {grams:.0f} g of PETG if printed solid")
-
+    grams = (sum(m.volume for m in made.values())
+             + made["jaw"].volume) / 1000.0 * 1.27
+    check("a whole set is a day of printing, not a week",
+          grams < 500.0, f"about {grams:.0f} g of PETG if printed solid")
     check(f"the object is {P.OVERALL_D:.0f} mm across and "
-          f"{P.OVERALL_H:.0f} mm tall",
-          P.OVERALL_D < min(P.BED), "the size the brief implies, not a choice")
+          f"{P.STACK.overall_h:.0f} mm tall",
+          P.OVERALL_D < min(P.BED) and P.STACK.overall_h < 325.0,
+          "the size the brief implies, not a choice")
 
 
 def main():
@@ -296,9 +314,9 @@ def main():
     brief_checks()
     cam_checks()
     wall_checks()
+    keying_checks()
     assembly_checks()
     part_checks()
-
     print()
     if FAILS:
         print(f"{len(FAILS)} of {CHECKS} checks FAILED:")

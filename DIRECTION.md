@@ -23,7 +23,7 @@ one-line description. Add a row when you create a project.
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
 | 3d-tools | Shared, project-agnostic 3D helpers — currently a headless software renderer | working |
 | cantstop | 3D-printed push-your-luck dice board game — octagonal wireframe board, stackable pieces | prototype |
-| twist-grip | 3D-printed finger-trap fidget — twist the ring, two jaws close on your finger | prototype |
+| twist-grip | 3D-printed finger-trap fidget — twist the outside, two blades grip 90 mm of finger | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 

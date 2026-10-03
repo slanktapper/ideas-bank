@@ -116,44 +116,37 @@ def render_assembly(phi: float, name: str, fast: bool, az=38, el=34):
 
 
 def render_mechanism(phi: float, name: str, fast: bool):
-    """The ring and the jaws, with the body left off.
+    """The shell and the blades, with the body and cap left off.
 
-    This is the one picture that shows the whole mechanism: two spiral
-    grooves half a turn apart, and a pin sitting in each. A DRAWING, not a
-    preview -- the ring is drawn in grey because the real filament is black,
-    and a black top face lit from above hides the very grooves this view
-    exists to check. The assembly shots carry the real colours.
-
-    Tilted rather than straight down for the same reason: flat shading gives
-    every top face the same value, so from directly overhead a 4.6 mm groove
-    and the surface beside it are the same grey.
+    A DRAWING, not a preview: the shell is drawn grey because the filament
+    is black, and a black floor lit from above hides the very spirals this
+    view exists to check.
     """
     w, h, ss = _size(fast)
-    ps = [{"mesh": T.spun(T.ring(), phi), "color": (0.70, 0.72, 0.76)},
+    ps = [{"mesh": T.spun(T.shell(), phi), "color": (0.70, 0.72, 0.76)},
           *[{"mesh": T.jaw(phi, k), "color": P.COL_JAW}
             for k in range(P.JAW_COUNT)]]
-    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=90, elevation_deg=58,
-                  margin=1.06)
+    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=90, elevation_deg=46,
+                  margin=1.04)
     img = R.render(ps, width=w, height=h, supersample=ss, edges=0.5, **cam)
     if fast:
         _save(img, name)
         return
 
-    def at(r, deg, z=P.Z_RING_TOP):
+    st = P.STACK
+
+    def at(r, deg, z=P.RING_T):
         a = math.radians(deg)
         return (r * math.cos(a), r * math.sin(a), z)
 
-    pin0 = S.pin_radius(phi)
     _callouts(img, cam, w, h, [
-        {"at": at(pin0, S.JAW_ANGLES[0]),
-         "text": f"pin in its groove, r = {pin0:.0f} mm"},
-        {"at": at(S.groove_radius(90.0), 90.0 + phi),
-         "text": f"spiral: r {P.R_PIN_IN:.0f} to {P.R_PIN_OUT:.0f} mm "
-                 f"over half a turn"},
-        {"at": at(P.OVERALL_D / 2, 232, P.WALL_H / 2),
+        {"at": at(S.pin_radius(phi), S.JAW_ANGLES[0]),
+         "text": f"pin in its groove, r = {S.pin_radius(phi):.0f} mm"},
+        {"at": at(P.OVERALL_D / 2, 232, st.wall_top * 0.55),
          "text": "fluted wall — the part you twist"},
-        {"at": at(max(S.jaw_face_radius(phi), 1.0), 310.0, P.Z_PAD_TOP),
-         "text": f"gap {S.gap(phi):.0f} mm"},
+        {"at": at(max(S.jaw_face_radius(phi), 1.0), 300.0,
+                  st.jaw_0 + P.GRIP_L * 0.5),
+         "text": f"{P.GRIP_L:.0f} mm blade, gap {S.gap(phi):.0f} mm"},
     ])
     _save(img, name)
 
@@ -173,35 +166,36 @@ def render_section(phi: float, name: str, fast: bool):
     # The cut keeps the half at negative y and its faces look toward +y, so
     # the camera has to be on the +y side. From the other side you get a
     # tidy render of the outside of the part and no section at all.
-    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=90, elevation_deg=20,
-                  margin=1.10)
+    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=90, elevation_deg=14,
+                  margin=1.04)
     img = R.render(ps, width=w, height=h, supersample=ss, **cam)
     if fast:
         _save(img, name)
         return
 
+    st = P.STACK
     _callouts(img, cam, w, h, [
-        {"at": (S.pin_radius(phi), 0.0, (P.Z_PIN_BASE + P.Z_JAW_0) / 2),
-         "text": f"pin, {P.PIN_LEN:.1f} mm into a {P.GROOVE_DEPTH:.1f} mm "
-                 f"groove"},
-        {"at": (-P.LUG_R_OUT, 0.0, (P.LUG_Z0 + P.LUG_Z1) / 2),
-         "text": "lug under the ring's lip — all that holds it together"},
-        {"at": (P.BORE_D / 2 + 4.0, 0.0, P.Z_LID_0 + P.LIP_T / 2),
-         "text": "lid over the channel: keeps the pin in the groove"},
+        {"at": (S.pin_radius(phi), 0.0, (st.pin_bot_0 + st.jaw_0) / 2),
+         "text": "bottom pin, in the shell's floor"},
+        {"at": (S.pin_radius(phi), 0.0, (st.jaw_top + st.pin_top_1) / 2),
+         "text": "top pin, in the cap — both ends driven together"},
+        {"at": (-P.LUG_R_OUT, 0.0, (st.lug_z0 + st.lug_z1) / 2),
+         "text": "lug under the shell's lip"},
         {"at": (-(S.jaw_face_radius(phi) + 1.0), 0.0,
-                (P.Z_JAW_0 + P.Z_PAD_TOP) / 2),
-         "text": f"pad — {S.gap(phi):.0f} mm apart here"},
+                st.jaw_0 + P.GRIP_L * 0.5),
+         "text": f"{P.GRIP_L:.0f} mm of grip, {S.gap(phi):.0f} mm apart here"},
     ])
     _save(img, name)
 
 
 def render_parts(name: str, fast: bool):
-    """The three printed parts, as they are oriented on the bed."""
+    """The four printed parts, as they are oriented on the bed."""
     w, h, ss = _size(fast)
     pr = T.printable()
-    colours = {"ring": P.COL_RING, "body": P.COL_BODY, "jaw": P.COL_JAW}
+    colours = {"shell": P.COL_SHELL, "body": P.COL_BODY,
+               "cap": P.COL_CAP, "jaw": P.COL_JAW}
     ps, x = [], 0.0
-    for key in ("ring", "body", "jaw"):
+    for key in ("shell", "body", "cap", "jaw"):
         m = pr[key].copy()
         wide = m.bounds[1][0] - m.bounds[0][0]
         m.apply_translation((x - m.bounds[0][0], -m.centroid[1], 0.0))
@@ -215,7 +209,7 @@ def render_parts(name: str, fast: bool):
 def render_coupon(name: str, fast: bool):
     w, h, ss = _size(fast)
     cp = T.coupon()
-    ps = [{"mesh": cp["coupon-ring"], "color": P.COL_RING},
+    ps = [{"mesh": cp["coupon-shell"], "color": P.COL_SHELL},
           {"mesh": cp["coupon-body"], "color": P.COL_BODY},
           {"mesh": cp["coupon-jaw"], "color": P.COL_JAW}]
     cam = R.frame([p["mesh"] for p in ps], azimuth_deg=24, elevation_deg=30,
@@ -242,8 +236,8 @@ def main(argv=None):
 
     if do_ren:
         print("renders")
-        render_assembly(0.0, "01-open.png", a.fast)
-        render_assembly(P.TWIST_SWEEP, "02-shut.png", a.fast)
+        render_assembly(0.0, "01-open.png", a.fast, az=38, el=22)
+        render_assembly(P.TWIST_SWEEP, "02-shut.png", a.fast, az=38, el=22)
         render_mechanism(0.0, "03-mechanism-open.png", a.fast)
         render_mechanism(P.TWIST_SWEEP, "04-mechanism-shut.png", a.fast)
         render_section(S.phi_for_gap(17.0), "05-section-on-a-finger.png", a.fast)
@@ -261,7 +255,7 @@ def main(argv=None):
               f"of PETG printed solid")
         print(f"the fit coupon:    "
               f"{sum(g for n, g in grams if n.startswith('coupon')):.0f} g")
-    print(f"{P.OVERALL_D:.0f} mm across, {P.OVERALL_H:.0f} mm tall; "
+    print(f"{P.OVERALL_D:.0f} mm across, {P.STACK.overall_h:.0f} mm tall; "
           f"bed is {P.BED[0]:.0f} x {P.BED[1]:.0f} mm")
     print(f"\ndone in {time.time() - t0:.1f}s")
     return 0

@@ -3,55 +3,53 @@
 Change a number here, run test_fit.py, then build.py. Nothing else in the
 project hard-codes a size; if a number appears twice, one of them is wrong.
 
-THE ONE SHAPE THAT IS NOT NEGOTIABLE. The brief fixes three things: a
-circular 40 mm opening, two jaws driven inward by twisting the outside, and
-jaw faces that touch when the twist is run all the way over. Those three
-together fix the size of the whole object, and it is worth seeing why before
-changing anything:
+WHAT THE BRIEF FIXES, and what that forces:
 
-  - A face that starts flush with a 40 mm bore and ends at the axis travels
-    20 mm. That is not adjustable while both of those hold.
-  - The cam pin that drives a jaw cannot sit in front of its face, and the
-    cam groove cannot cross the finger hole. So the pin sits behind the face
-    by at least the bore radius plus the ring's inner wall plus half a
-    groove -- about 27 mm here.
-  - So the pin sweeps a band from r=27 to r=47, the ring that carries it is
-    about 100 mm across, and the jaw tail reaches r=51 when open, which the
-    body plate has to keep supported.
+  - a circular 40 mm opening, straight through;
+  - two jaws driven inward by twisting the outside;
+  - faces that touch when the twist is run all the way over;
+  - a grip 90 mm long, so the jaws hold the whole length of a finger
+    rather than a 7 mm band of it.
 
-Hence a device about 111 mm across. Shrinking it means giving up one of the
-three fixed things, or adding a 2:1 lever between pin and jaw -- two more
-moving parts, discussed in direction.md.
+The first three fix how WIDE it is, and the fourth fixes how TALL. A face
+flush with a 40 mm bore that ends on the axis travels 20 mm; the cam pin
+cannot sit in front of its face and its groove cannot cross the finger hole,
+so the pin's inner limit is the bore plus the body wall, the turning fit, the
+lip that holds it together and one wall between that and the groove -- about
+r=29. The pin therefore sweeps r 29.4 to 49.4, a jaw tail reaches r=53.9 when
+open, and the shell has to be outside all of it. Hence 115 mm across.
+
+THE ONE THING THE 90 MM GRIP CHANGES, beyond height: a 90 mm blade driven by
+a single pin at one end is a drawer pulled by one corner. It cocks, and it
+jams. So there are TWO scroll plates -- the shell's floor and the cap -- and
+each jaw has a pin at each end. The two plates turn together, so both ends of
+a jaw are driven identically and there is no couple to cock it.
 """
 
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 
 # ---------------------------------------------------------------------------
 # the brief
 # ---------------------------------------------------------------------------
 
 BORE_D = 40.0              # the finger opening, clear and circular when open
-TWIST_SWEEP = 180.0        # degrees of ring rotation from fully open to shut.
-                           # Half a turn: one comfortable wrist movement, and
-                           # it makes the two cam grooves tile the ring's face
-                           # exactly (see scroll.py).
+TWIST_SWEEP = 180.0        # degrees from fully open to shut. Half a turn is
+                           # one wrist movement, and it also makes the two cam
+                           # grooves tile the face exactly -- see scroll.py.
 JAW_COUNT = 2
+GRIP_L = 90.0              # how much of a finger the jaws hold
 
-JAW_TRAVEL = BORE_D / 2.0  # 20.0 -- flush with the bore, to touching at the
-                           # axis. Derived, never set: it IS the bore radius.
+JAW_TRAVEL = BORE_D / 2.0  # 20.0 -- derived, never set: it IS the bore radius
 
 # ---------------------------------------------------------------------------
 # print tolerances
 # ---------------------------------------------------------------------------
-# An FDM part is not its model. Holes come out undersize, outside corners
-# come out oversize, and a sliding fit designed at nominal is a press fit in
-# plastic. Every clearance in this file is one of these four, so that a first
-# print can move all of them at once.
 
 FIT_SLIDE = 0.35           # faces that slide across each other in use
-FIT_TURN = 0.35            # the rotating bearing between ring and skirt
+FIT_TURN = 0.35            # the rotating bearing between shell and body
 FIT_FREE = 0.30            # faces that only need to not touch
 WALL_MIN = 1.6             # thinnest wall anywhere -- four 0.4 mm lines
 
@@ -59,167 +57,175 @@ WALL_MIN = 1.6             # thinnest wall anywhere -- four 0.4 mm lines
 # the cam pin and its groove
 # ---------------------------------------------------------------------------
 
-PIN_D = 5.0                # the pin standing under each jaw
+PIN_D = 5.0
 GROOVE_W = PIN_D + 2 * FIT_SLIDE      # 5.7
 GROOVE_DEPTH = 4.6
-PIN_LEN = GROOVE_DEPTH - FIT_FREE     # 4.3, so the pin never bottoms out
-# EACH END OF A GROOVE GETS A FLAT PAD, and its length is not a free
-# choice. The groove is a swept slot with a cap square to its path, so the
-# pin's CENTRE has to come to rest a pin radius short of that cap -- measured
-# along the arc, which means the angle depends on the radius. A flat 2 deg
-# looked generous and was not: at the inner end, where the arc is shortest,
-# 2 deg put a third of the pin through the end wall of its own groove.
+PIN_LEN = GROOVE_DEPTH - FIT_FREE     # 4.3, so a pin never bottoms out
 GROOVE_END_CLEAR = FIT_FREE
 _pad = lambda r: math.degrees((GROOVE_W / 2 + GROOVE_END_CLEAR) / r)
 
 # ---------------------------------------------------------------------------
-# the twist ring, and the chain of walls that sets the whole size
+# the chain of walls that sets how wide it is
 # ---------------------------------------------------------------------------
-# Read this top to bottom: every radius is derived from the one above it, and
-# the first one is the finger. Setting any of them by hand breaks the chain
-# and puts a wall somewhere at nothing. test_fit.py measures the real walls
-# in the finished meshes, not these numbers, so a broken chain shows up.
+# Read top to bottom: every radius derives from the one above it, and the
+# first is the finger. Setting any of them by hand breaks the chain and puts
+# a wall somewhere at nothing. test_fit.py measures the real walls.
 
-SKIRT_ID = BORE_D                                  # the bore runs straight
-SKIRT_OD = SKIRT_ID + 2 * WALL_MIN                 # 43.2
-RING_ID = SKIRT_OD + 2 * FIT_TURN                  # 43.9, the turning fit
+BODY_WALL = 3.0                                    # 90 mm of unsupported tube
+                                                   # wants more than the 1.6 a
+                                                   # flat plate needed
+SKIRT_ID = BORE_D
+SKIRT_OD = SKIRT_ID + 2 * BODY_WALL                # 46.0
+RING_ID = SKIRT_OD + 2 * FIT_TURN                  # 46.7, the turning fit
 
-# The lip inside the ring, and the lugs that hook under it, are what holds
-# the object together. LIP_OVERLAP is how much of the lug the lip actually
-# covers -- the only thing resisting a finger being pulled out of a shut jaw.
 LIP_OVERLAP = 1.6
-LIP_R_OUT = RING_ID / 2 + LIP_OVERLAP              # 23.55
+LIP_R_OUT = RING_ID / 2 + LIP_OVERLAP              # 24.95
 LIP_Z0 = 3.8                                       # underside of the lip
 
-# THE SIZE DRIVER. The groove cannot start until the lip has ended and a wall
-# has been put between them -- it is measured from LIP_R_OUT, not from the
-# bore. Getting this wrong is how the first version of this file left a
-# 0.35 mm wall between the lip pocket and the groove.
 RING_INNER_WALL = WALL_MIN
-R_GROOVE_IN = LIP_R_OUT + RING_INNER_WALL          # 25.15
-R_PIN_IN = R_GROOVE_IN + GROOVE_W / 2              # 28.0
-R_PIN_OUT = R_PIN_IN + JAW_TRAVEL                  # 48.0
-R_GROOVE_OUT = R_PIN_OUT + GROOVE_W / 2            # 50.85
+R_GROOVE_IN = LIP_R_OUT + RING_INNER_WALL          # 26.55
+R_PIN_IN = R_GROOVE_IN + GROOVE_W / 2              # 29.4
+R_PIN_OUT = R_PIN_IN + JAW_TRAVEL                  # 49.4
+R_GROOVE_OUT = R_PIN_OUT + GROOVE_W / 2            # 52.25
 
-RING_OUTER_WALL = 2.45
-RING_T = 7.0
+RING_T = 7.0                                       # the shell's floor
 RING_FLOOR = RING_T - GROOVE_DEPTH                 # 2.4 under every groove
 
-# The end pads, now that the two radii exist. The inner one is the longer in
-# angle because the same arc length subtends more of a smaller circle.
-GROOVE_PAD_IN = _pad(R_PIN_IN)                     # ~6.4 deg
-GROOVE_PAD_OUT = _pad(R_PIN_OUT)                   # ~3.8 deg
+GROOVE_PAD_IN = _pad(R_PIN_IN)                     # ~6.1 deg
+GROOVE_PAD_OUT = _pad(R_PIN_OUT)                   # ~3.7 deg
 
 # ---------------------------------------------------------------------------
-# the jaws
+# the jaws -- now blades, not bars
 # ---------------------------------------------------------------------------
 
-JAW_W = 13.0                           # the sliding base, in its channel
+JAW_W = 13.0                           # width across, in its slot
 SLOT_W = JAW_W + 2 * FIT_SLIDE         # 13.7
-JAW_H = 4.4                            # height of that base
+FACE_T = 3.5                           # thickness of the face plate itself
+RIB_W = 5.0                            # the web joining the two arms
+ARM_H = 6.0                            # the arms that carry the pins
 
-# The pin sits exactly R_PIN_IN behind the face, because when the face is on
-# the axis the pin is at its innermost. One number, two meanings, and they
-# cannot drift apart.
-PIN_OFFSET = R_PIN_IN                  # 28.0
-JAW_TAIL = PIN_D / 2 + 2.0             # material behind the pin
-JAW_L = PIN_OFFSET + JAW_TAIL          # 32.5
-
-# The pad is what touches the finger, and what touches the other pad when
-# shut. It rises through the window in the channel's lid, so it can be taller
-# than the base it rides on.
-PAD_W = 8.6
-PAD_L = 6.0
-WINDOW_W = PAD_W + 2 * FIT_SLIDE       # 9.3
+PIN_OFFSET = R_PIN_IN                  # 29.4 -- the pin sits this far behind
+                                       # the face, which is exactly the pin's
+                                       # inner limit, because the face is on
+                                       # the axis when the pin is innermost
+JAW_TAIL = PIN_D / 2 + 2.0
+JAW_L = PIN_OFFSET + JAW_TAIL          # 33.9
+JAW_TAIL_R_MAX = BORE_D / 2 + JAW_L    # 53.9 at full open
 
 # ---------------------------------------------------------------------------
-# the body
+# the body: a tube, not a plate
 # ---------------------------------------------------------------------------
 
-PLATE_T = 7.0
-PLATE_GAP = 0.30                       # body plate clear of the ring's face
-# LIP_T is derived from the lid's underside in the stack below, not stated
-# here: the jaw rides on the RING's face, a little below the plate's own
-# underside, so stating a lid thickness directly gave the jaw 0.6 mm of float
-# where 0.3 was meant.
+BODY_ARC_R_OUT = LIP_R_OUT - 0.15      # 24.8. The tube is thicker above the
+                                       # shell's floor than the skirt below
+                                       # it, and the step is the shoulder the
+                                       # whole body stands on.
+TOPRING_T = 3.0                        # the ring closing the top of the tube
 
-# The plate has to stay under the jaw tail at full open. That is what sets
-# its diameter -- the jaw does, not a styling choice.
-JAW_TAIL_R_MAX = BORE_D / 2 + JAW_L    # 52.5
-PLATE_OD = 2 * (JAW_TAIL_R_MAX + 0.5)  # 106.0
-
-SKIRT_Z0 = 0.0                         # flush with the ring's underside, so
-                                       # the object stands on both
-LUG_ARC = 30.0                         # degrees of arc per lug
-LUG_R_OUT = LIP_R_OUT - FIT_FREE       # 23.25
+# THE CAP'S HOOK, and why it lives in such a narrow band. The cap has to be
+# held DOWN: a finger pulled out of a shut jaw drags the blades up, and they
+# push on the cap. The only thing above them to hook onto is the body, and
+# the only free annulus is between the body's bore and the start of the
+# spiral -- 6.5 mm, which has to hold the body's own wall, two clearances,
+# the hook, and a wall between the hook and the groove.
+#
+# The first version of this had the hook ABOVE the body's lugs, which holds
+# nothing at all: lifting the cap just moves it further away. The hook goes
+# UNDER them.
+CAP_HOOK_R_IN = SKIRT_OD / 2 + FIT_FREE            # 23.3, clear of the neck
+CAP_HOOK_R_OUT = CAP_HOOK_R_IN + WALL_MIN          # 24.9
+CAP_HOOK_T = 3.0
+TOP_LUG_OUT = CAP_HOOK_R_OUT - FIT_FREE            # 24.6, overlapping it
+LUG_ARC = 30.0
+LUG_R_OUT = LIP_R_OUT - FIT_FREE       # 24.65
 LUG_H = 2.2
-LUG_Z1 = LIP_Z0 - FIT_FREE             # 3.5, just under the lip, so the body
-LUG_Z0 = LUG_Z1 - LUG_H                # can only ever lift by FIT_FREE
+NOTCH_SLACK = 3.0
 
-# WHY THESE THREE ANGLES AND NOT 0/120/240. The lugs pass through notches in
-# the lip to go together, and the ring must never find those notches again
-# while in use. Evenly spaced lugs line up with their notches every 120
-# degrees -- including at 120, the middle of a 180 degree sweep, where the
-# body would lift straight off a shut mechanism. Spacing them unevenly means
-# the only rotation lining all three up at once is none at all: the gaps here
+# WHY UNEVEN ANGLES. The lugs pass through notches to go together, and the
+# shell must never find those notches again while in use. Evenly spaced lugs
+# line up every 120 degrees -- including at 120, the middle of a 180 degree
+# sweep, where the body would lift straight off a shut mechanism. These gaps
 # are 100, 115 and 145 degrees, all different, so no turn maps the set onto
-# itself. The notches are open at full open and nowhere else, which is where
-# it is meant to come apart.
+# itself and the notches are open at full open and nowhere else.
 LUG_ANGLES = (0.0, 100.0, 215.0)
 LUG_COUNT = len(LUG_ANGLES)
-NOTCH_SLACK = 3.0                      # degrees each side, to assemble by hand
+
+# The top set is the same pattern turned 40 degrees, to miss the two jaw
+# slots at 0 and 180 -- at the top of the tube there is no material there.
+TOP_LUG_ANGLES = tuple((a + 40.0) % 360.0 for a in LUG_ANGLES)
 
 # ---------------------------------------------------------------------------
-# the grip
-# ---------------------------------------------------------------------------
-# The ring is the thing you twist, so it has to be the outermost thing, and
-# it has to stand proud of the body plate -- which the jaw tails have already
-# pushed out to 104 mm.
-
-WALL_ID = PLATE_OD + 2 * FIT_FREE      # 106.6
-WALL_T = 3.2
-WALL_H = 16.0                          # a little above the plate's top face
-FLUTE_COUNT = 24
-FLUTE_D = 3.4                          # scalloped out of the wall's outside
-FLUTE_DEPTH = 0.9
-
-# ---------------------------------------------------------------------------
-# the stack, bottom to top
+# the shell and the cap: the rotating assembly
 # ---------------------------------------------------------------------------
 
-Z_RING_0 = 0.0
-Z_RING_TOP = Z_RING_0 + RING_T                  # 7.0
-Z_JAW_0 = Z_RING_TOP                            # jaws ride on the ring's face
-Z_PLATE_0 = Z_RING_TOP + PLATE_GAP              # 7.3
-Z_PLATE_TOP = Z_PLATE_0 + PLATE_T               # 14.3
-Z_LID_0 = Z_JAW_0 + JAW_H + FIT_FREE            # 11.7, underside of the lid:
-                                                # measured from the jaw that
-                                                # has to fit under it
-LIP_T = Z_PLATE_TOP - Z_LID_0                   # 2.6
-Z_PAD_TOP = Z_PLATE_TOP                         # pad flush with the top face
-Z_PIN_BASE = Z_JAW_0 - PIN_LEN                  # 2.7
-Z_GROOVE_FLOOR = RING_FLOOR                     # 2.4
+WALL_ID = 2 * (JAW_TAIL_R_MAX + 0.8)   # 109.4 -- clear of the jaw tails
+WALL_T = 3.0
+OVERALL_D = WALL_ID + 2 * WALL_T       # 115.4
 
-OVERALL_D = 2 * (WALL_ID / 2 + WALL_T)          # 113.0
-OVERALL_H = max(WALL_H, Z_PLATE_TOP)            # 16.0
+FLUTE_COUNT = 28
+FLUTE_D = 4.0
+FLUTE_DEPTH = 1.0
+
+
+# Three pegs, not a ring of teeth: the cap has to turn with the shell, and
+# three pegs on the same uneven angles go together exactly one way round.
+PEG_D = 5.0
+PEG_H = 4.0
+PEG_R = (WALL_ID / 2 + OVERALL_D / 2) / 2.0        # mid-wall
+
+PLATE_GAP = 0.30
 
 # ---------------------------------------------------------------------------
-# materials and the machine
+# the stack, as a function of how long the grip is
 # ---------------------------------------------------------------------------
-# See ../available-tools.md. PETG is the functional default: tough, slides on
-# itself without galling the way PLA does, and does not creep under a held
-# load the way PLA does -- and this thing is meant to be squeezed and left
-# squeezed. Colours are filament actually on the shelf.
+# Heights are a function, not constants, so a short-grip prototype is the
+# same object with one argument changed rather than a second model.
 
-BED = (325.0, 320.0)       # H2D single-nozzle envelope
+
+def stack(grip_l: float = GRIP_L) -> SimpleNamespace:
+    jaw_0 = RING_T                              # jaws ride on the shell floor
+    jaw_top = jaw_0 + grip_l
+    cap_0 = jaw_top + PLATE_GAP                 # the cap sits on the shell
+    cap_hook_1 = cap_0 + CAP_HOOK_T
+    topring_0 = cap_hook_1 + FIT_FREE           # the body's top ring, ABOVE
+    topring_1 = topring_0 + TOPRING_T           # the hook that holds the cap
+    cap_top = topring_1 + 0.5
+    return SimpleNamespace(
+        grip_l=grip_l,
+        ring_0=0.0,
+        ring_top=RING_T,
+        jaw_0=jaw_0,
+        jaw_top=jaw_top,
+        pin_bot_0=jaw_0 - PIN_LEN,              # bottom pin, into the floor
+        pin_top_1=jaw_top + PIN_LEN,            # top pin, into the cap
+        groove_floor=RING_FLOOR,
+        arc_top=jaw_top,                        # the thick tube ends here
+        topring_0=topring_0,
+        topring_1=topring_1,
+        wall_top=cap_0,
+        cap_0=cap_0,
+        cap_hook_1=cap_hook_1,
+        cap_top=cap_top,
+        lug_z1=LIP_Z0 - FIT_FREE,
+        lug_z0=LIP_Z0 - FIT_FREE - LUG_H,
+        overall_h=cap_top,
+    )
+
+
+STACK = stack()
+
+# ---------------------------------------------------------------------------
+# materials and the machine -- see ../available-tools.md
+# ---------------------------------------------------------------------------
+
+BED = (325.0, 320.0)
 NOZZLE = 0.4
 LAYER = 0.2
 
-COL_RING = (0.05, 0.08, 0.10)          # PETG Basic, black
+COL_SHELL = (0.05, 0.08, 0.10)         # PETG Basic, black
 COL_BODY = (0.93, 0.94, 0.92)          # PETG Basic, white
 COL_JAW = (0.95, 0.42, 0.05)           # PETG Basic, orange
-COL_CUT = (0.62, 0.64, 0.68)           # section-cut faces
-
-# ---------------------------------------------------------------------------
+COL_CAP = (0.13, 0.17, 0.22)           # black too, drawn a shade apart
+COL_CUT = (0.62, 0.64, 0.68)
 
 DEG = math.pi / 180.0
