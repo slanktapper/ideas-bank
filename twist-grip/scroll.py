@@ -165,6 +165,45 @@ def grooves_polygon(n: int = 240):
 
 
 # ---------------------------------------------------------------------------
+# the ratchet
+# ---------------------------------------------------------------------------
+
+def tooth_radius(psi_deg: float) -> float:
+    """The collar's inner surface, at an angle in the collar's own frame.
+
+    A sawtooth with a flat bottom: within each tooth the surface ramps
+    outward from the crest to the valley, runs flat for a quarter of the
+    pitch -- which is where the nose rests -- then drops back to the crest
+    at a radial wall.
+
+    The post is fixed, so in the collar's frame it travels BACKWARDS as the
+    shell turns to close. Backwards along this profile the surface closes in
+    on the nose gently -- deflecting the post -- and then jumps away at each
+    boundary, which is the click. Forwards, that same boundary is a wall
+    arriving head on, and nothing rides over it. So closing clicks and
+    opening locks, which is the way round a clamp wants.
+    """
+    pitch = 360.0 / P.RATCHET_TEETH
+    # Phased so a valley sits under the post whenever the twist is a whole
+    # number of clicks -- which is the only place it ever comes to rest.
+    phase = P.PAWL_ANGLE - (1.0 - P.RATCHET_FLAT / 2.0) * pitch
+    f = ((psi_deg - phase) % pitch) / pitch
+    if f >= 1.0 - P.RATCHET_FLAT:
+        return P.COLLAR_R_ROOT
+    rise = f / (1.0 - P.RATCHET_FLAT)
+    return P.COLLAR_R_CREST + (P.COLLAR_R_ROOT - P.COLLAR_R_CREST) * rise
+
+
+def click_deg() -> float:
+    return 360.0 / P.RATCHET_TEETH
+
+
+def click_mm() -> float:
+    """How much a jaw moves between one click and the next."""
+    return click_deg() * P.JAW_TRAVEL / P.TWIST_SWEEP
+
+
+# ---------------------------------------------------------------------------
 # what the cam does to the ring's size
 # ---------------------------------------------------------------------------
 

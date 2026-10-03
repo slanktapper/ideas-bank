@@ -189,6 +189,67 @@ PEG_R = (WALL_ID / 2 + OVERALL_D / 2) / 2.0        # mid-wall
 PLATE_GAP = 0.30
 
 # ---------------------------------------------------------------------------
+# the ratchet
+# ---------------------------------------------------------------------------
+# A clicker, and a positive lock that does not depend on friction. It lives
+# ABOVE the cap because that is the only place it can: everywhere a fixed
+# surface faces a turning one lower down, the gap is 0.3 mm, and the bore
+# has to stay clear. Above the cap's top face there is nothing at all.
+#
+# A collar rises from the cap with sawteeth inside it, and a springy post
+# rises from the body inside that. Turning to close walks the post's nose
+# over the ramps -- click -- and the steep flank of each tooth blocks it
+# turning back. Press the pad on top of the post inward and the nose comes
+# off the teeth, and it twists open freely.
+#
+# Both pieces stand UP from parts that already print standing up, so the
+# whole mechanism adds no supports and no extra part.
+
+RATCHET_TEETH = 36                     # 10 deg a click, 1.11 mm of jaw
+                                       # travel, 18 clicks over the sweep.
+                                       # Not finer: the nose has to be
+                                       # NARROWER than the flat bottom of a
+                                       # valley or its edges ride the ramps
+                                       # either side and it never rests
+                                       # anywhere, and a nose much under
+                                       # 1.4 mm is not worth printing.
+RATCHET_DEPTH = 0.8
+RATCHET_FLAT = 0.40                    # of each tooth, a flat valley at the
+                                       # root. A pure sawtooth comes to a
+                                       # knife edge, so the nose has no
+                                       # definite place to rest and sits
+                                       # part-way up a ramp wherever it
+                                       # stops -- preloaded, rattling, and
+                                       # impossible to model as a part that
+                                       # is not interfering with another.
+COLLAR_R_ROOT = CAP_HOOK_R_OUT         # 24.9, the valley the nose sits in
+COLLAR_R_CREST = COLLAR_R_ROOT - RATCHET_DEPTH     # 24.1, what blocks it
+COLLAR_R_OUT = 26.6
+COLLAR_H = 9.5
+
+PAWL_ANGLE = -50.0                     # clear of the top lugs and the slots
+POST_R_IN = 22.9
+POST_R_OUT = 23.9                      # 0.2 inside the crests, so only the
+POST_W = 3.4                           # nose ever touches a tooth
+POST_BOSS_R_OUT = 24.0                 # the pad on the top ring it stands on
+POST_BOSS_ARC = 14.0
+NOSE_R = 24.70                         # just inside the valley floor
+NOSE_W = 1.4                           # narrower than a valley's flat, which
+                                       # is 1.73 mm of arc at this radius
+NOSE_H = 3.0
+PAD_T = 3.0
+PAD_W = 9.0                            # the pad is wide, not deep: anything
+                                       # standing further out than the post
+                                       # stops the collar being lowered over
+                                       # it, and the thing would not go
+                                       # together at all
+
+# The post is a cantilever and its length is the only thing setting how hard
+# the click is. 1.0 mm thick and 3.4 wide, a nose about 8 mm up needs
+# roughly 2 N to push aside -- a firm click rather than a vague one. Shorten
+# it and the force climbs with the cube.
+
+# ---------------------------------------------------------------------------
 # the stack, as a function of how long the grip is
 # ---------------------------------------------------------------------------
 # Heights are a function, not constants, so a short-grip prototype is the
@@ -203,6 +264,10 @@ def stack(grip_l: float = GRIP_L) -> SimpleNamespace:
     topring_0 = cap_hook_1 + FIT_FREE           # the body's top ring, ABOVE
     topring_1 = topring_0 + TOPRING_T           # the hook that holds the cap
     cap_top = topring_1 + 0.5
+    collar_0 = cap_top
+    collar_1 = collar_0 + COLLAR_H
+    nose_1 = collar_1 - 0.6                     # the nose stays in the teeth
+    post_top = collar_1 + 0.9 + PAD_T
     return SimpleNamespace(
         grip_l=grip_l,
         ring_0=0.0,
@@ -219,9 +284,14 @@ def stack(grip_l: float = GRIP_L) -> SimpleNamespace:
         cap_0=cap_0,
         cap_hook_1=cap_hook_1,
         cap_top=cap_top,
+        collar_0=collar_0,
+        collar_1=collar_1,
+        nose_0=nose_1 - NOSE_H,
+        nose_1=nose_1,
+        post_top=post_top,
         lug_z1=LIP_Z0 - FIT_FREE,
         lug_z0=LIP_Z0 - FIT_FREE - LUG_H,
-        overall_h=cap_top,
+        overall_h=post_top,
     )
 
 

@@ -233,6 +233,38 @@ def render_down_the_bore(phi: float, name: str, fast: bool):
     _save(img, name)
 
 
+def render_ratchet(phi: float, name: str, fast: bool):
+    """The clicker, close up: the toothed collar and the post inside it."""
+    w, h, ss = _size(fast)
+    st = P.STACK
+    ps = [{"mesh": T.spun(T.cap(), phi), "color": (0.62, 0.65, 0.70)},
+          {"mesh": T.body(), "color": P.COL_BODY}]
+    # Low, so the post is seen standing proud of the collar rather than
+    # straight down into it.
+    cam = {"eye": (46.0, -62.0, st.post_top + 10.0),
+           "target": (0.0, 0.0, st.collar_0 + 2.0), "fov_deg": 40.0}
+    img = R.render(ps, width=w, height=h, supersample=ss, edges=0.5, **cam)
+    if fast:
+        _save(img, name)
+        return
+
+    a = math.radians(P.PAWL_ANGLE)
+    _callouts(img, cam, w, h, [
+        {"at": (P.NOSE_R * math.cos(a), P.NOSE_R * math.sin(a),
+                (st.nose_0 + st.nose_1) / 2), "dir": (1, 0), "push": 0.26 * w,
+         "text": f"nose in a valley — {S.click_deg():.0f}° a click"},
+        {"at": (P.POST_R_IN * math.cos(a), P.POST_R_IN * math.sin(a),
+                st.post_top - P.PAD_T / 2), "dir": (-1, 0), "push": 0.24 * w,
+         "text": "press here to release"},
+        {"at": (P.COLLAR_R_OUT * math.cos(math.radians(140)),
+                P.COLLAR_R_OUT * math.sin(math.radians(140)),
+                (st.collar_0 + st.collar_1) / 2), "dir": (0, 1),
+         "push": 0.20 * h,
+         "text": f"{P.RATCHET_TEETH} teeth, on the cap"},
+    ])
+    _save(img, name)
+
+
 def render_parts(name: str, fast: bool):
     """The four printed parts, as they are oriented on the bed."""
     w, h, ss = _size(fast)
@@ -294,6 +326,7 @@ def main(argv=None):
                              "10-down-the-bore-on-a-finger.png", a.fast)
         render_down_the_bore(P.TWIST_SWEEP, "11-down-the-bore-shut.png",
                              a.fast)
+        render_ratchet(0.0, "12-ratchet.png", a.fast)
 
     print("\n" + "-" * 78)
     print(S.summary())

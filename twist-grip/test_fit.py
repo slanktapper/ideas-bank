@@ -36,7 +36,11 @@ TOUCHING = 0.05        # mm^3. Solids that share a face boolean out to a
 
 # 120 is in this list on purpose: it is where evenly spaced lugs used to let
 # the body lift straight off.
-SWEEP_SAMPLES = (0.0, 45.0, 90.0, 120.0, 180.0)
+# All whole numbers of clicks. Between clicks the pawl is riding a ramp and
+# IS pressing on a tooth -- that is what a spring does -- so a static model
+# of a half-click position shows an overlap that is the mechanism working,
+# not a fault. Resting positions are the ones that have to be clean.
+SWEEP_SAMPLES = (0.0, 40.0, 90.0, 120.0, 180.0)
 
 
 def check(label, ok, detail=""):
@@ -239,6 +243,79 @@ def keying_checks():
           len(set(gaps)) == 3, f"{gaps} degrees")
 
 
+def ratchet_checks():
+    print("\nthe ratchet")
+    st = P.STACK
+
+    check("a click is a small turn, and there are plenty of them",
+          3.0 < S.click_deg() < 15.0 and P.TWIST_SWEEP / S.click_deg() > 12,
+          f"{S.click_deg():.1f} deg a click = {S.click_mm():.2f} mm of jaw "
+          f"travel, {P.TWIST_SWEEP / S.click_deg():.0f} clicks over the sweep")
+
+    # WHICH WAY IT LOCKS, derived from the profile rather than assumed.
+    # Walking the post along the surface in each direction: one way the
+    # radius only ever eases away gradually or jumps outward (it rides over);
+    # the other way it jumps INWARD, which is a wall arriving head on.
+    pitch = S.click_deg()
+    psis = np.linspace(0.0, 3 * pitch, 4000)
+    rs = np.array([S.tooth_radius(x) for x in psis])
+    steps = np.diff(rs)
+    jumps = steps[np.abs(steps) > P.RATCHET_DEPTH * 0.5]
+    check("opening meets a wall: the surface jumps inward that way",
+          len(jumps) == 3 and bool((jumps < 0).all()),
+          f"{len(jumps)} walls in 3 teeth, each {jumps.mean():+.2f} mm")
+    flat = np.sum(np.abs(rs - P.COLLAR_R_ROOT) < 1e-9) / len(rs)
+    check("each tooth has a flat valley for the nose to rest in",
+          abs(flat - P.RATCHET_FLAT) < 0.02,
+          f"{flat * 100:.0f}% of each tooth is flat bottom")
+    check("closing rides over: backwards, the same step is outward",
+          bool((-jumps > 0).all())
+          and abs(float(-jumps.mean()) - P.RATCHET_DEPTH) < 0.05,
+          f"{-jumps.mean():+.2f} mm of snap, which is the click")
+    check("and between the walls it is a gentle ramp",
+          float(np.abs(steps[np.abs(steps) <= P.RATCHET_DEPTH * 0.5]).max())
+          < 0.01,
+          "no step a nose could catch on")
+
+    # The nose has to sit in a valley and be stopped by a crest.
+    check("the nose sits in a valley with a crest to stop it",
+          P.COLLAR_R_CREST < P.NOSE_R < P.COLLAR_R_ROOT,
+          f"nose tip r={P.NOSE_R}, valley {P.COLLAR_R_ROOT}, crest "
+          f"{P.COLLAR_R_CREST} — {P.NOSE_R - P.COLLAR_R_CREST:.2f} mm of bite")
+    check("only the nose ever touches a tooth",
+          P.POST_R_OUT < P.COLLAR_R_CREST,
+          f"the post itself stops at r={P.POST_R_OUT}, "
+          f"{P.COLLAR_R_CREST - P.POST_R_OUT:.2f} mm clear of the crests")
+    check("pressing the pad far enough frees it",
+          P.NOSE_R - P.COLLAR_R_CREST < 1.2,
+          f"{P.NOSE_R - P.COLLAR_R_CREST:.2f} mm of press to clear the teeth")
+    check("the pad is clear of the collar, so it can be pressed",
+          st.post_top - P.PAD_T > st.collar_1,
+          f"pad at z {st.post_top - P.PAD_T:.1f}..{st.post_top:.1f}, collar "
+          f"tops out at {st.collar_1:.1f}")
+    check("the ratchet never narrows the bore",
+          P.COLLAR_R_CREST > P.BORE_D / 2 and P.POST_R_IN > P.BORE_D / 2,
+          f"nothing inside r={min(P.COLLAR_R_CREST, P.POST_R_IN):.1f}")
+
+    # The post is a spring, so it has to be free to move. Press the POST,
+    # not the body: shoving the whole body sideways proves nothing except
+    # that a body off its axis fouls the shell.
+    post = T.pawl_post(st)
+    inward = (math.cos(math.radians(P.PAWL_ANGLE + 180)),
+              math.sin(math.radians(P.PAWL_ANGLE + 180)))
+    free = True
+    for phi in (0.0, 45.0, 90.0, 135.0, 180.0):
+        moved = post.copy()
+        moved.apply_translation((inward[0] * 0.9, inward[1] * 0.9, 0.0))
+        if overlap(moved, T.spun(T.cap(), phi)) > TOUCHING:
+            free = False
+    check("the post has room to be pressed, at every twist",
+          free, "0.9 mm inward clears the teeth at five angles")
+    check("and at rest it is not fighting the teeth",
+          overlap(post, T.cap()) < TOUCHING,
+          "the nose sits in a flat valley, not part-way up a ramp")
+
+
 def assembly_checks():
     print("\nassembly: does it go together, and move")
     st = P.STACK
@@ -277,8 +354,11 @@ def assembly_checks():
           "nothing rubbing in normal use")
 
     # ...and all of it comes apart where it is meant to.
-    at_open = (overlap(lifted(b, 4.0), T.shell())
-               + overlap(lifted(T.cap(), 4.0), b))
+    # Without the pawl post: taking it apart means pressing the release, and
+    # the check is about the lugs and notches, not the ratchet.
+    b_free = T.body(with_post=False)
+    at_open = (overlap(lifted(b_free, 4.0), T.shell())
+               + overlap(lifted(T.cap(), 4.0), b_free))
     check("at full open the notches line up and it lifts apart",
           at_open < TOUCHING,
           f"{at_open:.3f} mm3 in the way — deliberate, this is how it "
@@ -344,6 +424,7 @@ def main():
     cam_checks()
     wall_checks()
     keying_checks()
+    ratchet_checks()
     assembly_checks()
     part_checks()
     print()

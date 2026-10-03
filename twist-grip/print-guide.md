@@ -13,7 +13,7 @@ stl/coupon-cap.stl                              20 g
 stl/coupon-jaw.stl                              17 g
 ```
 
-About 76 g all told, against **370 g and the better part of a day** for the
+About 77 g all told, against **370 g and the better part of a day** for the
 real set. It is the same mechanism with the grip cut from 90 mm to 25 and a
 120° wedge taken out of it — wide enough to take in a slot WALL and not just
 the slot, because a 26 mm blade's slot is 84° of the bore on its own — cut from the finished meshes rather than modelled
@@ -28,6 +28,7 @@ It carries every fit that matters:
 | blade in slot | 0.35 mm each side | blade rocks, or will not slide |
 | lugs under lip and hook | 0.30 mm | body or cap rattles up and down |
 | body in the shell's bore | 0.35 mm | wobbles instead of turning true |
+| the ratchet | 0.8 mm of tooth | vague click, or one that will not turn |
 
 Assemble the wedge and run the blade through its 25° or so of travel. If it
 binds, raise `FIT_SLIDE` in `params.py` by 0.05 and reprint the coupon; if it
@@ -120,8 +121,11 @@ their notches.
 3. Drop the cap on: three pegs into their three holes — it only goes on one
    way round — its hook notches over the body's top lugs, and the top pins up
    into the slots.
-4. Twist. All three sets of lugs leave their notches at once and it is
-   together.
+4. **Press and hold the release pad** on top of the post as the cap goes
+   down. The pawl's nose stands proud of the tooth crests, so the collar
+   cannot pass it otherwise.
+5. Twist. All three sets of lugs leave their notches at once, and the
+   ratchet starts clicking.
 
 From then on the cam holds the blades radially, the shell's lip holds the
 body down, and the body's top lugs hold the cap down. It comes apart again by
@@ -144,6 +148,10 @@ position it is possible in.
   not unwind; the spiral is shallow enough to lock on friction alone. If it
   creeps, the surfaces are more slippery than the 0.3 assumed and the design
   wants a detent.
+- **The click.** 10° a turn, 18 of them over the sweep. It should click
+  going closed and refuse to go back until you press the pad. If it clicks
+  but will not hold, the nose is not reaching its valley; if it will barely
+  turn, the post is too stiff — thin it by 0.1 mm and reprint the body.
 - **The faces meeting.** Twisted all the way over, the two blades should land
   flat against each other down their whole 90 mm, not touching at one end
   first. Meeting at the top or bottom first means the blades are cocked.

@@ -170,6 +170,55 @@ def lugs(angles, r_in, r_out, z0, z1):
 # the parts
 # ---------------------------------------------------------------------------
 
+
+def ratchet_ring(st):
+    """The toothed collar on top of the cap.
+
+    A sawtooth: over each tooth the surface ramps outward from the crest to
+    the valley, then drops back to the crest at a radial wall. Which way
+    that lets it turn is worth deriving rather than guessing.
+
+    The post is fixed, so in the COLLAR's own frame it travels backwards as
+    the shell turns to close. Going backwards along this profile the nose
+    rides gently outward up a ramp, then falls off a wall into the next
+    valley -- that is the click, and it is free. Going the other way the
+    nose meets that wall head on and stops. Closing is backwards along the
+    profile, so closing clicks and opening locks.
+    """
+    from shapely.geometry import Polygon
+
+    pitch = 360.0 / P.RATCHET_TEETH
+    inner = []
+    for i in range(P.RATCHET_TEETH):
+        for f in np.linspace(0.0, 1.0, 40, endpoint=False):
+            psi = (i + f) * pitch
+            a, r = math.radians(psi), S.tooth_radius(psi)
+            inner.append((r * math.cos(a), r * math.sin(a)))
+    outer = [(P.COLLAR_R_OUT * math.cos(math.radians(d)),
+              P.COLLAR_R_OUT * math.sin(math.radians(d)))
+             for d in np.linspace(0, 360, 361)[:-1]]
+    return from_polygon(Polygon(outer, [inner[::-1]]), st.collar_0, st.collar_1)
+
+
+def pawl_post(st):
+    """The springy post on the body, its nose, and the pad you press.
+
+    One cantilever. Press the pad inward, the nose comes off the teeth, and
+    the shell twists back freely. It stands on a boss on the body's top
+    ring, so it prints standing up with everything else.
+    """
+    post = bar(P.POST_R_OUT - P.POST_R_IN, P.POST_W, st.topring_1,
+               st.post_top, x0=P.POST_R_IN)
+    nose = bar(P.NOSE_R - P.POST_R_OUT + 0.2, P.NOSE_W, st.nose_0, st.nose_1,
+               x0=P.POST_R_OUT - 0.2)
+    pad = bar(P.POST_R_OUT - P.POST_R_IN, P.PAD_W,
+              st.post_top - P.PAD_T, st.post_top, x0=P.POST_R_IN)
+    boss = sector(P.SKIRT_OD / 2 - 0.2, P.POST_BOSS_R_OUT,
+                  -P.POST_BOSS_ARC / 2, P.POST_BOSS_ARC / 2,
+                  st.topring_0, st.topring_1)
+    return spun(fuse(post, nose, pad, boss), P.PAWL_ANGLE)
+
+
 def shell(st=None):
     """Fluted tube, scroll plate for a floor, three pegs on the rim."""
     st = st or P.STACK
@@ -206,7 +255,7 @@ def shell(st=None):
     return solid
 
 
-def body(st=None):
+def body(st=None, with_post=True):
     """The inner tube: bore, two slots, a skirt below and a ring above.
 
     Three diameters up its height, and each one is forced. The skirt is thin
@@ -225,7 +274,8 @@ def body(st=None):
              st.lug_z0, st.lug_z1),
         # the top lugs the cap's hook catches under
         lugs(P.TOP_LUG_ANGLES, P.SKIRT_OD / 2 - 0.2, P.TOP_LUG_OUT,
-             st.topring_0, st.topring_1))
+             st.topring_0, st.topring_1),
+        *([pawl_post(st)] if with_post else []))
 
     solid = cut(solid, tube(0.0, P.BORE_D / 2, st.ring_0 - 1.0,
                             st.topring_1 + 1.0))
@@ -262,6 +312,9 @@ def cap(st=None):
     solid = cut(solid, fuse(*[
         post(P.PEG_D + 2 * P.FIT_FREE, st.cap_0 - 0.5, st.cap_top + 0.5,
              at_r=P.PEG_R, angle_deg=a) for a in P.LUG_ANGLES]))
+
+    # the ratchet collar, standing on the cap's top face
+    solid = fuse(solid, ratchet_ring(st))
     return solid
 
 

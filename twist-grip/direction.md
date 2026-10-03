@@ -9,7 +9,10 @@ cylinder; twist the fluted outside and two blades come in from opposite sides
 and close on whatever is in the hole, gripping **90 mm of it** — the whole
 length of a finger, not a band round it. Each blade is **26 mm wide**, so
 between them they wrap about 160° of the bore's circumference: a finger is
-held on nearly half its perimeter. Twist it all the way and the two
+held on nearly half its perimeter.
+
+It clicks, too. A ratchet on top lets it close in 10° steps and locks against
+opening, and a pad you press with a thumbnail lets it go. Twist it all the way and the two
 faces meet on the axis. Twist it back and they retreat flush with the bore,
 leaving a clean 40 mm circle.
 
@@ -54,8 +57,8 @@ The brief fixes four things, and between them they fix the whole object.
 3. So the pin sweeps **r 29.4 to 49.4**, a blade's tail reaches **r = 53.9**
    when open, and the shell has to be outside all of it. **115 mm.**
 
-**How tall**, from the fourth: 90 mm of grip, plus the scroll plate under it
-and the one over it. **104 mm.**
+**How tall**, from the fourth: 90 mm of grip, plus the scroll plate under it,
+the one over it, and the ratchet collar above that. **118 mm.**
 
 A 2:1 lever between pin and blade would bring the diameter to about 80 mm, at
 the cost of two more moving parts and two more pivots per jaw. It is the
@@ -92,6 +95,41 @@ with the groove blind in it, and the **cap**, with the same spiral cut
 straight through so the pins are visible travelling. Three pegs on the
 shell's rim key the cap to it, and each blade has a pin at each end. Both
 ends are driven identically and the couple never exists.
+
+## The clicker
+
+A ratchet, so closing it goes click-click-click, it cannot creep back, and a
+press lets it go — the action of a quick-grip clamp.
+
+**It lives above the cap because that is the only place it fits.** The body
+is fixed and the shell and cap turn, so a ratchet needs one of each facing
+the other with room between them. Lower down there is none: skirt to shell
+bore is 0.35 mm, neck to cap hook is 0.30, top ring to cap is 1.90, and the
+bore itself has to stay clear for the finger. Above the cap's top face there
+is nothing at all, so that is where it went: a toothed collar standing up
+from the cap, and a springy post standing up inside it from the body. Both
+rise from parts that already print standing up, so the whole mechanism costs
+no supports and no extra part.
+
+**Which way it locks is derived, not assumed.** Each tooth ramps outward from
+crest to valley and then drops back at a radial wall. The post is fixed, so
+in the collar's frame it travels backwards as the shell closes: backwards
+along that profile the surface eases in on the nose and then jumps away at
+each wall — the click — while forwards the same wall arrives head on and
+stops it dead. `test_fit.py` walks the profile both ways and checks the sign
+of every discontinuity rather than taking the drawing's word for it.
+
+**Each valley has a flat bottom**, four tenths of the pitch. A pure sawtooth
+comes to a knife edge, so the nose has nowhere definite to rest and stops
+part-way up a ramp — permanently preloaded, and rattling. The flat also has
+to be *wider than the nose*, which is what fixes the tooth count at 36: at 48
+the flat was 0.8 mm and the nose's own edges rode the ramps either side.
+
+Figures: **10° a click**, 1.11 mm of jaw travel, 18 clicks over the sweep,
+0.8 mm of tooth, a 17° ramp, and about 2 N to press the post aside — set by
+the post being a 1.0 mm cantilever with its nose 8 mm up. That force goes as
+the cube of the length, so shortening the post is the fastest way to make it
+unpleasant.
 
 ## How it holds together
 
@@ -158,7 +196,7 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 
 ## Where it stands
 
-**Modelled and checked; no filament spent.** All 54 checks pass, and the ones
+**Modelled and checked; no filament spent.** All 70 checks pass, and the ones
 worth having interrogate the finished meshes rather than the numbers that
 made them: a 40 mm cylinder passing clean through all 104 mm of the open
 object, no interference between any two of the five parts at five twist
@@ -193,6 +231,14 @@ Defects the checks caught, none of which a drawing would have shown:
   full open. The tail is now trimmed to an arc about the axis, which costs
   1.6 mm off each corner rather than 3 mm of overall diameter, and follows
   the blade width automatically.
+- **The release pad blocked its own assembly.** It flared out to r 26.8 so
+  it would be easy to press — which put it in the path of the collar that
+  has to be lowered over it. The pad is wide tangentially now and no deeper
+  than the post, which costs nothing and lets the cap go on.
+- **The nose was wider than the valley it was supposed to rest in** — a
+  3.4 mm nose and a 0.8 mm flat, so its edges sat on the ramps either side
+  and it was never at rest anywhere. Hence a narrow 1.4 mm nose and 36 teeth
+  rather than 48.
 - **A check that lied.** The one asserting a blade's two pins share an axis
   failed on a correct part: slicing exactly on a face leaves zero-volume
   slivers in the boolean, and `.centroid` is area-weighted, so the slivers
@@ -211,9 +257,19 @@ sideways tests nothing.
 
 ## Open questions
 
-- **Is 115 × 104 mm too big in the hand?** It is a tin. The 2:1 lever gets
+- **How hard is the click, really?** About 2 N on paper, from beam theory on
+  a printed cantilever — which is the least trustworthy number in this
+  project. PETG's modulus varies with print temperature and layer bonding,
+  and the post is loaded across its layers. The coupon carries the whole
+  ratchet, so print it and feel it; the fix either way is one number
+  (`POST_R_OUT - POST_R_IN`) and a reprint of two small parts.
+- **Seating the cap means holding the release in.** The nose stands proud of
+  the tooth crests, so the collar cannot be lowered past it otherwise. That
+  is one instruction rather than a mechanism, but a lead-in chamfer on the
+  teeth would remove it.
+- **Is 115 × 118 mm too big in the hand?** It is a tin. The 2:1 lever gets
   the diameter to about 80 mm; nothing gets the height down except a shorter
-  grip.
+  grip or a shorter ratchet post.
 - **Does one twist still feel right over 90 mm?** The blades now have ten
   times the contact area they had as pads, so the friction against a finger
   is far higher while the cam is unchanged. The coupon will say.
