@@ -1,11 +1,21 @@
 # cantstop — parametric CAD-as-code toolchain
 # Python 3.10+.  Install with:  python3 -m pip install -r requirements.txt
-numpy>=1.26
-trimesh>=4.0
+
+# The renderer now lives in ../3d-tools and brings its own dependencies with
+# it: numpy, pillow, trimesh, and the three packages its section() needs.
+-r ../3d-tools/requirements.txt
+
 manifold3d>=2.3        # fast, robust boolean engine used by trimesh
 shapely>=2.0           # polygon algebra for the embossed numerals
 mapbox_earcut>=1.0     # polygon triangulation backend for trimesh
 matplotlib>=3.8        # glyph outlines (TextPath) + the bed-fit diagram
-pillow>=10.0           # PNG output / supersample downscaling
-networkx>=3.0          # trimesh needs these two to cap section cuts
-rtree>=1.0             #   (used only by the renders, not by STL export)
+scipy>=1.11            # trimesh's .convex_hull, which board.py uses for the
+                       # flares and the crown — see board.py:843. This line
+                       # was missing: build.py could not run at all from a
+                       # clean install of this file.
+
+# networkx and rtree used to be listed here, "needed to cap section cuts".
+# They are not: the full build and all 141 checks run without either, and
+# produce byte-identical STLs and PNGs. What capping actually needs is
+# scipy, shapely and mapbox_earcut, which ../3d-tools/requirements.txt asks
+# for and explains.

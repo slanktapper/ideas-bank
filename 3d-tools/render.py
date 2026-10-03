@@ -1,6 +1,11 @@
 """A small software rasteriser, so renders need no GPU and no display.
 
-The container this project is developed in has no OpenGL, and the usual
+Shared by every project in this repository that needs to look at a part
+before printing it. It knows nothing about any particular model -- only
+about lists of {"mesh": Trimesh, "color": (r, g, b)}. Written inside
+cantstop and extracted here unchanged; see direction.md.
+
+The containers these projects are developed in have no OpenGL, and the usual
 headless options (pyrender/OSMesa, pyglet under xvfb) are a pile of system
 dependencies that break the moment the base image moves. Rasterising into a
 numpy z-buffer instead is about a hundred lines, has no dependencies beyond
@@ -9,8 +14,8 @@ byte-identical PNG on any machine.
 
 Flat shading with two lights and a depth-discontinuity edge pass. That last
 bit matters more than it sounds: a wireframe lattice viewed head-on turns
-into visual mush without edges, and the whole point of these renders is to
-see whether the lattice is right before committing filament to it.
+into visual mush without edges, and the point of these renders is to see
+whether a part is right before committing filament to it.
 """
 
 from __future__ import annotations
@@ -298,10 +303,17 @@ def annotate(img, items, font_size=15, color=(26, 30, 40), leader=(90, 100, 118)
     "align": "left"|"right"}.
     """
     from PIL import ImageDraw, ImageFont
-    from matplotlib import font_manager
 
+    # matplotlib is here only to find a TrueType file on disk, because PIL's
+    # built-in font is a fixed-size bitmap. The import belongs inside the
+    # try: there is already a working fallback below it, and leaving it
+    # outside made a heavy dependency mandatory for one font lookup in a
+    # module whose point is to need nothing but numpy and pillow. With
+    # matplotlib present the result is byte-for-byte what it always was.
     try:
-        path = font_manager.findfont(font_manager.FontProperties(family="DejaVu Sans"))
+        from matplotlib import font_manager
+        path = font_manager.findfont(
+            font_manager.FontProperties(family="DejaVu Sans"))
         font = ImageFont.truetype(path, font_size)
     except Exception:
         font = ImageFont.load_default()

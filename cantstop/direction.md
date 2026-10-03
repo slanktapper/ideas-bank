@@ -697,7 +697,7 @@ Parametric CAD as code, in Python. No GUI, no OpenGL, no system packages.
 | Geometry | `trimesh`, with `manifold3d` as the boolean engine |
 | Polygons | `shapely` + `mapbox_earcut`, for the extruded numerals |
 | Glyphs | `matplotlib.textpath` (DejaVu Sans, bundled — same result anywhere) |
-| Renders | a ~150-line software rasteriser in `render.py`; numpy z-buffer, no GPU |
+| Renders | a software rasteriser, now shared: `../3d-tools/render.py`; numpy z-buffer, no GPU |
 | Output | binary STL, PNG |
 
 **Why not OpenSCAD.** It was the obvious first choice and it is installable
@@ -709,6 +709,19 @@ second toolchain. Python keeps geometry, tests and renders in one place.
 pyglet under xvfb) are a stack of system libraries that break whenever the base
 image moves. A numpy z-buffer has no dependencies past numpy and pillow and is
 deterministic — the same geometry gives the same PNG on any machine.
+
+**Why the renderer is no longer in this folder.** It was written here, and it
+now lives in `../3d-tools/`, because a second project needed it and a renderer
+is not where this project's ideas live — it knows nothing about dice, boards or
+columns, and it should not. `build.py` puts that one folder on `sys.path`; it
+is the only thing cantstop takes from outside itself.
+
+The consequence worth knowing: **this project is the renderer's regression
+test.** The PNGs in `renders/` are committed and the build is deterministic, so
+after any change in `3d-tools` a full `python3 build.py` here must leave
+`git status` clean. If it does not, either the change was wrong or the output
+moved on purpose — and if it moved on purpose, the new PNGs get committed with
+the reason.
 
 ## How to run
 
@@ -770,7 +783,10 @@ Defects this loop has caught rather than a print:
   correct under orthographic projection, and the error grows with the triangle,
   so nothing in the lattice ever showed it. The slab's top face is one
   57,000 mm² sheet and it showed at once, as wedges of z-fighting radiating
-  from its vertices. `render.py` now interpolates 1/z, which is exact.
+  from its vertices. The renderer now interpolates 1/z, which is exact. It is
+  also now pinned by a check in `../3d-tools/test_render.py` rather than by
+  this project's eyes: a feature sunk 1 mm into a large face has to stay
+  hidden, and with linear depth it shows through in full.
 
 What software cannot tell us is the fit, or what a colour boundary looks like
 coming off a printer. There are two test prints for that, in order:

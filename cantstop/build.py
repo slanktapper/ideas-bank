@@ -20,6 +20,13 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
+# The renderer lives in ../3d-tools, shared with the other projects that draw
+# a part before printing it. This is the only thing cantstop takes from
+# outside its own folder; the folder name is not a Python identifier, so it
+# goes on sys.path rather than being imported as a package. See
+# ../3d-tools/direction.md.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "3d-tools"))
+
 import board as B
 import params as P
 import render as R
