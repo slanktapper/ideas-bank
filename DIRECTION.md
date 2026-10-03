@@ -21,6 +21,18 @@ one-line description. Add a row when you create a project.
 | Short name | Description | Status |
 | --- | --- | --- |
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
+| 3d-tools | Shared, project-agnostic 3D helpers — currently a headless software renderer | working |
 | cantstop | 3D-printed push-your-luck dice board game — octagonal wireframe board, stackable pieces | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
+
+## The one shared folder
+
+`3d-tools` is the exception to the independence rule above, and it is meant to
+stay the only one. It holds tooling rather than an idea: code that is the same
+whatever is being printed, and that knows nothing about any project. Other
+folders import from it; it imports from none of them, ever.
+
+Anything that needs a project's vocabulary to explain is not a tool, and
+belongs in that project — even if two projects would both like it. Duplication
+between ideas is still the cheaper mistake.
