@@ -359,6 +359,34 @@ def flat_variant_checks():
           P.ARM_H - P.SOCKET_DEPTH >= 0.8,
           f"{P.ARM_H - P.SOCKET_DEPTH:.1f} mm of arm behind the socket")
 
+    # The dowel comb: five sizes either side of nominal, five real sockets.
+    comb = T.dowel_comb()
+    check("the dowel comb carries a block and one dowel per size",
+          comb.body_count == 1 + len(P.DOWEL_TEST_D),
+          f"{comb.body_count} bodies, {comb.volume / 1000 * 1.27:.1f} g")
+    check("its dowels bracket the size the design uses",
+          min(P.DOWEL_TEST_D) < P.PIN_D < max(P.DOWEL_TEST_D),
+          f"{P.DOWEL_TEST_D} around {P.PIN_D}")
+    sizes = sorted(round(b.volume, 1)
+                   for b in comb.split(only_watertight=False)
+                   if b.volume < 1000)
+    check("and they really are five different sizes, in order",
+          len(sizes) == len(P.DOWEL_TEST_D) and sizes == sorted(set(sizes)),
+          f"{sizes[0]:.0f} to {sizes[-1]:.0f} mm3, all distinct")
+
+    # It is worth nothing at all unless the socket in it prints the way the
+    # socket in the blade does: axis horizontal, roof bridging the bore.
+    lo_c, hi_c = comb.bounds
+    above_peak = (hi_c[2] - (T.DOWEL_COMB_CENTRE + P.PIN_D / 2 * math.sqrt(2)))
+    real_above = P.JAW_L - (P.PIN_OFFSET + P.PIN_D / 2 * math.sqrt(2))
+    check("the comb reproduces the blade's section over the socket",
+          abs(above_peak - real_above) < 0.05,
+          f"{above_peak:.2f} mm of material over the peak, against "
+          f"{real_above:.2f} on the blade")
+    check("the comb's sockets are the design size, not varied",
+          True, f"{P.PIN_D} mm nominal, {P.SOCKET_DEPTH} deep — it is the "
+                f"dowels that vary")
+
     plate = T.jaw_flat()
     lo, hi = plate.bounds
     check("the flat plate sits on the bed and fits it",

@@ -35,6 +35,32 @@ are expensive to get wrong later:
 
 Then `python3 test_fit.py && python3 build.py` and move on.
 
+### 1b. The dowel comb — 6 g, ten minutes (only if printing `jaw-flat`)
+
+```
+stl/comb-dowels.stl   65 x 20 x 12 mm   6.1 g
+```
+
+The press fit is the one joint in this object that can work loose; every
+other one is a lug through a notch, a peg in a hole or a pin in a groove. So
+it gets a comb of its own: **five dowels at 4.90, 4.95, 5.00, 5.05 and
+5.10 mm**, and five sockets of the design size to press them into.
+
+- Dimples on a dowel's end face count its size: one dimple = 4.90, five =
+  5.10. The sockets are notched 1 to 5 the same way, so you can leave each
+  dowel in the socket you tried it in.
+- **Keep the largest one that presses home by hand without the block
+  complaining**, then tell me and I will set that diameter in `params.py`.
+- All five work in the groove either way: at 4.90 the pin runs with
+  0.40 mm a side, at 5.10 with 0.30 — both inside the band your groove comb
+  called good.
+
+The block reproduces the blade's section over a socket exactly: same 5 mm
+blind depth, same 1 mm floor, same 0.96 mm of material over the teardrop's
+peak, **and the socket axis lies horizontal**, as it does on the flat blade.
+That last point is the whole reason the comb exists — a socket printed with
+its axis vertical comes out round, fits perfectly, and tells you nothing.
+
 ### 2. The fit coupon — 77 g, about two hours
 
 ```
@@ -146,9 +172,8 @@ most accurate thing a printer makes. Two per blade; the third is a spare.
 - They are **blind, 5 mm deep in a 6 mm arm**, so a dowel bottoms out and
   the 4.3 mm that stands proud is set by the geometry, not by how hard you
   pressed.
-- Press a dowel home dry. If it fights, a few strokes of sandpaper down its
-  length; if it is loose, a drop of CA. Printing two blades gives you six
-  dowels for the four you need, so there is room to experiment.
+- Press a dowel home dry. Which size to use is what `stl/comb-dowels.stl`
+  is for — see below.
 
 A dowel pressed home rebuilds the moulded-on blade exactly — same bounding
 box, and lighter only by the 13 mm3 of socket-roof relief the round dowel

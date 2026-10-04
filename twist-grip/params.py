@@ -147,6 +147,12 @@ SOCKET_ROOF = 45.0                     # degrees, self-supporting
 DOWEL_L = PIN_LEN + SOCKET_DEPTH       # 9.3
 DOWEL_SPARES = 1                       # a jaw needs two; print three
 
+# The press fit is the one joint in this object that can work loose -- every
+# other one is a lug through a notch, a peg in a hole or a pin in a groove.
+# So it gets a comb of its own: five dowels either side of nominal, and five
+# real sockets to press them into.
+DOWEL_TEST_D = (4.90, 4.95, 5.00, 5.05, 5.10)
+
 # ---------------------------------------------------------------------------
 # the body: a tube, not a plate
 # ---------------------------------------------------------------------------

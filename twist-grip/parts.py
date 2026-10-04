@@ -614,3 +614,77 @@ def jaw_flat():
         d.apply_translation((x + k * (P.PIN_D + 5.0), 0.0, 0.0))
         pins.append(d)
     return trimesh.util.concatenate([blade, *pins])
+
+
+# ---------------------------------------------------------------------------
+# the dowel comb
+# ---------------------------------------------------------------------------
+
+DOWEL_COMB_PITCH = 13.0
+DOWEL_COMB_CENTRE = 7.0        # socket axis, above the bed
+
+
+def _teardrop_sideways(d, length, x, z):
+    """A teardrop socket lying on its side, peak upward.
+
+    The socket has to be printed the way the real one is -- axis horizontal,
+    roof bridging over the bore -- because that orientation is the whole
+    reason it is a teardrop and the whole reason its printed size is not its
+    drawn size. A socket test printed with the axis vertical would come out
+    round, fit perfectly, and tell you nothing.
+    """
+    from shapely.geometry import Polygon
+
+    r = d / 2.0
+    # The arc covers the 270 degrees AWAY from the peak, so the apex closes
+    # it between the two ends. Run it the other way and the apex connects
+    # across the middle: a self-intersecting outline that extrudes to
+    # something that is not a solid.
+    pts = [(r * math.cos(a), r * math.sin(a))
+           for a in np.radians(np.linspace(135.0, 405.0, 64))]
+    pts.append((0.0, r * math.sqrt(2.0)))          # peak, toward +y
+    m = trimesh.creation.extrude_polygon(Polygon(pts), length)
+    # +90 about x: the extrusion axis turns into -y, and the peak turns up
+    m.apply_transform(trimesh.transformations.rotation_matrix(
+        math.pi / 2, (1, 0, 0)))
+    m.apply_translation((x, length, z))
+    return m
+
+
+def dowel_comb():
+    """Five dowels either side of nominal, and five real sockets for them.
+
+    The block reproduces the arm's section around a socket exactly: the same
+    5 mm blind depth, the same 1 mm of floor behind it, and the same ~1 mm of
+    material over the teardrop's peak. What it does NOT reproduce is the
+    29 mm of blade below the socket, which costs plastic and changes nothing
+    about how a horizontal hole prints.
+    """
+    r = P.PIN_D / 2.0
+    height = DOWEL_COMB_CENTRE + r * math.sqrt(2.0) + 0.96
+    depth = P.SOCKET_DEPTH + 1.0                   # 5 mm socket, 1 mm floor
+    width = DOWEL_COMB_PITCH * len(P.DOWEL_TEST_D)
+
+    block = trimesh.creation.box(extents=(width, depth, height))
+    block.apply_translation((width / 2, depth / 2, height / 2))
+
+    cuts, pins = [], []
+    for i, d in enumerate(P.DOWEL_TEST_D):
+        x = i * DOWEL_COMB_PITCH + DOWEL_COMB_PITCH / 2
+        # every socket is the DESIGN size; it is the dowels that vary
+        cuts.append(_teardrop_sideways(P.PIN_D, P.SOCKET_DEPTH + 0.01, x,
+                                       DOWEL_COMB_CENTRE))
+        cuts.append(_comb_ticks(i + 1, x - 3.0, depth - 1.4,
+                                height - 1.0, height))
+
+        pin = post(d, 0.0, P.DOWEL_L, sections=96)
+        pin.apply_translation((x, depth + 11.0, 0.0))
+        # dimples on the top face, counting the size
+        marks = [post(0.9, P.DOWEL_L - 0.6, P.DOWEL_L + 0.5,
+                      at_r=1.45, angle_deg=90.0 + k * 40.0, sections=16)
+                 for k in range(i + 1)]
+        for m in marks:
+            m.apply_translation((x, depth + 11.0, 0.0))
+        pins.append(cut(pin, fuse(*marks)) if marks else pin)
+
+    return trimesh.util.concatenate([cut(block, fuse(*cuts)), *pins])
