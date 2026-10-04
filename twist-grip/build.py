@@ -47,6 +47,7 @@ def write_stls() -> list[tuple[str, float]]:
     out = []
     items = dict(T.printable())
     items.update(T.coupon())
+    items.update(T.fit_comb())
     for name, mesh in items.items():
         m = mesh.copy()
         m.apply_translation((0.0, 0.0, -m.bounds[0][2]))      # sit on the bed
@@ -265,6 +266,23 @@ def render_ratchet(phi: float, name: str, fast: bool):
     _save(img, name)
 
 
+def render_comb(name: str, fast: bool):
+    """The fit comb — the first thing to print."""
+    w, h, ss = _size(fast)
+    cb = T.fit_comb()
+    g = cb["comb-grooves"].copy()
+    sp = cb["comb-springs"].copy()
+    pin = cb["comb-pin"].copy()
+    sp.apply_translation((2.0, -30.0, 0.0))
+    pin.apply_translation((78.0, -24.0, 0.0))
+    ps = [{"mesh": g, "color": (0.32, 0.36, 0.42)},
+          {"mesh": sp, "color": P.COL_JAW},
+          {"mesh": pin, "color": P.COL_BODY}]
+    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-68, elevation_deg=46,
+                  margin=1.06)
+    _save(R.render(ps, width=w, height=h, supersample=ss, **cam), name)
+
+
 def render_parts(name: str, fast: bool):
     """The four printed parts, as they are oriented on the bed."""
     w, h, ss = _size(fast)
@@ -327,17 +345,25 @@ def main(argv=None):
         render_down_the_bore(P.TWIST_SWEEP, "11-down-the-bore-shut.png",
                              a.fast)
         render_ratchet(0.0, "12-ratchet.png", a.fast)
+        render_comb("13-fit-comb.png", a.fast)
 
     print("\n" + "-" * 78)
     print(S.summary())
     print("-" * 78)
     if grams:
-        whole = sum(g for n, g in grams if not n.startswith("coupon"))
+        # Name the parts of the mechanism rather than excluding the test
+        # pieces: every time a new test piece is added, a filter that works
+        # by exclusion quietly starts counting it as part of the set.
+        MECHANISM = ("shell", "body", "cap", "jaw")
+        whole = sum(g for n, g in grams if n in MECHANISM)
         whole += next(g for n, g in grams if n == "jaw")      # the second jaw
         print(f"a whole mechanism: ring + body + 2 jaws, about {whole:.0f} g "
               f"of PETG printed solid")
         print(f"the fit coupon:    "
               f"{sum(g for n, g in grams if n.startswith('coupon')):.0f} g")
+        print(f"the fit comb:      "
+              f"{sum(g for n, g in grams if n.startswith('comb')):.0f} g "
+              f"— print this one first")
     print(f"{P.OVERALL_D:.0f} mm across, {P.STACK.overall_h:.0f} mm tall; "
           f"bed is {P.BED[0]:.0f} x {P.BED[1]:.0f} mm")
     print(f"\ndone in {time.time() - t0:.1f}s")

@@ -420,3 +420,115 @@ def coupon():
     }
     out["coupon-jaw"].apply_translation((-S.jaw_face_radius(0.0), 0.0, 0.0))
     return out
+
+
+# ---------------------------------------------------------------------------
+# the fit comb: the cheapest print that settles the guessed numbers
+# ---------------------------------------------------------------------------
+# Two numbers in params.py are guesses that only a printer can settle, and
+# both of them are expensive to get wrong in a 77 g coupon, let alone a 374 g
+# set:
+#
+#   FIT_SLIDE  -- the clearance everything slides on. Too tight and the
+#                 mechanism binds; too loose and it rattles.
+#   the pawl post's thickness -- which sets the click force, and goes as the
+#                 CUBE of nothing else changing.
+#
+# So print these first. A few grams, a few minutes, and they turn both
+# guesses into measurements before any of the real geometry is committed.
+
+COMB_CLEARANCES = (0.25, 0.30, 0.35, 0.40, 0.45)
+COMB_POST_T = (0.8, 0.9, 1.0, 1.1)
+COMB_TICK = 1.2
+
+
+def _comb_ticks(n, x, y, z0, z1, pitch=2.6):
+    """n notches, so a cell can be identified without reading anything."""
+    return fuse(*[
+        trimesh.creation.box(extents=(COMB_TICK, 2.4, z1 - z0 + 1.0),
+                             transform=trimesh.transformations.translation_matrix(
+                                 (x + k * pitch, y, (z0 + z1) / 2)))
+        for k in range(n)])
+
+
+def comb_grooves():
+    """Five arcs of the real spiral, cut at five clearances.
+
+    Taken from the INNER end of the spiral, where it curves most tightly and
+    a round pin in a swept slot binds soonest. A straight test slot would
+    pass at a clearance the real groove fails at.
+    """
+    pts = []
+    for t in np.linspace(0.0, 45.0, 120):
+        r = P.R_PIN_IN + P.JAW_TRAVEL * t / P.TWIST_SWEEP
+        a = math.radians(t)
+        pts.append((r * math.cos(a), r * math.sin(a)))
+    pts = np.asarray(pts)
+    lo, hi = pts.min(axis=0), pts.max(axis=0)
+    cell_w, cell_h = (hi[0] - lo[0]) + 9.0, (hi[1] - lo[1]) + 9.0
+
+    plate = trimesh.creation.box(
+        extents=(cell_w * len(COMB_CLEARANCES), cell_h, P.RING_T))
+    plate.apply_translation((cell_w * len(COMB_CLEARANCES) / 2, cell_h / 2,
+                             P.RING_T / 2))
+
+    from shapely.geometry import LineString
+    cuts = []
+    for i, clear in enumerate(COMB_CLEARANCES):
+        shifted = pts - lo + np.array([i * cell_w + 4.5, 4.5])
+        poly = LineString(shifted).buffer(
+            (P.PIN_D + 2 * clear) / 2, cap_style=2, join_style=2, resolution=16)
+        cuts.append(from_polygon(poly, P.RING_FLOOR, P.RING_T + 1.0))
+        cuts.append(_comb_ticks(i + 1, i * cell_w + 3.0, 1.2,
+                                P.RING_T - 1.0, P.RING_T))
+    return cut(plate, fuse(*cuts))
+
+
+def comb_pin():
+    """The real pin, on something to hold it by."""
+    knob = post(12.0, 0.0, 5.0)
+    pin = post(P.PIN_D, 5.0, 5.0 + P.PIN_LEN)
+    return fuse(knob, pin)
+
+
+def comb_springs():
+    """Four pawl posts at four thicknesses, each with a stop 0.8 mm away.
+
+    Press each one until it meets its stop -- that is exactly the deflection
+    a tooth asks for -- and keep the one that feels like a firm click rather
+    than a vague one or a wall. Then put its thickness into params.py as
+    POST_R_OUT - POST_R_IN.
+    """
+    st = P.STACK
+    h = st.post_top - st.topring_1
+    nose_0 = st.nose_0 - st.topring_1
+    base_t = 4.0
+    pitch = 16.0
+
+    parts_ = [trimesh.creation.box(extents=(pitch * len(COMB_POST_T), 22.0,
+                                            base_t))]
+    parts_[0].apply_translation((pitch * len(COMB_POST_T) / 2, 11.0,
+                                 base_t / 2))
+    for i, t in enumerate(COMB_POST_T):
+        x = i * pitch + pitch / 2
+        col = trimesh.creation.box(extents=(t, P.POST_W, h))
+        col.apply_translation((x, 8.0, base_t + h / 2))
+        nose = trimesh.creation.box(
+            extents=(t + (P.NOSE_R - P.POST_R_OUT), P.NOSE_W, P.NOSE_H))
+        nose.apply_translation((x + (P.NOSE_R - P.POST_R_OUT) / 2, 8.0,
+                                base_t + (nose_0 + P.NOSE_H / 2)))
+        # the stop: a wall exactly one tooth's depth from the post's face
+        stop = trimesh.creation.box(extents=(3.0, 8.0, nose_0 + P.NOSE_H))
+        stop.apply_translation((x - t / 2 - P.RATCHET_DEPTH - 1.5, 8.0,
+                                base_t + (nose_0 + P.NOSE_H) / 2))
+        parts_ += [col, nose, stop]
+    solid = fuse(*parts_)
+    return cut(solid, fuse(*[_comb_ticks(i + 1, i * pitch + 2.0, 19.0,
+                                         base_t - 1.0, base_t)
+                             for i in range(len(COMB_POST_T))]))
+
+
+def fit_comb():
+    return {"comb-grooves": comb_grooves(),
+            "comb-pin": comb_pin(),
+            "comb-springs": comb_springs()}

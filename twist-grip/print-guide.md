@@ -4,7 +4,38 @@ Read this before spending filament. Nothing here has been printed yet, so
 everything below is reasoning from `../available-tools.md` and the geometry,
 not experience with this part.
 
-## Print the coupon first
+## Print in this order
+
+Three prints, each one answering the question the next one would otherwise
+waste filament discovering.
+
+### 1. The fit comb — 27 g, under half an hour
+
+```
+stl/comb-grooves.stl   73 x 33 x 7 mm    17.5 g
+stl/comb-springs.stl   64 x 22 x 18 mm    8.5 g
+stl/comb-pin.stl       12 x 12 x 9 mm     0.8 g
+```
+
+Two numbers in `params.py` are guesses only a printer can settle, and both
+are expensive to get wrong later:
+
+- **`FIT_SLIDE`, the clearance everything slides on.** `comb-grooves` carries
+  five arcs of the real spiral — taken from its inner end, where it curves
+  most tightly and a round pin binds soonest — cut at 0.25, 0.30, 0.35, 0.40
+  and 0.45 mm. Try `comb-pin` in each; the notches beside each arc count
+  which is which, 1 to 5. Keep the tightest that still slides sweetly along
+  the whole arc, and put it in `params.py`.
+- **The pawl post's thickness, which sets how hard the click is.** `comb-
+  springs` has four posts at 0.8, 0.9, 1.0 and 1.1 mm, each with a stop
+  exactly 0.8 mm away — which is precisely the deflection a tooth asks for.
+  Press each until it meets its stop. Keep the one that feels like a firm
+  button rather than a vague squish or a wall, and set
+  `POST_R_OUT - POST_R_IN` to it.
+
+Then `python3 test_fit.py && python3 build.py` and move on.
+
+### 2. The fit coupon — 77 g, about two hours
 
 ```
 stl/coupon-shell.stl   120° wedge, 25 mm grip   33 g
@@ -13,14 +44,13 @@ stl/coupon-cap.stl                              20 g
 stl/coupon-jaw.stl                              17 g
 ```
 
-About 77 g all told, against **370 g and the better part of a day** for the
-real set. It is the same mechanism with the grip cut from 90 mm to 25 and a
-120° wedge taken out of it — wide enough to take in a slot WALL and not just
-the slot, because a 26 mm blade's slot is 84° of the bore on its own — cut from the finished meshes rather than modelled
-to resemble them, so the walls, the groove floor and every overhang are
-exactly what the full part would print.
+The same mechanism with the grip cut from 90 mm to 25 and a 120° wedge taken
+out of it — wide enough to take in a slot WALL and not just the slot, because
+a 26 mm blade's slot is 84° of the bore on its own. Cut from the finished
+meshes rather than modelled to resemble them, so the walls, the groove floor
+and every overhang are exactly what the full part would print.
 
-It carries every fit that matters:
+It carries every fit at once:
 
 | fit | clearance as drawn | what wrong feels like |
 | --- | --- | --- |
@@ -30,33 +60,52 @@ It carries every fit that matters:
 | body in the shell's bore | 0.35 mm | wobbles instead of turning true |
 | the ratchet | 0.8 mm of tooth | vague click, or one that will not turn |
 
-Assemble the wedge and run the blade through its 25° or so of travel. If it
-binds, raise `FIT_SLIDE` in `params.py` by 0.05 and reprint the coupon; if it
-is sloppy, lower it. Then rebuild and print the real thing.
+And it answers the question the comb cannot: **whether a blade driven from
+both ends still slides sweetly when the two pins are a print tolerance
+apart.** That is the whole reason there are two scroll plates, and the only
+way to find out is to feel it.
 
-**The coupon answers one more question the full part cannot afford to get
-wrong:** whether a blade driven from both ends still slides sweetly when the
-two pins are a print tolerance apart. That is the whole reason there are two
-scroll plates, and the only way to find out is to feel it.
+### 3. The real thing — 374 g, the better part of a day
 
-## Material
+Only once the coupon moves the way it should.
 
-**PETG**, from the five colours on the shelf. It is the functional default
-for good reasons here: it slides on itself without the galling PLA does, it
-is tough enough for a pin in a groove taking a side load, and — the one that
-decides it — **it does not creep**. This object is meant to be squeezed and
-left squeezed, which is precisely the load that makes PLA sag over days in a
-warm room.
+## Material: PETG, and the reason is the spring
 
-ABS would also do and has the chamber for it, but there is one colour of it
-and no reason to spend the chamber's time.
+Both are on the shelf and either would *work*, so this is a judgement rather
+than a rule. It comes down to one part.
 
-Suggested colours, all on hand: **black** shell and cap, **white** body,
-**orange** blades. The blades are the moving part and want to read as
-separate — and with a 40 mm bore you see a lot of them. Any pairing works.
+**The pawl post is a living spring in a fidget.** It gets flexed 0.8 mm every
+click, eighteen clicks a close, and a fidget is a thing people click
+hundreds of times an evening. It is a cantilever printed standing up, so the
+bending load falls across its layer lines — which is precisely how PLA
+fails: it is stiff and notch-sensitive, and a repeatedly flexed PLA cantilever
+cracks at the root and snaps. PETG is tougher and far more fatigue-tolerant,
+and that is the normal reason printed flexures are made from it.
 
-**Quantities.** One shell, one body, one cap, and **two** blades from the one
-`jaw.stl`.
+PLA is also about 1.75× stiffer, so the same post that needs ~2 N in PETG
+needs ~3.5 N in PLA — a click that is less satisfying and a release you have
+to lean on.
+
+The secondary reasons both point the same way: PETG does not creep, and this
+is a thing meant to be squeezed and left squeezed; and the pins are 5 mm
+cantilevers taking side loads, where PLA's brittleness is the wrong property.
+
+**Where PLA would genuinely be better**, for honesty's sake: it prints small
+features more crisply, which matters here (a 1.4 mm nose, 0.8 mm teeth), it
+is more dimensionally stable over a 115 mm part, and it slides on itself
+more happily — PETG on PETG is notoriously grabby, and this mechanism has a
+lot of sliding plastic.
+
+So: **PETG throughout, including the test prints.** Validate in the material
+you will build in — PETG prints slightly fatter than PLA, so clearances
+measured in one do not transfer to the other, and transferring them is the
+entire point of the comb.
+
+**If the twist comes out grabby**, the fix is one experiment rather than a
+redesign: reprint the shell and cap in PLA and leave the body and blades in
+PETG. Almost every sliding pair in this object is body-against-shell, so
+that makes them dissimilar plastics, which slide better than like on like —
+and the spring stays in the material it needs.
 
 ## Orientation
 

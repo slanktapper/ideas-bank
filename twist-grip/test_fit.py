@@ -408,6 +408,23 @@ def part_checks():
               f"{m.volume / 1000 * 1.27:.0f} g, "
               f"{m.bounds[1][2] - m.bounds[0][2]:.0f} mm tall")
 
+    for name, m in T.fit_comb().items():
+        check(f"{name} is a sane test piece",
+              m.is_watertight and m.body_count == 1,
+              f"{m.volume / 1000 * 1.27:.1f} g, "
+              f"{m.bounds[1][0] - m.bounds[0][0]:.0f} x "
+              f"{m.bounds[1][1] - m.bounds[0][1]:.0f} mm")
+
+    # A comb that does not bracket the value it is meant to settle tells you
+    # only that the guess was outside it.
+    check("the comb brackets the clearance it is testing",
+          min(T.COMB_CLEARANCES) < P.FIT_SLIDE < max(T.COMB_CLEARANCES),
+          f"{T.COMB_CLEARANCES} around FIT_SLIDE={P.FIT_SLIDE}")
+    post_t = P.POST_R_OUT - P.POST_R_IN
+    check("and the post thickness it is testing",
+          min(T.COMB_POST_T) < post_t < max(T.COMB_POST_T),
+          f"{T.COMB_POST_T} around {post_t:.1f} mm")
+
     grams = (sum(m.volume for m in made.values())
              + made["jaw"].volume) / 1000.0 * 1.27
     check("a whole set is a day of printing, not a week",

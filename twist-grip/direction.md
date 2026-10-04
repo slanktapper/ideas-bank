@@ -196,7 +196,7 @@ Everything dimensioned lives in `params.py`. Change a number there, run
 
 ## Where it stands
 
-**Modelled and checked; no filament spent.** All 70 checks pass, and the ones
+**Modelled and checked; no filament spent.** All 75 checks pass, and the ones
 worth having interrogate the finished meshes rather than the numbers that
 made them: a 40 mm cylinder passing clean through all 104 mm of the open
 object, no interference between any two of the five parts at five twist
@@ -245,6 +245,14 @@ Defects the checks caught, none of which a drawing would have shown:
   dragged the answer 9 mm off while the volume stayed exactly right. It now
   slices inside the pins and uses the volume centroid.
 
+Three prints, in order, each answering what the next would otherwise waste
+filament discovering: the **fit comb** (27 g) settles the sliding clearance
+and the click force; the **coupon** (77 g) proves the mechanism moves; the
+set (374 g) is only worth starting once the coupon does. `print-guide.md`
+has the detail, including why it is PETG and not PLA — it comes down to the
+pawl post being a living spring in a thing people click hundreds of times an
+evening, and PLA cantilevers cracking at the root.
+
 What software cannot tell us is the fit. Everything that slides here is
 plastic on plastic at a clearance that is currently a guess. `stl/coupon-*`
 is the same mechanism with the grip cut to 25 mm and a 50° wedge taken out of
@@ -258,11 +266,11 @@ sideways tests nothing.
 ## Open questions
 
 - **How hard is the click, really?** About 2 N on paper, from beam theory on
-  a printed cantilever — which is the least trustworthy number in this
-  project. PETG's modulus varies with print temperature and layer bonding,
-  and the post is loaded across its layers. The coupon carries the whole
-  ratchet, so print it and feel it; the fix either way is one number
-  (`POST_R_OUT - POST_R_IN`) and a reprint of two small parts.
+  a printed cantilever — the least trustworthy number in this project, since
+  PETG's modulus varies with print temperature and layer bonding and the post
+  is loaded across its layers. `stl/comb-springs.stl` settles it for 9 g:
+  four posts, four thicknesses, a stop at exactly one tooth's depth. The fix
+  either way is one number and a reprint of two small parts.
 - **Seating the cap means holding the release in.** The nose stands proud of
   the tooth crests, so the collar cannot be lowered past it otherwise. That
   is one instruction rather than a mechanism, but a lead-in chamfer on the
