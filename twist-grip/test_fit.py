@@ -316,6 +316,66 @@ def ratchet_checks():
           "the nose sits in a flat valley, not part-way up a ramp")
 
 
+def flat_variant_checks():
+    print("\nthe flat-printing blade and its dowels")
+    st = P.STACK
+
+    blade, dow = T.jaw_socketed(), T.dowel()
+    check("the socketed blade is one watertight solid",
+          blade.is_watertight and blade.body_count == 1,
+          f"{len(blade.faces)} triangles")
+    check("the dowel is one watertight solid",
+          dow.is_watertight and dow.body_count == 1,
+          f"{P.PIN_D} mm by {P.DOWEL_L} mm")
+
+    # THE CHECK THAT MATTERS. Push a dowel home in each socket and the
+    # result has to be the blade with pins moulded on -- otherwise the two
+    # files are two different parts and only one of them fits the machine.
+    # At the pin's ASSEMBLED radius, not the blade's local offset: the blade
+    # is built around the axis and then slid out to its open position, so a
+    # dowel placed at PIN_OFFSET lands 20 mm short and sits in solid plastic.
+    r_pin = S.pin_radius(0.0)
+    bot, top = dow.copy(), dow.copy()
+    bot.apply_translation((r_pin, 0.0, st.pin_bot_0))
+    top.apply_translation((r_pin, 0.0, st.jaw_top - P.SOCKET_DEPTH))
+    built = T.fuse(blade, bot, top)
+    whole = T.jaw(0.0, 0)
+
+    # 1e-4, not 1e-9: these are mesh coordinates off a boolean, and they
+    # carry float32-sized rounding.
+    same_box = np.allclose(built.bounds, whole.bounds, atol=1e-4)
+    # The round dowel does not fill the socket's 45 degree peak, so the
+    # assembled blade is lighter by exactly that relief, twice.
+    relief = whole.volume - built.volume
+    check("a dowel pressed home rebuilds the moulded-on blade",
+          same_box and 0.0 < relief < 40.0,
+          f"same bounding box; {relief:.1f} mm3 lighter, which is the "
+          f"socket roof relief the dowel does not fill")
+    check("the dowel bottoms out at the right protrusion",
+          abs((st.jaw_0 - built.bounds[0][2]) - P.PIN_LEN) < 1e-4,
+          f"{P.PIN_LEN} mm proud, set by the socket floor rather than by "
+          f"how hard it was pressed")
+    check("the socket leaves a floor in the arm",
+          P.ARM_H - P.SOCKET_DEPTH >= 0.8,
+          f"{P.ARM_H - P.SOCKET_DEPTH:.1f} mm of arm behind the socket")
+
+    plate = T.jaw_flat()
+    lo, hi = plate.bounds
+    check("the flat plate sits on the bed and fits it",
+          abs(lo[2]) < 1e-6 and (hi[0] - lo[0]) < P.BED[0]
+          and (hi[1] - lo[1]) < P.BED[1],
+          f"{hi[0] - lo[0]:.0f} x {hi[1] - lo[1]:.0f} x {hi[2] - lo[2]:.0f} mm")
+    check("it carries the blade and a dowel for each pin, plus a spare",
+          plate.body_count == 1 + P.JAW_COUNT + P.DOWEL_SPARES,
+          f"{plate.body_count} separate bodies on one plate")
+
+    # Flat, the blade's whole underside is the face plate: nothing to support.
+    face = T.keep_both(plate, T.tube(0.0, P.OVERALL_D, -1.0, 0.6))
+    check("the blade lands on its face, so nothing needs supporting",
+          float(face.area) > 0.0 and lo[2] == 0.0,
+          f"the {P.JAW_W:.0f} x {P.GRIP_L:.0f} mm contact face is the bed face")
+
+
 def assembly_checks():
     print("\nassembly: does it go together, and move")
     st = P.STACK
@@ -443,6 +503,7 @@ def main():
     keying_checks()
     ratchet_checks()
     assembly_checks()
+    flat_variant_checks()
     part_checks()
     print()
     if FAILS:

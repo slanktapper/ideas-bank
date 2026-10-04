@@ -532,3 +532,85 @@ def fit_comb():
     return {"comb-grooves": comb_grooves(),
             "comb-pin": comb_pin(),
             "comb-springs": comb_springs()}
+
+
+# ---------------------------------------------------------------------------
+# the flat-printing blade, and its dowels
+# ---------------------------------------------------------------------------
+
+def _teardrop(d, z0, z1, at_r):
+    """A hole that prints cleanly with its axis horizontal.
+
+    Circle, with the sector facing the print's "up" replaced by a 45 degree
+    peak. Lying flat, the blade's socket axis is horizontal and the roof of a
+    plain round hole droops into the bore; a peak over it is self-supporting,
+    and a round dowel never touches it.
+
+    Drawn as ONE closed outline rather than a circle unioned with a triangle.
+    The triangle of the textbook teardrop meets the circle at exactly two
+    points, and a union that touches rather than overlaps pinches the polygon
+    there -- it extrudes to something that is not a solid, and every boolean
+    after it fails with "not all meshes are volumes".
+    """
+    from shapely.geometry import Polygon
+
+    r = d / 2.0
+    pts = [(r * math.cos(a), r * math.sin(a))
+           for a in np.radians(np.linspace(45.0, 315.0, 64))]
+    pts.append((r * math.sqrt(2.0), 0.0))          # the 45 degree peak
+    m = from_polygon(Polygon(pts), z0, z1)
+    m.apply_translation((at_r, 0.0, 0.0))
+    return m
+
+
+def jaw_socketed(phi=0.0, index=0, st=None):
+    """The blade with blind sockets where the pins were."""
+    st = st or P.STACK
+    solid = fuse(
+        bar(P.FACE_T, P.JAW_W, st.jaw_0, st.jaw_top),
+        bar(P.JAW_L, P.JAW_W, st.jaw_0, st.jaw_0 + P.ARM_H),
+        bar(P.JAW_L, P.JAW_W, st.jaw_top - P.ARM_H, st.jaw_top),
+        bar(P.JAW_L, P.RIB_W, st.jaw_0, st.jaw_top))
+    solid = keep_both(solid, post(
+        2 * P.JAW_TAIL_R_MAX, st.jaw_0 - 1.0, st.jaw_top + 1.0,
+        at_r=P.BORE_D / 2, angle_deg=180.0, sections=FACETS))
+    solid = cut(solid,
+                _teardrop(P.PIN_D, st.jaw_0 - 0.01,
+                          st.jaw_0 + P.SOCKET_DEPTH, P.PIN_OFFSET),
+                _teardrop(P.PIN_D, st.jaw_top - P.SOCKET_DEPTH,
+                          st.jaw_top + 0.01, P.PIN_OFFSET))
+    solid.apply_translation((S.jaw_face_radius(phi), 0.0, 0.0))
+    return spun(solid, S.JAW_ANGLES[index])
+
+
+def dowel():
+    """One pin, printed standing up: the most accurate thing a printer makes.
+
+    Bottoms out in its blind socket, so the 4.3 mm that stands proud is set
+    by the geometry rather than by how hard it was pressed.
+    """
+    return post(P.PIN_D, 0.0, P.DOWEL_L, sections=96)
+
+
+def jaw_flat():
+    """The blade laid on its face, with its dowels beside it on one plate.
+
+    Flat, the rib and both arms rise straight off the face plate, so the
+    whole blade prints without a scrap of support. The face that lands on
+    the build plate is the one that touches a finger.
+    """
+    st = P.STACK
+    blade = jaw_socketed(0.0, 0, st)
+    blade.apply_translation((-S.jaw_face_radius(0.0), 0.0, 0.0))
+    blade.apply_transform(trimesh.transformations.rotation_matrix(
+        -math.pi / 2, (0, 1, 0)))
+    blade.apply_translation((0.0, 0.0, -blade.bounds[0][2]))
+    blade.apply_translation((-blade.bounds[0][0], -blade.centroid[1], 0.0))
+
+    pins = []
+    x = blade.bounds[1][0] + 9.0
+    for k in range(P.JAW_COUNT + P.DOWEL_SPARES):
+        d = dowel()
+        d.apply_translation((x + k * (P.PIN_D + 5.0), 0.0, 0.0))
+        pins.append(d)
+    return trimesh.util.concatenate([blade, *pins])

@@ -121,8 +121,42 @@ All three print flat, no supports, nothing to clean up.
 `build.py` already writes them in these orientations — load the STLs as they
 come and do not let the slicer "optimise" them.
 
-**The blades are the one part needing support, and which way up decides
-where.** A blade has a pin at each end pointing opposite ways, so whichever
+### The blade: upright with pins on, or flat with pins loose
+
+Two files, same part, pick one.
+
+**`jaw.stl` — upright, pins moulded on.** Both pins print as vertical
+cylinders, so the four surfaces that bear against the groove walls are
+printed as walls, which is the best surface the machine makes. Needs a
+4.3 mm support block under the top arm, and that arm touches nothing in the
+assembly, so the scar does not matter. 34 x 26 footprint, 99 mm tall, so
+brim it.
+
+**`jaw-flat.stl` — flat, with the pins as separate dowels on the same
+plate.** The blade lies on its contact face: rib and both arms rise straight
+off the face plate, so the blade needs **no support at all**, prints three
+times faster, and sits rock solid on 26 x 90 mm of bed. The pins come off and
+become three 5 x 9.3 mm dowels standing beside it, where a cylinder is the
+most accurate thing a printer makes. Two per blade; the third is a spare.
+
+- The sockets are **teardrops**, not round holes: lying flat their axis is
+  horizontal, and the roof of a horizontal round hole droops into the bore.
+  A 45 degree peak over the circle is self-supporting and the round dowel
+  never touches it.
+- They are **blind, 5 mm deep in a 6 mm arm**, so a dowel bottoms out and
+  the 4.3 mm that stands proud is set by the geometry, not by how hard you
+  pressed.
+- Press a dowel home dry. If it fights, a few strokes of sandpaper down its
+  length; if it is loose, a drop of CA. Printing two blades gives you six
+  dowels for the four you need, so there is room to experiment.
+
+A dowel pressed home rebuilds the moulded-on blade exactly — same bounding
+box, and lighter only by the 13 mm3 of socket-roof relief the round dowel
+does not fill. `test_fit.py` checks that, so the two files cannot drift
+apart.
+
+**If you print `jaw.stl` upright, that is the one part needing support, and
+which way up decides where.** A blade has a pin at each end pointing opposite ways, so whichever
 way it stands one pin points down and the arm above it hangs in air. Printed
 **upside down**, that support lands under the *top* arm, which touches
 nothing in use — while the one face that does bear on something, the

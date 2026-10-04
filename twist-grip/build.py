@@ -48,6 +48,7 @@ def write_stls() -> list[tuple[str, float]]:
     items = dict(T.printable())
     items.update(T.coupon())
     items.update(T.fit_comb())
+    items["jaw-flat"] = T.jaw_flat()       # the alternative to jaw.stl
     for name, mesh in items.items():
         m = mesh.copy()
         m.apply_translation((0.0, 0.0, -m.bounds[0][2]))      # sit on the bed

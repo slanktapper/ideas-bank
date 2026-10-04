@@ -126,6 +126,28 @@ JAW_TAIL_R_MAX = BORE_D / 2 + JAW_L    # 53.9 at full open
 # parts.jaw() does the cut, so it follows JAW_W automatically.
 
 # ---------------------------------------------------------------------------
+# the flat-printing blade: separate dowel pins
+# ---------------------------------------------------------------------------
+# An ALTERNATIVE to the blade with pins moulded on. Printed flat on its face
+# the blade needs no support at all -- rib and both arms rise straight off
+# the face plate -- but its two pins would be horizontal cylinders hanging in
+# mid-air, and the support under them lands on the one circumference that has
+# to slide in a 5.7 mm groove.
+#
+# So the pins come off and become dowels, printed standing beside the blade,
+# where a 5 mm cylinder is the most accurate thing the machine makes.
+#
+# The socket is a TEARDROP, not a round hole. Lying flat, the socket's axis
+# is horizontal, and the roof of a horizontal round hole prints as a droop
+# into the bore. A 45 degree peak over the circle is self-supporting, and the
+# dowel simply ignores it.
+SOCKET_DEPTH = 5.0                     # blind, so the dowel bottoms out and
+                                       # sets its own protrusion
+SOCKET_ROOF = 45.0                     # degrees, self-supporting
+DOWEL_L = PIN_LEN + SOCKET_DEPTH       # 9.3
+DOWEL_SPARES = 1                       # a jaw needs two; print three
+
+# ---------------------------------------------------------------------------
 # the body: a tube, not a plate
 # ---------------------------------------------------------------------------
 
