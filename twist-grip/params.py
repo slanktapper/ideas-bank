@@ -305,10 +305,17 @@ BED = (325.0, 320.0)
 NOZZLE = 0.4
 LAYER = 0.2
 
-COL_SHELL = (0.05, 0.08, 0.10)         # PETG Basic, black
-COL_BODY = (0.93, 0.94, 0.92)          # PETG Basic, white
-COL_JAW = (0.95, 0.42, 0.05)           # PETG Basic, orange
-COL_CAP = (0.13, 0.17, 0.22)           # black too, drawn a shade apart
+# Every render uses these, so a part is the same colour wherever you see it.
+# All four are filament actually on the shelf -- see ../available-tools.md.
+#
+# These are RENDER colours, not swatches. Flat shading multiplies a colour by
+# a shade factor that is always under 1, so a colour entered at its true
+# value only ever comes out darker than the filament -- a milky pink lands on
+# mauve. Each of these is the filament lifted to survive that.
+COL_SHELL = (0.96, 0.97, 0.95)         # jade white / PETG white
+COL_BODY = (0.055, 0.07, 0.085)        # black
+COL_JAW = (1.00, 0.74, 0.82)           # PLA Pure, milky pink
+COL_CAP = (0.20, 0.38, 0.70)           # blue / PETG reflex blue
 COL_CUT = (0.62, 0.64, 0.68)
 
 DEG = math.pi / 180.0

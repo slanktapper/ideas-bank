@@ -215,7 +215,7 @@ def render_down_the_bore(phi: float, name: str, fast: bool):
     cam = {"eye": (0.0, 0.0, st.cap_top + dist), "target": (0.0, 0.0, 0.0),
            "fov_deg": fov}
     img = R.render(ps, width=w, height=h, supersample=ss,
-                   ambient=0.62, key=0.42, fill=0.30, spec=0.10, edges=0.42,
+                   ambient=0.66, key=0.40, fill=0.30, spec=0.10, edges=0.42,
                    **cam)
     if fast:
         _save(img, name)
@@ -283,6 +283,130 @@ def render_comb(name: str, fast: bool):
     _save(R.render(ps, width=w, height=h, supersample=ss, **cam), name)
 
 
+# Presentation lighting. The default is lit for CATCHING MISTAKES -- a low
+# ambient throws every facet into relief -- but it multiplies each colour by
+# about 0.7, which turns a milky pink into mauve and a black part into a
+# silhouette with no form in it. These shots are for looking at the object,
+# so: more ambient, and keep the edge pass to give the black part its shape.
+SHOW = dict(ambient=0.74, key=0.34, fill=0.20, spec=0.12, edges=0.46)
+
+PART_COLOURS = {"shell": P.COL_SHELL, "body": P.COL_BODY,
+                "cap": P.COL_CAP, "jaw": P.COL_JAW}
+
+PART_VIEWS = {"shell": (34, 26), "body": (34, 18), "cap": (34, 30),
+              "jaw": (28, 20)}
+
+
+def _assembled_parts(phi=0.0):
+    """Each part once, in the pose it has in the object."""
+    st = P.STACK
+    j = T.jaw(phi, 0)
+    return {"shell": T.spun(T.shell(st), phi), "body": T.body(st),
+            "cap": T.spun(T.cap(st), phi), "jaw": j}
+
+
+def render_portrait(key: str, name: str, fast: bool):
+    """One part on its own, in the orientation it sits in the object."""
+    w, h, ss = _size(fast)
+    m = _assembled_parts()[key]
+    az, el = PART_VIEWS[key]
+    cam = R.frame([m], azimuth_deg=az, elevation_deg=el, margin=1.03)
+    _save(R.render([{"mesh": m, "color": PART_COLOURS[key]}],
+                   width=w, height=h, supersample=ss, **SHOW, **cam), name)
+
+
+def render_body_end(end: str, name: str, fast: bool):
+    """The body's top or bottom end, close up and named.
+
+    DRAWN IN GREY, not the body's black. Flat shading multiplies a colour by
+    a factor under 1, so a black part comes back black whatever the light
+    does -- no lugs, no boss, no post, just a silhouette. The assembly shots
+    carry the real colour; this one has to be legible.
+
+    Framed on a slab of the part rather than the whole of it: the camera is
+    aimed with a cropped copy, but the whole body is drawn, so the end fills
+    the shot without anything looking cut off.
+    """
+    w, h, ss = _size(fast)
+    st = P.STACK
+    body = T.body()
+    top = end == "top"
+    z0, z1 = ((st.topring_0 - 10.0, st.post_top) if top
+              else (st.ring_0, st.ring_top + 10.0))
+    proxy = T.keep_both(body, T.tube(0.0, P.OVERALL_D, z0, z1))
+    cam = R.frame([proxy], azimuth_deg=40,
+                  elevation_deg=52 if top else -52, margin=1.06)
+    img = R.render([{"mesh": body, "color": (0.60, 0.62, 0.66)}],
+                   width=w, height=h, supersample=ss, ambient=0.5, key=0.5,
+                   fill=0.26, spec=0.2, edges=0.55, **cam)
+    if fast:
+        _save(img, name)
+        return
+
+    def at(r, deg, z):
+        a = math.radians(deg)
+        return (r * math.cos(a), r * math.sin(a), z)
+
+    if top:
+        items = [
+            {"at": at(P.TOP_LUG_OUT, P.TOP_LUG_ANGLES[0],
+                      (st.topring_0 + st.topring_1) / 2), "dir": (1, 0),
+             "text": "top lugs (3) — the cap's hook catches under these"},
+            {"at": at(P.POST_R_OUT, P.PAWL_ANGLE, st.post_top - P.PAD_T / 2),
+             "dir": (-1, 0), "text": "pawl post, and the pad you press"},
+            {"at": at(P.BORE_D / 2, 150.0, st.topring_1), "dir": (0, 1),
+             "text": f"{P.BORE_D:.0f} mm bore, straight through"},
+        ]
+    else:
+        items = [
+            {"at": at(P.LUG_R_OUT, P.LUG_ANGLES[1],
+                      (st.lug_z0 + st.lug_z1) / 2), "dir": (1, 0),
+             "text": "bottom lugs (3) — hook under the shell's lip"},
+            {"at": at(P.SKIRT_OD / 2, 200.0, P.RING_T / 2), "dir": (-1, 0),
+             "text": "skirt — this is what turns in the shell's bore"},
+            {"at": at(P.BODY_ARC_R_OUT, 90.0, P.RING_T + 6.0), "dir": (0, 1),
+             "text": "the step here is the shoulder it stands on"},
+        ]
+    _callouts(img, cam, w, h, items)
+    _save(img, name)
+
+
+def render_exploded(name: str, fast: bool):
+    """The four parts pulled apart along the axis, in assembly order."""
+    w, h, ss = _size(fast)
+    parts = _assembled_parts()
+    # Far enough that each part visibly clears the one below it. At half
+    # this, the body still sits down inside the shell and the picture reads
+    # as an assembled object with a floating lid.
+    lift = {"shell": 0.0, "body": 126.0, "jaw": 126.0, "cap": 258.0}
+    out_r = {"jaw": 60.0}
+    ps = []
+    for key in ("shell", "body", "jaw", "cap"):
+        for k in range(2 if key == "jaw" else 1):
+            m = (T.jaw(0.0, k) if key == "jaw" else parts[key]).copy()
+            a = math.radians(S.JAW_ANGLES[k]) if key == "jaw" else 0.0
+            dr = out_r.get(key, 0.0)
+            m.apply_translation((dr * math.cos(a), dr * math.sin(a),
+                                 lift[key]))
+            ps.append({"mesh": m, "color": PART_COLOURS[key]})
+    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=36, elevation_deg=14,
+                  margin=1.01)
+    _save(R.render(ps, width=int(w * 0.72), height=int(h * 1.55),
+                   supersample=ss, **SHOW, **cam), name)
+
+
+def render_together(phi: float, name: str, fast: bool):
+    """The same four parts, assembled, same colours, same light."""
+    w, h, ss = _size(fast)
+    ps = [{"mesh": m, "color": PART_COLOURS[k]}
+          for k, m in _assembled_parts(phi).items()]
+    ps += [{"mesh": T.jaw(phi, 1), "color": P.COL_JAW}]
+    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=36, elevation_deg=20,
+                  margin=1.03)
+    _save(R.render(ps, width=w, height=h, supersample=ss, **SHOW, **cam),
+          name)
+
+
 def render_parts(name: str, fast: bool):
     """The four printed parts, as they are oriented on the bed."""
     w, h, ss = _size(fast)
@@ -346,6 +470,14 @@ def main(argv=None):
                              a.fast)
         render_ratchet(0.0, "12-ratchet.png", a.fast)
         render_comb("13-fit-comb.png", a.fast)
+        for key in ("shell", "body", "cap", "jaw"):
+            render_portrait(key, f"2{list(PART_COLOURS).index(key)}-part-{key}.png", a.fast)
+        render_exploded("24-exploded.png", a.fast)
+        render_together(0.0, "25-together-open.png", a.fast)
+        render_together(P.TWIST_SWEEP, "26-together-shut.png",
+                        a.fast)
+        render_body_end("top", "27-body-top.png", a.fast)
+        render_body_end("bottom", "28-body-bottom.png", a.fast)
 
     print("\n" + "-" * 78)
     print(S.summary())
