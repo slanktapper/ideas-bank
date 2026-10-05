@@ -68,6 +68,12 @@ ENTRY_CHAMFER = 2.0                    # 45 deg lead-in at the finger entrance
 JAW_Z0, JAW_Z1 = 4.0, 82.0             # 78 mm of jaw
 JAW_L = 42.0
 WEB_T = 3.0
+# The jaw's own ends stand back from the ends of the slot. Built flush they
+# meet the uncut tube above and below face to face, which reads as zero
+# interference in CAD -- coincident surfaces overlap by nothing -- and binds
+# in plastic. The runners and the drive stay where they are, so this is a
+# change to the jaw alone and leaves a printed body still correct.
+JAW_END_FIT = 0.3
 
 # The y stack. Each number is forced by the one above it.
 JAW_Y = P.JAW_W / 2.0                  # 13.00  jaw side face
@@ -289,17 +295,18 @@ def body():
 
 
 def jaw(psi, index):
+    z0, z1 = JAW_Z0 + JAW_END_FIT, JAW_Z1 - JAW_END_FIT
     web = []
     for sign in (1, -1):
-        w = T.bar(JAW_L, WEB_T, JAW_Z0, JAW_Z1)
+        w = T.bar(JAW_L, WEB_T, z0, z1)
         w.apply_translation((0.0, sign * (JAW_Y - WEB_T / 2.0), 0.0))
         web.append(w)
 
     solid = T.fuse(
-        T.bar(P.FACE_T, P.JAW_W, JAW_Z0, JAW_Z1),
+        T.bar(P.FACE_T, P.JAW_W, z0, z1),
         *web,
-        T.bar(JAW_L, P.JAW_W, JAW_Z0, JAW_Z0 + 6.0),
-        T.bar(JAW_L, P.JAW_W, JAW_Z1 - 6.0, JAW_Z1),
+        T.bar(JAW_L, P.JAW_W, z0, JAW_Z0 + 6.0),
+        T.bar(JAW_L, P.JAW_W, JAW_Z1 - 6.0, z1),
         T.bar(DRIVE_BOSS_L, DRIVE_BOSS_W, *DRIVE_BOSS_Z, x0=DRIVE_BOSS_X),
         # The boss stood in mid-channel with 20 mm of air under it, and the
         # top end cap did the same. A spine from one cap to the other, in
@@ -511,6 +518,20 @@ def checks():
     ok("nothing in the jaw bridges more than 10 mm",
        span <= 10.0,
        f"widest span under the boss {span:.0f} mm, between spine and web")
+
+    # Zero interference is not the same as clearance: two faces flush
+    # against each other overlap by nothing and pass every boolean test,
+    # then bind in plastic. Nudge the jaw and insist it is actually free.
+    free = {}
+    for name, idx in (("along the bore", 2), ("across the slot", 1)):
+        j = jaw(PSI_OPEN, 0).copy()
+        t = [0.0, 0.0, 0.0]
+        t[idx] = 0.2
+        j.apply_translation(t)
+        free[name] = _overlap(bd, j)
+    ok("the jaw has real clearance, not coincident faces",
+       max(free.values()) < 1e-6,
+       "free to move 0.2 mm in both z and y")
 
     ok("the stub keeps a printable wall round the drive slot",
        9.0 - (DRIVE_D + 0.35) / 2.0 >= P.WALL_MIN,
