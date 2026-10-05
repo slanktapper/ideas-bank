@@ -147,13 +147,14 @@ WINDOW_Z = (DRIVE_Z - 4.0, DRIVE_Z + 4.0)           # 42 .. 50
 TIE_X = (22.0, WALL_X[1])              # clear of the entrance chamfer
 TIE_FRONT_Z = (0.0, JAW_Z0 - FIT)
 TIE_BACK_Z = (JAW_Z1 + FIT, BODY_H)
-# The boss cannot narrow in x: 12 mm is the 6 mm post plus 3 mm of wall
-# each side. It can narrow in y and z, and the webs carry on past it at
-# |y| 10..13, so the solid section the post roots into is unchanged.
-DRIVE_BOSS_X, DRIVE_BOSS_L = 20.0, 12.0
-DRIVE_BOSS_W = 20.0
-DRIVE_BOSS_Z = (DRIVE_Z - 5.0, DRIVE_Z + 5.0)
-DRIVE_RIB_W = 6.0
+# The support at the drive pin: a web from guide wall to guide wall, a
+# quarter the front-to-back width of the block it replaces, running from
+# the face side out past the pin. Printed face down -- the face plate on
+# the bed -- it grows straight up off the first layer, so nothing about it
+# bridges, which the 12 mm block standing in mid-channel did.
+DRIVE_WEB_T = 3.0                      # 25% of the old 12 mm
+DRIVE_WEB_L = 32.0                     # face side out past the pin
+DRIVE_WEB_Z = (DRIVE_Z - DRIVE_WEB_T / 2.0, DRIVE_Z + DRIVE_WEB_T / 2.0)
 
 COL = {"body": (0.055, 0.07, 0.085), "jaw": (1.00, 0.74, 0.82),
        "lever": (0.96, 0.97, 0.95), "brace": (0.85, 0.30, 0.22)}
@@ -307,15 +308,7 @@ def jaw(psi, index):
         *web,
         T.bar(JAW_L, P.JAW_W, z0, JAW_Z0 + 6.0),
         T.bar(JAW_L, P.JAW_W, JAW_Z1 - 6.0, z1),
-        T.bar(DRIVE_BOSS_L, DRIVE_BOSS_W, *DRIVE_BOSS_Z, x0=DRIVE_BOSS_X),
-        # The boss stood in mid-channel with 20 mm of air under it, and the
-        # top end cap did the same. A spine from one cap to the other, in
-        # the boss's own width, gives both something to grow from, and a
-        # short rib ties the boss back to the face plate.
-        T.bar(DRIVE_BOSS_L, DRIVE_RIB_W, JAW_Z0 + 6.0, JAW_Z1 - 6.0,
-              x0=DRIVE_BOSS_X),
-        T.bar(DRIVE_BOSS_X - P.FACE_T, DRIVE_RIB_W, *DRIVE_BOSS_Z,
-              x0=P.FACE_T))
+        T.bar(DRIVE_WEB_L, P.JAW_W, *DRIVE_WEB_Z, x0=0.0))
 
     for sign in (1, -1):
         for zc in RAIL_Z:
@@ -514,10 +507,14 @@ def checks():
     ok("a jaw can be slid in radially to assemble",
        worst_in < 1e-6, f"worst {worst_in:.1f} mm^3 over 11 positions")
 
-    span = (DRIVE_BOSS_W / 2.0 - DRIVE_RIB_W / 2.0)
-    ok("nothing in the jaw bridges more than 10 mm",
-       span <= 10.0,
-       f"widest span under the boss {span:.0f} mm, between spine and web")
+    pj = printable()["jaw"]
+    nz, af, cz = pj.face_normals[:, 2], pj.area_faces, pj.triangles_center[:, 2]
+    flat = af[(nz < -0.9) & (cz > 0.5)].sum()
+    ok("the jaw has almost nothing to bridge as printed",
+       flat < 200.0, f"{flat:.0f} mm^2 flat and unsupported, face down")
+    ok("the drive web reaches the face side",
+       DRIVE_WEB_L > DRIVE_LOCAL and P.FACE_T < DRIVE_WEB_L,
+       f"x 0..{DRIVE_WEB_L:.0f}, past the pin at x {DRIVE_LOCAL:.0f}")
 
     # Zero interference is not the same as clearance: two faces flush
     # against each other overlap by nothing and pass every boolean test,
@@ -714,8 +711,14 @@ def _on_bed(m):
 
 def printable():
     """Each distinct part, turned the way it wants to go on the bed."""
+    # The jaw prints on its face side. That stands the guide walls and the
+    # end caps upright, runs the vee runners vertically instead of across
+    # an overhang, and puts the drive web on the bed rather than in the air.
+    jw = jaw(PSI_SHUT, 0)
+    jw.apply_transform(trimesh.transformations.rotation_matrix(
+        -math.pi / 2, (0, 1, 0)))
     out = {"body": _on_bed(body()),
-           "jaw": _on_bed(jaw(PSI_SHUT, 0)),
+           "jaw": _on_bed(jw),
            "brace": _on_bed(brace(0))}
     # The lever lies down with its plates vertical and its spine flat along
     # the bed. Stood on the pivot end it is 130 mm tall on a footprint of
