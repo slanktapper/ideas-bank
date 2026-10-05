@@ -63,14 +63,37 @@ def plate(poly, thickness, y_at):
     return m
 
 
-def lever(psi, index):
-    """One forked lever: two plates straddling a blade, joined into a handle."""
+def pin_at(psi):
+    """Where the lever drives the blade: the pin centre, in the x-z plane."""
+    px, pz = PIVOT
+    return (px + ARM * math.sin(psi), pz - ARM * math.cos(psi))
+
+
+def lever_pins(psi):
+    """The two stub pins alone, as lever() places them."""
+    pin = pin_at(psi)
+    out = []
+    for y in (PLATE_Y, -PLATE_Y):
+        p = T.post(5.0, 0, 4.5).copy()
+        p.apply_transform(trimesh.transformations.rotation_matrix(
+            math.pi / 2 if y > 0 else -math.pi / 2, (1, 0, 0)))
+        p.apply_translation((pin[0], y, pin[1]))
+        out.append(p)
+    return out
+
+
+def lever(psi, index, drop_near=False):
+    """One forked lever: two plates straddling a blade, joined into a handle.
+
+    drop_near hides the +y plate so the pin and its pocket can be seen.
+    """
     px, pz = PIVOT
     tip = (px + HANDLE * math.sin(psi), pz - HANDLE * math.cos(psi))
     pin = (px + ARM * math.sin(psi), pz - ARM * math.cos(psi))
 
     bar = LineString([PIVOT, tip]).buffer(7.5, resolution=16)
-    sides = [plate(bar, PLATE_T, y) for y in (PLATE_Y, -PLATE_Y - PLATE_T)]
+    ys = (-PLATE_Y - PLATE_T,) if drop_near else (PLATE_Y, -PLATE_Y - PLATE_T)
+    sides = [plate(bar, PLATE_T, y) for y in ys]
 
     # the grip: the two plates merge below the body
     grip = T.bar(26.0, 2 * PLATE_Y + 2 * PLATE_T, tip[1] - 4.0, tip[1] + 18.0,
@@ -128,6 +151,55 @@ def scene(psi):
             *[{"mesh": lever(psi, k), "color": COL["lever"]} for k in range(2)]]
 
 
+def render_joint(out):
+    """Close-ups of the one place the lever touches the blade."""
+    psi = PSI_OPEN
+    pin = pin_at(psi)
+    focus = trimesh.creation.box(extents=(58.0, 58.0, 58.0))
+    focus.apply_translation((pin[0] - 6.0, 0.0, pin[1] + 8.0))
+    cam = R.frame([focus], azimuth_deg=26, elevation_deg=18, margin=1.0)
+
+    whole = scene(psi)
+    R.render(whole, width=1300, height=1050, supersample=2,
+             **SHOW, **cam).save(out / "36-joint.png")
+    print("  renders/36-joint.png")
+
+    # same camera, near fork plate gone, pins called out in a third colour
+    exposed = ([{"mesh": body(), "color": COL["body"]}]
+               + [{"mesh": blade(psi, k), "color": COL["jaw"]} for k in range(2)]
+               + [{"mesh": lever(psi, 0, drop_near=True), "color": COL["lever"]},
+                  {"mesh": lever(psi, 1), "color": COL["lever"]}]
+               + [{"mesh": p, "color": (0.85, 0.30, 0.22)}
+                  for p in lever_pins(psi)])
+    R.render(exposed, width=1300, height=1050, supersample=2,
+             **SHOW, **cam).save(out / "37-joint-exposed.png")
+    print("  renders/37-joint-exposed.png")
+
+    # plan section through the pin axis: the view that shows how deep it goes
+    # The section answers one question -- how far the pin reaches into the
+    # blade -- so the lever plates are left out of it entirely; in plan they
+    # cover the very thing being measured.
+    sec_parts = ([{"mesh": blade(psi, 0), "color": COL["jaw"]}]
+                 + [{"mesh": p, "color": (0.85, 0.30, 0.22)}
+                    for p in lever_pins(psi)])
+    cut = []
+    for item in sec_parts:
+        body_m, faces = R.section(item["mesh"], (0, 0, -1), (0, 0, pin[1]))
+        if body_m is not None and len(body_m.faces):
+            cut.append({"mesh": body_m, "color": item["color"]})
+        if faces is not None and len(faces.faces):
+            # cut faces go DARKER than the part, not lighter: tinting the
+            # near-white lever upward turned its section into blank paper.
+            cut.append({"mesh": faces,
+                        "color": tuple(c * 0.45 + 0.04 for c in item["color"])})
+    sec = {"eye": (pin[0] - 7.0, 0.0, 150.0),
+           "target": (pin[0] - 7.0, 0.0, 0.0), "fov_deg": 19.0}
+    R.render(cut, width=1250, height=1250, supersample=2, ambient=0.80,
+             key=0.26, fill=0.22, spec=0.06, edges=0.50,
+             **sec).save(out / "38-joint-section.png")
+    print("  renders/38-joint-section.png")
+
+
 def main():
     out = Path(__file__).parent / "renders"
     out.mkdir(exist_ok=True)
@@ -156,6 +228,8 @@ def main():
                  key=0.34, fill=0.26, spec=0.1, edges=0.42,
                  **bore).save(out / name)
         print(f"  renders/{name}")
+
+    render_joint(out)
 
     gap = P.BORE_D - 2 * ARM * (math.sin(PSI_OPEN) - math.sin(PSI_SHUT))
     print(f"\n  span {2*(PIVOT[0]+HANDLE*math.sin(PSI_OPEN)):.0f} mm open -> "
