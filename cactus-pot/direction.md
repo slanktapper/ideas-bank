@@ -88,8 +88,14 @@ against `params.py`, and `build.py --pot` fails loudly if the pot changes.
 
 ### The interface, as a contract
 
-A new pot is being designed, so these numbers are what the cactus needs from
-whatever pot it ends up in rather than facts about one mesh:
+These numbers are what the cactus needs from whatever pot it ends up in rather
+than facts about one mesh. The pebble pot, drawn after this was written, keeps
+all four, so the cactus fits it unchanged:
+
+    python3 build.py --pot <pebble-pot.stl>
+    socket Ø32.00 x 8.00 deep, floor 21.00 below a rim at z=76.00,
+    inner wall r=41.43 at its tightest -- params agree with this pot
+
 
 - **A blind socket in the middle of the inner floor**, concentric with the
   pot's axis. Blind matters: a drainage hole straight through the floor is a

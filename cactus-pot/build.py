@@ -69,14 +69,22 @@ def measure_pot(path):
         multiple_hits=True)
     bore = 2 * float(np.sort(np.linalg.norm(hits[:, :2], axis=1))[0])
 
-    # the cavity's wall, measured just above the floor -- NOT at the socket's
-    # height, where the pot is solid and the first thing a ray meets on its
-    # way out is the outside of the pot
-    hits, _, _ = ray.intersects_location(
-        np.array([[0.0, 0.0, floor + 2.0]]), np.array([[1.0, 0.0, 0.0]]),
-        multiple_hits=True)
-    r = np.sort(np.linalg.norm(hits[:, :2], axis=1))
-    inner = float(r[0]) if len(r) else None
+    # The cavity's wall -- NOT measured at the socket's height, where the pot
+    # is solid and the first thing a ray meets on its way out is the outside
+    # of the pot. And not from one ray either: a pot with any texture on its
+    # inside is tightest somewhere a single ray will miss, so this sweeps the
+    # whole well and keeps the worst radius it finds.
+    inner = None
+    ths = np.linspace(0.0, 2 * np.pi, 72, endpoint=False)
+    fan = np.column_stack([np.cos(ths), np.sin(ths), np.zeros_like(ths)])
+    for z in np.arange(floor + 1.0, rim - 0.5, 1.0):
+        o = np.column_stack([np.zeros_like(ths), np.zeros_like(ths),
+                             np.full_like(ths, z)])
+        hits, idx, _ = ray.intersects_location(o, fan, multiple_hits=True)
+        for i in range(len(ths)):
+            r = np.linalg.norm(hits[idx == i][:, :2], axis=1)
+            if len(r) and (inner is None or float(r.min()) < inner):
+                inner = float(r.min())
 
     print(f"pot                {np.round(hi - lo, 2).tolist()} mm, rim at "
           f"z={rim:.2f}")
@@ -87,7 +95,7 @@ def measure_pot(path):
           f"(params.POT_BORE_D = {P.POT_BORE_D}, "
           f"POT_SOCKET_DEPTH = {P.POT_SOCKET_DEPTH})")
     if inner:
-        print(f"inner wall         r={inner:.2f}   "
+        print(f"inner wall         r={inner:.2f} at its tightest   "
               f"(params.POT_INNER_R = {P.POT_INNER_R})")
 
     bad = []
@@ -97,6 +105,9 @@ def measure_pot(path):
         bad.append("POT_SOCKET_DEPTH")
     if abs((rim - floor) - P.POT_FLOOR_TO_RIM) > P.POT_TOL:
         bad.append("POT_FLOOR_TO_RIM")
+    if inner is not None and inner < P.POT_INNER_R - P.POT_TOL:
+        # only a tighter wall is a problem; a roomier one is free clearance
+        bad.append("POT_INNER_R")
     if bad:
         print("  MISMATCH -- update " + ", ".join(bad) + " before building")
     else:
