@@ -1,33 +1,35 @@
 #!/usr/bin/env python3
 """A PROPOSAL, not the project: the finger flattener driven by levers.
 
-Kept from the twist version: the 40 mm bore, the 26 x 90 mm jaw faces, and
-both faces translating 20 mm so they stay parallel. Gone: the scroll, the
-shell, the cap, and the whole twist -- a squeeze reacts against itself, so
-one hand supplies both the force and the reaction.
+Kept: the 40 mm bore, two jaw faces travelling 20 mm each so they stay
+parallel, and the vee runners that lock each jaw to pure radial travel.
 
-This revision moves the drive to the middle of the jaw and gives the jaw a
-real prismatic guide, which is what the stub-pin joint at the jaw's foot
-never was:
+This revision rebuilds the mount and the lever:
 
-    body        extruded out beside each jaw into two flanking walls
-    runners     a 45 deg vee rail on each side face of the jaw, near each
-                end but set 14 mm in from it, running along the travel
-    grooves     matching vees in the body walls, 20 mm longer than the rail
-    drive       a dowel at mid height, through fork, wall window and a
-                vertical slot in the jaw
+    entrance    the front face of the 90 mm body, jaw starting 3 mm in
+                behind a 45 degree lead-in chamfer
+    pivot       a 12 mm post out of each body wall, near the front
+    drive       a post out of each jaw side, ending 4 mm short of the
+                body post's tip -- that is, flush with the lever's
+                outer face, so it never fouls the brace
+    lever       one flat piece, 8 mm thick where the holes are, running
+                the length of the body and 40 mm past it
+    brace       a C channel over each pair of pivot posts, picking up
+                the 4 mm of post the lever leaves, holding the levers on
 
-The slot is not slop. The jaw is now locked to pure radial travel, while a
-pin on a swinging arm must move in z as well; the slot takes that 4.4 mm
-and passes on only the radial push.
+The drive hole is a short slot, not a round hole. The runners hold the
+jaw to pure radial travel, so the jaw post stays at one height while the
+lever's hole swings on an arc about the pivot: the distance from pivot
+to post grows from 60.00 to 63.25 mm across the stroke, and the slot is
+what absorbs those 3.25 mm.
 
-    pivot       r 25, z 95, on the outer face of the body wall
-    arm         47.4 mm to the dowel at z 52, mid jaw
-    handle      66.3 mm, carrying on past the dowel (nutcracker, not
-                see-saw: the handle has to be on the SAME side of the
-                pivot as the dowel, or a squeeze opens the jaws)
-    swing       25.0 deg  ->  20 mm of jaw travel
-    span        106 mm open, 50 mm shut
+Nutcracker, not see-saw: pivot, then drive, then handle, in that order
+along the lever. Put the handle on the far side of the pivot and
+squeezing opens the jaws.
+
+    pivot    r 26, z 9        arm 60 mm to the drive at z 69
+    swing    18.4 deg  ->  20 mm of jaw travel a side
+    span     at the body's back face, 103 mm open -> 52 mm shut
 
 Run:  python3 concept_lever.py
 """
@@ -52,52 +54,57 @@ import render as R
 # layout
 # ---------------------------------------------------------------------------
 
-BODY_R, BODY_H = 23.0, 100.0           # the tube around the 40 mm bore
-JAW_Z0, JAW_Z1 = 7.0, 97.0             # the 90 mm of jaw
-JAW_MID = (JAW_Z0 + JAW_Z1) / 2.0      # 52.0
-JAW_L = 42.0                           # how far a jaw reaches out radially
-WEB_T = 3.0                            # the jaw's side webs
+BODY_R, BODY_H = 23.0, 90.0
+ENTRY_CHAMFER = 2.0                    # 45 deg lead-in at the finger entrance
+JAW_Z0, JAW_Z1 = 3.0, 89.0             # the jaw starts just behind the chamfer
+JAW_L = 42.0
+WEB_T = 3.0
 
-# The y stack, measured out from the mid plane. Every number below is forced
-# by the one above it: the jaw's half width sets where the body wall can
-# start, the groove depth sets how thick that wall has to be, and the wall's
-# outer face sets where the lever's fork can run.
+# The y stack. Each number is forced by the one above it.
 JAW_Y = P.JAW_W / 2.0                  # 13.00  jaw side face
 WALL_Y0 = JAW_Y + 0.35                 # 13.35  body wall, inner face
-RAIL_H, GROOVE_H = 2.9, 3.0            #        45 deg vees
+RAIL_H, GROOVE_H = 2.9, 3.0            #        45 degree vees
 RAIL_TIP = JAW_Y + RAIL_H              # 15.90
 GROOVE_TIP = WALL_Y0 + GROOVE_H        # 16.35
 WALL_Y1 = GROOVE_TIP + P.WALL_MIN      # 17.95  skin left over the groove
-PLATE_Y0 = WALL_Y1 + 1.0               # 18.95  lever fork plate, inner face
-PLATE_T = 4.0
-PLATE_Y1 = PLATE_Y0 + PLATE_T          # 22.95
-PAD_Y1 = PLATE_Y1 + 5.0                #        grip pad, flared outward
 
-RAIL_X = (19.0, 39.0)                  # runner, in jaw-local x
-GROOVE_X = (RAIL_X[0], RAIL_X[1] + P.JAW_TRAVEL)       # 19 .. 59, absolute
-WALL_X = (15.0, GROOVE_X[1] + 2.0)                     # 15 .. 61
-WALL_Z = (6.0, BODY_H)
-RAIL_Z = (JAW_Z0 + 14.0, JAW_Z1 - 14.0)                # 21, 83: in from each end
+FIT = 0.3
+LEVER_T = 8.0                          # "8 mm where the holes are"
+LEVER_Y0 = WALL_Y1 + FIT               # 18.25
+LEVER_Y1 = LEVER_Y0 + LEVER_T          # 26.25
+POST_LEN = 12.0                        # the body post
+POST_TIP = WALL_Y1 + POST_LEN          # 29.95
+DRIVE_TIP = POST_TIP - 4.0             # 25.95  the jaw post's tip
+BRACE_Y0 = LEVER_Y1 + FIT              # 26.55
+BRACE_T = 4.0
+BRACE_Y1 = BRACE_Y0 + BRACE_T          # 30.55
 
-PIVOT = (25.0, 95.0)
-YOKE_X = 25.0                          # where the lever drives the jaw
-ARM = math.hypot(PIVOT[1] - JAW_MID, P.JAW_TRAVEL)     # 47.42
-PSI_OPEN = math.asin(P.JAW_TRAVEL / ARM)               # 24.95 deg
-PSI_SHUT = 0.0                         # shut is the arm hanging straight down
-HANDLE = 66.3
-BRACE_D = 14.0                         # the fork's tie, clear above the body
+PIVOT = (26.0, 9.0)                    # near the front, on the wall's face
+DRIVE_Z = 69.0
+ARM = DRIVE_Z - PIVOT[1]               # 60.0
+DRIVE_LOCAL = PIVOT[0]                 # the post's x in jaw-local terms
+PSI_OPEN = math.atan(P.JAW_TRAVEL / ARM)
+PSI_SHUT = 0.0
+LEVER_OVERHANG = 40.0
+LEVER_TIP_Z = BODY_H + LEVER_OVERHANG   # 130
+POST_D, DRIVE_D = 8.0, 6.0
+LEVER_HALF_W = 9.0
 
-AXLE_D, DOWEL_D = 6.0, 5.0
-YOKE_BOSS_X, YOKE_BOSS_L = 18.0, 16.0
-YOKE_BOSS_Z = (41.5, 57.5)
-WINDOW_X, WINDOW_Z = (21.0, 49.0), (44.0, 56.0)
+RAIL_X = (19.0, 39.0)
+GROOVE_X = (RAIL_X[0], RAIL_X[1] + P.JAW_TRAVEL)
+WALL_X = (15.0, GROOVE_X[1] + 2.0)
+WALL_Z = (2.0, BODY_H)
+RAIL_Z = (JAW_Z0 + 14.0, JAW_Z1 - 5.0)              # 17, 84
+WINDOW_X = (22.0, 50.0)
+WINDOW_Z = (DRIVE_Z - 4.0, DRIVE_Z + 4.0)           # 65 .. 73
+DRIVE_BOSS_X, DRIVE_BOSS_L = 20.0, 12.0
+DRIVE_BOSS_Z = (DRIVE_Z - 6.0, DRIVE_Z + 6.0)
 
 COL = {"body": (0.055, 0.07, 0.085), "jaw": (1.00, 0.74, 0.82),
-       "lever": (0.96, 0.97, 0.95), "pin": (0.85, 0.30, 0.22)}
+       "lever": (0.96, 0.97, 0.95), "brace": (0.85, 0.30, 0.22)}
 # The body is black by choice, which is fine for an assembly and useless for
 # a detail: at a base of 0.055 every face lands within a few percent of black
-# whatever the lighting does, so a 45 degree groove flank is invisible. The
-# detail figures draw the same part in grey.
+# whatever the lighting does. The detail figures draw it in grey.
 COL_DETAIL = (0.46, 0.49, 0.54)
 SHOW = dict(ambient=0.74, key=0.34, fill=0.20, spec=0.12, edges=0.46)
 
@@ -106,19 +113,27 @@ SHOW = dict(ambient=0.74, key=0.34, fill=0.20, spec=0.12, edges=0.46)
 # kinematics
 # ---------------------------------------------------------------------------
 
-def pin_at(psi):
-    """The dowel centre, in the x-z plane."""
-    return (PIVOT[0] + ARM * math.sin(psi), PIVOT[1] - ARM * math.cos(psi))
-
-
 def face_at(psi):
-    """Radius of the jaw's gripping face: 20 mm open, 0 shut."""
-    return pin_at(psi)[0] - YOKE_X
+    """Radius of the jaw's gripping face: 0 shut, 20 mm open.
+
+    The jaw post sits at one fixed height, so the lever's angle and the
+    jaw's radius are related by a tangent, not a sine.
+    """
+    return ARM * math.tan(psi)
 
 
-SLOT_W = DOWEL_D + 0.35
-SLOT_Z = (pin_at(PSI_SHUT)[1] - DOWEL_D / 2.0 - 0.3,
-          pin_at(PSI_OPEN)[1] + DOWEL_D / 2.0 + 0.3)
+def drive_at(psi):
+    return (PIVOT[0] + face_at(psi), DRIVE_Z)
+
+
+def swung(mesh, psi):
+    m = mesh.copy()
+    m.apply_transform(trimesh.transformations.rotation_matrix(
+        psi, (0, 1, 0), (PIVOT[0], 0.0, PIVOT[1])))
+    return m
+
+
+SLOT_RUN = math.hypot(ARM, P.JAW_TRAVEL) - ARM      # 3.25 mm
 
 
 # ---------------------------------------------------------------------------
@@ -129,9 +144,9 @@ def prism_x(poly, x0, x1):
     """Extrude a cross-section drawn in (y, z) along the x axis."""
     m = trimesh.creation.extrude_polygon(poly, x1 - x0)
     t = np.eye(4)
-    t[:3, :3] = np.array([[0.0, 0.0, 1.0],      # polygon's extrusion -> x
-                          [1.0, 0.0, 0.0],      # polygon's X         -> y
-                          [0.0, 1.0, 0.0]])     # polygon's Y         -> z
+    t[:3, :3] = np.array([[0.0, 0.0, 1.0],
+                          [1.0, 0.0, 0.0],
+                          [0.0, 1.0, 0.0]])
     m.apply_transform(t)
     m.apply_translation((x0, 0.0, 0.0))
     return m
@@ -141,10 +156,10 @@ def vee(y_root, y_tip, zc, sign):
     """A 45 degree vee in (y, z), apex outward at y_tip.
 
     Drawn from a root well inside the part it belongs to, so the boolean
-    has real overlap to work with rather than a coincident face. Because
-    the flanks are at 45 degrees the half height always equals the distance
-    back from the apex, which is what keeps the rail and the groove
-    parallel however far each is extended.
+    has real overlap rather than a coincident face. The 45 degrees make the
+    half height equal the distance back from the apex, which is what keeps
+    rail and groove parallel however far either is extended -- and leaves
+    every flank self-supporting when the part prints standing up.
     """
     half = abs(y_tip - y_root)
     return Polygon([(sign * y_root, zc - half),
@@ -153,7 +168,7 @@ def vee(y_root, y_tip, zc, sign):
 
 
 def plate(poly, thickness, y_at):
-    """A flat part lying in the x-z plane, occupying y_at .. y_at+thickness."""
+    """A flat part in the x-z plane, occupying y_at .. y_at+thickness."""
     m = trimesh.creation.extrude_polygon(poly, thickness)
     m.apply_transform(trimesh.transformations.rotation_matrix(
         math.pi / 2, (1, 0, 0)))
@@ -169,43 +184,45 @@ def along_y(mesh_zspan, sign):
     return m
 
 
+def pin(d, y0, y1, at_xz, sign):
+    m = along_y(T.post(d, y0, y1), sign)
+    m.apply_translation((at_xz[0], 0.0, at_xz[1]))
+    return m
+
+
 # ---------------------------------------------------------------------------
 # parts
 # ---------------------------------------------------------------------------
 
 def _wall(sign):
-    """One of the two walls the body extrudes out beside a jaw."""
     w = T.bar(WALL_X[1] - WALL_X[0], WALL_Y1 - WALL_Y0,
               WALL_Z[0], WALL_Z[1], x0=WALL_X[0])
     w.apply_translation((0.0, sign * (WALL_Y0 + WALL_Y1) / 2.0, 0.0))
     for zc in RAIL_Z:
         w = T.cut(w, prism_x(vee(WALL_Y0 - 1.35, GROOVE_TIP, zc, sign),
                              GROOVE_X[0], GROOVE_X[1]))
-    # the window the drive dowel reaches through
+    # the slot the jaw's drive post sweeps through
     w = T.cut(w, T.bar(WINDOW_X[1] - WINDOW_X[0], 2 * (WALL_Y1 + 1.0),
                        WINDOW_Z[0], WINDOW_Z[1], x0=WINDOW_X[0]))
-    axle = along_y(T.post(AXLE_D, WALL_Y1 - 1.0, PLATE_Y1 + 1.0), sign)
-    axle.apply_translation((PIVOT[0], 0.0, PIVOT[1]))
-    return T.fuse(w, axle)
+    return T.fuse(w, pin(POST_D, WALL_Y1 - 1.0, POST_TIP, PIVOT, sign))
 
 
-def body(expose=False):
-    """expose drops the near wall of the +x jaw, to show a runner in place."""
+def body():
     solid = T.tube(P.BORE_D / 2.0, BODY_R, 0.0, BODY_H)
+    # the finger goes in here: a 45 degree lead-in, and the jaw 3 mm behind it
+    cone = trimesh.creation.cone(radius=P.BORE_D / 2.0 + ENTRY_CHAMFER,
+                                 height=P.BORE_D / 2.0 + ENTRY_CHAMFER,
+                                 sections=128)
+    solid = T.cut(solid, cone)
     reach = 80.0
-    # the jaws pass clean through; cut before the walls go on, since the
-    # walls start exactly where this slot stops
     solid = T.cut(solid, T.bar(2 * reach, P.SLOT_W, JAW_Z0, JAW_Z1, x0=-reach))
     for k in range(2):
         for sign in (1, -1):
-            if expose and k == 0 and sign > 0:
-                continue
             solid = T.fuse(solid, T.spun(_wall(sign), 180.0 * k))
     return solid
 
 
 def jaw(psi, index):
-    """A face, two side webs, end caps, the yoke boss, and four runners."""
     web = []
     for sign in (1, -1):
         w = T.bar(JAW_L, WEB_T, JAW_Z0, JAW_Z1)
@@ -213,74 +230,64 @@ def jaw(psi, index):
         web.append(w)
 
     solid = T.fuse(
-        T.bar(P.FACE_T, P.JAW_W, JAW_Z0, JAW_Z1),                 # the face
+        T.bar(P.FACE_T, P.JAW_W, JAW_Z0, JAW_Z1),
         *web,
-        T.bar(JAW_L, P.JAW_W, JAW_Z0, JAW_Z0 + 6.0),              # end caps
+        T.bar(JAW_L, P.JAW_W, JAW_Z0, JAW_Z0 + 6.0),
         T.bar(JAW_L, P.JAW_W, JAW_Z1 - 6.0, JAW_Z1),
-        T.bar(YOKE_BOSS_L, P.JAW_W, *YOKE_BOSS_Z, x0=YOKE_BOSS_X))
+        T.bar(DRIVE_BOSS_L, P.JAW_W, *DRIVE_BOSS_Z, x0=DRIVE_BOSS_X))
 
     for sign in (1, -1):
         for zc in RAIL_Z:
             solid = T.fuse(solid, prism_x(vee(JAW_Y - 2.0, RAIL_TIP, zc, sign),
                                           *RAIL_X))
+        solid = T.fuse(solid, pin(DRIVE_D, JAW_Y - 2.0, DRIVE_TIP,
+                                  (DRIVE_LOCAL, DRIVE_Z), sign))
 
-    solid = T.cut(solid, T.bar(SLOT_W, 2 * (JAW_Y + 2.0), *SLOT_Z,
-                               x0=YOKE_X - SLOT_W / 2.0))
     solid.apply_translation((face_at(psi), 0.0, 0.0))
     return T.spun(solid, 180.0 * index)
 
 
-def lever(psi, index, drop_near=False):
-    """A fork: two plates outboard of the body walls, tied above the body."""
+def lever(psi, index, sign=1):
+    """One flat piece: a round hole on the pivot post, a short slot on the
+    jaw post, and 40 mm of handle past the back of the body."""
     px, pz = PIVOT
+    # the plate stops at the pivot: a tail behind it would sweep into the
+    # brace's web, which crosses in front of the body
+    spine = LineString([(px, pz),
+                        (px, LEVER_TIP_Z - LEVER_HALF_W)]).buffer(
+                            LEVER_HALF_W, resolution=16)
+    y0 = LEVER_Y0 if sign > 0 else -LEVER_Y1
+    solid = plate(spine, LEVER_T, y0)
 
-    def at(s):
-        return (px + s * math.sin(psi), pz - s * math.cos(psi))
-
-    top, tip = at(-BRACE_D), at(HANDLE)
-    spine = LineString([top, tip]).buffer(7.5, resolution=16)
-
-    pieces = []
-    for sign in (1, -1):
-        if drop_near and sign > 0:
-            continue
-        y0 = PLATE_Y0 if sign > 0 else -PLATE_Y1
-        pieces.append(plate(spine, PLATE_T, y0))
-        # the pad's inner corner has to stay off the tube: at the fork's
-        # own y the tube still reaches x 13.0, so it starts outboard of that
-        pad = T.bar(26.0, PAD_Y1 - PLATE_Y0, tip[1] - 6.0, tip[1] + 22.0,
-                    x0=tip[0] - 9.0)
-        pad.apply_translation((0.0, sign * (PLATE_Y0 + PAD_Y1) / 2.0, 0.0))
-        pieces.append(pad)
-
-    # the tie has to clear the body, so it sits above the tube's top face
-    brace = T.bar(15.0, 2 * PLATE_Y1, top[1] - 5.0, top[1] + 5.0,
-                  x0=top[0] - 7.5)
-    pieces.append(brace)
-
-    hole = along_y(T.post(AXLE_D + 0.6, -60.0, 60.0), 1)
-    hole.apply_translation((px, 0.0, pz))
-    pin_x, pin_z = at(ARM)
-    pin_hole = along_y(T.post(DOWEL_D + 0.1, -60.0, 60.0), 1)
-    pin_hole.apply_translation((pin_x, 0.0, pin_z))
-
-    solid = T.cut(T.fuse(*pieces), hole, pin_hole)
-    return T.spun(solid, 180.0 * index)
+    bore = pin(POST_D + 0.35, -60.0, 60.0, PIVOT, 1)
+    slot_poly = LineString([(px, pz + ARM),
+                            (px, pz + ARM + SLOT_RUN)]).buffer(
+                                (DRIVE_D + 0.35) / 2.0, resolution=16)
+    slot = plate(slot_poly, 200.0, -100.0)
+    return T.spun(swung(T.cut(solid, bore, slot), psi), 180.0 * index)
 
 
-def dowel(psi, index):
-    x, z = pin_at(psi)
-    m = along_y(T.post(DOWEL_D, -PLATE_Y1 - 1.0, PLATE_Y1 + 1.0), 1)
-    m.apply_translation((x, 0.0, z))
-    return T.spun(m, 180.0 * index)
+def brace(index):
+    """A C channel over one jaw's pair of pivot posts: two flanges with a
+    hole each, tied by a web that crosses clear in front of the body."""
+    px, pz = PIVOT
+    tab = LineString([(px, -4.0), (px, pz)]).buffer(8.0, resolution=16)
+    pieces = [plate(tab, BRACE_T, BRACE_Y0),
+              plate(tab, BRACE_T, -BRACE_Y1),
+              # the web crosses in front of the body, kept outboard of the
+              # entrance chamfer so nothing narrows the way in
+              T.bar(14.0, 2 * BRACE_Y1, -6.0, -2.0, x0=px - 2.0)]
+    holes = [pin(POST_D + 0.35, -60.0, 60.0, PIVOT, 1)]
+    return T.spun(T.cut(T.fuse(*pieces), *holes), 180.0 * index)
 
 
-def scene(psi, pins=True):
+def scene(psi, braces=True):
     out = [{"mesh": body(), "color": COL["body"]}]
     out += [{"mesh": jaw(psi, k), "color": COL["jaw"]} for k in range(2)]
-    out += [{"mesh": lever(psi, k), "color": COL["lever"]} for k in range(2)]
-    if pins:
-        out += [{"mesh": dowel(psi, k), "color": COL["pin"]} for k in range(2)]
+    out += [{"mesh": lever(psi, k, s), "color": COL["lever"]}
+            for k in range(2) for s in (1, -1)]
+    if braces:
+        out += [{"mesh": brace(k), "color": COL["brace"]} for k in range(2)]
     return out
 
 
@@ -300,44 +307,60 @@ def checks():
     fails = []
 
     def ok(name, cond, detail=""):
-        print(f"  {'PASS' if cond else 'FAIL'}  {name}{'  ' + detail if detail else ''}")
+        print(f"  {'PASS' if cond else 'FAIL'}  {name}"
+              f"{'  ' + detail if detail else ''}")
         if not cond:
             fails.append(name)
 
-    mid = PSI_OPEN / 2.0
+    lv, br = lever(PSI_SHUT, 0), brace(0)
+    bd, jw = body(), jaw(PSI_SHUT, 0)
+
+    ok("the body is 90 mm long", abs(BODY_H - 90.0) < 1e-9)
+    ok("the jaw sits just behind the entrance face",
+       JAW_Z0 <= 3.0, f"{JAW_Z0:.0f} mm in, behind a {ENTRY_CHAMFER:.0f} mm chamfer")
+    ok("the pivot is near the front, not a quarter in",
+       PIVOT[1] / BODY_H < 0.15, f"{100 * PIVOT[1] / BODY_H:.0f}% of the body")
+    ok("the body post stands 12 mm proud",
+       abs((POST_TIP - WALL_Y1) - 12.0) < 1e-9)
+    ok("the jaw post ends 4 mm short of it",
+       abs((POST_TIP - DRIVE_TIP) - 4.0) < 1e-9,
+       f"tips at {POST_TIP:.2f} and {DRIVE_TIP:.2f}")
+    ok("the lever is 8 mm thick at the holes",
+       abs(LEVER_T - 8.0) < 1e-9)
+    ok("the lever prints as one piece",
+       len(lv.split(only_watertight=False)) == 1)
+    ok("the brace is one piece",
+       len(br.split(only_watertight=False)) == 1)
+    ok("the lever runs 40 mm past the body",
+       abs((lv.bounds[1][2] - BODY_H) - LEVER_OVERHANG) < 1e-6,
+       f"tip at z {lv.bounds[1][2]:.0f}")
+    ok("the jaw post stops flush with the lever's outer face",
+       abs(DRIVE_TIP - LEVER_Y1) < 0.35,
+       f"post {DRIVE_TIP:.2f}, lever face {LEVER_Y1:.2f}")
+    ok("the brace picks up the post the lever leaves",
+       BRACE_Y0 >= LEVER_Y1 and POST_TIP > BRACE_Y0,
+       f"{POST_TIP - BRACE_Y0:.2f} mm of post in the brace")
     ok("each jaw face travels 20 mm",
-       abs((face_at(PSI_OPEN) - face_at(PSI_SHUT)) - P.JAW_TRAVEL) < 1e-9,
-       f"{face_at(PSI_OPEN):.1f} -> {face_at(PSI_SHUT):.1f} mm")
+       abs((face_at(PSI_OPEN) - face_at(PSI_SHUT)) - P.JAW_TRAVEL) < 1e-9)
     ok("the faces meet when shut", abs(face_at(PSI_SHUT)) < 1e-9)
     ok("the bore is clear when open",
        abs(face_at(PSI_OPEN) - P.BORE_D / 2.0) < 1e-9)
-    ok("the wall keeps a printable skin over its groove",
-       WALL_Y1 - GROOVE_TIP >= P.WALL_MIN,
-       f"{WALL_Y1 - GROOVE_TIP:.2f} mm, min {P.WALL_MIN}")
-    ok("rail flanks clear groove flanks",
-       0.2 < (GROOVE_TIP - RAIL_TIP) / math.sqrt(2.0) < 0.5,
-       f"{(GROOVE_TIP - RAIL_TIP) / math.sqrt(2.0):.2f} mm")
-    ok("the groove is a jaw-travel longer than the runner",
-       abs((GROOVE_X[1] - GROOVE_X[0])
-           - (RAIL_X[1] - RAIL_X[0]) - P.JAW_TRAVEL) < 1e-9)
-    ok("runners sit in from each end of the jaw",
-       RAIL_Z[0] - JAW_Z0 > 10.0 and JAW_Z1 - RAIL_Z[1] > 10.0,
-       f"{RAIL_Z[0] - JAW_Z0:.0f} mm in from each end")
-    ok("the drive is at the middle of the jaw",
-       abs(pin_at(PSI_OPEN)[1] - JAW_MID) < 1e-9, f"z {JAW_MID:.0f}")
-    ok("the slot is long enough for the pin's rise",
-       SLOT_Z[0] <= pin_at(PSI_SHUT)[1] - DOWEL_D / 2.0
-       and SLOT_Z[1] >= pin_at(PSI_OPEN)[1] + DOWEL_D / 2.0,
-       f"{pin_at(PSI_OPEN)[1] - pin_at(PSI_SHUT)[1]:.2f} mm of rise")
+    ok("the drive slot is long enough for the arc",
+       SLOT_RUN > 3.0, f"{SLOT_RUN:.2f} mm of run")
+    ok("the drive window clears the back runner",
+       RAIL_Z[1] - RAIL_H - WINDOW_Z[1] >= P.WALL_MIN,
+       f"{RAIL_Z[1] - RAIL_H - WINDOW_Z[1]:.1f} mm of wall")
 
-    for tag, psi in (("open", PSI_OPEN), ("half", mid), ("shut", PSI_SHUT)):
-        b, j, l, d = (body(), jaw(psi, 0), lever(psi, 0), dowel(psi, 0))
-        ok(f"jaw runs free in the body, {tag}", _overlap(b, j) < 1e-6,
-           f"{_overlap(b, j):.3f} mm^3")
-        ok(f"lever clears the body, {tag}", _overlap(b, l) < 1e-6)
-        ok(f"lever clears the jaw, {tag}", _overlap(j, l) < 1e-6)
-        ok(f"dowel slides in the slot, {tag}", _overlap(j, d) < 1e-6)
-        ok(f"dowel clears the body window, {tag}", _overlap(b, d) < 1e-6)
+    for tag, psi in (("open", PSI_OPEN), ("half", PSI_OPEN / 2), ("shut", PSI_SHUT)):
+        j = jaw(psi, 0)
+        lp, lm = lever(psi, 0, 1), lever(psi, 0, -1)
+        ok(f"jaw runs free in the body, {tag}", _overlap(bd, j) < 1e-6,
+           f"{_overlap(bd, j):.3f} mm^3")
+        ok(f"lever clears the body, {tag}", _overlap(bd, lp) < 1e-6)
+        ok(f"drive post rides free in the slot, {tag}",
+           _overlap(j, lp) < 1e-6 and _overlap(j, lm) < 1e-6)
+        ok(f"brace clears the lever, {tag}", _overlap(br, lp) < 1e-6)
+        ok(f"brace clears the body, {tag}", _overlap(br, bd) < 1e-6)
 
     print(f"\n  {'all checks pass' if not fails else str(len(fails)) + ' FAILED'}")
     return not fails
@@ -367,72 +390,67 @@ def _sectioned(items, normal, origin):
     return out
 
 
+def _greyed(items):
+    return [it if it["color"] != COL["body"] else
+            {"mesh": it["mesh"], "color": COL_DETAIL} for it in items]
+
+
 def renders(out):
     out.mkdir(exist_ok=True)
     op, sh = scene(PSI_OPEN), scene(PSI_SHUT)
 
-    # one camera per pair, framed on the open state, so the two compare
-    for az, el, names in ((90, 0, ("40-guide-side-open.png",
-                                   "41-guide-side-shut.png")),
-                          (38, 14, ("42-guide-quarter-open.png",
-                                    "43-guide-quarter-shut.png"))):
+    for az, el, names in ((90, 0, ("50-side-open.png", "51-side-shut.png")),
+                          (40, 16, ("52-quarter-open.png",
+                                    "53-quarter-shut.png"))):
         cam = R.frame([p["mesh"] for p in op], azimuth_deg=az,
-                      elevation_deg=el, margin=1.04)
+                      elevation_deg=el, margin=1.03)
         for name, ps in zip(names, (op, sh)):
             R.render(ps, width=1300, height=1050, supersample=2,
                      **SHOW, **cam).save(out / name)
             print(f"  renders/{name}")
 
-    bore = {"eye": (0.0, 0.0, BODY_H + 190.0), "target": (0.0, 0.0, 40.0),
-            "fov_deg": 46.0}
-    for name, ps in (("44-guide-bore-open.png", op),
-                     ("45-guide-bore-shut.png", sh)):
-        R.render(ps, width=1200, height=1200, supersample=2, ambient=0.72,
-                 key=0.34, fill=0.26, spec=0.1, edges=0.42,
-                 **bore).save(out / name)
+    # straight into the finger entrance
+    for name, ps in (("54-entrance-open.png", op), ("55-entrance-shut.png", sh)):
+        R.render(ps, width=1150, height=1150, supersample=2, ambient=0.74,
+                 key=0.32, fill=0.24, spec=0.1, edges=0.44,
+                 eye=(0.0, 0.0, -185.0), target=(0.0, 0.0, 30.0),
+                 fov_deg=42.0).save(out / name)
         print(f"  renders/{name}")
 
-    # runner and groove, drawn apart: a cutaway here just shows the inside
-    # of the far wall, where pulling the two walls off sideways shows the
-    # thing being asked about -- which rail lands in which groove
-    psi = PSI_SHUT
-    apart = [{"mesh": jaw(psi, 0), "color": COL["jaw"]}]
-    w = _wall(-1)
-    w.apply_translation((0.0, -34.0, 0.0))
-    apart.append({"mesh": w, "color": COL_DETAIL})
-    cam = R.frame([p["mesh"] for p in apart], azimuth_deg=56,
-                  elevation_deg=22, margin=1.03)
+    # the post stack, drawn apart: body post, lever, brace
+    apart = [{"mesh": _wall(1), "color": COL_DETAIL}]
+    lv = lever(PSI_SHUT, 0, 1)
+    lv.apply_translation((0.0, 26.0, 0.0))
+    apart.append({"mesh": lv, "color": COL["lever"]})
+    br = brace(0)
+    br.apply_translation((0.0, 56.0, 0.0))
+    apart.append({"mesh": br, "color": COL["brace"]})
+    # looking near-along x, so a stack pulled apart along y reads across
+    # the frame instead of hiding the post behind the lever
+    cam = R.frame([p["mesh"] for p in apart], azimuth_deg=8,
+                  elevation_deg=12, margin=1.03)
     R.render(apart, width=1300, height=1050, supersample=2,
-             **SHOW, **cam).save(out / "46-guide-runner.png")
-    print("  renders/46-guide-runner.png")
+             **SHOW, **cam).save(out / "56-stack-apart.png")
+    print("  renders/56-stack-apart.png")
 
-    # the vee engagement, cut across the runners
-    sec = _sectioned(scene(PSI_SHUT), (-1, 0, 0), (30.0, 0.0, 0.0))
-    R.render(sec, width=1250, height=1250, supersample=2, ambient=0.80,
-             key=0.26, fill=0.22, spec=0.06, edges=0.52,
-             eye=(230.0, 0.0, 52.0), target=(0.0, 0.0, 52.0),
-             fov_deg=34.0).save(out / "47-guide-section.png")
-    print("  renders/47-guide-section.png")
-
-    # the drive at mid height, cut through the dowel's own axis: in any
-    # solid view the jaw's open end stands in front of the thing to see
-    plan = scene(PSI_OPEN)
-    plan = [p if p["color"] != COL["body"] else
-            {"mesh": p["mesh"], "color": COL_DETAIL} for p in plan]
-    sec = _sectioned(plan, (0, 0, -1), (0.0, 0.0, JAW_MID))
-    R.render(sec, width=1250, height=1150, supersample=2, ambient=0.80,
-             key=0.26, fill=0.22, spec=0.06, edges=0.52,
-             eye=(36.0, 0.0, 190.0), target=(36.0, 0.0, 0.0),
-             fov_deg=30.0).save(out / "48-guide-drive.png")
-    print("  renders/48-guide-drive.png")
+    # plan sections through each post's own axis
+    for name, z, eye_x in (("57-pivot-section.png", PIVOT[1], 26.0),
+                           ("58-drive-section.png", DRIVE_Z, 30.0)):
+        sec = _sectioned(_greyed(scene(PSI_OPEN)), (0, 0, -1), (0.0, 0.0, z))
+        R.render(sec, width=1250, height=1100, supersample=2, ambient=0.80,
+                 key=0.26, fill=0.22, spec=0.06, edges=0.52,
+                 eye=(eye_x, 0.0, 170.0), target=(eye_x, 0.0, 0.0),
+                 fov_deg=32.0).save(out / name)
+        print(f"  renders/{name}")
 
 
 if __name__ == "__main__":
     good = checks()
     print()
     renders(Path(__file__).parent / "renders")
-    print(f"\n  span {2 * (PIVOT[0] + HANDLE * math.sin(PSI_OPEN)):.0f} mm open"
-          f" -> {2 * PIVOT[0]:.0f} mm shut")
-    print(f"  swing {math.degrees(PSI_OPEN - PSI_SHUT):.1f} deg, "
-          f"jaw travel {P.JAW_TRAVEL:.0f} mm a side")
+    for z, label in ((BODY_H, "at the body's back face"),
+                     (LEVER_TIP_Z, "at the lever tip")):
+        s = (z - PIVOT[1]) * math.sin(PSI_OPEN)
+        print(f"\n  grip {label}: span {2 * (PIVOT[0] + s):.0f} mm open"
+              f" -> {2 * PIVOT[0]:.0f} mm shut")
     sys.exit(0 if good else 1)
