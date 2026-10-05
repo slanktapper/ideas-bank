@@ -93,6 +93,8 @@ LEVER_OVERHANG = 40.0
 LEVER_TIP_Z = BODY_H + LEVER_OVERHANG   # 130
 POST_D, DRIVE_D = 8.0, 6.0
 LEVER_HALF_W = 9.0
+GRIP_R = 8.0                           # the round bar tying the two sides
+GRIP_D = 100.0                         # the earliest it clears the body
 
 RAIL_X = (19.0, 39.0)
 GROOVE_X = (RAIL_X[0], RAIL_X[1] + P.JAW_TRAVEL)
@@ -253,24 +255,34 @@ def jaw(psi, index):
     return T.spun(solid, 180.0 * index)
 
 
-def lever(psi, index, sign=1):
-    """One flat piece: a round hole on the pivot post, a short slot on the
-    jaw post, and 40 mm of handle past the back of the body."""
+def lever(psi, index, grip_d=GRIP_D):
+    """One piece. Two plates straddling the body, each with a round hole on
+    the pivot post and a short slot on the jaw post, tied near the far end
+    by a round bar that is also what the hand closes on.
+
+    The bar has to sit past the back of the body. It spans the whole width,
+    so anywhere inside the body's own length it would run straight through
+    the guide walls -- there is no path from one side to the other except
+    in front of the entrance or behind the back face, and only the back has
+    any leverage.
+    """
     px, pz = PIVOT
-    # the plate stops at the pivot: a tail behind it would sweep into the
+    # the plates stop at the pivot: a tail behind would sweep into the
     # brace's web, which crosses in front of the body
     spine = LineString([(px, pz),
                         (px, LEVER_TIP_Z - LEVER_HALF_W)]).buffer(
                             LEVER_HALF_W, resolution=16)
-    y0 = LEVER_Y0 if sign > 0 else -LEVER_Y1
-    solid = plate(spine, LEVER_T, y0)
+    pieces = [plate(spine, LEVER_T, LEVER_Y0),
+              plate(spine, LEVER_T, -LEVER_Y1),
+              pin(2 * GRIP_R, -LEVER_Y1, LEVER_Y1, (px, pz + grip_d), 1)]
 
     bore = pin(POST_D + 0.35, -60.0, 60.0, PIVOT, 1)
     slot_poly = LineString([(px, pz + ARM),
                             (px, pz + ARM + SLOT_RUN)]).buffer(
                                 (DRIVE_D + 0.35) / 2.0, resolution=16)
     slot = plate(slot_poly, 200.0, -100.0)
-    return T.spun(swung(T.cut(solid, bore, slot), psi), 180.0 * index)
+    return T.spun(swung(T.cut(T.fuse(*pieces), bore, slot), psi),
+                  180.0 * index)
 
 
 def brace(index):
@@ -290,8 +302,7 @@ def brace(index):
 def scene(psi, braces=True):
     out = [{"mesh": body(), "color": COL["body"]}]
     out += [{"mesh": jaw(psi, k), "color": COL["jaw"]} for k in range(2)]
-    out += [{"mesh": lever(psi, k, s), "color": COL["lever"]}
-            for k in range(2) for s in (1, -1)]
+    out += [{"mesh": lever(psi, k), "color": COL["lever"]} for k in range(2)]
     if braces:
         out += [{"mesh": brace(k), "color": COL["brace"]} for k in range(2)]
     return out
@@ -370,15 +381,24 @@ def checks():
        math.hypot(PIVOT[0] - LEVER_HALF_W, LEVER_Y0) > BODY_R,
        f"r {math.hypot(PIVOT[0] - LEVER_HALF_W, LEVER_Y0):.1f} vs {BODY_R}")
 
+    # the grab bar ties both sides, so the lever is one body, and its
+    # worst case against the walls is mid-stroke rather than at either end
+    worst = max(_overlap(bd, lever(PSI_OPEN * k / 8.0, 0)) for k in range(9))
+    ok("the grab bar clears the body right through the stroke",
+       worst < 1e-6, f"worst {worst:.3f} mm^3 over 9 positions")
+    spread = POST_TIP - LEVER_Y0
+    strain = 3 * LEVER_T * spread / (2 * GRIP_D ** 2)
+    ok("the lever can be sprung onto the posts without yielding",
+       strain < 0.02,
+       f"{spread:.1f} mm a side, {100 * strain:.2f}% strain")
+
     for tag, psi in (("open", PSI_OPEN), ("half", PSI_OPEN / 2), ("shut", PSI_SHUT)):
-        j = jaw(psi, 0)
-        lp, lm = lever(psi, 0, 1), lever(psi, 0, -1)
+        j, lv2 = jaw(psi, 0), lever(psi, 0)
         ok(f"jaw runs free in the body, {tag}", _overlap(bd, j) < 1e-6,
            f"{_overlap(bd, j):.3f} mm^3")
-        ok(f"lever clears the body, {tag}", _overlap(bd, lp) < 1e-6)
-        ok(f"drive post rides free in the slot, {tag}",
-           _overlap(j, lp) < 1e-6 and _overlap(j, lm) < 1e-6)
-        ok(f"brace clears the lever, {tag}", _overlap(br, lp) < 1e-6)
+        ok(f"lever clears the body, {tag}", _overlap(bd, lv2) < 1e-6)
+        ok(f"drive post rides free in the slot, {tag}", _overlap(j, lv2) < 1e-6)
+        ok(f"brace clears the lever, {tag}", _overlap(br, lv2) < 1e-6)
         ok(f"brace clears the body, {tag}", _overlap(br, bd) < 1e-6)
 
     print(f"\n  {'all checks pass' if not fails else str(len(fails)) + ' FAILED'}")
@@ -464,6 +484,14 @@ def renders(out):
              **SHOW, **cam).save(out / "59-runners.png")
     print("  renders/59-runners.png")
 
+    # the lever on its own: one piece, both sides tied by the grab bar
+    one = [{"mesh": lever(PSI_SHUT, 0), "color": COL["lever"]}]
+    cam = R.frame([p["mesh"] for p in one], azimuth_deg=34,
+                  elevation_deg=22, margin=1.04)
+    R.render(one, width=1300, height=1050, supersample=2,
+             **SHOW, **cam).save(out / "60-lever.png")
+    print("  renders/60-lever.png")
+
     # plan sections through each post's own axis
     for name, z, eye_x in (("57-pivot-section.png", PIVOT[1], 26.0),
                            ("58-drive-section.png", DRIVE_Z, 30.0)):
@@ -479,13 +507,20 @@ if __name__ == "__main__":
     good = checks()
     print()
     renders(Path(__file__).parent / "renders")
-    # A hand can close on the lever only where its outer edge stands proud
-    # of the guide wall; below that the wall is in the way of the push.
-    reach = (WALL_X[1] - LEVER_HALF_W - PIVOT[0]) / math.sin(PSI_OPEN)
-    for z, label in ((reach + PIVOT[1], "where the lever clears the wall"),
-                     (BODY_H, "at the body's back face"),
-                     (LEVER_TIP_Z, "at the lever tip")):
-        s = (z - PIVOT[1]) * math.sin(PSI_OPEN)
-        print(f"  grip {label} (z {z:.0f}): span {2 * (PIVOT[0] + s):.0f} mm"
-              f" open -> {2 * PIVOT[0]:.0f} mm shut")
+    # The hand now closes on the bar, so there is only one grip point left
+    # to quote, and it is the one the bar's clearance forces.
+    s = GRIP_D * math.sin(PSI_OPEN)
+    print(f"  grab bar {GRIP_D:.0f} mm along the lever:"
+          f" span {2 * (PIVOT[0] + s):.0f} mm open -> {2 * PIVOT[0]:.0f} shut,"
+          f" a {2 * s:.0f} mm stroke")
+    # full travel is a 93 mm stroke, wider than a hand opens. What matters
+    # is how far it has to open to admit a finger, which is a lot less.
+    for span in (100.0, 105.0, 110.0):
+        psi = math.asin((span / 2.0 - PIVOT[0]) / GRIP_D)
+        print(f"  opening to a {span:.0f} mm span gives a "
+              f"{2 * face_at(psi):.1f} mm gap between the jaw faces")
+    spread = POST_TIP - LEVER_Y0
+    print(f"  springing it on: {spread:.1f} mm a side, "
+          f"{100 * 3 * LEVER_T * spread / (2 * GRIP_D ** 2):.2f}% strain, "
+          f"{2000 * 2 * LEVER_HALF_W * LEVER_T ** 3 * spread / (4 * GRIP_D ** 3):.0f} N")
     sys.exit(0 if good else 1)
