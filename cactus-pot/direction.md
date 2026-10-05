@@ -90,8 +90,11 @@ against `params.py`, and `build.py --pot` fails loudly if the pot changes.
 ### The interface, as a contract
 
 These numbers are what the cactus needs from whatever pot it ends up in rather
-than facts about one mesh. The pebble pot, drawn after this was written, keeps
-all four, so the cactus fits it unchanged:
+than facts about one mesh. **The pebble pot is the chosen one** — a round body
+with a stone texture, picked over a square-sectioned variant that was drawn at
+the same time. Both carried the same mount and the cactus fits either; the
+square one is not what ships. The pebble pot keeps all four numbers, so the
+cactus fits it unchanged:
 
     python3 build.py --pot <pebble-pot.stl>
     socket Ø32.00 x 8.00 deep, floor 21.00 below a rim at z=76.00,
