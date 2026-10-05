@@ -86,6 +86,25 @@ trunk is Ø52–55 and it is 175 mm tall, 147 of which is above the rim — the
 assembly stands about 223 mm. `test_fit.py` checks all four of those numbers
 against `params.py`, and `build.py --pot` fails loudly if the pot changes.
 
+### The interface, as a contract
+
+A new pot is being designed, so these numbers are what the cactus needs from
+whatever pot it ends up in rather than facts about one mesh:
+
+- **A blind socket in the middle of the inner floor**, concentric with the
+  pot's axis. Blind matters: a drainage hole straight through the floor is a
+  different mount and would need a different base on the cactus.
+- **Deeper than the spigot**, so the cactus seats on the floor and not in the
+  hole. Any diameter works; `POT_BORE_D` follows it and the spigot is sized
+  from it with `SPIGOT_CLEAR` per side.
+- **A cavity wall far enough out** that the trunk clears it — `POT_INNER_R`
+  against `TRUNK_R_BASE + RIB_DEPTH`, checked in `test_fit.py`.
+- **A known floor-to-rim height**, because `AREOLE_Z_MIN` has to stay above it
+  or the pot's rim fouls the lowest spines going in.
+
+The cactus is scaled to the pot rather than the other way round, so a pot that
+changes size much from Ø92 × 76 should take the cactus's proportions with it.
+
 ## Open questions
 
 - **Does −0.06 hold?** It is the right number on paper and the coupon exists
