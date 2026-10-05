@@ -46,7 +46,7 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString, Point, Polygon
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "3d-tools"))
 
@@ -108,9 +108,12 @@ LEVER_TIP_Z = BODY_H + LEVER_OVERHANG   # 130
 POST_D, DRIVE_D = 8.0, 6.0
 LEVER_HALF_W = 9.0
 GRIP_R = 8.0                           # the round bar tying the two sides
-GRIP_Z = 108.0                         # the grab bar, clear behind the body
-KNEE = (27.0, 45.0)                    # where the lever cranks inboard
-LEVER_END = (24.5, 121.0)
+# A straight bar from the pivot to the grab bar, with a stub off its side
+# for the drive slot -- a simpler outline to print than a cranked arm, and
+# the same mechanism: pivot, drive and grab bar are where they were, and
+# only the metal between them changes shape.
+GRIP = (25.0, 108.0)                   # the grab bar, clear behind the body
+LEVER_END_Z = 121.0                    # buffered, this puts the tip at 130
 BRACE_WEB_X = (80.0, 88.0)             # the web crosses outboard of the lever
 
 RAIL_X = (19.0, 39.0)
@@ -282,23 +285,42 @@ def jaw(psi, index):
 
 
 def grip_xy():
-    """Where the grab bar sits, on the lever's long branch."""
-    (kx, kz), (ex, ez) = KNEE, LEVER_END
-    t = (GRIP_Z - kz) / (ez - kz)
-    return (kx + t * (ex - kx), GRIP_Z)
+    return GRIP
+
+
+def _on_axis(z):
+    """A point at height z on the straight bar through pivot and grab bar."""
+    (px, pz), (gx, gz) = PIVOT, GRIP
+    return (px + (gx - px) * (z - pz) / (gz - pz), z)
+
+
+def _stub():
+    """The side tab carrying the drive slot.
+
+    The slot cannot lie along the bar. In the lever's own frame the jaw post
+    tracks a line radial from the pivot -- that is what the runners holding
+    the jaw at one height force -- and the bar runs from the pivot to the
+    grab bar, which is a different direction. So the tab stands off the bar
+    and the slot inside it sits about 25 degrees across.
+    """
+    slot = LineString([on_arm(ARM_OPEN), on_arm(ARM_SHUT)])
+    mid = slot.interpolate(0.5, normalized=True)
+    rel = (mid.x - PIVOT[0], mid.y - PIVOT[1])
+    (px, pz), (gx, gz) = PIVOT, GRIP
+    ux, uz = (gx - px), (gz - pz)
+    n = math.hypot(ux, uz)
+    ux, uz = ux / n, uz / n
+    t = rel[0] * ux + rel[1] * uz                     # foot of the perpendicular
+    foot = (px + t * ux, pz + t * uz)
+    return slot.buffer(9.0, resolution=16).union(
+        Point(foot).buffer(LEVER_HALF_W, resolution=16)).convex_hull
 
 
 def lever(psi, index):
-    """One cranked piece. The pivot hole is outboard, past the body; the
-    arm leans inboard to the drive slot, and the long branch carries on
-    back to the grab bar that ties the two sides together.
-
-    The crank is what the outboard pivot costs. A straight bar from a
-    pivot that far out would put the hand out there too, and the span is
-    twice wherever the hand lands.
-    """
-    spine = LineString([PIVOT, KNEE, LEVER_END]).buffer(
-        LEVER_HALF_W, resolution=16)
+    """One piece: a straight bar from the outboard pivot to the grab bar,
+    with a stub off its side carrying the drive slot."""
+    spine = LineString([PIVOT, _on_axis(LEVER_END_Z)]).buffer(
+        LEVER_HALF_W, resolution=16).union(_stub())
     pieces = [plate(spine, LEVER_T, LEVER_Y0),
               plate(spine, LEVER_T, -LEVER_Y1),
               pin(2 * GRIP_R, -LEVER_Y1, LEVER_Y1, grip_xy(), 1)]
@@ -415,8 +437,8 @@ def checks():
     ok("the grab bar clears the body right through the stroke",
        worst < 1e-6, f"worst {worst:.3f} mm^3 over 9 positions")
 
-    gx, _ = grip_xy()
-    grip_arm = math.hypot(gx - PIVOT[0], GRIP_Z - PIVOT[1])
+    gx, gz = grip_xy()
+    grip_arm = math.hypot(gx - PIVOT[0], gz - PIVOT[1])
     spread = POST_TIP - LEVER_Y0
     strain = 3 * LEVER_T * spread / (2 * grip_arm ** 2)
     ok("the lever can be sprung onto the posts without yielding",
@@ -431,6 +453,12 @@ def checks():
     ok("the brace's web reaches across outboard of the lever",
        BRACE_WEB_X[0] > lv.bounds[1][0],
        f"web from x {BRACE_WEB_X[0]:.0f}, lever reaches {lv.bounds[1][0]:.0f}")
+    ok("the stub keeps a printable wall round the drive slot",
+       9.0 - (DRIVE_D + 0.35) / 2.0 >= P.WALL_MIN,
+       f"{9.0 - (DRIVE_D + 0.35) / 2.0:.2f} mm all round")
+    ok("the load path from grab bar to pivot is a straight bar",
+       abs((GRIP[0] - PIVOT[0]) * (_on_axis(LEVER_END_Z)[1] - PIVOT[1])
+           - (GRIP[1] - PIVOT[1]) * (_on_axis(LEVER_END_Z)[0] - PIVOT[0])) < 1e-9)
     ok("the drive post still slides along the arm, not across it",
        abs(ARM_SHUT - ARM_OPEN - SLOT_RUN) < 1e-9,
        f"arm {ARM_SHUT:.1f} -> {ARM_OPEN:.1f} mm")
