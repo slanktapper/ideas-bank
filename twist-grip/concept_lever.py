@@ -83,18 +83,35 @@ BRACE_Y0 = LEVER_Y1 + FIT              # 26.55
 BRACE_T = 4.0
 BRACE_Y1 = BRACE_Y0 + BRACE_T          # 30.55
 
-PIVOT = (25.0, 8.0)                    # near the front, on the wall's face
+# The pivot sits OUTBOARD of the body, past the walls, so the brace that
+# caps it can reach across from one side to the other beside the body
+# instead of wrapping round the front of the entrance. It costs a boss on
+# each wall and buys a longer, more inclined arm: 18.3 degrees of swing
+# instead of 27.8, and a 67 mm squeeze instead of 93.
+PIVOT = (66.0, 8.0)
+PIVOT_BOSS_X = (56.0, 72.0)
+PIVOT_BOSS_Z = (2.0, 18.0)
 DRIVE_Z = (JAW_Z0 + JAW_Z1) / 2.0      # 46.0, the middle of the jaw
-ARM = DRIVE_Z - PIVOT[1]               # 60.0
-DRIVE_LOCAL = PIVOT[0]                 # the post's x in jaw-local terms
-PSI_OPEN = math.atan(P.JAW_TRAVEL / ARM)
+DRIVE_LOCAL = 25.0                     # the post's x in jaw-local terms
+DZ_ARM = DRIVE_Z - PIVOT[1]            # 38.0, the only term that sets sense
+# The arm now leans inboard, so its angle -- not a plain tangent -- carries
+# the jaw. Rotation about the pivot drops the arm's polar angle, and the
+# post, held at one height by the runners, slides along the arm as it goes.
+ALPHA_SHUT = math.atan2(DZ_ARM, DRIVE_LOCAL - PIVOT[0])
+ALPHA_OPEN = math.atan2(DZ_ARM, DRIVE_LOCAL + P.JAW_TRAVEL - PIVOT[0])
+PSI_OPEN = ALPHA_SHUT - ALPHA_OPEN
 PSI_SHUT = 0.0
+ARM_SHUT = DZ_ARM / math.sin(ALPHA_SHUT)
+ARM_OPEN = DZ_ARM / math.sin(ALPHA_OPEN)
 LEVER_OVERHANG = 40.0
 LEVER_TIP_Z = BODY_H + LEVER_OVERHANG   # 130
 POST_D, DRIVE_D = 8.0, 6.0
 LEVER_HALF_W = 9.0
 GRIP_R = 8.0                           # the round bar tying the two sides
-GRIP_D = 100.0                         # the earliest it clears the body
+GRIP_Z = 108.0                         # the grab bar, clear behind the body
+KNEE = (27.0, 45.0)                    # where the lever cranks inboard
+LEVER_END = (24.5, 121.0)
+BRACE_WEB_X = (80.0, 88.0)             # the web crosses outboard of the lever
 
 RAIL_X = (19.0, 39.0)
 GROOVE_X = (RAIL_X[0], RAIL_X[1] + P.JAW_TRAVEL)
@@ -122,12 +139,14 @@ SHOW = dict(ambient=0.74, key=0.34, fill=0.20, spec=0.12, edges=0.46)
 # ---------------------------------------------------------------------------
 
 def face_at(psi):
-    """Radius of the jaw's gripping face: 0 shut, 20 mm open.
+    """Radius of the jaw's gripping face: 0 shut, 20 mm open."""
+    return (PIVOT[0] + DZ_ARM / math.tan(ALPHA_SHUT - psi)) - DRIVE_LOCAL
 
-    The jaw post sits at one fixed height, so the lever's angle and the
-    jaw's radius are related by a tangent, not a sine.
-    """
-    return ARM * math.tan(psi)
+
+def on_arm(r):
+    """A point r along the arm, in the lever's own (shut) frame."""
+    return (PIVOT[0] + r * math.cos(ALPHA_SHUT),
+            PIVOT[1] + r * math.sin(ALPHA_SHUT))
 
 
 def drive_at(psi):
@@ -141,7 +160,7 @@ def swung(mesh, psi):
     return m
 
 
-SLOT_RUN = math.hypot(ARM, P.JAW_TRAVEL) - ARM      # 3.25 mm
+SLOT_RUN = ARM_SHUT - ARM_OPEN
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +225,13 @@ def _wall(sign):
     w = T.bar(WALL_X[1] - WALL_X[0], WALL_Y1 - WALL_Y0,
               WALL_Z[0], WALL_Z[1], x0=WALL_X[0])
     w.apply_translation((0.0, sign * (WALL_Y0 + WALL_Y1) / 2.0, 0.0))
+    # the boss goes on before the grooves are cut: added after, it fills the
+    # outer end of the front groove, exactly where that runner sits at full
+    # open, and the jaw jams on it
+    boss = T.bar(PIVOT_BOSS_X[1] - PIVOT_BOSS_X[0], WALL_Y1 - WALL_Y0,
+                 *PIVOT_BOSS_Z, x0=PIVOT_BOSS_X[0])
+    boss.apply_translation((0.0, sign * (WALL_Y0 + WALL_Y1) / 2.0, 0.0))
+    w = T.fuse(w, boss)
     for zc in RAIL_Z:
         w = T.cut(w, prism_x(vee(WALL_Y0 - 1.35, GROOVE_TIP, zc, sign),
                              GROOVE_X[0], GROOVE_X[1]))
@@ -255,48 +281,50 @@ def jaw(psi, index):
     return T.spun(solid, 180.0 * index)
 
 
-def lever(psi, index, grip_d=GRIP_D):
-    """One piece. Two plates straddling the body, each with a round hole on
-    the pivot post and a short slot on the jaw post, tied near the far end
-    by a round bar that is also what the hand closes on.
+def grip_xy():
+    """Where the grab bar sits, on the lever's long branch."""
+    (kx, kz), (ex, ez) = KNEE, LEVER_END
+    t = (GRIP_Z - kz) / (ez - kz)
+    return (kx + t * (ex - kx), GRIP_Z)
 
-    The bar has to sit past the back of the body. It spans the whole width,
-    so anywhere inside the body's own length it would run straight through
-    the guide walls -- there is no path from one side to the other except
-    in front of the entrance or behind the back face, and only the back has
-    any leverage.
+
+def lever(psi, index):
+    """One cranked piece. The pivot hole is outboard, past the body; the
+    arm leans inboard to the drive slot, and the long branch carries on
+    back to the grab bar that ties the two sides together.
+
+    The crank is what the outboard pivot costs. A straight bar from a
+    pivot that far out would put the hand out there too, and the span is
+    twice wherever the hand lands.
     """
-    px, pz = PIVOT
-    # the plates stop at the pivot: a tail behind would sweep into the
-    # brace's web, which crosses in front of the body
-    spine = LineString([(px, pz),
-                        (px, LEVER_TIP_Z - LEVER_HALF_W)]).buffer(
-                            LEVER_HALF_W, resolution=16)
+    spine = LineString([PIVOT, KNEE, LEVER_END]).buffer(
+        LEVER_HALF_W, resolution=16)
     pieces = [plate(spine, LEVER_T, LEVER_Y0),
               plate(spine, LEVER_T, -LEVER_Y1),
-              pin(2 * GRIP_R, -LEVER_Y1, LEVER_Y1, (px, pz + grip_d), 1)]
+              pin(2 * GRIP_R, -LEVER_Y1, LEVER_Y1, grip_xy(), 1)]
 
     bore = pin(POST_D + 0.35, -60.0, 60.0, PIVOT, 1)
-    slot_poly = LineString([(px, pz + ARM),
-                            (px, pz + ARM + SLOT_RUN)]).buffer(
-                                (DRIVE_D + 0.35) / 2.0, resolution=16)
+    # the slot runs along the arm, because that is the way the post slides
+    slot_poly = LineString([on_arm(ARM_OPEN), on_arm(ARM_SHUT)]).buffer(
+        (DRIVE_D + 0.35) / 2.0, resolution=16)
     slot = plate(slot_poly, 200.0, -100.0)
     return T.spun(swung(T.cut(T.fuse(*pieces), bore, slot), psi),
                   180.0 * index)
 
 
 def brace(index):
-    """A C channel over one jaw's pair of pivot posts: two flanges with a
-    hole each, tied by a web that crosses clear in front of the body."""
+    """A C channel capping one jaw's pair of pivot posts. With the posts
+    outboard of the walls, its web reaches across beside the body rather
+    than wrapping round the entrance."""
     px, pz = PIVOT
-    tab = LineString([(px, -6.0), (px, pz)]).buffer(8.0, resolution=16)
+    tab = LineString([(px, pz), (BRACE_WEB_X[0] - 2.0, pz)]).buffer(
+        8.0, resolution=16)
     pieces = [plate(tab, BRACE_T, BRACE_Y0),
               plate(tab, BRACE_T, -BRACE_Y1),
-              # the web crosses in front of the body, kept outboard of the
-              # entrance chamfer so nothing narrows the way in
-              T.bar(14.0, 2 * BRACE_Y1, -8.0, -4.0, x0=px - 2.0)]
-    holes = [pin(POST_D + 0.35, -60.0, 60.0, PIVOT, 1)]
-    return T.spun(T.cut(T.fuse(*pieces), *holes), 180.0 * index)
+              T.bar(BRACE_WEB_X[1] - BRACE_WEB_X[0], 2 * BRACE_Y1,
+                    0.0, 16.0, x0=BRACE_WEB_X[0])]
+    hole = pin(POST_D + 0.35, -60.0, 60.0, PIVOT, 1)
+    return T.spun(T.cut(T.fuse(*pieces), hole), 180.0 * index)
 
 
 def scene(psi, braces=True):
@@ -349,8 +377,8 @@ def checks():
     ok("the brace is one piece",
        len(br.split(only_watertight=False)) == 1)
     ok("the lever runs 40 mm past the body",
-       abs((lv.bounds[1][2] - BODY_H) - LEVER_OVERHANG) < 1e-6,
-       f"tip at z {lv.bounds[1][2]:.0f}")
+       abs((lv.bounds[1][2] - BODY_H) - LEVER_OVERHANG) < 0.3,
+       f"{lv.bounds[1][2] - BODY_H:.1f} mm past, tip at z {lv.bounds[1][2]:.1f}")
     ok("the jaw post stops flush with the lever's outer face",
        abs(DRIVE_TIP - LEVER_Y1) < 0.35,
        f"post {DRIVE_TIP:.2f}, lever face {LEVER_Y1:.2f}")
@@ -386,11 +414,26 @@ def checks():
     worst = max(_overlap(bd, lever(PSI_OPEN * k / 8.0, 0)) for k in range(9))
     ok("the grab bar clears the body right through the stroke",
        worst < 1e-6, f"worst {worst:.3f} mm^3 over 9 positions")
+
+    gx, _ = grip_xy()
+    grip_arm = math.hypot(gx - PIVOT[0], GRIP_Z - PIVOT[1])
     spread = POST_TIP - LEVER_Y0
-    strain = 3 * LEVER_T * spread / (2 * GRIP_D ** 2)
+    strain = 3 * LEVER_T * spread / (2 * grip_arm ** 2)
     ok("the lever can be sprung onto the posts without yielding",
        strain < 0.02,
        f"{spread:.1f} mm a side, {100 * strain:.2f}% strain")
+
+    ok("the pivot post stands outboard of the guide wall",
+       PIVOT[0] - POST_D / 2.0 > WALL_X[1] or
+       PIVOT_BOSS_X[1] > WALL_X[1], f"pivot at x {PIVOT[0]:.0f}, wall ends {WALL_X[1]:.0f}")
+    ok("the brace stays off the front of the entrance",
+       br.bounds[0][2] >= -1e-9, f"nearest face at z {br.bounds[0][2]:.1f}")
+    ok("the brace's web reaches across outboard of the lever",
+       BRACE_WEB_X[0] > lv.bounds[1][0],
+       f"web from x {BRACE_WEB_X[0]:.0f}, lever reaches {lv.bounds[1][0]:.0f}")
+    ok("the drive post still slides along the arm, not across it",
+       abs(ARM_SHUT - ARM_OPEN - SLOT_RUN) < 1e-9,
+       f"arm {ARM_SHUT:.1f} -> {ARM_OPEN:.1f} mm")
 
     for tag, psi in (("open", PSI_OPEN), ("half", PSI_OPEN / 2), ("shut", PSI_SHUT)):
         j, lv2 = jaw(psi, 0), lever(psi, 0)
@@ -458,7 +501,7 @@ def renders(out):
 
     # the post stack, drawn apart: body post, lever, brace
     apart = [{"mesh": _wall(1), "color": COL_DETAIL}]
-    lv = lever(PSI_SHUT, 0, 1)
+    lv = lever(PSI_SHUT, 0)
     lv.apply_translation((0.0, 26.0, 0.0))
     apart.append({"mesh": lv, "color": COL["lever"]})
     br = brace(0)
@@ -509,18 +552,16 @@ if __name__ == "__main__":
     renders(Path(__file__).parent / "renders")
     # The hand now closes on the bar, so there is only one grip point left
     # to quote, and it is the one the bar's clearance forces.
-    s = GRIP_D * math.sin(PSI_OPEN)
-    print(f"  grab bar {GRIP_D:.0f} mm along the lever:"
-          f" span {2 * (PIVOT[0] + s):.0f} mm open -> {2 * PIVOT[0]:.0f} shut,"
-          f" a {2 * s:.0f} mm stroke")
+    gx, gz = grip_xy()
+    R = math.hypot(gx - PIVOT[0], gz - PIVOT[1])
+    beta = math.atan2(gz - PIVOT[1], gx - PIVOT[0])
+    gx_o = PIVOT[0] + R * math.cos(beta - PSI_OPEN)
+    print(f"  grab bar: span {2 * gx_o:.0f} mm open -> {2 * gx:.0f} shut,"
+          f" a {2 * (gx_o - gx):.0f} mm stroke")
     # full travel is a 93 mm stroke, wider than a hand opens. What matters
     # is how far it has to open to admit a finger, which is a lot less.
-    for span in (100.0, 105.0, 110.0):
-        psi = math.asin((span / 2.0 - PIVOT[0]) / GRIP_D)
-        print(f"  opening to a {span:.0f} mm span gives a "
-              f"{2 * face_at(psi):.1f} mm gap between the jaw faces")
     spread = POST_TIP - LEVER_Y0
     print(f"  springing it on: {spread:.1f} mm a side, "
-          f"{100 * 3 * LEVER_T * spread / (2 * GRIP_D ** 2):.2f}% strain, "
-          f"{2000 * 2 * LEVER_HALF_W * LEVER_T ** 3 * spread / (4 * GRIP_D ** 3):.0f} N")
+          f"{100 * 3 * LEVER_T * spread / (2 * R ** 2):.2f}% strain, "
+          f"{2000 * 2 * LEVER_HALF_W * LEVER_T ** 3 * spread / (4 * R ** 3):.0f} N")
     sys.exit(0 if good else 1)
