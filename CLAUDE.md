@@ -178,6 +178,35 @@ The failure this exists to prevent is silent omission: finishing a project that 
 have been better with a printed or cut part, without the user ever learning that option
 existed.
 
+## Fixing a model: make it right, don't redesign around it
+
+**When the user says something about a model is wrong, the intent is to make it
+right.** The default is the smallest change that actually fixes the thing they
+named. If the complaint is about the lettering, edit the lettering — its size, its
+placement, which face it sits on. Do not redesign the body, change the silhouette,
+or rebuild the part around the complaint.
+
+A complaint is not a brief for a new version. Rebuilding more than was asked costs
+the user a review of work they never wanted, and buries the fix they did.
+
+**If the fix is impossible as stated, say so before building anything.** Geometry
+genuinely does constrain this: a surface may have no flat area to move text onto, a
+face may be too narrow for the word, a feature may not fit the wall. When that
+happens:
+
+1. Say in one sentence what cannot be done and why, in the user's own terms.
+2. Put the realistic options to them with `AskUserQuestion` — one short line each on
+   what it gets and what it costs.
+3. Name a recommendation, then **wait**.
+
+The options come *before* the rebuild, not after it. Handing over a finished
+alternative and a list of options in the same breath is the failure this rule exists
+to prevent: by then the choice has already been made for the user.
+
+**Measure before claiming.** Section the mesh and quote real numbers rather than
+describing what the model ought to be. "Constant radius 45.50 mm across the panel, so
+it turns through 97°" is checkable. "It's flat now" was not — and was wrong.
+
 ## Time and dates
 
 **All times and dates in this repository are Alberta, Canada time** — the
@@ -223,4 +252,5 @@ status updates, and any timestamp you quote back from git, logs, or a file listi
 | Project folder | Self-contained; conventions come from inside it |
 | New idea | Short name → folder → `direction.md` → registry row |
 | Physical capability | Check `available-tools.md`; ask when a fit is plausible but unclear |
+| Model is "not right" | Fix the thing named, minimally; if truly impossible, options first, then wait |
 | Times and dates | Alberta time (`America/Edmonton`), zone always labelled |
