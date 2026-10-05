@@ -90,7 +90,9 @@ BRACE_Y1 = BRACE_Y0 + BRACE_T          # 30.55
 # instead of 27.8, and a 67 mm squeeze instead of 93.
 PIVOT = (66.0, 8.0)
 PIVOT_BOSS_X = (56.0, 72.0)
-PIVOT_BOSS_Z = (2.0, 18.0)
+# Kept below the front runner's sweep: at z 2..18 the boss stood in the
+# groove's own height out past x 59, and the jaw fouled it on the way in.
+PIVOT_BOSS_Z = (0.0, 14.0)
 DRIVE_Z = (JAW_Z0 + JAW_Z1) / 2.0      # 46.0, the middle of the jaw
 DRIVE_LOCAL = 25.0                     # the post's x in jaw-local terms
 DZ_ARM = DRIVE_Z - PIVOT[1]            # 38.0, the only term that sets sense
@@ -118,12 +120,18 @@ BRACE_WEB_X = (80.0, 88.0)             # the web crosses outboard of the lever
 
 RAIL_X = (19.0, 39.0)
 GROOVE_X = (RAIL_X[0], RAIL_X[1] + P.JAW_TRAVEL)
-WALL_X = (15.0, GROOVE_X[1] + 2.0)
-WALL_Z = (2.0, BODY_H)
+# The wall stops where the groove does, and the drive window runs out to
+# the same edge. Blind at their outer ends the jaw cannot be got in at all:
+# it has to enter radially from outside, and a 2 mm lip across the end of a
+# groove is enough to stop its runner dead.
+WALL_X = (15.0, GROOVE_X[1])
+# The walls run all the way to the entrance face. Started at z = 2 they
+# began 38 mm out over thin air, with only the tube under their inner end.
+WALL_Z = (0.0, BODY_H)
 # front and back, as far apart as they will go: the pair's separation is
 # what holds the jaw square, and it has to clear the pivot post at one end
 RAIL_Z = (JAW_Z0 + 15.0, JAW_Z1 - 5.0)              # 18, 84
-WINDOW_X = (22.0, 50.0)
+WINDOW_X = (22.0, WALL_X[1])
 WINDOW_Z = (DRIVE_Z - 4.0, DRIVE_Z + 4.0)           # 42 .. 50
 DRIVE_BOSS_X, DRIVE_BOSS_L = 20.0, 12.0
 DRIVE_BOSS_Z = (DRIVE_Z - 6.0, DRIVE_Z + 6.0)
@@ -453,6 +461,18 @@ def checks():
     ok("the brace's web reaches across outboard of the lever",
        BRACE_WEB_X[0] > lv.bounds[1][0],
        f"web from x {BRACE_WEB_X[0]:.0f}, lever reaches {lv.bounds[1][0]:.0f}")
+    # The jaw can only go in radially from outside, so every runner groove
+    # and the drive window have to run out to the wall's edge, and nothing
+    # may stand in the sweep on the way. A design that passes every running
+    # check can still be a design that cannot be put together.
+    worst_in = 0.0
+    for extra in (0, 3, 6, 10, 15, 20, 25, 30, 40, 50, 65):
+        j = jaw(PSI_OPEN, 0).copy()
+        j.apply_translation((extra, 0.0, 0.0))
+        worst_in = max(worst_in, _overlap(bd, j))
+    ok("a jaw can be slid in radially to assemble",
+       worst_in < 1e-6, f"worst {worst_in:.1f} mm^3 over 11 positions")
+
     ok("the stub keeps a printable wall round the drive slot",
        9.0 - (DRIVE_D + 0.35) / 2.0 >= P.WALL_MIN,
        f"{9.0 - (DRIVE_D + 0.35) / 2.0:.2f} mm all round")
@@ -619,10 +639,57 @@ def scale_model(out, scales=SCALES):
     return written
 
 
+# ---------------------------------------------------------------------------
+# printable parts
+# ---------------------------------------------------------------------------
+
+QUANTITY = {"body": 1, "jaw": 2, "lever": 2, "brace": 2}
+
+
+def _on_bed(m):
+    m = m.copy()
+    m.apply_translation((0.0, 0.0, -m.bounds[0][2]))
+    return m
+
+
+def printable():
+    """Each distinct part, turned the way it wants to go on the bed."""
+    out = {"body": _on_bed(body()),
+           "jaw": _on_bed(jaw(PSI_SHUT, 0)),
+           "brace": _on_bed(brace(0))}
+    # The lever lies down with its plates vertical and its spine flat along
+    # the bed. Stood on the pivot end it is 130 mm tall on a footprint of
+    # two small pads, which is asking to be knocked over.
+    lv = lever(PSI_SHUT, 0)
+    (px, pz), (ex, ez) = PIVOT, _on_axis(LEVER_END_Z)
+    lv.apply_transform(trimesh.transformations.rotation_matrix(
+        math.atan2(ez - pz, ex - px), (0, 1, 0)))
+    out["lever"] = _on_bed(lv)
+    return out
+
+
+def write_stls(out):
+    out.mkdir(exist_ok=True)
+    total = 0.0
+    for name, m in printable().items():
+        path = out / f"{name}.stl"
+        m.export(path)
+        s = m.bounds[1] - m.bounds[0]
+        n = QUANTITY[name]
+        g = m.volume / 1000.0 * 1.27 * 0.4 + m.volume / 1000.0 * 1.27 * 0.0
+        g = m.volume / 1000.0 * 1.27          # solid; infill scales it down
+        total += g * n
+        print(f"  {name}.stl  x{n}   {s[0]:5.1f} x {s[1]:5.1f} x {s[2]:5.1f} mm"
+              f"   {g:5.1f} g solid, about {g * 0.45:4.1f} g at 35% infill")
+    print(f"  whole mechanism: about {total * 0.45:.0f} g at 35% infill")
+
+
 if __name__ == "__main__":
     good = checks()
     print()
     renders(Path(__file__).parent / "renders")
+    print()
+    write_stls(SCALE_DIR)
     print()
     scale_model(SCALE_DIR)
     # The hand now closes on the bar, so there is only one grip point left
