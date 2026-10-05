@@ -9,9 +9,12 @@ This revision rebuilds the mount and the lever:
     entrance    the front face of the 90 mm body, jaw starting 3 mm in
                 behind a 45 degree lead-in chamfer
     pivot       a 12 mm post out of each body wall, near the front
-    drive       a post out of each jaw side, ending 4 mm short of the
-                body post's tip -- that is, flush with the lever's
-                outer face, so it never fouls the brace
+    runners     a vee rail near each end of each jaw side, 66 mm apart,
+                which is the separation that holds the jaw square
+    drive       a post out of the middle of each jaw side, ending 4 mm
+                short of the
+                body post's tip -- flush with the lever's outer
+                face, so it never fouls the brace
     lever       one flat piece, 8 mm thick where the holes are, running
                 the length of the body and 40 mm past it
     brace       a C channel over each pair of pivot posts, picking up
@@ -27,9 +30,10 @@ Nutcracker, not see-saw: pivot, then drive, then handle, in that order
 along the lever. Put the handle on the far side of the pivot and
 squeezing opens the jaws.
 
-    pivot    r 26, z 9        arm 60 mm to the drive at z 69
-    swing    18.4 deg  ->  20 mm of jaw travel a side
-    span     at the body's back face, 103 mm open -> 52 mm shut
+    pivot    r 25, z 8        arm 38 mm to the drive at z 46, mid jaw
+    swing    27.8 deg  ->  20 mm of jaw travel a side
+    span     104 mm open -> 50 mm shut, closing on the lever from z 66,
+             which is where its outer edge first clears the guide wall
 
 Run:  python3 concept_lever.py
 """
@@ -79,8 +83,8 @@ BRACE_Y0 = LEVER_Y1 + FIT              # 26.55
 BRACE_T = 4.0
 BRACE_Y1 = BRACE_Y0 + BRACE_T          # 30.55
 
-PIVOT = (26.0, 9.0)                    # near the front, on the wall's face
-DRIVE_Z = 69.0
+PIVOT = (25.0, 8.0)                    # near the front, on the wall's face
+DRIVE_Z = (JAW_Z0 + JAW_Z1) / 2.0      # 46.0, the middle of the jaw
 ARM = DRIVE_Z - PIVOT[1]               # 60.0
 DRIVE_LOCAL = PIVOT[0]                 # the post's x in jaw-local terms
 PSI_OPEN = math.atan(P.JAW_TRAVEL / ARM)
@@ -94,9 +98,11 @@ RAIL_X = (19.0, 39.0)
 GROOVE_X = (RAIL_X[0], RAIL_X[1] + P.JAW_TRAVEL)
 WALL_X = (15.0, GROOVE_X[1] + 2.0)
 WALL_Z = (2.0, BODY_H)
-RAIL_Z = (JAW_Z0 + 14.0, JAW_Z1 - 5.0)              # 17, 84
+# front and back, as far apart as they will go: the pair's separation is
+# what holds the jaw square, and it has to clear the pivot post at one end
+RAIL_Z = (JAW_Z0 + 15.0, JAW_Z1 - 5.0)              # 18, 84
 WINDOW_X = (22.0, 50.0)
-WINDOW_Z = (DRIVE_Z - 4.0, DRIVE_Z + 4.0)           # 65 .. 73
+WINDOW_Z = (DRIVE_Z - 4.0, DRIVE_Z + 4.0)           # 42 .. 50
 DRIVE_BOSS_X, DRIVE_BOSS_L = 20.0, 12.0
 DRIVE_BOSS_Z = (DRIVE_Z - 6.0, DRIVE_Z + 6.0)
 
@@ -271,12 +277,12 @@ def brace(index):
     """A C channel over one jaw's pair of pivot posts: two flanges with a
     hole each, tied by a web that crosses clear in front of the body."""
     px, pz = PIVOT
-    tab = LineString([(px, -4.0), (px, pz)]).buffer(8.0, resolution=16)
+    tab = LineString([(px, -6.0), (px, pz)]).buffer(8.0, resolution=16)
     pieces = [plate(tab, BRACE_T, BRACE_Y0),
               plate(tab, BRACE_T, -BRACE_Y1),
               # the web crosses in front of the body, kept outboard of the
               # entrance chamfer so nothing narrows the way in
-              T.bar(14.0, 2 * BRACE_Y1, -6.0, -2.0, x0=px - 2.0)]
+              T.bar(14.0, 2 * BRACE_Y1, -8.0, -4.0, x0=px - 2.0)]
     holes = [pin(POST_D + 0.35, -60.0, 60.0, PIVOT, 1)]
     return T.spun(T.cut(T.fuse(*pieces), *holes), 180.0 * index)
 
@@ -346,10 +352,23 @@ def checks():
     ok("the bore is clear when open",
        abs(face_at(PSI_OPEN) - P.BORE_D / 2.0) < 1e-9)
     ok("the drive slot is long enough for the arc",
-       SLOT_RUN > 3.0, f"{SLOT_RUN:.2f} mm of run")
-    ok("the drive window clears the back runner",
-       RAIL_Z[1] - RAIL_H - WINDOW_Z[1] >= P.WALL_MIN,
-       f"{RAIL_Z[1] - RAIL_H - WINDOW_Z[1]:.1f} mm of wall")
+       SLOT_RUN > 4.5, f"{SLOT_RUN:.2f} mm of run")
+    ok("the drive post is at the middle of the jaw",
+       abs(DRIVE_Z - (JAW_Z0 + JAW_Z1) / 2.0) < 1e-9, f"z {DRIVE_Z:.0f}")
+    ok("a runner sits near each end of the jaw",
+       RAIL_Z[0] - JAW_Z0 <= 15.0 and JAW_Z1 - RAIL_Z[1] <= 15.0,
+       f"{RAIL_Z[0] - JAW_Z0:.0f} and {JAW_Z1 - RAIL_Z[1]:.0f} mm in, "
+       f"{RAIL_Z[1] - RAIL_Z[0]:.0f} mm apart")
+    ok("the drive window clears both runners",
+       min(RAIL_Z[1] - RAIL_H - WINDOW_Z[1],
+           WINDOW_Z[0] - (RAIL_Z[0] + RAIL_H)) >= P.WALL_MIN,
+       f"{min(RAIL_Z[1] - RAIL_H - WINDOW_Z[1], WINDOW_Z[0] - RAIL_Z[0] - RAIL_H):.1f} mm of wall")
+    ok("the front runner's groove clears the pivot post",
+       (RAIL_Z[0] - RAIL_H) - (PIVOT[1] + POST_D / 2.0) >= 1.5,
+       f"{(RAIL_Z[0] - RAIL_H) - (PIVOT[1] + POST_D / 2.0):.1f} mm")
+    ok("the lever's pivot end clears the tube",
+       math.hypot(PIVOT[0] - LEVER_HALF_W, LEVER_Y0) > BODY_R,
+       f"r {math.hypot(PIVOT[0] - LEVER_HALF_W, LEVER_Y0):.1f} vs {BODY_R}")
 
     for tag, psi in (("open", PSI_OPEN), ("half", PSI_OPEN / 2), ("shut", PSI_SHUT)):
         j = jaw(psi, 0)
@@ -433,6 +452,18 @@ def renders(out):
              **SHOW, **cam).save(out / "56-stack-apart.png")
     print("  renders/56-stack-apart.png")
 
+    # runner and groove, drawn apart: the jaw's two vee rails and the
+    # drive post in the middle, against the wall they land in
+    apart = [{"mesh": jaw(PSI_SHUT, 0), "color": COL["jaw"]}]
+    w = _wall(-1)
+    w.apply_translation((0.0, -36.0, 0.0))
+    apart.append({"mesh": w, "color": COL_DETAIL})
+    cam = R.frame([p["mesh"] for p in apart], azimuth_deg=56,
+                  elevation_deg=20, margin=1.03)
+    R.render(apart, width=1300, height=1050, supersample=2,
+             **SHOW, **cam).save(out / "59-runners.png")
+    print("  renders/59-runners.png")
+
     # plan sections through each post's own axis
     for name, z, eye_x in (("57-pivot-section.png", PIVOT[1], 26.0),
                            ("58-drive-section.png", DRIVE_Z, 30.0)):
@@ -448,9 +479,13 @@ if __name__ == "__main__":
     good = checks()
     print()
     renders(Path(__file__).parent / "renders")
-    for z, label in ((BODY_H, "at the body's back face"),
+    # A hand can close on the lever only where its outer edge stands proud
+    # of the guide wall; below that the wall is in the way of the push.
+    reach = (WALL_X[1] - LEVER_HALF_W - PIVOT[0]) / math.sin(PSI_OPEN)
+    for z, label in ((reach + PIVOT[1], "where the lever clears the wall"),
+                     (BODY_H, "at the body's back face"),
                      (LEVER_TIP_Z, "at the lever tip")):
         s = (z - PIVOT[1]) * math.sin(PSI_OPEN)
-        print(f"\n  grip {label}: span {2 * (PIVOT[0] + s):.0f} mm open"
-              f" -> {2 * PIVOT[0]:.0f} mm shut")
+        print(f"  grip {label} (z {z:.0f}): span {2 * (PIVOT[0] + s):.0f} mm"
+              f" open -> {2 * PIVOT[0]:.0f} mm shut")
     sys.exit(0 if good else 1)
