@@ -60,7 +60,8 @@ No GUI, no CAD application, no OpenSCAD.
     python3 build.py --stl            # just the printable files
     python3 build.py --renders        # just the pictures
     python3 build.py --pot <pot.stl>  # measure the pot, and render it seated
-    python3 test_fit.py               # 23 checks; all have to pass
+    python3 test_fit.py               # 26 checks; all have to pass
+    python3 test_fit.py --pot <stl>   # 27, the last one against a real pot
 
 Every dimension lives in `params.py`. The two that matter most:
 
@@ -94,7 +95,14 @@ all four, so the cactus fits it unchanged:
 
     python3 build.py --pot <pebble-pot.stl>
     socket Ø32.00 x 8.00 deep, floor 21.00 below a rim at z=76.00,
-    inner wall r=41.43 at its tightest -- params agree with this pot
+    inner wall r=39.37 at its tightest -- params agree with this pot
+
+That wall is filleted where it meets the floor: 38.8 in the corner itself,
+opening to 42.8 by 4 mm up. It costs nothing here, because the cactus's base
+flare makes the cactus narrowest exactly where the pot is tightest.
+`test_fit.py --pot <stl>` measures both profiles over the 21 mm the cactus is
+down inside the pot and reports the worst gap, which is **14.9 mm**, 20 mm up
+— not down in the corner at all.
 
 
 - **A blind socket in the middle of the inner floor**, concentric with the

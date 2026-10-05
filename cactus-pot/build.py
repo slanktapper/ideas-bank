@@ -77,7 +77,7 @@ def measure_pot(path):
     inner = None
     ths = np.linspace(0.0, 2 * np.pi, 72, endpoint=False)
     fan = np.column_stack([np.cos(ths), np.sin(ths), np.zeros_like(ths)])
-    for z in np.arange(floor + 1.0, rim - 0.5, 1.0):
+    for z in np.arange(floor + 0.05, rim - 0.5, 0.5):
         o = np.column_stack([np.zeros_like(ths), np.zeros_like(ths),
                              np.full_like(ths, z)])
         hits, idx, _ = ray.intersects_location(o, fan, multiple_hits=True)

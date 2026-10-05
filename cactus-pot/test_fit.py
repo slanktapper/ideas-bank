@@ -38,6 +38,52 @@ def head(title):
 
 # ---------------------------------------------------------------------------
 
+def pot_clearance(body, path):
+    """Compare the real profiles, height by height, inside the pot.
+
+    The flat check in main() puts the trunk's widest radius against the
+    pot's tightest wall and ignores that they happen at different heights.
+    Inside a pot that is filleted at the floor, that is the wrong comparison
+    twice over: the pot is tightest exactly where the cactus's base flare
+    makes it narrowest. Given a pot mesh, this measures both profiles over
+    the 21 mm the cactus is down inside it and reports the worst gap.
+    """
+    pot = trimesh.load(path, force="mesh")
+    ray = trimesh.ray.ray_triangle.RayMeshIntersector(pot)
+    rim = pot.bounds[1][2]
+    hits, _, _ = ray.intersects_location(
+        np.array([[P.POT_BORE_D * 0.75, 0.0, rim + 50.0]]),
+        np.array([[0.0, 0.0, -1.0]]), multiple_hits=True)
+    floor = float(np.sort(hits[:, 2])[-1])
+
+    ths = np.linspace(0.0, 2 * np.pi, 72, endpoint=False)
+    fan = np.column_stack([np.cos(ths), np.sin(ths), np.zeros_like(ths)])
+    v = body.vertices
+    vr = np.linalg.norm(v[:, :2], axis=1)
+
+    worst, worst_z = np.inf, None
+    for dz in np.arange(0.05, P.POT_FLOOR_TO_RIM, 0.5):
+        band = (v[:, 2] > dz - 0.5) & (v[:, 2] <= dz + 0.5)
+        if not band.any():
+            continue
+        cactus_r = float(vr[band].max())
+
+        o = np.column_stack([np.zeros_like(ths), np.zeros_like(ths),
+                             np.full_like(ths, floor + dz)])
+        hits, idx, _ = ray.intersects_location(o, fan, multiple_hits=True)
+        wall = np.inf
+        for i in range(len(ths)):
+            r = np.linalg.norm(hits[idx == i][:, :2], axis=1)
+            if len(r):
+                wall = min(wall, float(r.min()))
+        if wall < np.inf and wall - cactus_r < worst:
+            worst, worst_z = wall - cactus_r, dz
+
+    head("pot clearance, profile against profile")
+    check(worst > 2.0, "the cactus clears the pot's wall at every height",
+          f"tightest {worst:.1f} mm, {worst_z:.1f} mm above the floor")
+
+
 def main():
     body, sites = C.cactus()
     spike = C.spike()
@@ -190,6 +236,9 @@ def main():
     check(P.AREOLE_Z_MIN > P.POT_FLOOR_TO_RIM + 1.0,
           "no spine sits down inside the pot",
           f"lowest at {P.AREOLE_Z_MIN}, rim at {P.POT_FLOOR_TO_RIM}")
+
+    if "--pot" in sys.argv:
+        pot_clearance(body, sys.argv[sys.argv.index("--pot") + 1])
 
     # -----------------------------------------------------------------------
     print(f"\n{CHECKS - len(FAILS)}/{CHECKS} checks passed")

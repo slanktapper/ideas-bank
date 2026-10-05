@@ -34,11 +34,13 @@ BED = (325.0, 320.0)    # single-nozzle build area; the plate check uses it
 POT_BORE_D = 32.00      # the blind socket in the pot's inner floor
 POT_SOCKET_DEPTH = 8.00 # how deep that socket goes
 POT_FLOOR_TO_RIM = 21.0 # the cactus's first 21 mm are down inside the pot
-POT_INNER_R = 39.7      # the pot's inner wall, at its tightest, above the
+POT_INNER_R = 38.8      # the pot's inner wall, at its tightest, above the
                         # floor. Deliberately the TIGHTER of the two pots
-                        # measured (the pebble pot is 41.4): the check this
-                        # feeds only cares about the worst case, and a
-                        # roomier pot is free clearance.
+                        # measured. The pebble pot is filleted where its wall
+                        # meets its floor, so it is 38.8 right in that corner
+                        # and opens to 42.8 by 4 mm up -- and the corner is
+                        # the number to hold, because the check this feeds
+                        # only cares about the worst case.
 POT_TOL = 0.50          # how far the measured pot may differ before the build stops
 
 SPIGOT_CLEAR = 0.35     # the spigot is this much under the bore, per side:
