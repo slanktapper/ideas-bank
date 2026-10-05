@@ -11,12 +11,12 @@ they say nothing about fit.
 
 | file | qty | size (mm) | ~weight at 35% |
 | --- | --- | --- | --- |
-| `body.stl` | 1 | 144 × 60 × 90 | 51 g |
-| `jaw.stl` | 2 | 42 × 52 × 86 | 24 g each |
-| `lever.stl` | 2 | 140 × 53 × 42 | 30 g each |
+| `body.stl` | 1 | 144 × 60 × 90 | 64 g |
+| `jaw.stl` | 2 | 42 × 52 × 78 | 22 g each |
+| `lever.stl` | 2 | 140 × 53 × 43 | 30 g each |
 | `brace.stl` | 2 | 30 × 61 × 16 | 6 g each |
 
-About **170 g** all in. Seven pieces, four distinct.
+About **181 g** all in. Seven pieces, four distinct.
 
 Every file is already turned the way it wants to go and sits on z = 0, so
 drop it on the plate and do not let the slicer re-orient it. The lever in
@@ -28,7 +28,7 @@ Only for the posts, and only under them:
 
 - **`body.stl`** — the four pivot posts at z 8. Horizontal cylinders
   cantilevered 12 mm off a vertical wall.
-- **`jaw.stl`** — the two drive posts at z 43. Same shape, same reason.
+- **`jaw.stl`** — the two drive posts at z 39. Same shape, same reason.
 - **`lever.stl`** — the underside of the drive-slot stub. Small.
 - **`brace.stl`** — none.
 
@@ -60,7 +60,8 @@ jaws and braces are not fussy.
 1. **Jaws into the body.** Each goes in radially from outside, runners into
    grooves, drive post through the wall window. Push it in until the face
    reaches the bore. The grooves and the window run out to the wall's edge
-   for exactly this reason; nothing else lets a jaw in.
+   for exactly this reason; nothing else lets a jaw in. The tie slabs above
+   and below the slot clear the jaw's path by 0.3 mm.
 2. **Levers onto the posts.** Spread the two plates about 12 mm a side,
    slide the lever on from the back with the plates straddling the walls,
    and let go when the pivot hole lines up with the pivot post. The drive
@@ -78,7 +79,7 @@ Three things that have never been in plastic:
   pin in a round groove, not on a 45° vee, so it is an inference.
 - **Springing the lever on.** The 43 N and 1.20% are beam theory, not
   experience.
-- **The squeeze.** 117 mm open to 50 shut, closing on the grab bar.
+- **The squeeze.** 118 mm open to 50 shut, closing on the grab bar.
 
 If the vee is tight, the number to change is `RAIL_H` in
 `concept_lever.py`; the groove is cut from `GROOVE_H` and the clearance is

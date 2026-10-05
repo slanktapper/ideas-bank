@@ -60,7 +60,12 @@ import render as R
 
 BODY_R, BODY_H = 23.0, 90.0
 ENTRY_CHAMFER = 2.0                    # 45 deg lead-in at the finger entrance
-JAW_Z0, JAW_Z1 = 3.0, 89.0             # the jaw starts just behind the chamfer
+# The jaw's ends are where the two halves of the body get to meet. Run the
+# jaw to 89 and they meet over 3 mm at the front and 1 mm at the back -- 20
+# mm^2 of material across the whole y = 0 plane, holding two walls that a
+# squeeze is trying to prise apart. Pulling the jaw in at both ends buys a
+# tie slab at each, spanning the walls over their full radial length.
+JAW_Z0, JAW_Z1 = 4.0, 82.0             # 78 mm of jaw
 JAW_L = 42.0
 WEB_T = 3.0
 
@@ -133,6 +138,9 @@ WALL_Z = (0.0, BODY_H)
 RAIL_Z = (JAW_Z0 + 15.0, JAW_Z1 - 5.0)              # 18, 84
 WINDOW_X = (22.0, WALL_X[1])
 WINDOW_Z = (DRIVE_Z - 4.0, DRIVE_Z + 4.0)           # 42 .. 50
+TIE_X = (22.0, WALL_X[1])              # clear of the entrance chamfer
+TIE_FRONT_Z = (0.0, JAW_Z0 - FIT)
+TIE_BACK_Z = (JAW_Z1 + FIT, BODY_H)
 DRIVE_BOSS_X, DRIVE_BOSS_L = 20.0, 12.0
 DRIVE_BOSS_Z = (DRIVE_Z - 6.0, DRIVE_Z + 6.0)
 
@@ -254,7 +262,7 @@ def _wall(sign):
 
 def body():
     solid = T.tube(P.BORE_D / 2.0, BODY_R, 0.0, BODY_H)
-    # the finger goes in here: a 45 degree lead-in, and the jaw 3 mm behind it
+    # the finger goes in here: a 45 degree lead-in, with the jaw just behind
     cone = trimesh.creation.cone(radius=P.BORE_D / 2.0 + ENTRY_CHAMFER,
                                  height=P.BORE_D / 2.0 + ENTRY_CHAMFER,
                                  sections=128)
@@ -264,6 +272,14 @@ def body():
     for k in range(2):
         for sign in (1, -1):
             solid = T.fuse(solid, T.spun(_wall(sign), 180.0 * k))
+    # The ties. Beyond each end of the jaw, a slab right across the slot,
+    # joining each pair of walls over the whole length they stand on. These
+    # are the only material anywhere that crosses y = 0 between the walls,
+    # and a squeeze works to prise those walls apart.
+    for zs in (TIE_FRONT_Z, TIE_BACK_Z):
+        tie = T.bar(TIE_X[1] - TIE_X[0], P.SLOT_W, *zs, x0=TIE_X[0])
+        for k in range(2):
+            solid = T.fuse(solid, T.spun(tie, 180.0 * k))
     return solid
 
 
@@ -392,7 +408,12 @@ def checks():
 
     ok("the body is 90 mm long", abs(BODY_H - 90.0) < 1e-9)
     ok("the jaw sits just behind the entrance face",
-       JAW_Z0 <= 3.0, f"{JAW_Z0:.0f} mm in, behind a {ENTRY_CHAMFER:.0f} mm chamfer")
+       JAW_Z0 <= 5.0,
+       f"{JAW_Z0:.0f} mm in, behind a {ENTRY_CHAMFER:.0f} mm chamfer")
+    tie = trimesh.creation.box(extents=(400.0, 1.0, 400.0))
+    across = _overlap(bd, tie) / 1.0
+    ok("the two sides of the body are properly tied together",
+       across > 400.0, f"{across:.0f} mm^2 crossing y = 0")
     ok("the pivot is near the front, not a quarter in",
        PIVOT[1] / BODY_H < 0.15, f"{100 * PIVOT[1] / BODY_H:.0f}% of the body")
     ok("the body post stands 12 mm proud",
