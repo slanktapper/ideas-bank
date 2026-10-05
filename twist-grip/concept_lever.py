@@ -574,10 +574,57 @@ def renders(out):
         print(f"  renders/{name}")
 
 
+# ---------------------------------------------------------------------------
+# scale reference
+# ---------------------------------------------------------------------------
+
+SCALE_DIR = Path(__file__).parent / "stl-lever"
+# A tenth is what was asked for and is the right size to hold. A quarter is
+# also written because at a tenth the jaw's own walls (0.35 and 0.30 mm)
+# fall under one 0.4 mm extrusion, so they come out only if the slicer is
+# told to detect thin walls, and then at 0.4 mm -- chunkier than scale. At a
+# quarter they are real walls and the silhouette is honest.
+SCALES = (0.1, 0.25)
+
+
+def scale_model(out, scales=SCALES):
+    """A shrunk solid of the whole assembly, to look at and hold.
+
+    Not a working model and not meant to be one: a mechanism whose fits are
+    already at the process minimum cannot be scaled down, because the fits
+    do not scale with it. At a tenth the 0.35 mm sliding clearance is
+    0.035 mm, a tenth of a layer, so every part fuses to its neighbour.
+    That is fine here -- fused is what a scale reference wants -- but it is
+    why this file is for looking at, not for trying.
+
+    Written as one mesh in the open position and one shut, each sitting on
+    z = 0 so it drops straight onto the bed.
+    """
+    out.mkdir(exist_ok=True)
+    written = []
+    for tag, psi in (("open", PSI_OPEN), ("shut", PSI_SHUT)):
+        whole = trimesh.util.concatenate([p["mesh"] for p in scene(psi)])
+        lo, hi = whole.bounds
+        whole.apply_translation((-(lo[0] + hi[0]) / 2.0,
+                                 -(lo[1] + hi[1]) / 2.0, -lo[2]))
+        for scale in scales:
+            m = whole.copy()
+            m.apply_scale(scale)
+            path = out / f"scale-1-{round(1 / scale)}-{tag}.stl"
+            m.export(path)
+            size = m.bounds[1] - m.bounds[0]
+            written.append((path.name, size))
+            print(f"  {path.relative_to(Path(__file__).parent)}"
+                  f"   {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm")
+    return written
+
+
 if __name__ == "__main__":
     good = checks()
     print()
     renders(Path(__file__).parent / "renders")
+    print()
+    scale_model(SCALE_DIR)
     # The hand now closes on the bar, so there is only one grip point left
     # to quote, and it is the one the bar's clearance forces.
     gx, gz = grip_xy()
