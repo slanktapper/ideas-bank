@@ -12,11 +12,11 @@ they say nothing about fit.
 | file | qty | size (mm) | ~weight at 35% |
 | --- | --- | --- | --- |
 | `body.stl` | 1 | 144 × 60 × 90 | 64 g |
-| `jaw.stl` | 2 | 42 × 52 × 78 | 22 g each |
+| `jaw.stl` | 2 | 42 × 52 × 78 | 25 g each |
 | `lever.stl` | 2 | 140 × 53 × 43 | 30 g each |
 | `brace.stl` | 2 | 30 × 61 × 16 | 6 g each |
 
-About **181 g** all in. Seven pieces, four distinct.
+About **186 g** all in. Seven pieces, four distinct.
 
 Every file is already turned the way it wants to go and sits on z = 0, so
 drop it on the plate and do not let the slicer re-orient it. The lever in
@@ -29,6 +29,8 @@ Only for the posts, and only under them:
 - **`body.stl`** — the four pivot posts at z 8. Horizontal cylinders
   cantilevered 12 mm off a vertical wall.
 - **`jaw.stl`** — the two drive posts at z 39. Same shape, same reason.
+  Nothing else: a spine runs cap to cap through the drive boss, so the
+  widest bridge left inside the jaw is 7 mm.
 - **`lever.stl`** — the underside of the drive-slot stub. Small.
 - **`brace.stl`** — none.
 

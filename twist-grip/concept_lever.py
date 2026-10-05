@@ -141,8 +141,13 @@ WINDOW_Z = (DRIVE_Z - 4.0, DRIVE_Z + 4.0)           # 42 .. 50
 TIE_X = (22.0, WALL_X[1])              # clear of the entrance chamfer
 TIE_FRONT_Z = (0.0, JAW_Z0 - FIT)
 TIE_BACK_Z = (JAW_Z1 + FIT, BODY_H)
+# The boss cannot narrow in x: 12 mm is the 6 mm post plus 3 mm of wall
+# each side. It can narrow in y and z, and the webs carry on past it at
+# |y| 10..13, so the solid section the post roots into is unchanged.
 DRIVE_BOSS_X, DRIVE_BOSS_L = 20.0, 12.0
-DRIVE_BOSS_Z = (DRIVE_Z - 6.0, DRIVE_Z + 6.0)
+DRIVE_BOSS_W = 20.0
+DRIVE_BOSS_Z = (DRIVE_Z - 5.0, DRIVE_Z + 5.0)
+DRIVE_RIB_W = 6.0
 
 COL = {"body": (0.055, 0.07, 0.085), "jaw": (1.00, 0.74, 0.82),
        "lever": (0.96, 0.97, 0.95), "brace": (0.85, 0.30, 0.22)}
@@ -295,7 +300,15 @@ def jaw(psi, index):
         *web,
         T.bar(JAW_L, P.JAW_W, JAW_Z0, JAW_Z0 + 6.0),
         T.bar(JAW_L, P.JAW_W, JAW_Z1 - 6.0, JAW_Z1),
-        T.bar(DRIVE_BOSS_L, P.JAW_W, *DRIVE_BOSS_Z, x0=DRIVE_BOSS_X))
+        T.bar(DRIVE_BOSS_L, DRIVE_BOSS_W, *DRIVE_BOSS_Z, x0=DRIVE_BOSS_X),
+        # The boss stood in mid-channel with 20 mm of air under it, and the
+        # top end cap did the same. A spine from one cap to the other, in
+        # the boss's own width, gives both something to grow from, and a
+        # short rib ties the boss back to the face plate.
+        T.bar(DRIVE_BOSS_L, DRIVE_RIB_W, JAW_Z0 + 6.0, JAW_Z1 - 6.0,
+              x0=DRIVE_BOSS_X),
+        T.bar(DRIVE_BOSS_X - P.FACE_T, DRIVE_RIB_W, *DRIVE_BOSS_Z,
+              x0=P.FACE_T))
 
     for sign in (1, -1):
         for zc in RAIL_Z:
@@ -493,6 +506,11 @@ def checks():
         worst_in = max(worst_in, _overlap(bd, j))
     ok("a jaw can be slid in radially to assemble",
        worst_in < 1e-6, f"worst {worst_in:.1f} mm^3 over 11 positions")
+
+    span = (DRIVE_BOSS_W / 2.0 - DRIVE_RIB_W / 2.0)
+    ok("nothing in the jaw bridges more than 10 mm",
+       span <= 10.0,
+       f"widest span under the boss {span:.0f} mm, between spine and web")
 
     ok("the stub keeps a printable wall round the drive slot",
        9.0 - (DRIVE_D + 0.35) / 2.0 >= P.WALL_MIN,
