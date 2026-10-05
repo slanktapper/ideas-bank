@@ -39,31 +39,69 @@ POT_C = (0.76, 0.46, 0.33)
 def measure_pot(path):
     """Report the numbers params.POT_* have to agree with.
 
-    The pot is a mesh, not source, so its mouth is measured rather than read:
-    slice it just below the rim and take the inner loop's radius.
+    The pot is a mesh, not source, so it is measured rather than read. What
+    matters is not the mouth -- the pot's cavity is 82 mm across and the
+    cactus does not fill it -- but the blind socket in the middle of the
+    cavity's floor, which is what the spigot actually goes into. Found by
+    casting a ray down the axis: the first thing it hits is the bottom of
+    that socket.
     """
     pot = trimesh.load(path, force="mesh")
     lo, hi = pot.bounds
-    print(f"pot bounds      {np.round(lo, 2).tolist()} .. {np.round(hi, 2).tolist()}")
-    print(f"pot height      {hi[2] - lo[2]:.2f}")
-    z = hi[2] - 2.0
-    sec = pot.section(plane_origin=[0, 0, z], plane_normal=[0, 0, 1])
-    if sec is None:
-        print("no section at the rim -- measure it by hand")
-        return None
-    planar, _ = sec.to_2D()
-    radii = [np.linalg.norm(e.discrete(planar.vertices), axis=1)
-             for e in planar.entities]
-    rings = sorted(float(np.mean(r)) for r in radii)
-    print(f"rim rings at z={z:.1f}: " +
-          ", ".join(f"Ø{2 * r:.2f}" for r in rings))
-    if len(rings) >= 2:
-        bore = 2 * rings[0]
-        print(f"measured bore   Ø{bore:.2f}   (params.POT_BORE_D = {P.POT_BORE_D})")
-        if abs(bore - P.POT_BORE_D) > P.POT_TOL:
-            print("  MISMATCH -- update params.POT_BORE_D before building")
-        return bore
-    return None
+    rim = hi[2]
+    ray = trimesh.ray.ray_triangle.RayMeshIntersector(pot)
+
+    down = np.array([[0.0, 0.0, -1.0]])
+    hits, _, _ = ray.intersects_location(
+        np.array([[0.0, 0.0, rim + 50.0]]), down, multiple_hits=True)
+    socket_floor = float(np.sort(hits[:, 2])[-1]) if len(hits) else None
+
+    # the cavity floor, probed off-axis but still inside the socket's wall
+    hits, _, _ = ray.intersects_location(
+        np.array([[P.POT_BORE_D * 0.75, 0.0, rim + 50.0]]), down,
+        multiple_hits=True)
+    floor = float(np.sort(hits[:, 2])[-1]) if len(hits) else None
+
+    # the socket's radius, measured halfway up it
+    z = (socket_floor + floor) / 2
+    hits, _, _ = ray.intersects_location(
+        np.array([[0.0, 0.0, z]]), np.array([[1.0, 0.0, 0.0]]),
+        multiple_hits=True)
+    bore = 2 * float(np.sort(np.linalg.norm(hits[:, :2], axis=1))[0])
+
+    # the cavity's wall, measured just above the floor -- NOT at the socket's
+    # height, where the pot is solid and the first thing a ray meets on its
+    # way out is the outside of the pot
+    hits, _, _ = ray.intersects_location(
+        np.array([[0.0, 0.0, floor + 2.0]]), np.array([[1.0, 0.0, 0.0]]),
+        multiple_hits=True)
+    r = np.sort(np.linalg.norm(hits[:, :2], axis=1))
+    inner = float(r[0]) if len(r) else None
+
+    print(f"pot                {np.round(hi - lo, 2).tolist()} mm, rim at "
+          f"z={rim:.2f}")
+    print(f"cavity floor       z={floor:.2f}")
+    print(f"floor to rim       {rim - floor:.2f}   "
+          f"(params.POT_FLOOR_TO_RIM = {P.POT_FLOOR_TO_RIM})")
+    print(f"socket             Ø{bore:.2f} x {floor - socket_floor:.2f} deep  "
+          f"(params.POT_BORE_D = {P.POT_BORE_D}, "
+          f"POT_SOCKET_DEPTH = {P.POT_SOCKET_DEPTH})")
+    if inner:
+        print(f"inner wall         r={inner:.2f}   "
+              f"(params.POT_INNER_R = {P.POT_INNER_R})")
+
+    bad = []
+    if abs(bore - P.POT_BORE_D) > P.POT_TOL:
+        bad.append("POT_BORE_D")
+    if abs((floor - socket_floor) - P.POT_SOCKET_DEPTH) > P.POT_TOL:
+        bad.append("POT_SOCKET_DEPTH")
+    if abs((rim - floor) - P.POT_FLOOR_TO_RIM) > P.POT_TOL:
+        bad.append("POT_FLOOR_TO_RIM")
+    if bad:
+        print("  MISMATCH -- update " + ", ".join(bad) + " before building")
+    else:
+        print("  params agree with this pot")
+    return pot, floor
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +145,7 @@ def _spikes_in(sites):
     return trimesh.util.concatenate(out)
 
 
-def build_renders():
+def build_renders(pot=None, pot_floor=0.0):
     os.makedirs(RENDERS, exist_ok=True)
     body, sites = C.cactus()
     spikes = _spikes_in(sites)
@@ -185,18 +223,33 @@ def build_renders():
     shot("10-fit-coupon.png", [{"mesh": coupon, "color": (0.62, 0.64, 0.70)}],
          40, 40)
 
+    # The whole point of the exercise, if a pot was given: the cactus in it.
+    # The pot mesh is translated so its cavity floor lands on z=0, which is
+    # where the cactus's own soil line is.
+    if pot is not None:
+        seated = pot.copy()
+        seated.apply_translation([0.0, 0.0, -pot_floor])
+        assembly = [{"mesh": seated, "color": POT_C},
+                    {"mesh": body, "color": GREEN},
+                    {"mesh": spikes, "color": SPIKE_C}]
+        shot("11-in-the-pot.png", assembly, 104, 12)
+        shot("12-in-the-pot-side.png", assembly, 118, 2)
+
 
 def main():
     args = sys.argv[1:]
+    pot, floor = None, 0.0
     if "--pot" in args:
-        measure_pot(args[args.index("--pot") + 1])
-        return
+        pot, floor = measure_pot(args[args.index("--pot") + 1])
+        # measuring alone is a useful thing to ask for
+        if len(args) == 2:
+            return
     do_stl = "--renders" not in args
     do_renders = "--stl" not in args
     if do_stl:
         build_stl()
     if do_renders:
-        build_renders()
+        build_renders(pot, floor)
 
 
 if __name__ == "__main__":

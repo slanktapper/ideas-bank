@@ -126,17 +126,30 @@ def trunk_mean_radius(z: np.ndarray) -> np.ndarray:
 
 
 def _rib_scale(z: np.ndarray) -> np.ndarray:
-    """How much of RIB_DEPTH is present at this height."""
+    """How much of RIB_DEPTH is present at this height.
+
+    Nothing below the top of the base flare: ribs on a cone that is still
+    growing would be chased by the clip and come out as a frill.
+    """
     t = np.clip(z / P.TRUNK_H, 0.0, 1.0)
-    base = np.clip((t - P.RIB_FADE_BASE) / 0.10, 0.0, 1.0)
+    flare_top = (P.TRUNK_R_BASE - P.SPIGOT_R) / P.TRUNK_H
+    base = np.clip((t - flare_top - P.RIB_FADE_BASE) / 0.10, 0.0, 1.0)
     top = np.clip((1.0 - t) / (1.0 - P.RIB_FADE_TOP), 0.0, 1.0)
     return base * (top ** 0.8)
 
 
 def trunk_radius(theta: np.ndarray, z: np.ndarray) -> np.ndarray:
-    """The skin: mean radius, plus ribs, plus a slow asymmetric wobble."""
+    """The skin: mean radius, plus ribs, plus a slow asymmetric wobble.
+
+    The mean is clipped by a 45-degree cone rising off the spigot. The trunk
+    is 26 mm in radius and the spigot is 15.65, so without it the part has a
+    10 mm flat ledge round its first layer -- an overhang the printer would
+    have to bridge over nothing. The cone spends the first 10 mm of height
+    growing out to full width instead, which is both printable and what a
+    cactus does where it leaves the soil. All of it is hidden inside the pot.
+    """
     t = np.clip(z / P.TRUNK_H, 0.0, 1.0)
-    mean = trunk_mean_radius(z)
+    mean = np.minimum(trunk_mean_radius(z), P.SPIGOT_R + np.maximum(z, 0.0))
     twist = np.radians(P.RIB_TWIST_DEG) * t
     ribs = P.rib_profile(theta + twist, P.RIB_COUNT, P.RIB_SHARPNESS)
     wobble = P.WOBBLE_AMP * np.cos(theta - 2 * np.pi * P.WOBBLE_TURNS * t)
@@ -174,19 +187,18 @@ def trunk_body() -> trimesh.Trimesh:
     """The column, with its spigot below the soil line and a crowned top."""
     theta = np.linspace(0.0, 2 * np.pi, P.SEG_THETA, endpoint=False)
 
-    spigot_r = 0.5 * (P.POT_BORE_D - 2 * P.SPIGOT_CLEAR)
+    spigot_r = P.SPIGOT_R
     rings = []
 
-    # --- the spigot: a plain cylinder with a chamfered lead-in, below z=0,
-    #     then a short flare out to the trunk's radius at the soil line.
-    #     Every ring's z is distinct: two rings at the same height make a
-    #     zero-area band, which trimesh drops and leaves a hole behind.
-    base_r = trunk_mean_radius(np.zeros(1))[0]
+    # --- the spigot: a plain cylinder with a chamfered lead-in, below z=0.
+    #     It stops at z=0, which is the pot's inner floor; the trunk's own
+    #     base flare takes over from there. Every ring's z is distinct: two
+    #     rings at the same height make a zero-area band, which trimesh drops
+    #     and leaves a hole behind.
     z0 = -P.SPIGOT_H
     for z, r in ((z0, spigot_r - P.SPIGOT_CHAMFER),
                  (z0 + P.SPIGOT_CHAMFER, spigot_r),
-                 (-0.85, spigot_r),
-                 (-0.45, base_r)):
+                 (-0.30, spigot_r)):
         rings.append(np.column_stack([
             r * np.cos(theta), r * np.sin(theta), np.full_like(theta, z)]))
 
@@ -456,6 +468,14 @@ def cactus(with_sockets=True, with_arms=True):
     probe = np.array([p + n * 0.35 for p, n, _, _ in sites])
     buried = body.contains(probe)
     sites = [s for s, b in zip(sites, buried) if not b]
+
+    # Drop any site whose spine would hang below SPIKE_FLOOR_DEG. A saguaro
+    # does carry spines under its arms, but the socket for one is a hole
+    # drilled into a roof: it prints as a sagging ellipse and the spike it
+    # takes points at the floor. Not worth it for something nobody sees.
+    sites = [s for s in sites
+             if _rake(s[1], s[2], s[3])[2]
+             > np.sin(np.radians(P.SPIKE_FLOOR_DEG))]
 
     pads = [areole_pad(p, n) for p, n, _, _ in sites]
     body = _union([body] + pads)

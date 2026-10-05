@@ -143,8 +143,9 @@ def main():
     # not asking for zero -- it is asking that none of them hangs so far
     # below horizontal that its socket becomes a hole in a roof.
     low = np.degrees(np.arcsin(np.min(axes[:, 2])))
-    check(low > -25.0, "no spike hangs far below horizontal",
-          f"lowest lean {low:.0f}° (arm undersides)")
+    check(low >= P.SPIKE_FLOOR_DEG - 0.5,
+          "no spike hangs below the floor angle",
+          f"lowest lean {low:.0f}°, floor {P.SPIKE_FLOOR_DEG:.0f}°")
 
     # -- printing -----------------------------------------------------------
     head("printing")
@@ -180,8 +181,15 @@ def main():
     check(0.2 <= P.SPIGOT_CLEAR <= 0.6,
           "the spigot is a drop-in fit, not a press fit",
           f"Ø{spigot_d:.2f} in a Ø{P.POT_BORE_D:.2f} bore")
-    print("       POT_BORE_D is provisional until the pot mesh is measured:")
-    print("       python3 build.py --pot reference/pot.stl")
+    check(P.SPIGOT_H < P.POT_SOCKET_DEPTH - 0.3,
+          "the cactus lands on the pot floor, not in the hole",
+          f"{P.SPIGOT_H} mm spigot in an {P.POT_SOCKET_DEPTH} mm socket")
+    check(P.TRUNK_R_BASE + P.RIB_DEPTH < P.POT_INNER_R - 4.0,
+          "the trunk clears the pot's inner wall",
+          f"{P.POT_INNER_R - P.TRUNK_R_BASE:.1f} mm of gap at the floor")
+    check(P.AREOLE_Z_MIN > P.POT_FLOOR_TO_RIM + 1.0,
+          "no spine sits down inside the pot",
+          f"lowest at {P.AREOLE_Z_MIN}, rim at {P.POT_FLOOR_TO_RIM}")
 
     # -----------------------------------------------------------------------
     print(f"\n{CHECKS - len(FAILS)}/{CHECKS} checks passed")

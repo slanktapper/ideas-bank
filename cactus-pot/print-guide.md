@@ -7,8 +7,8 @@ than geometry. Machine is the H2D; see `../available-tools.md`.
 
 | File | How many | Notes |
 | --- | --- | --- |
-| `stl/cactus.stl` | 1 | 119 mm tall, stands on the flat end of its spigot |
-| `stl/spikes-x72.stl` | 2 plates | 81 sockets, so print a few spare |
+| `stl/cactus.stl` | 1 | 187 mm tall, stands on the flat end of its spigot |
+| `stl/spikes-x72.stl` | 2 plates | 108 sockets, so print a few spare |
 | `stl/spike.stl` | — | the single part, to arrange your own plate |
 | `stl/fit-test-coupon.stl` | 1 | **print this first** |
 
@@ -30,15 +30,17 @@ Doing this costs about fifteen minutes and three grams. Not doing it risks
 
 ## The cactus
 
-- **Orientation:** as exported, standing on the spigot. Do not tilt it; the
-  ribs and the socket mouths are all better for being printed upright.
-- **Supports:** needed under the two arms only — about 3% of the part. Tree
+- **Orientation:** as exported, standing on the flat end of the spigot. Do not
+  tilt it; the ribs and the socket mouths are all better for being printed
+  upright. The first 10 mm above the spigot is a 45° flare out to full width,
+  so nothing down there needs bridging — and all of it ends up inside the pot.
+- **Supports:** needed under the two arms only — about 4% of the part. Tree
   supports, or a PETG interface under a PLA body for breakaway supports from
   filament already on the shelf.
 - **Walls:** 3 perimeters. The sockets are bored 3.4 mm into the skin and the
   pin has to bite on solid plastic, not on sparse infill.
 - **Infill:** 10–15% is plenty. It is decorative and the spigot carries it.
-- **Layer:** 0.20 mm. Finer buys little here — the ribs are 2.5 mm deep.
+- **Layer:** 0.20 mm. Finer buys little here — the ribs are 3.6 mm deep.
 - **Material:** PLA for the look, PETG if it will sit in a window. PLA at 60 °C
   will droop on a sunny sill; the arms are the part that will show it.
 
@@ -64,3 +66,14 @@ millimetre, it is a blob in the hole bottom, so clear it rather than pushing
 harder. A spike at Ø1.86 shears before the socket does.
 
 Work from the crown down, so a seated spike is never in the way of your hand.
+
+## In the pot
+
+The cactus drops into the Ø32 socket in the pot's floor and lands on the floor
+itself, not on the bottom of the hole. It lifts straight out again — the fit is
+0.35 mm of clearance per side, because a 220 mm assembly is a long lever and a
+press fit down there would be a wrestling match every time the pot is cleaned.
+
+If it rocks, the culprit is elephant's foot on the cactus's first layer, not
+the socket. Scrape the bottom edge of the spigot's flange rather than reaming
+the pot.

@@ -31,15 +31,19 @@ BED = (325.0, 320.0)    # single-nozzle build area; the plate check uses it
 # it by more than POT_TOL, so a stale number here fails loudly rather than
 # producing a cactus that does not drop in.
 
-POT_BORE_D = 34.00      # inside diameter of the pot's mouth
-POT_SOIL_Z = 6.00       # how deep the spigot sits below the pot's rim
+POT_BORE_D = 32.00      # the blind socket in the pot's inner floor
+POT_SOCKET_DEPTH = 8.00 # how deep that socket goes
+POT_FLOOR_TO_RIM = 21.0 # the cactus's first 21 mm are down inside the pot
+POT_INNER_R = 39.7      # the pot's inner wall just above its floor
 POT_TOL = 0.50          # how far the measured pot may differ before the build stops
 
 SPIGOT_CLEAR = 0.35     # the spigot is this much under the bore, per side:
                         # a drop-in fit, not a press fit. The cactus should
-                        # lift out for cleaning and it is a long lever arm.
-SPIGOT_H = 8.00         # length of the plug below the body's flare
+                        # lift out, and it is a long lever arm.
+SPIGOT_H = 7.40         # shorter than the socket, so the cactus lands on the
+                        # pot's floor rather than on the bottom of the hole
 SPIGOT_CHAMFER = 0.60   # lead-in so it finds the bore without a fight
+SPIGOT_R = 0.5 * (POT_BORE_D - 2 * SPIGOT_CLEAR)
 
 # ---------------------------------------------------------------------------
 # TRUNK — the columnar body
@@ -50,16 +54,16 @@ SPIGOT_CHAMFER = 0.60   # lead-in so it finds the bore without a fight
 # going up rather than a constant tube, and a crown that is flattened and
 # slightly sunken instead of a hemisphere.
 
-TRUNK_H = 104.0         # soil line to the top of the crown
-TRUNK_R_BASE = 17.2     # radius at the soil line (mean, before ribbing)
-TRUNK_R_MID = 18.4      # the slight swell a real trunk carries low down
-TRUNK_R_TOP = 14.6      # tapered in at the shoulder
+TRUNK_H = 168.0         # soil line to the top of the crown
+TRUNK_R_BASE = 26.0     # radius at the soil line (mean, before ribbing)
+TRUNK_R_MID = 27.6      # the slight swell a real trunk carries low down
+TRUNK_R_TOP = 21.4      # tapered in at the shoulder
 TRUNK_MID_FRAC = 0.22   # height fraction where the swell peaks
 
-RIB_COUNT = 13          # saguaros run 12-24. An odd count stops the eye
+RIB_COUNT = 15          # saguaros run 12-24. An odd count stops the eye
                         # pairing ribs across the silhouette, which is what
                         # makes a ribbed column look machined.
-RIB_DEPTH = 2.50        # crest-to-valley, at mid height
+RIB_DEPTH = 3.60        # crest-to-valley, at mid height
 RIB_SHARPNESS = 0.78    # 0 = sinusoid, 1 = crests pinched and valleys wide,
                         # which is how an areole-bearing rib actually sits
 RIB_TWIST_DEG = 7.0     # total twist over the full height: nothing in nature
@@ -70,13 +74,13 @@ RIB_FADE_TOP = 0.90     # ribs shallow out towards the crown (height fraction
 RIB_FADE_BASE = 0.04    # and die into the soil line, so the spigot's shoulder
                         # is a clean circle
 
-WOBBLE_AMP = 0.42       # low-frequency asymmetry on the whole column. Small,
+WOBBLE_AMP = 0.68       # low-frequency asymmetry on the whole column. Small,
 WOBBLE_TURNS = 1.6      # and the single biggest thing separating "grown" from
                         # "revolved". Without it the trunk is a lathe part.
 
 CROWN_FLAT_FRAC = 0.46  # how much of the top radius is the flattened crown
-CROWN_RISE = 7.4        # how far the crown lifts above the shoulder
-CROWN_DIMPLE = 1.30     # the apical depression, where a saguaro grows from
+CROWN_RISE = 11.4        # how far the crown lifts above the shoulder
+CROWN_DIMPLE = 2.00     # the apical depression, where a saguaro grows from
 
 # ---------------------------------------------------------------------------
 # ARMS
@@ -87,12 +91,12 @@ CROWN_DIMPLE = 1.30     # the apical depression, where a saguaro grows from
 # symmetric pair is the single most cartoonish thing a cactus can do.
 
 ARMS = (
-    dict(z_frac=0.44, bearing=28.0, length=58.0, r=8.2, elbow=0.50, rise=0.95),
-    dict(z_frac=0.68, bearing=214.0, length=42.0, r=6.9, elbow=0.46, rise=0.90),
+    dict(z_frac=0.42, bearing=28.0, length=88.0, r=12.4, elbow=0.50, rise=0.95),
+    dict(z_frac=0.66, bearing=214.0, length=64.0, r=10.4, elbow=0.46, rise=0.90),
 )
-ARM_RIB_COUNT = 9       # fewer ribs on a thinner stem, as in the real plant
-ARM_RIB_DEPTH = 1.70
-ARM_BLEND = 2.2         # radius of the fillet where an arm meets the trunk.
+ARM_RIB_COUNT = 11      # fewer ribs on a thinner stem, as in the real plant
+ARM_RIB_DEPTH = 2.40
+ARM_BLEND = 3.2         # radius of the fillet where an arm meets the trunk.
                         # An un-filleted join is both ugly and a stress riser
                         # in a printed part that will be picked up by an arm.
 
@@ -103,11 +107,14 @@ ARM_BLEND = 2.2         # radius of the fillet where an arm meets the trunk.
 # of a woolly pad sitting on the crest of a rib, evenly spaced up the rib.
 # Modelling the pad is what stops the sockets looking like drilled holes.
 
-AREOLE_PITCH = 13.0     # vertical spacing along a rib crest
-AREOLE_R = 2.00         # radius of the pad
-AREOLE_RISE = 0.55      # how far it stands off the crest
-AREOLE_Z_JITTER = 1.6   # rib-to-rib stagger, so pads do not form rings
-AREOLE_Z_MIN = 9.0      # none below this, they would be buried in soil
+AREOLE_PITCH = 18.0     # vertical spacing along a rib crest
+AREOLE_R = 2.60         # radius of the pad
+AREOLE_RISE = 0.70      # how far it stands off the crest
+AREOLE_Z_JITTER = 2.1   # rib-to-rib stagger, so pads do not form rings
+AREOLE_Z_MIN = 24.0     # none below this. The pot's rim stands 21 mm above
+                        # its floor and the trunk is 13 mm clear of the pot's
+                        # inner wall, so a spine down there would either be
+                        # invisible or foul the pot going in.
 AREOLE_CROWN_KEEP = 0.96  # and none above this height fraction
 
 # Which ribs carry pads. Every rib on the trunk is 13 x 7 = 91 sockets and an
@@ -170,7 +177,7 @@ SOCKET_RELIEF_L = 1.00  # somewhere for stringing and a first-layer blob to
 # smaller than the one below, which is the only orientation that gives a
 # needle a clean taper and no supports. The collar doubles as its own brim.
 
-SPIKE_L = 13.0          # exposed length above the pad
+SPIKE_L = 16.0          # exposed length above the pad
 SPIKE_TIP_D = 0.42      # one nozzle width. A true point cannot be printed;
                         # 0.42 is the smallest honest number and it still
                         # feels sharp to a fingertip.
@@ -179,6 +186,9 @@ SPIKE_BELLY = 0.18      # how much the needle bows out from a straight cone,
                         # a straight taper.
 SPIKE_COLLAR_D = 2.90   # seats on the areole, hides the socket mouth, and
 SPIKE_COLLAR_H = 0.55   # gives the part a first layer worth printing
+SPIKE_FLOOR_DEG = -14.0  # no spine may hang lower than this off horizontal:
+                         # its socket would be a hole in a roof. The arm
+                         # undersides are where this bites.
 SPIKE_RAKE_DEG = 34.0   # how far the spike leans up from the surface normal.
                         # Spines on a saguaro point up and out, not straight
                         # out, and this one number does more for realism than
@@ -209,7 +219,7 @@ SEG_SOCKET = 32
 # still reproducible and a socket does not wander between two builds.
 
 SEED = 20261005
-AREOLE_Z_SCATTER = 1.9      # +/- mm on a pad's position along its rib
+AREOLE_Z_SCATTER = 2.4      # +/- mm on a pad's position along its rib
 SPIKE_RAKE_SCATTER = 9.0    # +/- degrees on the lean
 SPIKE_SWING_SCATTER = 7.0   # +/- degrees of sideways swing off the crest
 
