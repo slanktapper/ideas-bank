@@ -81,10 +81,10 @@ What to look at when it comes off:
   every spike; at normal speeds that is where they go furry.
 - **Colour:** jade white, white or the milky pink read as spines. Black looks
   like a sea urchin, which may be the point. For the body, PLA Basic
-  Mistletoe Green — it is the only green on the shelf, and it arrived after
-  this project started, so earlier notes here assume a green that did not
-  exist yet. Cocoa Brown suits the pot's stone field; the pot half picks that,
-  not this file.
+  Mistletoe Green — the only green there is, and it is **on order rather than
+  on hand**, so check `../filament.md` before counting on it for a print
+  today. Cocoa Brown, same caveat, suits the pot's stone field; the pot half
+  picks that, not this file.
 
 ## Seating them
 
