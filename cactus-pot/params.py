@@ -195,7 +195,11 @@ SOCKET_RELIEF_L = 1.00  # somewhere for stringing and a first-layer blob to
 # smaller than the one below, which is the only orientation that gives a
 # needle a clean taper and no supports. The collar doubles as its own brim.
 
-SPIKE_L = 16.0          # exposed length above the pad
+SPIKE_L = 12.0          # exposed length above the pad. Was 16.0; Rob asked
+                        # for 75% of it on 2026-10-06, and shorter spines
+                        # read as a saguaro's rather than a hedgehog's.
+                        # The socket, the pin and the collar are untouched,
+                        # so a printed spike still seats the same way.
 SPIKE_TIP_D = 0.42      # one nozzle width. A true point cannot be printed;
                         # 0.42 is the smallest honest number and it still
                         # feels sharp to a fingertip.
