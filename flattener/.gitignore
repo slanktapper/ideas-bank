@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# renders are generated: python3 concept_lever.py (or build.py --renders)
+renders/
