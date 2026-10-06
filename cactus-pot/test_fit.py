@@ -179,59 +179,76 @@ def main():
           f"{int(np.sum(~proud))} flush or drowned of {len(sites)}")
 
     # -- the arrangement ----------------------------------------------------
-    # Rob's complaint about the first version: the spines read as rows. Two
-    # faults, and both are checked here on the finished site list rather than
-    # on the numbers that generated it.
+    # Rob complained twice about how the spines are laid out: first that they
+    # read as rows, then that they read as columns. Both are checked here on
+    # the finished site list rather than on the numbers that generated it.
     head("arrangement")
 
-    for label, phases in (("trunk", C._rib_phases(
-            len([k for k in range(P.RIB_COUNT) if not k % P.SPIKE_RIB_STEP]), 0)),
-            *[(f"arm {i}", C._rib_phases(
-                len([k for k in range(P.ARM_RIB_COUNT)
-                     if not k % P.ARM_SPIKE_RIB_STEP]),
-                1 + int(spec["bearing"])))
-              for i, spec in enumerate(P.ARMS)]):
-        gaps = C._circ_gaps(phases)
-        sep = float(np.min(np.abs(gaps)))
-        check(sep >= P.RIB_PHASE_MIN_SEP,
-              f"{label}: no rib starts level with the one beside it",
-              f"closest neighbours {sep:.2f} of a pitch "
-              f"({sep * P.AREOLE_PITCH:.1f} mm)")
-        worst_run = min(
-            (max(gaps[(i + j) % len(gaps)] for j in range(3))
-             - min(gaps[(i + j) % len(gaps)] for j in range(3)))
-            for i in range(len(gaps))) if len(gaps) >= 4 else 1.0
-        check(worst_run >= P.RIB_PHASE_RUN_TOL,
-              f"{label}: no four ribs march in step",
-              f"tightest run of three gaps spans {worst_run:.2f}")
+    # Both arms and the trunk are drawn the same way now, so they get the
+    # same checks: the spacing they promise, and no ladder up any one crest.
+    for i, spec in enumerate(P.ARMS):
+        ap = np.array([p for p, _, _, _ in C.arm_areoles(spec)])
+        ad = np.linalg.norm(ap[:, None, :] - ap[None, :, :], axis=2)
+        np.fill_diagonal(ad, np.inf)
+        check(float(ad.min()) >= P.ARM_AREOLE_MIN_SEP - 1e-6,
+              f"arm {i}: no two pads are closer than the spacing",
+              f"{len(ap)} pads, closest {float(ad.min()):.1f} mm, "
+              f"asked for {P.ARM_AREOLE_MIN_SEP:.1f}")
 
-    # And the thing a person actually sees: a pad on one rib sitting at the
-    # same height as a pad on the rib next to it. Measured on the trunk's own
-    # sites, grouped back onto their ribs by undoing the twist -- a pad's
-    # bearing drifts with height, so grouping on the raw angle splits one rib
-    # into several and compares pads that are not neighbours at all. The arms
-    # are covered by the phase checks above; their crests are not at fixed
-    # bearings, so there is nothing to group them by here.
+    # The trunk is not laid out per rib at all any more, so what it gets
+    # checked on is the thing the layout promises: a minimum distance between
+    # any two pads, which is what rules out both a row and a column without
+    # either being mentioned.
     trunk_sites = C.trunk_areoles()
+    pts = np.array([p for p, _, _, _ in trunk_sites])
+    d = np.linalg.norm(pts[:, None, :] - pts[None, :, :], axis=2)
+    np.fill_diagonal(d, np.inf)
+    check(float(d.min()) >= P.AREOLE_MIN_SEP - 1e-6,
+          "no two pads on the trunk are closer than the spacing",
+          f"{len(pts)} pads, closest {float(d.min()):.1f} mm, "
+          f"asked for {P.AREOLE_MIN_SEP:.1f}")
+
+    # Group the pads back onto their crests by undoing the twist -- a pad's
+    # bearing drifts with height, so grouping on the raw angle splits one rib
+    # into several.
     crests = np.arange(P.RIB_COUNT) * 2 * np.pi / P.RIB_COUNT
     by_rib = {}
     for p, _, _, _ in trunk_sites:
         th = np.arctan2(p[1], p[0]) + np.radians(P.RIB_TWIST_DEG) * p[2] / P.TRUNK_H
-        k = int(np.argmin(np.abs((crests - th + np.pi) % (2 * np.pi) - np.pi)))
-        by_rib.setdefault(k, []).append(float(p[2]))
+        dd = (crests - th + np.pi) % (2 * np.pi) - np.pi
+        k = int(np.argmin(np.abs(dd)))
+        by_rib.setdefault(k, []).append((float(p[2]), -np.degrees(dd[k])))
 
-    keys = sorted(by_rib)
-    level, closest = 0, np.inf
-    for a, b in zip(keys, keys[1:] + keys[:1]):
-        for za in by_rib[a]:
-            for zb in by_rib[b]:
-                d = abs(za - zb)
-                closest = min(closest, d)
-                if d < 2.5:
-                    level += 1
-    check(level == 0, "no pad is level with one on the rib beside it",
-          f"{len(keys)} ribs, {level} pairs within 2.5 mm, "
-          f"closest {closest:.1f} mm apart")
+    # The old layout put pads on every other rib, so the trunk wore eight
+    # stripes. Every rib has to carry some now, or the stripes are back.
+    check(len(by_rib) == P.RIB_COUNT,
+          "every rib carries spines, so there are no bare stripes",
+          f"{len(by_rib)} of {P.RIB_COUNT} ribs used")
+
+    # A column is pads evenly stacked up one crest. Nothing fixes how many a
+    # crest gets now, so the check is that no crest is a ladder: no three
+    # pads up one rib with the same gap between them.
+    counts = sorted(len(v) for v in by_rib.values())
+    worst_ladder, spans = np.inf, []
+    for k, v in by_rib.items():
+        zs = np.array(sorted(z for z, _ in v))
+        spans.append(max(o for _, o in v) - min(o for _, o in v))
+        for i in range(len(zs) - 2):
+            a, b, c = zs[i:i + 3]
+            worst_ladder = min(worst_ladder, abs((b - a) - (c - b)))
+    check(worst_ladder > 2.0,
+          "no three pads up one rib are evenly spaced",
+          f"{counts[0]}-{counts[-1]} pads per rib, "
+          f"closest to a ladder {worst_ladder:.1f} mm out of step")
+
+    # And the sideways wander has to stay on the rib: past a third of the way
+    # to the valley the pad is on the flank and its socket is bored into a
+    # slope.
+    half_rib = 180.0 / P.RIB_COUNT
+    check(max(spans) / 2 <= half_rib / 3,
+          "every pad is still on its rib's crest",
+          f"widest wander +/-{max(spans) / 2:.1f}°, "
+          f"crest is +/-{half_rib / 3:.1f}° wide")
 
     # -- seated spikes ------------------------------------------------------
     head("assembly")

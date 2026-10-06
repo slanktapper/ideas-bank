@@ -32,7 +32,7 @@ green body, with no multi-material printing on the big part at all.
 
 **Does:**
 
-- The cactus body: ribbed trunk, two arms, areole pads, 108 spike sockets, and
+- The cactus body: ribbed trunk, two arms, areole pads, 110 spike sockets, and
   a spigot that drops into the socket in the pot's floor.
 - The spike: one part, printed many times.
 - A fit-test coupon that steps the socket diameter either side of nominal, so
@@ -70,7 +70,7 @@ Every dimension lives in `params.py`. The two that matter most:
 | | |
 | --- | --- |
 | `PRESS_FIT` | the *printed* interference, −0.06 mm. Negative is a bite. |
-| `SPIKE_RIB_STEP` | 1 puts a pad on every rib, 2 on every other. 2 is 108 spikes. |
+| `AREOLE_MIN_SEP` | how close two pads may get: 14.5 mm on the trunk, 11.0 on an arm. It is what sets the spike count — 110 — because pads are drawn until the part will not take another. |
 
 ## The pot, measured
 
@@ -131,16 +131,40 @@ changes size much from Ø92 × 76 should take the cactus's proportions with it.
 - **Does −0.06 hold?** It is the right number on paper and the coupon exists
   because paper is not the same as PETG at 240 °C. Print the coupon, find the
   hole the spike seats in, set `SOCKET_COMP` from it.
-- **The spines must not read as rows.** They did in the first version: a fixed
-  2.1 mm step from one rib to the next, which with evenly spaced pads let the
-  eye join them into rings and a spiral. Every tidy formula has a structure
-  and the structure is what shows, so each rib's starting height is now drawn
-  at random and rejected until no rib sits level with its neighbour and no
-  four ribs march in step. `test_fit.py` checks both, and checks the finished
-  sites rather than the numbers that made them.
-- **108 spikes is an evening.** `SPIKE_RIB_STEP` and `AREOLE_PITCH` are the
-  dials; doubling the pitch halves the count. If seating them turns out to be
-  tedious rather than pleasant, that is where it gets backed off.
+- **The spines must not read as rows, and must not read as columns.** They did
+  both, and the second one is why the trunk's layout no longer has ribs in it.
+
+  The rows came from a fixed 2.1 mm step from one rib to the next: with evenly
+  spaced pads the eye joined them into rings and a spiral. That was replaced by
+  drawing each rib's starting height at random and rejecting it until no rib
+  sat level with its neighbour and no four ribs marched in step. It fixed the
+  rows and left the columns untouched, because a pad still belonged to a rib —
+  so every rib carrying pads was a vertical line of them, and with pads on
+  every other rib the trunk wore eight stripes. Letting a pad wander a few
+  degrees off its own crest was built and measured and is not enough: ±3.8° is
+  ±1.8 mm against the 11.3 mm gap to the next rib, so the line only wobbles.
+
+  So a trunk pad does not belong to a rib any more. A crest and a height are
+  drawn together, every rib in the draw, and the pad is kept only if it clears
+  every pad already placed by `AREOLE_MIN_SEP` and does not make three evenly
+  spaced pads up one crest. The draw runs until the trunk will not take
+  another. Nothing decides in advance how many pads a rib gets, which is the
+  thing that stops them being columns — the ribs now carry between 1 and 6
+  each. Pads are still *on* crests, because that is where an areole grows and
+  where a socket has a flat top to be bored into. Both arms are drawn the same
+  way, with their own spacing — they had lines of their own down each crest,
+  which is what Rob was looking at when he said the body and both sides had
+  them.
+
+  `test_fit.py` checks all of it on the finished sites rather than on the
+  numbers that made them: the spacing, that all 15 ribs are used, that no three
+  pads up a rib are evenly spaced, and that the wander keeps every pad on its
+  crest.
+- **110 spikes is an evening.** `AREOLE_MIN_SEP` and `ARM_AREOLE_MIN_SEP` are
+  the dials now, and they are the honest ones: spacing is the thing with a
+  physical meaning and the count follows from it. Raising the trunk's to 16 mm
+  drops it to about 55 pads. If seating them turns out to be tedious rather
+  than pleasant, that is where it gets backed off.
 - **No spines on the arm undersides.** `SPIKE_FLOOR_DEG` drops any socket that
   would be a hole in a roof. A real saguaro has them; a printer does not enjoy
   them.

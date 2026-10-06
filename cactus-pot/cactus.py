@@ -301,28 +301,86 @@ def arm_body(spec) -> trimesh.Trimesh:
 # areoles and sockets
 # ---------------------------------------------------------------------------
 
+def _poisson_crest_sites():
+    """Pad sites on the trunk as (bearing, height), scattered over all ribs.
+
+    This replaced a per-rib run of pads, and the reason is Rob's second
+    complaint. Giving each rib its own starting height fixed the rows; it
+    could not fix the columns, because a pad still belonged to a rib, so
+    every rib carrying pads was a vertical line of them and the eye read the
+    lines. Wandering a pad a few degrees off its own crest only made each
+    line wobble -- measured, +/-4.6 degrees is +/-2.2 mm against a 11.3 mm
+    gap to the next rib, which is not enough to stop being a line.
+
+    So a pad no longer belongs to a rib. A crest and a height are drawn
+    together and kept only if the pad is AREOLE_MIN_SEP from every pad
+    already placed, until the surface will not take another. Every crest is
+    in the draw, not every other one, and nothing decides in advance how many
+    pads a crest gets -- which is what stops them being columns. The pad is
+    still ON a crest, because that is where an areole grows and where the
+    socket has a flat top to be bored into.
+
+    Drawing until it is full rather than to a count means AREOLE_MIN_SEP sets
+    the spine count. That is the honest dial: spacing is the thing with a
+    physical meaning, and the count follows from it.
+    """
+    rng = np.random.default_rng(P.SEED + 611953)
+    crest_thetas = np.arange(P.RIB_COUNT) * 2 * np.pi / P.RIB_COUNT
+    z_lo, z_hi = P.AREOLE_Z_MIN, P.TRUNK_H * P.AREOLE_CROWN_KEEP
+    sites, pts, misses = [], [], 0
+    per_crest = {k: [] for k in range(P.RIB_COUNT)}
+    while misses < P.AREOLE_FILL_TRIES:
+        k = int(rng.integers(P.RIB_COUNT))
+        z = float(rng.uniform(z_lo, z_hi))
+        th0 = crest_thetas[k] + np.radians(
+            rng.uniform(-P.AREOLE_TH_SCATTER, P.AREOLE_TH_SCATTER))
+        th = th0 - np.radians(P.RIB_TWIST_DEG) * z / P.TRUNK_H
+        p = trunk_point(th, z)[0]
+        if pts and np.min(np.linalg.norm(np.array(pts) - p, axis=1)) \
+                < P.AREOLE_MIN_SEP:
+            misses += 1
+            continue
+        if not _ladder_ok(per_crest[k], z):
+            misses += 1
+            continue
+        misses = 0
+        pts.append(p)
+        per_crest[k].append(z)
+        sites.append((th0, z))
+    return sites
+
+
+def _ladder_ok(zs: list, z: float) -> bool:
+    """Would adding z give three evenly spaced pads up this one crest?
+
+    Spacing alone does not rule this out, and it happens: two pads both
+    landing at exactly AREOLE_MIN_SEP from the one between them is three in a
+    line with identical gaps, which is a column in miniature and the eye
+    finds it.
+    """
+    run = sorted(zs + [z])
+    for i in range(len(run) - 2):
+        a, b, c = run[i:i + 3]
+        if abs((b - a) - (c - b)) < P.AREOLE_LADDER_TOL:
+            return False
+    return True
+
+
 def trunk_areoles():
     """Every socket site on the trunk, sitting on the rib crests.
 
-    Each site is (point, normal, rake, swing). The crest is followed up the
-    twist, so a pad stays on top of its rib instead of sliding into the
-    valley by the time it reaches the shoulder.
+    Each site is (point, normal, rake, swing). Where the sites come from is
+    `_poisson_crest_sites`. The crest is followed up the twist, so a pad
+    stays on top of its rib instead of sliding into the valley by the time it
+    reaches the shoulder.
     """
-    raw = []
-    crest_thetas = np.arange(P.RIB_COUNT) * 2 * np.pi / P.RIB_COUNT
-    bearing = [th0 for k, th0 in enumerate(crest_thetas)
-               if not k % P.SPIKE_RIB_STEP]
-    phases = _rib_phases(len(bearing), 0)
-    for th0, phase in zip(bearing, phases):
-        z = P.AREOLE_Z_MIN + P.AREOLE_PITCH * phase
-        while z < P.TRUNK_H * P.AREOLE_CROWN_KEEP:
-            raw.append((th0, z))
-            z += P.AREOLE_PITCH
+    raw = _poisson_crest_sites()
     jit = _scatter(len(raw))
     out = []
-    for (th0, z), (dz, rake, swing) in zip(raw, jit):
-        zz = float(np.clip(z + dz, P.AREOLE_Z_MIN,
-                           P.TRUNK_H * P.AREOLE_CROWN_KEEP))
+    # no z jitter here: the height came out of a continuous draw already, and
+    # nudging it afterwards is exactly what would undo the spacing the draw
+    # was rejected on. The rake and swing still vary per spike.
+    for (th0, zz), (_dz, rake, swing) in zip(raw, jit):
         t = zz / P.TRUNK_H
         th = th0 - np.radians(P.RIB_TWIST_DEG) * t
         out.append((trunk_point(th, zz)[0], trunk_normal(th, zz)[0],
@@ -331,7 +389,17 @@ def trunk_areoles():
 
 
 def arm_areoles(spec):
-    """(point, normal) along the crests of one arm."""
+    """(point, normal, rake, swing) on the crests of one arm.
+
+    Drawn the same way as the trunk, and for the same reason: an arm laid out
+    per rib wore its own lines of spines down the crests, which is what Rob
+    was looking at when he said the main body and both sides had them. Every
+    crest is in the draw, the pad is kept only if it clears the pads already
+    on this arm by ARM_AREOLE_MIN_SEP and does not make three evenly spaced
+    pads along one crest, and the draw runs until the arm is full. Each arm
+    seeds from its own bearing, so the two do not share an arrangement with
+    each other or with the trunk.
+    """
     rings, pts, tang = arm_rings(spec)
     n_pts = len(pts)
     arc = np.concatenate([[0.0], np.cumsum(
@@ -339,24 +407,45 @@ def arm_areoles(spec):
     theta = np.linspace(0.0, 2 * np.pi, P.SEG_THETA // 2, endpoint=False)
     crest_idx = [int(round(j * len(theta) / P.ARM_RIB_COUNT))
                  % len(theta) for j in range(P.ARM_RIB_COUNT)]
-    raw = []
-    bearing = [ti for k, ti in enumerate(crest_idx)
-               if not k % P.ARM_SPIKE_RIB_STEP]
-    # each arm gets its own draw, so the two arms do not share an
-    # arrangement with each other or with the trunk
-    phases = _rib_phases(len(bearing), 1 + int(spec["bearing"]))
-    for ti, phase in zip(bearing, phases):
-        s = 9.0 + P.AREOLE_PITCH * phase
-        while s < arc[-1] - 4.0:
-            raw.append((ti, s))
-            s += P.AREOLE_PITCH
-    jit = _scatter(len(raw))
+    step_deg = 360.0 / len(theta)   # one ring vertex, in degrees of bearing
+    s_lo, s_hi = 9.0, arc[-1] - 4.0
+
+    def point_at(ti, ss):
+        """Surface point at a fractional crest index and an arc length."""
+        i = min(max(int(np.searchsorted(arc, ss)), 1), n_pts - 2)
+        # ti is fractional, so walk round the closed ring between the two
+        # vertices either side of it. At one vertex per 3 degrees the chord
+        # sits about 4 microns inside the surface, which is nothing.
+        j0 = int(np.floor(ti)) % len(theta)
+        j1 = (j0 + 1) % len(theta)
+        f = float(ti - np.floor(ti))
+        return i, rings[i, j0] * (1.0 - f) + rings[i, j1] * f
+
+    rng = np.random.default_rng(P.SEED + 86243 * (1 + int(spec["bearing"])))
+    sites, placed, misses = [], [], 0
+    per_crest = {k: [] for k in range(P.ARM_RIB_COUNT)}
+    while misses < P.AREOLE_FILL_TRIES:
+        k = int(rng.integers(P.ARM_RIB_COUNT))
+        ss = float(rng.uniform(s_lo, s_hi))
+        ti = crest_idx[k] + rng.uniform(
+            -P.AREOLE_TH_SCATTER, P.AREOLE_TH_SCATTER) / step_deg
+        _, p = point_at(ti, ss)
+        if placed and np.min(np.linalg.norm(np.array(placed) - p, axis=1)) \
+                < P.ARM_AREOLE_MIN_SEP:
+            misses += 1
+            continue
+        if not _ladder_ok(per_crest[k], ss):
+            misses += 1
+            continue
+        misses = 0
+        placed.append(p)
+        per_crest[k].append(ss)
+        sites.append((ti, ss))
+
+    jit = _scatter(len(sites))
     out = []
-    for (ti, s), (ds, rake, swing) in zip(raw, jit):
-        ss = float(np.clip(s + ds, 9.0, arc[-1] - 4.0))
-        i = int(np.searchsorted(arc, ss))
-        i = min(max(i, 1), n_pts - 2)
-        p = rings[i, ti]
+    for (ti, ss), (_ds, rake, swing) in zip(sites, jit):
+        i, p = point_at(ti, ss)
         # normal: radially out from the spine at that station
         n = p - pts[i]
         n -= tang[i] * (n @ tang[i])
@@ -393,53 +482,15 @@ def _rake(n, extra=0.0, swing=0.0):
     return out / np.linalg.norm(out)
 
 
-def _rib_phases(n: int, seed_offset: int) -> np.ndarray:
-    """Where each spine-bearing rib starts, as a fraction of AREOLE_PITCH.
-
-    Drawn, then checked against the two rules in params.py, then redrawn if
-    they fail. Rejection rather than arithmetic is the point: every tidy
-    formula -- a fixed step, a golden-ratio step -- has a structure, and
-    structure is exactly what Rob could see in the first version. What a
-    plant has is neighbours that disagree, and that is a constraint, not a
-    sequence.
-
-    Deterministic for a given (SEED, seed_offset, n), so the trunk and each
-    arm get their own arrangement and none of them moves between builds.
-    """
-    rng = np.random.default_rng(P.SEED + 7919 * seed_offset)
-    for _ in range(P.RIB_PHASE_TRIES):
-        ph = rng.random(n)
-        if _phases_ok(ph):
-            return ph
-    raise RuntimeError(
-        f"no arrangement of {n} ribs satisfies RIB_PHASE_MIN_SEP="
-        f"{P.RIB_PHASE_MIN_SEP} and RIB_PHASE_RUN_TOL={P.RIB_PHASE_RUN_TOL} "
-        f"in {P.RIB_PHASE_TRIES} tries -- loosen one of them")
-
-
-def _circ_gaps(ph: np.ndarray) -> np.ndarray:
-    """Signed gap from each rib to the next one round, in (-0.5, +0.5]."""
-    d = (np.roll(ph, -1) - ph + 0.5) % 1.0 - 0.5
-    return d
-
-
-def _phases_ok(ph: np.ndarray) -> bool:
-    n = len(ph)
-    if n < 2:
-        return True
-    gaps = _circ_gaps(ph)
-    if np.min(np.abs(gaps)) < P.RIB_PHASE_MIN_SEP:
-        return False                       # neighbours level with each other
-    if n >= 4:
-        for i in range(n):
-            run = np.array([gaps[(i + j) % n] for j in range(3)])
-            if run.max() - run.min() < P.RIB_PHASE_RUN_TOL:
-                return False               # four ribs marching in step
-    return True
-
-
 def _scatter(n):
-    """Deterministic per-site (z offset, rake, swing) jitter."""
+    """Deterministic per-site (z offset, rake, swing) jitter.
+
+    The z offset is no longer used by anything: both the trunk and the arms
+    draw a pad's position continuously now, and nudging it afterwards would
+    undo the spacing the draw was rejected on. It is still drawn, because
+    dropping it would shift every rake and swing after it and move every
+    socket in the model for no reason.
+    """
     rng = np.random.default_rng(P.SEED)
     return np.column_stack([
         rng.uniform(-P.AREOLE_Z_SCATTER, P.AREOLE_Z_SCATTER, n),

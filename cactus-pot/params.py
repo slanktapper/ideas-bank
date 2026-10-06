@@ -117,26 +117,29 @@ ARM_BLEND = 3.2         # radius of the fillet where an arm meets the trunk.
 # AREOLES — the raised pads the spikes grow out of
 # ---------------------------------------------------------------------------
 # On a real cactus spines never come straight out of the skin: they come out
-# of a woolly pad sitting on the crest of a rib, evenly spaced up the rib.
-# Modelling the pad is what stops the sockets looking like drilled holes.
+# of a woolly pad sitting on the crest of a rib. Modelling the pad is what
+# stops the sockets looking like drilled holes. Where the pads go is further
+# down, under AREOLE_MIN_SEP; it is not as simple as evenly up a rib, and the
+# reason it is not is written there.
 
-AREOLE_PITCH = 18.0     # vertical spacing along a rib crest
 AREOLE_R = 2.60         # radius of the pad
 AREOLE_RISE = 0.70      # how far it stands off the crest
 AREOLE_Z_JITTER = 2.1   # DEAD. Kept only so an old params file is obviously
-                        # stale rather than silently different: the rib-to-rib
-                        # stagger is no longer a fixed step. See RIB_PHASE_*.
+                        # stale rather than silently different: the trunk's
+                        # pads are not stepped up a rib at all now, and the
+                        # arms' pads are not stepped either. Spacing is the
+                        # dial now: see AREOLE_MIN_SEP.
 AREOLE_Z_MIN = 24.0     # none below this. The pot's rim stands 21 mm above
                         # its floor and the trunk is 13 mm clear of the pot's
                         # inner wall, so a spine down there would either be
                         # invisible or foul the pot going in.
 AREOLE_CROWN_KEEP = 0.96  # and none above this height fraction
 
-# Which ribs carry pads. Every rib on the trunk is 13 x 7 = 91 sockets and an
-# evening with tweezers; every other rib is half that and still reads as a
-# spiny cactus from any distance. SPIKE_RIB_STEP is the dial.
-SPIKE_RIB_STEP = 2      # 1 = every rib, 2 = every other rib
-ARM_SPIKE_RIB_STEP = 2
+# Which ribs carry pads: all of them, on the trunk and on both arms. There
+# used to be a SPIKE_RIB_STEP and an ARM_SPIKE_RIB_STEP that put pads on
+# every other rib, and they are the reason the spines read as stripes -- see
+# AREOLE_MIN_SEP. Both are gone; if an old params file still sets them,
+# nothing reads them.
 
 # ---------------------------------------------------------------------------
 # PRESS FIT — the socket in the cactus and the pin on the spike
@@ -257,23 +260,43 @@ AREOLE_Z_SCATTER = 1.4      # +/- mm on a pad's position along its rib. Small
                             # scatter bigger than half that stagger just
                             # undoes it at random.
 
-# Where each rib starts its run of pads, as a fraction of AREOLE_PITCH.
-# This was a fixed step of 2.1 mm per rib, and a fixed step is a pattern: a
-# small one reads as a spiral winding up the cactus, and with the pads
-# otherwise evenly spaced the eye joins them into rings. Real spines do not
-# line up with their neighbours in either direction.
+# TRUNK pads: how close two of them may get, measured straight through the
+# air rather than along a rib.
 #
-# So the phases are drawn at random from SEED and then REJECTED until they
-# satisfy both rules below, which is why they are constraints rather than a
-# formula -- a formula is the thing that produced the pattern.
-RIB_PHASE_MIN_SEP = 0.24    # no two neighbouring ribs may start within this
-                            # fraction of a pitch of each other: that is what
-                            # makes pads look level with the ones beside them
-RIB_PHASE_RUN_TOL = 0.13    # and no three consecutive gaps may agree this
-                            # closely -- three equal gaps is four ribs in a
-                            # row marching, which is the diagonal version of
-                            # the same fault
-RIB_PHASE_TRIES = 4000      # draws allowed before giving up and saying so
+# The stagger above fixed the rows and could not fix the columns, because a
+# pad still belonged to a rib: every rib carrying pads was a vertical line of
+# them, and only every other rib carried any, so the trunk wore eight stripes
+# of spines. Wandering a pad off its own crest does not help enough to
+# matter -- a few degrees is a couple of mm at the trunk's radius, against
+# the 11.3 mm gap to the next rib, so the line only wobbles. It was built,
+# rendered and measured, and it still read as eight lines.
+#
+# So a trunk pad no longer belongs to a rib. A crest and a height are drawn
+# together, every crest in the draw rather than every other one, and the pad
+# is kept only if it clears every pad already placed by AREOLE_MIN_SEP. The
+# draw runs until the surface will not take another. Nothing decides in
+# advance how many pads a crest gets, which is what stops them being columns.
+#
+# That makes this number, not a count, the dial: spacing is the thing with a
+# physical meaning and the count follows from it. 14.5 lands 65 on the trunk,
+# which is where the per-rib layout it replaced had got to. Smaller means
+# more spines and more evenings with tweezers.
+AREOLE_MIN_SEP = 14.5
+ARM_AREOLE_MIN_SEP = 11.0   # the same for an arm, which is a thinner stem
+                            # carrying a smaller spine, so they sit closer
+AREOLE_FILL_TRIES = 600     # consecutive rejections before calling it full
+AREOLE_LADDER_TOL = 2.0     # three pads up one crest whose two gaps agree
+                            # within this many mm are a column in miniature,
+                            # so the draw rejects the third. Spacing alone
+                            # does not rule it out: two pads both landing at
+                            # exactly AREOLE_MIN_SEP make a perfect ladder.
+AREOLE_TH_SCATTER = 3.8     # +/- degrees a pad may sit off the top of its
+                            # crest. Ribs are 360/RIB_COUNT apart so a crest
+                            # is half that wide; past about a third of the
+                            # way to the valley the pad is on the flank and
+                            # its socket is bored into a slope, so this stays
+                            # inside that. It is the finishing touch, not the
+                            # fix -- AREOLE_MIN_SEP is the fix.
 SPIKE_RAKE_SCATTER = 9.0    # +/- degrees on the lean
 SPIKE_SWING_SCATTER = 7.0   # +/- degrees of sideways swing off the crest
 

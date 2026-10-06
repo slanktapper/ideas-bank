@@ -8,7 +8,7 @@ than geometry. Machine is the H2D; see `../available-tools.md`.
 | File | How many | Notes |
 | --- | --- | --- |
 | `stl/cactus.stl` | 1 | 187 mm tall, stands on the flat end of its spigot |
-| `stl/spikes-x72.stl` | 2 plates | 108 sockets, so print a few spare |
+| `stl/spikes-x72.stl` | 2 plates | 110 sockets, so print a few spare |
 | `stl/spike.stl` | — | the single part, to arrange your own plate |
 | `stl/fit-test-coupon.stl` | 1 | **print this first** |
 | `stl/test-print-wedge.stl` | 1 | **and this second** — 150° of the real trunk |
@@ -51,7 +51,7 @@ What to look at when it comes off:
 - Pull a seated spike out sideways. It should resist and then break the pad
   before it slips, not slide out.
 - And the part nobody measures: stand back and look at it. Eleven spines at
-  the real spacing is the first honest view of what 108 will look like.
+  the real spacing is the first honest view of what 110 will look like.
 
 ## The cactus
 
