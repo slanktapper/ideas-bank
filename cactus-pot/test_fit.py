@@ -292,8 +292,12 @@ def main():
           "no spine sits down inside the pot",
           f"lowest at {P.AREOLE_Z_MIN}, rim at {P.POT_FLOOR_TO_RIM}")
 
-    if "--pot" in sys.argv:
-        pot_clearance(body, sys.argv[sys.argv.index("--pot") + 1])
+    import build
+    path = build.pot_path(sys.argv[1:])
+    if path:
+        pot_clearance(body, path)
+    else:
+        print("\n(no pot mesh found; pass --pot <stl> for the clearance check)")
 
     # -----------------------------------------------------------------------
     print(f"\n{CHECKS - len(FAILS)}/{CHECKS} checks passed")

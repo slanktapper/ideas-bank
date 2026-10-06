@@ -4,11 +4,12 @@ One file so a number is changed in one place and the geometry, the checks and
 the renders all follow. Nothing here is a magic constant without a reason
 written beside it.
 
-The pot itself is not modelled here. It arrived as a mesh
-(`reference/pot.stl`), and the cactus only has to agree with it in two
-places: the diameter of the spigot that drops into it and the height of the
-soil line. Those two live in the POT block and are the first things to
-re-measure when the pot changes.
+The pot itself is not modelled here. It is built by the other half of this
+project, in `pot/`, and lands as a mesh at `POT_STL`; the cactus only has to
+agree with it where they meet -- the socket the spigot drops into, the floor
+it stands on and the rim height. Those live in the POT block and are the first
+things to re-measure when the pot changes. `build.py` and `test_fit.py` read
+that mesh and fail loudly if these numbers have drifted from it.
 """
 
 from __future__ import annotations
@@ -31,10 +32,16 @@ BED = (325.0, 320.0)    # single-nozzle build area; the plate check uses it
 # it by more than POT_TOL, so a stale number here fails loudly rather than
 # producing a cactus that does not drop in.
 
+# The pot is the other half of this project and lives in pot/, built by its
+# own code. It is a mesh to this half -- measured, never imported -- so what
+# `build.py --pot` and `test_fit.py --pot` read by default is its STL. Pass
+# --pot <path> to measure a different one.
+POT_STL = "pot/stl/pebble-pot.stl"
+
 POT_BORE_D = 32.00      # the blind socket in the pot's inner floor
 POT_SOCKET_DEPTH = 8.00 # how deep that socket goes
 POT_FLOOR_TO_RIM = 21.0 # the cactus's first 21 mm are down inside the pot
-POT_INNER_R = 38.8      # the pot's inner wall, at its tightest, above the
+POT_INNER_R = 38.80     # the pot's inner wall, at its tightest, above the
                         # floor. Deliberately the TIGHTER of the two pots
                         # measured. The pebble pot is filleted where its wall
                         # meets its floor, so it is 38.8 right in that corner

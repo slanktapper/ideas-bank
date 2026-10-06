@@ -3,8 +3,13 @@
 The source model this project started from, and anything else that is an
 input rather than something built here.
 
-This folder is **empty on purpose.** The pot is a third-party mesh Rob
-supplied, and nothing here copies it: `build.py --pot <path>` takes it by path,
+Note: the pot the cactus now ships with is **not** here and is not a
+third-party mesh. It is built from code in `../pot/` and lands at
+`../pot/stl/pebble-pot.stl`, which is what `params.POT_STL` points at. This
+folder is only about the downloaded original Rob started from.
+
+That original is **not in the repository**, and this folder is **empty on
+purpose**: nothing here copies it. `build.py --pot <path>` takes it by path,
 measures it, and renders the cactus seated in it, so the pot can live wherever
 Rob keeps it without this project owning a copy of someone else's model.
 

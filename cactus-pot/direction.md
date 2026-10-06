@@ -5,9 +5,10 @@
 ## What it is
 
 A printed cactus that drops into a printed flower pot, with its spines printed
-as a separate part and press-fitted into sockets on the body. The pot came from
-a downloaded model (`reference/`); the cactus is rebuilt here as parametric
-code, because the thing that was wrong with it — it read as a cartoon — is not
+as a separate part and press-fitted into sockets on the body. Both halves are
+parametric code: the cactus here, the pot in `pot/` — see
+[pot/direction.md](pot/direction.md). The cactus was rebuilt rather than edited
+because the thing that was wrong with it — it read as a cartoon — is not
 something you can edit out of a mesh.
 
 ## Why
@@ -101,9 +102,11 @@ cactus fits it unchanged:
     socket Ø32.00 x 8.00 deep, floor 21.00 below a rim at z=76.00,
     inner wall r=39.37 at its tightest -- params agree with this pot
 
-That wall is filleted where it meets the floor: 38.8 in the corner itself,
-opening to 42.8 by 4 mm up. It costs nothing here, because the cactus's base
-flare makes the cactus narrowest exactly where the pot is tightest.
+That 39.37 is the narrowest the sampler finds over the heights it walks, not the
+wall's true minimum. The wall is straight at r=42.80 and filleted into the
+floor, so the real minimum is **38.80**, in the corner itself, opening to 42.80
+by 4 mm up. It costs nothing here, because the cactus's base flare makes the
+cactus narrowest exactly where the pot is tightest.
 `test_fit.py --pot <stl>` measures both profiles over the 21 mm the cactus is
 down inside the pot and reports the worst gap, which is **14.9 mm**, 20 mm up
 — not down in the corner at all.

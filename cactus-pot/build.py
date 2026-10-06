@@ -23,6 +23,20 @@ import cactus as C                                      # noqa: E402
 import params as P                                      # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def pot_path(args):
+    """The pot mesh to measure: --pot wins, else params.POT_STL if it is there.
+
+    Defaulting rather than requiring an argument is the point of the pot
+    living in this project: a clean checkout builds and checks the whole
+    object with no paths typed in. A pot that is not in the repo yet is what
+    --pot is for.
+    """
+    if "--pot" in args:
+        return args[args.index("--pot") + 1]
+    path = os.path.join(HERE, P.POT_STL)
+    return path if os.path.exists(path) else None
 STL = os.path.join(HERE, "stl")
 RENDERS = os.path.join(HERE, "renders")
 
@@ -273,10 +287,11 @@ def build_renders(pot=None, pot_floor=0.0):
 def main():
     args = sys.argv[1:]
     pot, floor = None, 0.0
-    if "--pot" in args:
-        pot, floor = measure_pot(args[args.index("--pot") + 1])
+    path = pot_path(args)
+    if path:
+        pot, floor = measure_pot(path)
         # measuring alone is a useful thing to ask for
-        if len(args) == 2:
+        if args and args[0] == "--pot" and len(args) == 2:
             return
     do_stl = "--renders" not in args
     do_renders = "--stl" not in args
