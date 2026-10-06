@@ -95,7 +95,8 @@ Every dimension is a constant at the top of `build.py`. The ones that matter:
 | `R`, `H` | 46.0, 76.0 — outer radius and height. The cactus is scaled to these. |
 | `WELL_Z`, `SOCKET_D`, `SOCKET_H` | the mount: floor at 55.0, Ø32.0 × 8.0 blind socket. Changing any of these breaks the cactus. |
 | `PAN_W`, `PAN_H`, `PAN_Z` | the cartouche, 78 × 37 mm, centred 48.5 up. |
-| `BEAD_W` | the border round each stone: 1.05 mm, tied to `GROOVE` so it fills the gap exactly. |
+| `BEAD_W` | the border round each stone: 1.89 mm, 1.8x the groove, so it fills every nominal gap solid. |
+| `BAND_D` | the raised bottom: 0.575 mm proud, half the height of a stone. |
 | `PAN_INSET`, `PAN_MARGIN` | 5.0 and 2.5 mm of clear panel around the text. The three lines are set at one size and the block is centred on its *inked* extent, so the top and bottom margins come out equal. |
 | `CELL_H`, `GROOVE`, `N_CELLS` | the stone field: 1.15 proud, 1.05 gaps, 300 seeds. |
 
@@ -107,7 +108,7 @@ Off `stl/pebble-pot.stl` itself:
 | --- | --- |
 | Overall | **94.30 × 94.30 × 76.00 mm** |
 | The body | Ø92.00 — the extra 2.30 is the stone cells standing 1.15 mm proud |
-| Watertight | yes, 158 152 faces, 365 043 mm³ |
+| Watertight | yes as built, 372 656 faces, 371 405 mm³ |
 | Well floor | z = 55.00, so 21.00 below the rim |
 | Socket | Ø32.00 × 8.00 deep, blind, on the axis |
 | Inner wall | r = 42.80 straight, with a 4 mm fillet into the floor — 38.80 in the corner itself, open to 42.80 by z = 59 |
@@ -129,11 +130,13 @@ colouring to the slicer, so the split lives in the geometry:
 | `02-silver-stones.stl` | Silk silver PLA | The 179 raised cells, as 179 separate closed bodies |
 | `03-white-panel.stl` | Jade white PLA | The cartouche, 1.6 mm deep behind its face |
 | `04-black-letters.stl` | Black PLA | The letters, filling the 1.0 mm engraving flush |
-| `05-purple-borders.stl` | Silk+ purple PLA | A rounded border round every stone, filling the grooves |
+| `05-purple-borders.stl` | Silk+ purple PLA | A rounded border round every stone, and the raised bottom below the scalloped line |
 
-Volumes: 336 665 + 21 945 + 3 903 + 540 + 3 666 mm³, which reconciles with the
-366 716 mm³ of `build.body_unlettered()` to 3.1 mm³ — under a thousandth of a
-percent, at the corners where neighbouring borders run into each other.
+Volumes: 333 422 + 21 926 + 3 903 + 540 + 12 154 mm³, which reconciles with the
+371 945 mm³ of `build.body_unlettered()` to 0.1 mm³. The parts are disjoint by
+construction: the wider borders bite about 18 mm³ off the stones' feet and
+140 mm³ off their own overlaps, and those are cut away rather than left for two
+filaments to argue over.
 
 `stl/colour/` is not tracked: it is 55 MB, and `colours.py` regenerates it
 exactly from the same seed. Load all four into the slicer at the
@@ -146,22 +149,52 @@ read by colour rather than by shadow. The single-colour pot is unchanged.
 
 ### The borders
 
-Every stone is outlined by a rounded bead that fills the groove around it. The
-width is not chosen: it is `GROOVE`, the gap the cells are set apart by,
-measured back off the built field at a median and a minimum of 1.050 mm. Each
-stone carries its own half of it -- a quarter-round rising from nothing at the
-stone's foot to 0.525 mm at the middle of the groove -- so two neighbours at the
-nominal spacing meet and make one half-round, and a pair that happens to sit
-further apart simply leaves gold between them. That is the right behaviour: it is
-a border round each stone, not a flood fill of the gaps.
+Every stone is outlined by a rounded bead that fills the groove around it. It
+started at `GROOVE` wide, 1.050 mm, measured back off the built field as the
+median and the minimum gap; each stone carried a quarter-round rising from
+nothing at its foot to 0.525 mm at the middle of the groove, so two neighbours
+met exactly and anything wider than nominal showed gold between them.
 
-The crown stands 0.525 mm off the wall, half the height of the stones, so the
-stones still read as the raised thing.
+It is now 1.8x that, 1.89 mm. Each stone's quarter-round has a radius of
+0.945 mm and reaches 0.925 mm out, which is most of the way across a nominal
+groove, so neighbouring borders overlap instead of meeting: every nominal groove
+is filled solid, the crown stands about 0.84 mm off the wall rather than
+0.525 mm, and a wider-than-nominal gap gets a border 1.8x as wide instead of a
+sliver of gold. The whole border network comes out as one connected solid of
+5 442 mm³ -- it used to be 179 separate ones of 3 666 mm³ in total.
 
-Each half stops `BEAD_GAP` short of the middle, 0.02 mm. Two halves that met
-exactly would put a pair of coincident faces in the union and the pot would stop
-being a volume on reload. 0.04 mm of gold between two borders is a fortieth of a
-nozzle: it fuses on the first layer and nothing in a slicer ever sees it.
+The stones still read as the raised thing: they stand 1.15 mm proud, so the
+crown is about three quarters of their height.
+
+Overlapping borders are unioned rather than concatenated, and the 18 mm³ where
+the wider bead runs into a stone's foot is cut off the stone. Each quarter still
+stops `BEAD_GAP` short of its own full extent, 0.02 mm, because two faces that
+land exactly on each other make the pot stop being a volume on reload.
+
+### The raised bottom
+
+Everything below the scalloped line stands 0.575 mm proud of the wall -- half
+the height of a stone -- in the same purple as the borders, so the line now
+divides a raised purple base from the stone field above it rather than being
+just a change of texture.
+
+It is the pot's own profile grown 0.575 mm **along its normal**, not radially, so
+the band stands the same height proud of the foot's roll as it does of the
+straight wall; a radial offset would have thinned away to nothing where the foot
+turns under. It is clipped at z = 0, so the pot still stands on the same 26 mm
+flat and is still exactly 76.00 mm tall, and the overall 94.30 mm across is
+unchanged because the band is well inside the stones' envelope. Volume
+6 849 mm³.
+
+Its skin bites `BAND_BITE` = 0.3 mm into the wall and runs `BAND_LAP` = 0.15 mm
+up behind the stones' feet, for the same reason the beads stop short: a solid
+that lands exactly on another leaves coincident faces, and the union stops being
+a volume on reload. An overlap is safe where a touch is not.
+
+The cutter that trims it to the scalloped line is built directly rather than
+revolved, in `above_wave`: a ring at r = 18 and a ring at r = R + 8 both sit at
+`wave(theta)`, so the surface between them -- the only part of it that cuts
+anything -- is the wave itself.
 
 It is swept, not stacked: `potlib.sweep_on_cylinder` runs the section along each
 cell's outline and onto the wall in one pass, giving 179 watertight bodies with
@@ -177,17 +210,17 @@ that; it is not a hole.
 ### What five colours costs
 
 Worth knowing before the slicer is opened. Every colour on this pot spans most of
-its height -- the stones and their borders run from z 13 to 75, the cartouche from
-30 to 67, the name from 32 to 64, and the gold is everywhere. So almost every
-layer carries several filaments:
+its height -- the stones run from z 13.6 to 74.6, the cartouche from 30 to 67,
+the name from 32.5 to 64.5, and gold and purple are both everywhere now that the
+bottom is raised in purple. So all but two layers carry several filaments:
 
 | | |
 | --- | --- |
 | Layers at 0.2 mm | 380 |
-| Layers carrying more than one colour | 311 |
-| Filament changes | about 960 |
-| Purge, at 0.35 to 0.9 g flushed a change | 340 to 870 g |
-| The pot itself | 367 cm³, about 455 g |
+| Layers carrying more than one colour | 378 |
+| Filament changes | about 1 030 |
+| Purge, at 0.35 to 0.9 g flushed a change | 360 to 930 g |
+| The pot itself | 372 cm³, about 462 g |
 
 So the waste is of the same order as the part, and could exceed it. That is not an
 argument against doing it -- it is a print worth the filament if the look is

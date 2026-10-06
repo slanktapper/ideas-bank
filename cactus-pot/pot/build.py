@@ -41,15 +41,24 @@ PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
 PAN_SINK  = 0.5               # how far the panel sits below the plain wall
 TEXT_DEPTH = 1.0
 PAN_INSET  = 5.0              # clear margin left and right of the longest line
-BEAD_W    = GROOVE            # the border round each stone is exactly as wide as
-                              # the gaps between them, so two neighbouring borders
-                              # meet in the middle and fill the groove
+BEAD_W    = 1.8 * GROOVE      # the border round each stone. At 1.0x the groove
+                              # two neighbouring borders met exactly in the middle
+                              # and anything wider than nominal showed gold; at
+                              # 1.8x they overlap, so every nominal groove is
+                              # filled solid and the bead stands 1.6x taller
 BEAD_STEPS = 5                # steps in the rounded section; 5 puts each riser
                               # at 0.10 mm, under any layer this will print at
 BEAD_GAP  = 0.02              # how far short of the groove's middle each stone's
                               # half stops. Two halves that met exactly would
                               # leave a coincident pair of faces in the union,
                               # and the mesh stops being a volume on reload.
+BAND_D    = CELL_H / 2        # the raised bottom: half the height of the stones
+BAND_BITE = 0.3               # how far its skin reaches into the wall. It has to
+                              # overlap the body rather than land on it: two solids
+                              # meeting exactly leave coincident faces and the
+                              # union stops being a volume on reload.
+BAND_LAP  = 0.15              # how far the band runs up behind the stones' feet,
+                              # for the same reason
 PAN_MARGIN = 2.5              # clear margin above and below the block of text.
                               # All three lines are set at one size and the block
                               # is centred on its inked extent, so the margin
@@ -91,14 +100,12 @@ def panel_shape():
 def stone_border(cells=None):
     """A rounded border round every stone, filling the grooves between them.
 
-    Each stone gets its own half of the bead: a quarter-round swept along its
-    outline, rising from nothing at the stone's foot to BEAD_W/2 at the edge of
-    its own half. Two neighbours are GROOVE apart and BEAD_W is GROOVE, so their
-    two quarters meet in the middle of the groove and make one half-round. Where
-    the gap happens to be wider than nominal they stop short, which is right --
-    it is a border round each stone, not a flood fill of the gaps.
-
-    Returned as one body per stone, each watertight, like the stones themselves.
+    Each stone gets its own half of the bead: a quarter-round of radius BEAD_W/2
+    swept along its outline, rising from nothing at the stone's foot to BEAD_W/2
+    out. BEAD_W is 1.8x the nominal groove, so at nominal spacing two neighbours'
+    quarters overlap and fill the groove solid, and a wider-than-nominal gap gets
+    a border 1.8x as wide as before rather than a sliver of body colour. The
+    overlaps are resolved here, so the result is one solid.
     Sweeping rather than stacking extruded bands matters even more here than it
     did for a single ring: the level sets of this shape are 180-hole polygons
     that do not extrude into closed solids at all.
@@ -113,7 +120,60 @@ def stone_border(cells=None):
         # clockwise, so the sweep's normal points out of the stone
         ring = np.asarray(orient(c, -1.0).segmentize(1.8).exterior.coords)[:-1]
         beads.append(P.sweep_on_cylinder(ring, sec, R))
-    return trimesh.util.concatenate(beads)
+    return P.union(*beads)
+
+
+def profile_band():
+    """The two (r, z) profiles bounding the raised bottom's skin.
+
+    The outer one is the pot's own profile grown BAND_D along its normal -- so
+    the band stands the same height proud of the foot's roll as it does of the
+    straight wall -- clipped at z = 0 so the pot still stands on the same flat
+    and keeps the same overall height. The inner one is the profile shrunk
+    BAND_BITE, so the skin overlaps the body instead of landing on it.
+    """
+    base = Polygon(profile_outer())
+    grown = base.buffer(BAND_D, join_style=2).intersection(box(0.0, 0.0, 200.0, H + 50.0))
+    inner = base.buffer(-BAND_BITE, join_style=2)
+    out = []
+    for poly in (grown, inner):
+        ring = np.asarray(orient(poly, 1.0).exterior.coords)[:-1]
+        # snap the axis edge back onto the axis: a profile that misses it by
+        # BAND_BITE would revolve into a solid with a pinhole down the middle
+        out.append([(0.0 if r < BAND_BITE + 1e-6 else float(r), float(z)) for r, z in ring])
+    return out
+
+
+def above_wave(lift=BAND_LAP, seg=512):
+    """A solid filling everything above the scalloped line, as a cutter.
+
+    Built directly rather than revolved, because its underside is the wave: a
+    ring at r=18 and a ring at r=R+8 both sit at wave(theta), so the surface
+    between them -- the only part any of this cuts -- is the wave itself.
+    """
+    th = np.linspace(0, 2*np.pi, seg, endpoint=False)
+    w = wave(th * R) + lift
+    r_in, r_out, z_top = 18.0, R + 8.0, H + 20.0
+    ring = lambda r, z: np.c_[r*np.cos(th), r*np.sin(th), z]
+    V = np.vstack([[[0.0, 0.0, w.max() + 2.0]], ring(r_in, w), ring(r_out, w),
+                   ring(r_out, np.full(seg, z_top)), [[0.0, 0.0, z_top]]])
+    inn, out, top, hub = 1, 1 + seg, 1 + 2*seg, 1 + 3*seg
+    i = np.arange(seg); j = (i + 1) % seg
+    F = [np.c_[np.zeros(seg, int), inn + j, inn + i],
+         np.c_[inn + i, inn + j, out + j], np.c_[inn + i, out + j, out + i],
+         np.c_[out + i, out + j, top + j], np.c_[out + i, top + j, top + i],
+         np.c_[top + i, top + j, np.full(seg, hub)]]
+    m = trimesh.Trimesh(V, np.vstack(F), process=True)
+    m.merge_vertices(); m.update_faces(m.nondegenerate_faces())
+    if m.volume < 0: m.invert()
+    return m
+
+
+def bottom_band():
+    """The whole bottom of the pot, standing BAND_D proud, ending at the wave."""
+    grown, inner = profile_band()
+    skin = P.diff(P.revolve(grown, seg=256), P.revolve(inner, seg=256))
+    return P.diff(skin, above_wave())
 
 
 def stone_cells(seed=11):
@@ -214,9 +274,9 @@ def body_unlettered(quiet=False):
     if not quiet:
         print('with stone', body.is_watertight, len(body.faces))
     body = P.diff(body, panel_pocket())
-    body = P.union(body, stone_border(cells))
+    body = P.union(body, stone_border(cells), bottom_band())
     if not quiet:
-        print('with borders', body.is_watertight, len(body.faces))
+        print('with borders and band', body.is_watertight, len(body.faces))
     return body
 
 

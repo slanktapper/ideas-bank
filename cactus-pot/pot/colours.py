@@ -8,7 +8,7 @@ geometry and survives being reopened:
     silver  the raised stones themselves
     white   the smooth cartouche the name sits in
     black   the letters, filling the engraving flush
-    purple  the rounded border running round every stone
+    purple  the rounded border running round every stone, and the raised bottom
 
 Note what this changes: on `stl/pebble-pot.stl` the name is a void cut 1.0 mm
 into the panel. Here it is *filled*, so the four parts together make the shape
@@ -61,17 +61,18 @@ def split():
     print('solid %.0f mm3, watertight %s' % (solid.volume, solid.is_watertight))
 
     cutter, skin, stone = B.text_cutter(quiet=True), panel_skin(), B.stone_solid()
-    bead = B.stone_border()
 
-    # The stone field was unioned onto the body and lies wholly inside it, so it
-    # is already the silver part -- 179 separate closed cells, no boolean needed.
-    silver = stone
+    # The borders and the raised bottom were unioned on and lie wholly inside the
+    # finished body, so together they are the purple part with no cutting against
+    # the body needed. They do overlap each other, and the borders now overlap
+    # each other too, so they are unioned rather than concatenated.
+    purple = P.union(B.stone_border(), B.bottom_band())
+    # The stone field likewise lies wholly inside the body, but the wider borders
+    # bite about 18 mm3 off its feet, and two filaments cannot share a voxel.
+    silver = P.diff(stone, purple)
     black = P.intersect(solid, cutter)
     white = P.diff(P.intersect(solid, skin), cutter)
-    # The borders, like the stones, were unioned on and lie wholly inside the
-    # finished body, so they are their own part with no boolean needed.
-    purple = bead
-    gold = P.diff(solid, stone, skin, cutter, bead)
+    gold = P.diff(solid, stone, skin, cutter, purple)
 
     OUT.mkdir(parents=True, exist_ok=True)
     total = 0.0
