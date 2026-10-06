@@ -31,16 +31,26 @@ def tidy(m):
     duplicate and zero-area triangles that only merge once the vertices do.
     Slicers care, so fix it here rather than leaving it to them.
     """
-    m.merge_vertices(merge_tex=True, merge_norm=True)
-    m.update_faces(m.nondegenerate_faces())
-    m.update_faces(m.unique_faces())
-    m.remove_unreferenced_vertices()
-    return m
+    c = m.copy()
+    c.merge_vertices(merge_tex=True, merge_norm=True)
+    c.update_faces(c.nondegenerate_faces())
+    c.update_faces(c.unique_faces())
+    c.remove_unreferenced_vertices()
+    # dropping duplicate faces closes most results but opens a few: keep the
+    # cleaned copy only when it is still closed
+    return c if c.is_watertight or not m.is_watertight else m
 
 
 if __name__ == '__main__':
     stl = pathlib.Path(__file__).resolve().parent / 'stl'
     pot = trimesh.load(stl / 'pebble-pot.stl')
+    if not pot.is_volume:
+        # The borders pinch against the wall at about a hundred edges, which an
+        # STL round trip turns into edges with four faces on them. Slicers do not
+        # care; the boolean engine refuses to start. Build it in memory instead.
+        print('the written pot is not a volume on reload -- rebuilding in memory')
+        import build
+        pot = build.build()
     ws = wave_solid()
     print('wave solid watertight', ws.is_watertight)
     base = trimesh.boolean.intersection([pot, ws], engine='manifold')

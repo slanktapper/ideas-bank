@@ -1,0 +1,16 @@
+# cactus-pot — parametric CAD-as-code, same toolchain as cantstop.
+# Python 3.10+.  Install with:  python3 -m pip install -r requirements.txt
+
+# The renderer lives in ../3d-tools and brings numpy, pillow, trimesh, scipy,
+# shapely and mapbox_earcut with it.
+-r ../3d-tools/requirements.txt
+
+manifold3d>=2.3        # the boolean engine. Every socket, the apical dimple
+                       # and the arm joins are booleans on a 200k-face mesh;
+                       # trimesh's other engines either crash or take minutes.
+
+rtree>=1.0             # 3d-tools lists this as NOT needed, and for cantstop
+                       # it genuinely is not. It is needed here: the press-fit
+                       # section cuts a plane that crosses the bore, the spike
+                       # and the pad, and capping a cut with more than one
+                       # loop in it sends trimesh looking for an R-tree.

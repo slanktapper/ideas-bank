@@ -64,6 +64,106 @@ def text_prism(geom, depth, over=0.6, dens=1.5):
     return m
 
 
+def sweep_on_cylinder(path, section, radius):
+    """Sweep a closed 2D `section` along a closed 2D `path`, onto a cylinder.
+
+    `path` is (u, z) on the unrolled wall; `section` is (t, h) where t runs along
+    the path's own normal and h is depth out from the wall. Both are closed loops
+    given once, without a repeated last point. The result is a quad tube, so it
+    is watertight with no caps and no booleans -- which is why this exists rather
+    than stacking extruded bands: a swept bead comes out two orders of magnitude
+    lighter than the same shape unioned out of slabs.
+    """
+    P = np.asarray(path, float)
+    S = np.asarray(section, float)
+    nxt, prv = np.roll(P, -1, axis=0), np.roll(P, 1, axis=0)
+    tang = nxt - prv
+    tang /= np.linalg.norm(tang, axis=1)[:, None]
+    norm = np.c_[-tang[:, 1], tang[:, 0]]                 # in the (u, z) plane
+
+    u = P[:, 0][:, None] + norm[:, 0][:, None] * S[:, 0][None, :]
+    z = P[:, 1][:, None] + norm[:, 1][:, None] * S[:, 0][None, :]
+    r = radius + S[:, 1][None, :]
+    ang = u / radius
+    V = np.stack([r*np.cos(ang), r*np.sin(ang), z], axis=-1).reshape(-1, 3)
+
+    n, m = len(P), len(S)
+    i = np.arange(n)[:, None]; j = np.arange(m)[None, :]
+    a = i*m + j
+    b = i*m + (j + 1) % m
+    c = ((i + 1) % n)*m + (j + 1) % m
+    d = ((i + 1) % n)*m + j
+    F = np.vstack([np.stack([a, b, c], -1).reshape(-1, 3),
+                   np.stack([a, c, d], -1).reshape(-1, 3)])
+    mesh = trimesh.Trimesh(V, F, process=True)
+    mesh.merge_vertices(); mesh.update_faces(mesh.nondegenerate_faces())
+    mesh.remove_unreferenced_vertices()
+    if mesh.volume < 0: mesh.invert()
+    return mesh
+
+
+def body_point(u, y, d, radius, foot_r, base_flat):
+    """Map flat (u, y) plus depth `d` onto a pot body with a rolled foot.
+
+    `u` is arc length round the pot at `radius`, and `y` is arc length *along the
+    outer profile*, equal to z on the straight wall and continuing round the roll
+    below it. `d` is depth along the surface normal, out positive. Above the roll
+    this is exactly `bend_to_cylinder`; below it the point follows the roll and
+    the depth leans with the surface, so a cell 1.15 mm proud stands 1.15 mm proud
+    of the curve rather than of a cylinder it is nowhere near.
+    """
+    y = np.asarray(y, float)
+    r = np.full(y.shape, float(radius)); z = y.copy()
+    nr = np.ones(y.shape); nz = np.zeros(y.shape)
+    low = y < foot_r
+    if np.any(low):
+        a = np.pi/2 - (foot_r - y[low]) / foot_r      # 0 at the base, pi/2 at the top
+        r[low] = base_flat + foot_r*np.sin(a)
+        z[low] = foot_r - foot_r*np.cos(a)
+        nr[low] = np.sin(a); nz[low] = -np.cos(a)
+    rr = r + np.asarray(d, float)*nr
+    ang = np.asarray(u, float) / radius
+    return np.stack([rr*np.cos(ang), rr*np.sin(ang), z + np.asarray(d, float)*nz], axis=-1)
+
+
+def wrap_to_body(mesh, radius, foot_r, base_flat, max_edge=3.0):
+    """Wrap a flat prism (x across, y up, z = outward depth) onto the pot body."""
+    m = mesh.copy()
+    m = m.subdivide_to_size(max_edge=max_edge, max_iter=6)
+    V = np.asarray(m.vertices)
+    m.vertices = body_point(V[:, 0], V[:, 1], V[:, 2], radius, foot_r, base_flat)
+    return m
+
+
+def sweep_on_body(path, section, radius, foot_r, base_flat):
+    """`sweep_on_cylinder`, but onto a pot body with a rolled foot."""
+    P_ = np.asarray(path, float)
+    S = np.asarray(section, float)
+    nxt, prv = np.roll(P_, -1, axis=0), np.roll(P_, 1, axis=0)
+    tang = nxt - prv
+    tang /= np.linalg.norm(tang, axis=1)[:, None]
+    norm = np.c_[-tang[:, 1], tang[:, 0]]
+
+    u = P_[:, 0][:, None] + norm[:, 0][:, None] * S[:, 0][None, :]
+    y = P_[:, 1][:, None] + norm[:, 1][:, None] * S[:, 0][None, :]
+    d = np.broadcast_to(S[:, 1][None, :], u.shape)
+    V = body_point(u.ravel(), y.ravel(), d.ravel(), radius, foot_r, base_flat)
+
+    n, m = len(P_), len(S)
+    i = np.arange(n)[:, None]; j = np.arange(m)[None, :]
+    a = i*m + j
+    b = i*m + (j + 1) % m
+    c = ((i + 1) % n)*m + (j + 1) % m
+    e = ((i + 1) % n)*m + j
+    F = np.vstack([np.stack([a, b, c], -1).reshape(-1, 3),
+                   np.stack([a, c, e], -1).reshape(-1, 3)])
+    mesh = trimesh.Trimesh(V, F, process=True)
+    mesh.merge_vertices(); mesh.update_faces(mesh.nondegenerate_faces())
+    mesh.remove_unreferenced_vertices()
+    if mesh.volume < 0: mesh.invert()
+    return mesh
+
+
 def bend_to_cylinder(mesh, radius):
     """Wrap a flat prism (x across, y up, z = outward depth) onto a cylinder.
 
@@ -92,6 +192,10 @@ def diff(a, *bs):
     for b in bs:
         a = trimesh.boolean.difference([a, b], engine=BOOL)
     return a
+
+
+def intersect(a, b):
+    return trimesh.boolean.intersection([a, b], engine=BOOL)
 
 
 def union(*ms):
