@@ -39,6 +39,11 @@ N_CELLS   = 300
 PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
 PAN_SINK  = 0.5               # how far the panel sits below the plain wall
 TEXT_DEPTH = 1.0
+PAN_INSET  = 5.0              # clear margin left and right of the longest line
+PAN_MARGIN = 2.5              # clear margin above and below the block of text.
+                              # All three lines are set at one size and the block
+                              # is centred on its inked extent, so the margin
+                              # that comes out top and bottom is this number.
 LINES = ['Eleanor', "Shellstrop's", 'File']
 
 
@@ -138,9 +143,13 @@ def build():
     body = P.diff(body, pocket)
 
     face = Face('Outfit-Bold')
-    placed = fit_lines(face, LINES, PAN_W - 10.0, 3.4, 9.6)
-    for g, cap, w in placed: print(f'  line cap {cap:.1f} mm, width {w:.1f} mm')
+    placed = fit_lines(face, LINES, PAN_W - 2*PAN_INSET, PAN_H - 2*PAN_MARGIN, 9.6)
+    for g, cap, w in placed: print(f'  line cap {cap:.2f} mm, width {w:.1f} mm')
     text = unary_union([affinity.translate(g, 0, PAN_Z) for g, _, _ in placed])
+    lo, hi = text.bounds[1], text.bounds[3]
+    print('  text z %.2f..%.2f in a panel of %.2f..%.2f -- margins %.2f above, '
+          '%.2f below' % (lo, hi, PAN_Z - PAN_H/2, PAN_Z + PAN_H/2,
+                          PAN_Z + PAN_H/2 - hi, lo - (PAN_Z - PAN_H/2)))
     cutter = P.bend_to_cylinder(P.text_prism(text, 1.5, over=TEXT_DEPTH + PAN_SINK, dens=1.2), R)
     body = P.diff(body, cutter)
     print('final', body.is_watertight, len(body.faces), 'volume %.0f' % body.volume)

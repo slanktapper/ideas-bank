@@ -107,27 +107,50 @@ class Face:
         return geom, x
 
 
-def fit_lines(face, lines, width_mm, gap_mm, max_cap):
-    """Set each line as large as it can be inside `width_mm`, capped at `max_cap`.
+def fit_lines(face, lines, width_mm, height_mm, max_cap, min_gap=1.6):
+    """Set `lines` to one common cap height, stacked, to fill a panel.
 
-    Returns [(geometry, cap_mm, width)] with each line centred on x=0, stacked
-    downward from y=0 with `gap_mm` between baselines' cap boxes.
+    Every line gets the *same* size: the largest cap height at which the widest
+    of them still fits `width_mm`, capped at `max_cap`. The gap between lines is
+    then solved so that the block's **inked** extent is exactly `height_mm`, and
+    the block is centred on (0, 0) by that same inked extent -- not by the cap
+    boxes, which is the thing to get right here. Ascenders overshoot the cap line
+    and descenders fall below the baseline, so a stack centred on its cap boxes
+    sits visibly high in its panel.
+
+    Returns [(geometry, cap_mm, width)], and the caller insets `height_mm` from
+    the panel to leave a margin top and bottom. Those two margins are then equal
+    by construction.
     """
     from shapely import affinity
-    out = []
-    for s in lines:
-        cap = max_cap
-        g, w = face.line(s, cap)
-        if w > width_mm:
-            cap *= width_mm / w
+    from shapely.ops import unary_union
+
+    def stack(cap, gap):
+        """Lay the lines out at one size, each centred on x=0, and return the
+        geometries together with the inked height of the block."""
+        placed, y = [], 0.0
+        for s in lines:
             g, w = face.line(s, cap)
-        out.append([g, cap, w])
-    y = 0.0
-    placed = []
-    for g, cap, w in out:
-        y -= cap
-        placed.append((affinity.translate(g, -w/2, y), cap, w))
-        y -= gap_mm
-    h = -y + gap_mm
-    # recentre the block on y=0
-    return [(affinity.translate(g, 0, h/2), cap, w) for g, cap, w in placed]
+            y -= cap
+            placed.append((affinity.translate(g, -w/2, y), cap, w))
+            y -= gap
+        ink = unary_union([g for g, _, _ in placed]).bounds
+        return placed, ink[3] - ink[1], ink
+
+    # one size for all of them, set by whichever line is widest
+    cap = max_cap
+    widest = max(face.line(s, cap)[1] for s in lines)
+    if widest > width_mm:
+        cap *= width_mm / widest
+
+    # the inked height is linear in the gap, so one measurement solves it
+    while True:
+        _, h0, _ = stack(cap, 0.0)
+        gap = (height_mm - h0) / max(len(lines) - 1, 1)
+        if gap >= min_gap or cap < 1.0:
+            break
+        cap *= 0.97                      # too tall to breathe: take a size off
+
+    placed, _, ink = stack(cap, gap)
+    mid = (ink[1] + ink[3]) / 2
+    return [(affinity.translate(g, 0, -mid), cap, w) for g, cap, w in placed]
