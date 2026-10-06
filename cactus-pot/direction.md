@@ -35,7 +35,8 @@ green body, with no multi-material printing on the big part at all.
   a spigot that drops into the socket in the pot's floor.
 - The spike: one part, printed many times.
 - A fit-test coupon that steps the socket diameter either side of nominal, so
-  the press fit gets measured instead of guessed.
+  the press fit gets measured instead of guessed, and a wedge of the real
+  trunk that proves the joint on the curved ribbed wall it actually lives on.
 - Renders, so the shape is judged before filament is spent.
 
 **Does not:**
@@ -127,6 +128,13 @@ changes size much from Ø92 × 76 should take the cactus's proportions with it.
 - **Does −0.06 hold?** It is the right number on paper and the coupon exists
   because paper is not the same as PETG at 240 °C. Print the coupon, find the
   hole the spike seats in, set `SOCKET_COMP` from it.
+- **The spines must not read as rows.** They did in the first version: a fixed
+  2.1 mm step from one rib to the next, which with evenly spaced pads let the
+  eye join them into rings and a spiral. Every tidy formula has a structure
+  and the structure is what shows, so each rib's starting height is now drawn
+  at random and rejected until no rib sits level with its neighbour and no
+  four ribs march in step. `test_fit.py` checks both, and checks the finished
+  sites rather than the numbers that made them.
 - **108 spikes is an evening.** `SPIKE_RIB_STEP` and `AREOLE_PITCH` are the
   dials; doubling the pitch halves the count. If seating them turns out to be
   tedious rather than pleasant, that is where it gets backed off.

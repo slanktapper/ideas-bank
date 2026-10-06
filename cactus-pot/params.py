@@ -116,7 +116,9 @@ ARM_BLEND = 3.2         # radius of the fillet where an arm meets the trunk.
 AREOLE_PITCH = 18.0     # vertical spacing along a rib crest
 AREOLE_R = 2.60         # radius of the pad
 AREOLE_RISE = 0.70      # how far it stands off the crest
-AREOLE_Z_JITTER = 2.1   # rib-to-rib stagger, so pads do not form rings
+AREOLE_Z_JITTER = 2.1   # DEAD. Kept only so an old params file is obviously
+                        # stale rather than silently different: the rib-to-rib
+                        # stagger is no longer a fixed step. See RIB_PHASE_*.
 AREOLE_Z_MIN = 24.0     # none below this. The pot's rim stands 21 mm above
                         # its floor and the trunk is 13 mm clear of the pot's
                         # inner wall, so a spine down there would either be
@@ -200,6 +202,23 @@ SPIKE_RAKE_DEG = 34.0   # how far the spike leans up from the surface normal.
                         # out, and this one number does more for realism than
                         # anything else on the part.
 
+# ---------------------------------------------------------------------------
+# TEST PRINT
+# ---------------------------------------------------------------------------
+# A wedge cut out of the real trunk, so the fit is proved on the geometry it
+# will actually be used on rather than on a flat block. A hole in a curved,
+# ribbed wall drilled at a 34 degree rake does not print like a hole in a
+# coupon: it breaks out through a crest, its mouth is an ellipse, and the
+# first layers over it are bridging. If the press fit is going to disagree
+# with the arithmetic anywhere, it is here.
+#
+# Sized to be worth printing twice rather than once: a third of the trunk,
+# standing on its own flat bottom, in the same orientation as the real part.
+
+TEST_Z0 = 25.0          # bottom of the wedge, just above the lowest pads
+TEST_Z1 = 70.0          # top, just below where the first arm leaves
+TEST_WEDGE_DEG = 150.0  # how much of the trunk to keep
+
 SPIKE_PLATE_N = 72      # how many go on a plate
 SPIKE_PLATE_PITCH = 6.0
 
@@ -225,7 +244,29 @@ SEG_SOCKET = 32
 # still reproducible and a socket does not wander between two builds.
 
 SEED = 20261005
-AREOLE_Z_SCATTER = 2.4      # +/- mm on a pad's position along its rib
+AREOLE_Z_SCATTER = 1.4      # +/- mm on a pad's position along its rib. Small
+                            # on purpose: the rib-to-rib stagger below is
+                            # what stops the pads reading as rows, and a
+                            # scatter bigger than half that stagger just
+                            # undoes it at random.
+
+# Where each rib starts its run of pads, as a fraction of AREOLE_PITCH.
+# This was a fixed step of 2.1 mm per rib, and a fixed step is a pattern: a
+# small one reads as a spiral winding up the cactus, and with the pads
+# otherwise evenly spaced the eye joins them into rings. Real spines do not
+# line up with their neighbours in either direction.
+#
+# So the phases are drawn at random from SEED and then REJECTED until they
+# satisfy both rules below, which is why they are constraints rather than a
+# formula -- a formula is the thing that produced the pattern.
+RIB_PHASE_MIN_SEP = 0.24    # no two neighbouring ribs may start within this
+                            # fraction of a pitch of each other: that is what
+                            # makes pads look level with the ones beside them
+RIB_PHASE_RUN_TOL = 0.13    # and no three consecutive gaps may agree this
+                            # closely -- three equal gaps is four ribs in a
+                            # row marching, which is the diagonal version of
+                            # the same fault
+RIB_PHASE_TRIES = 4000      # draws allowed before giving up and saying so
 SPIKE_RAKE_SCATTER = 9.0    # +/- degrees on the lean
 SPIKE_SWING_SCATTER = 7.0   # +/- degrees of sideways swing off the crest
 

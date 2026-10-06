@@ -178,6 +178,61 @@ def main():
     check(bool(np.all(proud)), "every areole stands proud of the skin",
           f"{int(np.sum(~proud))} flush or drowned of {len(sites)}")
 
+    # -- the arrangement ----------------------------------------------------
+    # Rob's complaint about the first version: the spines read as rows. Two
+    # faults, and both are checked here on the finished site list rather than
+    # on the numbers that generated it.
+    head("arrangement")
+
+    for label, phases in (("trunk", C._rib_phases(
+            len([k for k in range(P.RIB_COUNT) if not k % P.SPIKE_RIB_STEP]), 0)),
+            *[(f"arm {i}", C._rib_phases(
+                len([k for k in range(P.ARM_RIB_COUNT)
+                     if not k % P.ARM_SPIKE_RIB_STEP]),
+                1 + int(spec["bearing"])))
+              for i, spec in enumerate(P.ARMS)]):
+        gaps = C._circ_gaps(phases)
+        sep = float(np.min(np.abs(gaps)))
+        check(sep >= P.RIB_PHASE_MIN_SEP,
+              f"{label}: no rib starts level with the one beside it",
+              f"closest neighbours {sep:.2f} of a pitch "
+              f"({sep * P.AREOLE_PITCH:.1f} mm)")
+        worst_run = min(
+            (max(gaps[(i + j) % len(gaps)] for j in range(3))
+             - min(gaps[(i + j) % len(gaps)] for j in range(3)))
+            for i in range(len(gaps))) if len(gaps) >= 4 else 1.0
+        check(worst_run >= P.RIB_PHASE_RUN_TOL,
+              f"{label}: no four ribs march in step",
+              f"tightest run of three gaps spans {worst_run:.2f}")
+
+    # And the thing a person actually sees: a pad on one rib sitting at the
+    # same height as a pad on the rib next to it. Measured on the trunk's own
+    # sites, grouped back onto their ribs by undoing the twist -- a pad's
+    # bearing drifts with height, so grouping on the raw angle splits one rib
+    # into several and compares pads that are not neighbours at all. The arms
+    # are covered by the phase checks above; their crests are not at fixed
+    # bearings, so there is nothing to group them by here.
+    trunk_sites = C.trunk_areoles()
+    crests = np.arange(P.RIB_COUNT) * 2 * np.pi / P.RIB_COUNT
+    by_rib = {}
+    for p, _, _, _ in trunk_sites:
+        th = np.arctan2(p[1], p[0]) + np.radians(P.RIB_TWIST_DEG) * p[2] / P.TRUNK_H
+        k = int(np.argmin(np.abs((crests - th + np.pi) % (2 * np.pi) - np.pi)))
+        by_rib.setdefault(k, []).append(float(p[2]))
+
+    keys = sorted(by_rib)
+    level, closest = 0, np.inf
+    for a, b in zip(keys, keys[1:] + keys[:1]):
+        for za in by_rib[a]:
+            for zb in by_rib[b]:
+                d = abs(za - zb)
+                closest = min(closest, d)
+                if d < 2.5:
+                    level += 1
+    check(level == 0, "no pad is level with one on the rib beside it",
+          f"{len(keys)} ribs, {level} pairs within 2.5 mm, "
+          f"closest {closest:.1f} mm apart")
+
     # -- seated spikes ------------------------------------------------------
     head("assembly")
     tips = mouths + axes * (P.SPIKE_L + P.SPIKE_COLLAR_H)

@@ -127,6 +127,7 @@ def build_stl():
         ("spike.stl", C.spike()),
         (f"spikes-x{P.SPIKE_PLATE_N}.stl", C.spike_plate()),
         ("fit-test-coupon.stl", C.fit_coupon()),
+        ("test-print-wedge.stl", C.test_section()),
     ]
     for name, mesh in out:
         path = os.path.join(STL, name)
@@ -233,6 +234,28 @@ def build_renders(pot=None, pot_floor=0.0):
     coupon = C.fit_coupon()
     shot("10-fit-coupon.png", [{"mesh": coupon, "color": (0.62, 0.64, 0.70)}],
          40, 40)
+
+    # the test print, with its spikes in, since that is how it gets judged
+    wedge = C.test_section()
+    inside = [s for s in sites
+              if P.TEST_Z0 < s[0][2] < P.TEST_Z1
+              and abs((np.degrees(np.arctan2(s[0][1], s[0][0])) + 180) % 360
+                      - 180) < P.TEST_WEDGE_DEG / 2]
+    one = C.spike()
+    seated = []
+    for p, n, rake, swing in inside:
+        s = one.copy()
+        axis = C._rake(n, rake, swing)
+        m = C._frame_from_normal(axis)
+        m[:3, 3] = p - axis * (P.PIN_SHANK_L - P.AREOLE_RISE * 0.25)
+        s.apply_transform(m)
+        seated.append(s)
+    parts = [{"mesh": wedge, "color": GREEN}]
+    if seated:
+        parts.append({"mesh": trimesh.util.concatenate(seated),
+                      "color": SPIKE_C})
+    shot("13-test-print.png", parts, 0, 14)
+    print(f"  test print carries {len(inside)} sockets")
 
     # The whole point of the exercise, if a pot was given: the cactus in it.
     # The pot mesh is translated so its cavity floor lands on z=0, which is

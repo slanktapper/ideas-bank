@@ -310,10 +310,11 @@ def trunk_areoles():
     """
     raw = []
     crest_thetas = np.arange(P.RIB_COUNT) * 2 * np.pi / P.RIB_COUNT
-    for k, th0 in enumerate(crest_thetas):
-        if k % P.SPIKE_RIB_STEP:
-            continue
-        z = P.AREOLE_Z_MIN + (k * P.AREOLE_Z_JITTER) % P.AREOLE_PITCH
+    bearing = [th0 for k, th0 in enumerate(crest_thetas)
+               if not k % P.SPIKE_RIB_STEP]
+    phases = _rib_phases(len(bearing), 0)
+    for th0, phase in zip(bearing, phases):
+        z = P.AREOLE_Z_MIN + P.AREOLE_PITCH * phase
         while z < P.TRUNK_H * P.AREOLE_CROWN_KEEP:
             raw.append((th0, z))
             z += P.AREOLE_PITCH
@@ -339,10 +340,13 @@ def arm_areoles(spec):
     crest_idx = [int(round(j * len(theta) / P.ARM_RIB_COUNT))
                  % len(theta) for j in range(P.ARM_RIB_COUNT)]
     raw = []
-    for k, ti in enumerate(crest_idx):
-        if k % P.ARM_SPIKE_RIB_STEP:
-            continue
-        s = 9.0 + (k * P.AREOLE_Z_JITTER) % P.AREOLE_PITCH
+    bearing = [ti for k, ti in enumerate(crest_idx)
+               if not k % P.ARM_SPIKE_RIB_STEP]
+    # each arm gets its own draw, so the two arms do not share an
+    # arrangement with each other or with the trunk
+    phases = _rib_phases(len(bearing), 1 + int(spec["bearing"]))
+    for ti, phase in zip(bearing, phases):
+        s = 9.0 + P.AREOLE_PITCH * phase
         while s < arc[-1] - 4.0:
             raw.append((ti, s))
             s += P.AREOLE_PITCH
@@ -387,6 +391,51 @@ def _rake(n, extra=0.0, swing=0.0):
     if swing:
         out = _rotate(out, up, swing)
     return out / np.linalg.norm(out)
+
+
+def _rib_phases(n: int, seed_offset: int) -> np.ndarray:
+    """Where each spine-bearing rib starts, as a fraction of AREOLE_PITCH.
+
+    Drawn, then checked against the two rules in params.py, then redrawn if
+    they fail. Rejection rather than arithmetic is the point: every tidy
+    formula -- a fixed step, a golden-ratio step -- has a structure, and
+    structure is exactly what Rob could see in the first version. What a
+    plant has is neighbours that disagree, and that is a constraint, not a
+    sequence.
+
+    Deterministic for a given (SEED, seed_offset, n), so the trunk and each
+    arm get their own arrangement and none of them moves between builds.
+    """
+    rng = np.random.default_rng(P.SEED + 7919 * seed_offset)
+    for _ in range(P.RIB_PHASE_TRIES):
+        ph = rng.random(n)
+        if _phases_ok(ph):
+            return ph
+    raise RuntimeError(
+        f"no arrangement of {n} ribs satisfies RIB_PHASE_MIN_SEP="
+        f"{P.RIB_PHASE_MIN_SEP} and RIB_PHASE_RUN_TOL={P.RIB_PHASE_RUN_TOL} "
+        f"in {P.RIB_PHASE_TRIES} tries -- loosen one of them")
+
+
+def _circ_gaps(ph: np.ndarray) -> np.ndarray:
+    """Signed gap from each rib to the next one round, in (-0.5, +0.5]."""
+    d = (np.roll(ph, -1) - ph + 0.5) % 1.0 - 0.5
+    return d
+
+
+def _phases_ok(ph: np.ndarray) -> bool:
+    n = len(ph)
+    if n < 2:
+        return True
+    gaps = _circ_gaps(ph)
+    if np.min(np.abs(gaps)) < P.RIB_PHASE_MIN_SEP:
+        return False                       # neighbours level with each other
+    if n >= 4:
+        for i in range(n):
+            run = np.array([gaps[(i + j) % n] for j in range(3)])
+            if run.max() - run.min() < P.RIB_PHASE_RUN_TOL:
+                return False               # four ribs marching in step
+    return True
 
 
 def _scatter(n):
@@ -532,6 +581,29 @@ def spike_plate(n=None, pitch=None) -> trimesh.Trimesh:
         m.apply_translation([(i % cols) * pitch, (i // cols) * pitch, 0.0])
         out.append(m)
     return trimesh.util.concatenate(out)
+
+
+def test_section(body=None) -> trimesh.Trimesh:
+    """A wedge of the real trunk: real ribs, real pads, real raked sockets.
+
+    The coupon measures one number -- the hole diameter that gives the right
+    bite. This proves the whole joint on the surface it will live on, and it
+    is the print to make before committing a day to the cactus.
+    """
+    if body is None:
+        body, _ = cactus(with_arms=False)
+
+    half = np.radians(P.TEST_WEDGE_DEG) / 2
+    r = (P.TRUNK_R_MID + P.RIB_DEPTH) * 2.0
+    ths = np.linspace(-half, half, 48)
+    poly = np.vstack([[0.0, 0.0],
+                      np.column_stack([r * np.cos(ths), r * np.sin(ths)])])
+    wedge = trimesh.creation.extrude_triangulation(
+        *trimesh.creation.triangulate_polygon(
+            __import__("shapely").geometry.Polygon(poly)),
+        height=P.TEST_Z1 - P.TEST_Z0)
+    wedge.apply_translation([0.0, 0.0, P.TEST_Z0])
+    return trimesh.boolean.intersection([body, wedge], engine=ENGINE)
 
 
 def fit_coupon() -> trimesh.Trimesh:

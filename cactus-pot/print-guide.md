@@ -11,6 +11,7 @@ than geometry. Machine is the H2D; see `../available-tools.md`.
 | `stl/spikes-x72.stl` | 2 plates | 108 sockets, so print a few spare |
 | `stl/spike.stl` | — | the single part, to arrange your own plate |
 | `stl/fit-test-coupon.stl` | 1 | **print this first** |
+| `stl/test-print-wedge.stl` | 1 | **and this second** — 150° of the real trunk |
 
 ## Print the coupon first
 
@@ -27,6 +28,30 @@ hole's step and rebuild — the step is marked by its position, leftmost is
 
 Doing this costs about fifteen minutes and three grams. Not doing it risks
 81 sockets at the wrong size on a part that takes most of a day.
+
+## Then the wedge
+
+The coupon settles one number. The wedge settles whether the joint works on
+the surface it will actually live on, which is not the same question: a socket
+in the cactus is drilled at 34° into a curved, ribbed wall, so it breaks out
+through a crest, its mouth is an ellipse rather than a circle, and the layers
+closing over it are bridging. None of that happens in a flat block.
+
+`test-print-wedge.stl` is 150° of the real trunk between z=25 and z=70 — same
+ribs, same pads, same eleven sockets at their real rake, printed standing up
+exactly as the cactus is. About 45 g and under two hours.
+
+What to look at when it comes off:
+
+- Does a spike seat with the same thumb pressure it took in the coupon? If it
+  is tighter here, the socket's elliptical mouth is the reason and
+  `SOCKET_MOUTH_CHAMFER` is the dial.
+- Is the mouth clean, or did the bridge over it sag into the hole? A sag is
+  what `SOCKET_RELIEF_L` is for, and it can grow.
+- Pull a seated spike out sideways. It should resist and then break the pad
+  before it slips, not slide out.
+- And the part nobody measures: stand back and look at it. Eleven spines at
+  the real spacing is the first honest view of what 108 will look like.
 
 ## The cactus
 
