@@ -217,6 +217,61 @@ SPIKE_RAKE_DEG = 34.0   # how far the spike leans up from the surface normal.
                         # anything else on the part.
 
 # ---------------------------------------------------------------------------
+# FIT COUPON — the first thing to print
+# ---------------------------------------------------------------------------
+# A ladder of holes stepping either side of SOCKET_D, so the press fit gets
+# measured in the filament it will be printed in rather than trusted from
+# arithmetic. Find the hole a spike seats firmly in, read its label, and move
+# SOCKET_COMP by that much.
+#
+# The label is the point of the numbers below. Seven identical holes in a
+# plain block are only legible while you still remember which end you started
+# counting from -- which is not the state anyone is in a week later, or when
+# the coupon turns up in a drawer next to a second one printed in a different
+# filament. So each hole carries its own step, engraved beside it in
+# hundredths of a millimetre, and the coupon is sized around the label rather
+# than the label squeezed into whatever room the holes left.
+
+COUPON_N = 7            # odd, so one hole is the model as drawn and is
+                        # labelled 0. Three steps either side of it.
+COUPON_STEP = 0.06      # one step of hole diameter, and deliberately the same
+                        # size as PRESS_FIT: the winning hole's label is then
+                        # exactly how far SOCKET_COMP has to move, and a
+                        # neighbour is one whole press fit away rather than a
+                        # distinction nobody can feel with a thumb.
+COUPON_PITCH = 10.5     # hole to hole. Set by the label -- "-18" is 8.1 mm of
+                        # engraving and wants a gutter either side. It was 7.0
+                        # when the holes were unlabelled.
+COUPON_MARGIN = 3.0     # material left beyond the outermost label
+COUPON_DEPTH_Y = 16.0   # across the block: a row of holes along the top, the
+                        # numbers in a row under them, like a rule
+COUPON_HOLE_Y = 4.0     # the hole row, off the block's middle
+COUPON_T = SOCKET_DEPTH + 3.0   # thick enough that a bored hole still leaves
+                                # a floor under it, and stiff enough to push
+                                # a spike into without flexing
+
+# The engraving. Cut into the top face, so it needs no support and the digits
+# are the last thing the nozzle touches.
+# These three are not free of each other, and the binding constraint is the
+# counter -- the island of material inside an 8 or a 0, which the engraving
+# leaves standing proud and the nozzle has to print. It measures
+# (W - stroke) wide by (H/2 - stroke) tall, so a fat stroke in a small box
+# closes it up: at H=2.4, W=1.5, stroke=0.8 the counter is 0.7 x 0.4 mm, too
+# small for a 0.4 nozzle to lay down, and an engraved 8 comes out as a filled
+# pit with no 8 in it. The numbers below leave 1.2 x 1.0 mm, three extrusions
+# by two and a half.
+COUPON_MARK_H = 3.2     # cap height
+COUPON_MARK_W = 1.8     # width of a digit's box, before the stroke is added
+COUPON_MARK_STROKE = 0.6    # the groove itself. Narrower than this and the
+                            # slicer stops leaving a gap between perimeters
+                            # and the number fills in.
+COUPON_MARK_GAP = 0.45  # between one character and the next
+COUPON_MARK_DEPTH = 0.6     # three layers at 0.2. Deep enough to read as
+                            # shadow in a dark filament, shallow enough that
+                            # it is not a hole in a 6.4 mm block.
+COUPON_MARK_Y = -3.6    # where the row of numbers sits
+
+# ---------------------------------------------------------------------------
 # TEST PRINT
 # ---------------------------------------------------------------------------
 # A wedge cut out of the real trunk, so the fit is proved on the geometry it

@@ -124,6 +124,67 @@ def main():
           "the tip is at least one extrusion wide",
           f"Ø{P.SPIKE_TIP_D:.2f}")
 
+    # -- the fit coupon -----------------------------------------------------
+    # The coupon is a measuring instrument, and an instrument whose scale
+    # cannot be read is just a block with holes in it. These checks are on
+    # the engraving: that it is there against every hole, that the nozzle can
+    # lay it down, and that the counters inside an 8 or a 0 survive.
+    head("fit coupon")
+    steps = C.coupon_steps()
+    labels = [C.coupon_label(d) for d in steps]
+    check(len(set(labels)) == len(labels),
+          "every hole gets its own label", " ".join(labels))
+    check(abs(P.COUPON_STEP - abs(P.PRESS_FIT)) < 1e-9,
+          "one step of the ladder is one press fit",
+          f"step {P.COUPON_STEP:.2f} against a fit of {P.PRESS_FIT:+.2f}")
+
+    check(P.COUPON_MARK_STROKE >= P.NOZZLE,
+          "the engraved stroke is at least one extrusion wide",
+          f"{P.COUPON_MARK_STROKE:.2f} on a {P.NOZZLE} nozzle")
+    # The island inside an 8 is the smallest piece of material on the part.
+    # Let it close up and the digit prints as a filled pit, which is worse
+    # than no label at all because it still looks like a number.
+    counter = min(P.COUPON_MARK_W - P.COUPON_MARK_STROKE,
+                  P.COUPON_MARK_H / 2 - P.COUPON_MARK_STROKE)
+    check(counter >= 2 * P.NOZZLE,
+          "the counter inside an 8 is wide enough to print",
+          f"{P.COUPON_MARK_W - P.COUPON_MARK_STROKE:.1f} x "
+          f"{P.COUPON_MARK_H / 2 - P.COUPON_MARK_STROKE:.1f} mm")
+
+    advance = P.COUPON_MARK_W + P.COUPON_MARK_STROKE + P.COUPON_MARK_GAP
+    widest = max(advance * len(t) - P.COUPON_MARK_GAP for t in labels)
+    check(widest + 1.0 <= P.COUPON_PITCH,
+          "the widest label fits between two holes",
+          f'"{max(labels, key=len)}" is {widest:.1f} mm in a '
+          f"{P.COUPON_PITCH} pitch")
+
+    # Engraved rather than raised, so it must not reach the holes in y and
+    # must not break through a 6.4 mm block.
+    gap = ((P.COUPON_HOLE_Y - (P.SOCKET_D + max(steps)) / 2)
+           - (P.COUPON_MARK_Y + (P.COUPON_MARK_H + P.COUPON_MARK_STROKE) / 2))
+    check(gap > 1.0, "the numbers clear the holes",
+          f"{gap:.1f} mm between the label row and the widest hole")
+    check(P.COUPON_MARK_DEPTH < P.COUPON_T - P.NOZZLE * 3,
+          "the engraving does not break through the block",
+          f"{P.COUPON_MARK_DEPTH} deep in {P.COUPON_T} of material")
+
+    # And the thing all of the above is for, read off the finished mesh:
+    # every hole has engraving beside it. A groove floor is the one surface
+    # at exactly COUPON_T - COUPON_MARK_DEPTH, so finding one under a hole's
+    # own x span is proof that hole got labelled.
+    v = coupon.vertices
+    floor_z = P.COUPON_T - P.COUPON_MARK_DEPTH
+    on_floor = v[np.abs(v[:, 2] - floor_z) < 1e-6]
+    w = P.COUPON_PITCH * P.COUPON_N + 2 * P.COUPON_MARGIN
+    missing = []
+    for i in range(P.COUPON_N):
+        x = -w / 2 + P.COUPON_MARGIN + P.COUPON_PITCH * (i + 0.5)
+        near = np.abs(on_floor[:, 0] - x) <= P.COUPON_PITCH / 2
+        if not near.any():
+            missing.append(labels[i])
+    check(not missing, "every hole in the coupon is labelled on the mesh",
+          f"{P.COUPON_N} holes, {len(on_floor)} vertices of groove floor")
+
     # -- the sockets --------------------------------------------------------
     head("sockets")
     check(len(sites) > 0, "there are sockets", f"{len(sites)} of them")

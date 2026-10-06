@@ -657,6 +657,103 @@ def test_section(body=None) -> trimesh.Trimesh:
     return trimesh.boolean.intersection([body, wedge], engine=ENGINE)
 
 
+# Seven-segment characters, drawn from boxes. The pot half of this project
+# sets real type from real glyph outlines, and that machinery is deliberately
+# not reached for here: the two halves do not import from each other, and a
+# gauge wants chunky strokes that survive a 0.4 nozzle more than it wants a
+# typeface. Seven segments give both, in a table short enough to read.
+#
+#      aaa        a = top      d = bottom
+#     f   b       b = upper r  e = lower l
+#      ggg        c = lower r  f = upper l
+#     e   c       g = middle
+#      ddd
+_SEGMENTS = {
+    "0": "abcdef", "1": "bc",     "2": "abdeg",  "3": "abcdg", "4": "bcfg",
+    "5": "acdfg",  "6": "acdefg", "7": "abc",    "8": "abcdefg", "9": "abcdfg",
+}
+
+
+def _char_boxes(ch: str, h: float, w: float, s: float):
+    """One character as a list of (cx, cy, sx, sy) boxes in its own frame.
+
+    The frame is the digit's box: x from 0 to w, y from 0 to h. Every segment
+    is drawn s/2 long at each end, so the corners of a digit meet solidly
+    instead of leaving a notch the slicer has to decide about.
+    """
+    if ch == "-":
+        return [(w / 2, h / 2, w + s, s)]
+    if ch == "+":
+        return [(w / 2, h / 2, w + s, s), (w / 2, h / 2, s, w + s)]
+
+    seg = _SEGMENTS[ch]
+    out = []
+    for name, y in (("a", h), ("g", h / 2), ("d", 0.0)):
+        if name in seg:
+            out.append((w / 2, y, w + s, s))
+    for name, x, y in (("f", 0.0, h * 0.75), ("b", w, h * 0.75),
+                       ("e", 0.0, h * 0.25), ("c", w, h * 0.25)):
+        if name in seg:
+            out.append((x, y, s, h / 2 + s))
+    # a 1 is the only character whose ink is all down one edge of its box;
+    # left where it falls it reads as a gap with a stroke beside it
+    if ch == "1":
+        out = [(cx - w / 2, cy, sx, sy) for cx, cy, sx, sy in out]
+    return out
+
+
+def engrave(text: str, cx: float, cy: float, z_top: float,
+            h=None, w=None, stroke=None, gap=None, depth=None):
+    """Cutters that sink `text` into a face lying at z = z_top.
+
+    Centred on (cx, cy). Returns boxes to subtract, not a mesh to add: the
+    numbers are engraved rather than raised because a raised digit on a top
+    face is a 0.8 mm island the nozzle has to start from nothing, and because
+    a coupon gets handled.
+    """
+    h = P.COUPON_MARK_H if h is None else h
+    w = P.COUPON_MARK_W if w is None else w
+    stroke = P.COUPON_MARK_STROKE if stroke is None else stroke
+    gap = P.COUPON_MARK_GAP if gap is None else gap
+    depth = P.COUPON_MARK_DEPTH if depth is None else depth
+
+    advance = w + stroke + gap
+    total = advance * len(text) - gap
+    x0 = cx - total / 2 + stroke / 2
+    y0 = cy - h / 2
+
+    out = []
+    for i, ch in enumerate(text):
+        for bx, by, sx, sy in _char_boxes(ch, h, w, stroke):
+            box = trimesh.creation.box([sx, sy, depth * 2])
+            box.apply_translation([x0 + advance * i + bx, y0 + by, z_top])
+            out.append(box)
+    return out
+
+
+def coupon_steps():
+    """The step each hole is drilled at, in millimetres, left to right.
+
+    Symmetric about 0, so the middle hole is the socket exactly as modelled
+    and its label is the one that means "change nothing".
+    """
+    k = np.arange(P.COUPON_N) - (P.COUPON_N - 1) // 2
+    return k * P.COUPON_STEP
+
+
+def coupon_label(ds: float) -> str:
+    """A step as it is engraved: hundredths of a millimetre, signed.
+
+    Hundredths rather than millimetres because "-18" is three characters of
+    engraving and "-0.18" is five, on a part where every character costs a
+    millimetre of coupon. The leading zero on the sixes keeps all six signed
+    labels the same width, so the row reads as a scale rather than as seven
+    unrelated numbers.
+    """
+    n = int(round(ds * 100))
+    return "0" if n == 0 else f"{'+' if n > 0 else '-'}{abs(n):02d}"
+
+
 def fit_coupon() -> trimesh.Trimesh:
     """A test block of sockets stepping either side of SOCKET_D.
 
@@ -665,19 +762,24 @@ def fit_coupon() -> trimesh.Trimesh:
     the first-layer squish. So it gets measured instead: print the coupon and
     a handful of spikes, find the hole the spike seats firmly in, and set
     SOCKET_COMP from the step that won.
+
+    Each hole carries that step engraved beside it. The holes differ by
+    0.06 mm and nothing about looking at them says which is which, so an
+    unlabelled coupon only answers the question while you still remember
+    which end you counted from.
     """
-    steps = np.arange(-3, 4) * 0.06         # +/- 0.18 in 0.06 steps
-    pitch = 7.0
-    w = pitch * len(steps) + 6.0
-    block = trimesh.creation.box([w, 14.0, P.SOCKET_DEPTH + 3.0])
-    block.apply_translation([0, 0, (P.SOCKET_DEPTH + 3.0) / 2])
+    steps = coupon_steps()
+    w = P.COUPON_PITCH * P.COUPON_N + 2 * P.COUPON_MARGIN
+    block = trimesh.creation.box([w, P.COUPON_DEPTH_Y, P.COUPON_T])
+    block.apply_translation([0, 0, P.COUPON_T / 2])
 
     cutters = []
     for i, ds in enumerate(steps):
-        x = -w / 2 + 3.0 + pitch * (i + 0.5)
+        x = -w / 2 + P.COUPON_MARGIN + P.COUPON_PITCH * (i + 0.5)
         c = trimesh.creation.cylinder(radius=(P.SOCKET_D + ds) / 2,
                                       height=P.SOCKET_DEPTH * 2,
                                       sections=P.SEG_SOCKET)
-        c.apply_translation([x, 0.0, P.SOCKET_DEPTH + 3.0])
+        c.apply_translation([x, P.COUPON_HOLE_Y, P.COUPON_T])
         cutters.append(c)
+        cutters += engrave(coupon_label(ds), x, P.COUPON_MARK_Y, P.COUPON_T)
     return _difference(block, cutters)

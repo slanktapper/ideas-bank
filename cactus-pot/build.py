@@ -245,9 +245,19 @@ def build_renders(pot=None, pot_floor=0.0):
     shot("08-spike.png", [{"mesh": one, "color": SPIKE_C}], 30, 12, margin=1.1)
     plate = C.spike_plate()
     shot("09-spike-plate.png", [{"mesh": plate, "color": SPIKE_C}], 40, 34)
+    # The coupon is a gauge, so the shot has to be one its numbers can be
+    # read off. That rules out the three-quarter view the other parts get:
+    # from 270 the camera is on the side the engraving reads from -- from 90
+    # it looks at the top face from behind and every label comes out
+    # mirrored -- and a high elevation keeps the digits nearly square on.
+    # More ambient than the default, because a 0.6 mm groove in a flat face
+    # is all shadow and no silhouette.
     coupon = C.fit_coupon()
-    shot("10-fit-coupon.png", [{"mesh": coupon, "color": (0.62, 0.64, 0.70)}],
-         40, 40)
+    cam = R.frame([coupon], 270, 68, margin=1.02)
+    R.render([{"mesh": coupon, "color": (0.62, 0.64, 0.70)}],
+             ambient=0.42, key=0.72, **cam).save(
+        os.path.join(RENDERS, "10-fit-coupon.png"))
+    print("renders/10-fit-coupon.png")
 
     # the test print, with its spikes in, since that is how it gets judged
     wedge = C.test_section()

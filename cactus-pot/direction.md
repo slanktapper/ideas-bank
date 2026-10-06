@@ -35,9 +35,10 @@ green body, with no multi-material printing on the big part at all.
 - The cactus body: ribbed trunk, two arms, areole pads, 110 spike sockets, and
   a spigot that drops into the socket in the pot's floor.
 - The spike: one part, printed many times.
-- A fit-test coupon that steps the socket diameter either side of nominal, so
-  the press fit gets measured instead of guessed, and a wedge of the real
-  trunk that proves the joint on the curved ribbed wall it actually lives on.
+- A fit-test coupon that steps the socket diameter either side of nominal —
+  with each step engraved beside its hole, so the answer can be read off the
+  part instead of counted from an end — and a wedge of the real trunk that
+  proves the joint on the curved ribbed wall it actually lives on.
 - Renders, so the shape is judged before filament is spent.
 
 **Does not:**
@@ -130,7 +131,20 @@ changes size much from Ø92 × 76 should take the cactus's proportions with it.
 
 - **Does −0.06 hold?** It is the right number on paper and the coupon exists
   because paper is not the same as PETG at 240 °C. Print the coupon, find the
-  hole the spike seats in, set `SOCKET_COMP` from it.
+  hole the spike seats in, and add that hole's engraved number to
+  `SOCKET_COMP`. The ladder steps by `COUPON_STEP`, which is set equal to
+  `PRESS_FIT` on purpose: one hole either side of the winner is a whole press
+  fit away, so the answer is one hole rather than a region.
+
+  The engraving is seven-segment characters built from boxes in `cactus.py`,
+  not type. The pot half of this project sets real glyph outlines and that
+  machinery is deliberately not reached for: the two halves do not import
+  from each other, and what a gauge needs is a stroke a 0.4 nozzle can cut
+  and a counter it can leave standing, which is a different problem from
+  setting a name on a pot. The binding number is the counter inside an 8 —
+  `COUPON_MARK_W` and `COUPON_MARK_H` are sized around it, and `test_fit.py`
+  checks it, because a stroke too fat for its box engraves an 8 as a filled
+  pit that still looks like a number.
 - **The spines must not read as rows, and must not read as columns.** They did
   both, and the second one is why the trunk's layout no longer has ribs in it.
 
