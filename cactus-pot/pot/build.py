@@ -13,6 +13,7 @@ import potlib as P
 from text3d import Face, fit_lines
 from shapely.geometry import Polygon, box, Point
 from shapely.ops import unary_union
+from shapely.geometry.polygon import orient
 from shapely import affinity
 from scipy.spatial import Voronoi
 
@@ -40,11 +41,15 @@ PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
 PAN_SINK  = 0.5               # how far the panel sits below the plain wall
 TEXT_DEPTH = 1.0
 PAN_INSET  = 5.0              # clear margin left and right of the longest line
-BEAD_W    = GROOVE            # the border round the panel is exactly as wide as
-                              # the gaps between the stones
-BEAD_OUT  = 1.1               # how far outside the panel edge its centreline runs
-BEAD_STEPS = 7                # steps in the rounded section; 7 puts each one
-                              # under a layer height, so it prints as a curve
+BEAD_W    = GROOVE            # the border round each stone is exactly as wide as
+                              # the gaps between them, so two neighbouring borders
+                              # meet in the middle and fill the groove
+BEAD_STEPS = 5                # steps in the rounded section; 5 puts each riser
+                              # at 0.10 mm, under any layer this will print at
+BEAD_GAP  = 0.02              # how far short of the groove's middle each stone's
+                              # half stops. Two halves that met exactly would
+                              # leave a coincident pair of faces in the union,
+                              # and the mesh stops being a volume on reload.
 PAN_MARGIN = 2.5              # clear margin above and below the block of text.
                               # All three lines are set at one size and the block
                               # is centred on its inked extent, so the margin
@@ -83,22 +88,32 @@ def panel_shape():
     return box(-PAN_W/2 + r, PAN_Z - PAN_H/2 + r, PAN_W/2 - r, PAN_Z + PAN_H/2 - r).buffer(r)
 
 
-def panel_bead():
-    """A rounded border round the cartouche, BEAD_W wide, raised off the wall.
+def stone_border(cells=None):
+    """A rounded border round every stone, filling the grooves between them.
 
-    Half-round in section, of radius BEAD_W/2, so it stands BEAD_W/2 proud of the
-    plain wall -- lower than the stones, which stand CELL_H. It is built as a
-    stack of nested bands rather than swept: at height z the half-round is
-    sqrt(a^2 - z^2) wide, so unioning one band per step gives the section. Seven
-    steps puts each riser at 0.08 mm, under any layer this will be printed at.
+    Each stone gets its own half of the bead: a quarter-round swept along its
+    outline, rising from nothing at the stone's foot to BEAD_W/2 at the edge of
+    its own half. Two neighbours are GROOVE apart and BEAD_W is GROOVE, so their
+    two quarters meet in the middle of the groove and make one half-round. Where
+    the gap happens to be wider than nominal they stop short, which is right --
+    it is a border round each stone, not a flood fill of the gaps.
+
+    Returned as one body per stone, each watertight, like the stones themselves.
+    Sweeping rather than stacking extruded bands matters even more here than it
+    did for a single ring: the level sets of this shape are 180-hole polygons
+    that do not extrude into closed solids at all.
     """
-    a = BEAD_W / 2
-    ring = np.asarray(
-        panel_shape().buffer(BEAD_OUT).segmentize(1.2).exterior.coords)[:-1]
-    arc = [(a*np.cos(t), a*np.sin(t))
-           for t in np.linspace(np.pi, 0.0, BEAD_STEPS + 1)]
-    sec = [(a, -1.0), (-a, -1.0)] + arc          # half-round, on a root in the wall
-    return P.sweep_on_cylinder(ring, sec, R)
+    a, half = BEAD_W / 2, BEAD_W / 2 - BEAD_GAP
+    sec = ([(0.0, -1.0)]
+           + [(t, float(np.sqrt(max(a*a - (a - t)**2, 0.0))))
+              for t in np.linspace(0.0, half, BEAD_STEPS + 1)]
+           + [(half, -1.0)])
+    beads = []
+    for c in (stone_cells() if cells is None else cells):
+        # clockwise, so the sweep's normal points out of the stone
+        ring = np.asarray(orient(c, -1.0).segmentize(1.8).exterior.coords)[:-1]
+        beads.append(P.sweep_on_cylinder(ring, sec, R))
+    return trimesh.util.concatenate(beads)
 
 
 def stone_cells(seed=11):
@@ -149,10 +164,9 @@ def stone_cells(seed=11):
     return cells
 
 
-def stone_solid():
+def stone_solid(cells=None):
     """The field of raised cells, as one solid, already wrapped onto the wall."""
-    cells = stone_cells()
-    print('cells', len(cells))
+    cells = stone_cells() if cells is None else cells
     prisms = [P.text_prism(c, CELL_H, over=1.2, dens=1.2) for c in cells]
     return P.bend_to_cylinder(trimesh.util.concatenate(prisms), R)
 
@@ -193,13 +207,16 @@ def body_unlettered(quiet=False):
                   P.cyl(SOCKET_D/2, WELL_Z - SOCKET_H, WELL_Z + 1.0, seg=96))
     if not quiet:
         print('body watertight', body.is_watertight, 'volume %.0f' % body.volume)
-    body = P.union(body, stone_solid())
+    cells = stone_cells()
+    if not quiet:
+        print('cells', len(cells))
+    body = P.union(body, stone_solid(cells))
     if not quiet:
         print('with stone', body.is_watertight, len(body.faces))
     body = P.diff(body, panel_pocket())
-    body = P.union(body, panel_bead())
+    body = P.union(body, stone_border(cells))
     if not quiet:
-        print('with bead', body.is_watertight, len(body.faces))
+        print('with borders', body.is_watertight, len(body.faces))
     return body
 
 

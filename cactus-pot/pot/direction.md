@@ -94,7 +94,7 @@ Every dimension is a constant at the top of `build.py`. The ones that matter:
 | `R`, `H` | 46.0, 76.0 — outer radius and height. The cactus is scaled to these. |
 | `WELL_Z`, `SOCKET_D`, `SOCKET_H` | the mount: floor at 55.0, Ø32.0 × 8.0 blind socket. Changing any of these breaks the cactus. |
 | `PAN_W`, `PAN_H`, `PAN_Z` | the cartouche, 78 × 37 mm, centred 48.5 up. |
-| `BEAD_W`, `BEAD_OUT` | the border: 1.05 mm wide (tied to `GROOVE`), centreline 1.1 mm outside the panel. |
+| `BEAD_W` | the border round each stone: 1.05 mm, tied to `GROOVE` so it fills the gap exactly. |
 | `PAN_INSET`, `PAN_MARGIN` | 5.0 and 2.5 mm of clear panel around the text. The three lines are set at one size and the block is centred on its *inked* extent, so the top and bottom margins come out equal. |
 | `CELL_H`, `GROOVE`, `N_CELLS` | the stone field: 1.15 proud, 1.05 gaps, 300 seeds. |
 
@@ -128,10 +128,14 @@ colouring to the slicer, so the split lives in the geometry:
 | `02-silver-stones.stl` | Silk silver PLA | The 179 raised cells, as 179 separate closed bodies |
 | `03-white-panel.stl` | Jade white PLA | The cartouche, 1.6 mm deep behind its face |
 | `04-black-letters.stl` | Black PLA | The letters, filling the 1.0 mm engraving flush |
-| `05-purple-border.stl` | Silk+ purple PLA | The rounded border round the cartouche |
+| `05-purple-borders.stl` | Silk+ purple PLA | A rounded border round every stone, filling the grooves |
 
-Volumes: 339 018 + 21 945 + 3 903 + 540 + 328 mm³, which reconciles with the
-365 734 mm³ of `build.body_unlettered()` to 0.1 mm³. Load all four into the slicer at the
+Volumes: 336 665 + 21 945 + 3 903 + 540 + 3 666 mm³, which reconciles with the
+366 716 mm³ of `build.body_unlettered()` to 3.1 mm³ — under a thousandth of a
+percent, at the corners where neighbouring borders run into each other.
+
+`stl/colour/` is not tracked: it is 55 MB, and `colours.py` regenerates it
+exactly from the same seed. Load all four into the slicer at the
 origin and assign a filament to each; they are disjoint, so nothing needs
 painting by hand.
 
@@ -139,19 +143,30 @@ painting by hand.
 void cut into the panel. Here it is filled, so the face is flush and the letters
 read by colour rather than by shadow. The single-colour pot is unchanged.
 
-### The border
+### The borders
 
-A half-round bead running round the cartouche, 1.05 mm wide and standing
-0.525 mm off the plain wall. The width is not chosen: it is `GROOVE`, the gap
-between the stones, measured back off the built cells at a median and minimum of
-1.050 mm. Its centreline sits 1.1 mm outside the panel edge, which is the middle
-of the clear ring between the panel and the nearest stone, so it reads as a frame
-rather than as a lip of the pocket.
+Every stone is outlined by a rounded bead that fills the groove around it. The
+width is not chosen: it is `GROOVE`, the gap the cells are set apart by,
+measured back off the built field at a median and a minimum of 1.050 mm. Each
+stone carries its own half of it -- a quarter-round rising from nothing at the
+stone's foot to 0.525 mm at the middle of the groove -- so two neighbours at the
+nominal spacing meet and make one half-round, and a pair that happens to sit
+further apart simply leaves gold between them. That is the right behaviour: it is
+a border round each stone, not a flood fill of the gaps.
 
-It is swept, not stacked: `potlib.sweep_on_cylinder` runs the half-round section
-along the panel outline and onto the wall in one pass. The same bead built by
-unioning extruded bands came out at 209 000 triangles against this one's 5 600,
-for the same shape.
+The crown stands 0.525 mm off the wall, half the height of the stones, so the
+stones still read as the raised thing.
+
+Each half stops `BEAD_GAP` short of the middle, 0.02 mm. Two halves that met
+exactly would put a pair of coincident faces in the union and the pot would stop
+being a volume on reload. 0.04 mm of gold between two borders is a fortieth of a
+nozzle: it fuses on the first layer and nothing in a slicer ever sees it.
+
+It is swept, not stacked: `potlib.sweep_on_cylinder` runs the section along each
+cell's outline and onto the wall in one pass, giving 179 watertight bodies with
+no boolean. Stacking extruded level sets is not merely slower here, it does not
+work at all -- the level sets of this shape are polygons with 179 holes, and they
+do not extrude into closed solids.
 
 Three of the five are watertight on reload. The gold body is closed as written
 but has about 1 600 edges where it touches itself in the narrow grooves between
