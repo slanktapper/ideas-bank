@@ -79,8 +79,12 @@ What to look at when it comes off:
 - **Speed:** slow the outer wall right down, 30 mm/s or so. The tip is one
   extrusion wide and the toolhead is turning a 0.4 mm circle at the top of
   every spike; at normal speeds that is where they go furry.
-- **Colour:** white, jade white or the milky pink read as spines against a
-  green body. Black looks like a sea urchin, which may be the point.
+- **Colour:** jade white, white or the milky pink read as spines. Black looks
+  like a sea urchin, which may be the point. For the body, PLA Basic
+  Mistletoe Green — it is the only green on the shelf, and it arrived after
+  this project started, so earlier notes here assume a green that did not
+  exist yet. Cocoa Brown suits the pot's stone field; the pot half picks that,
+  not this file.
 
 ## Seating them
 
