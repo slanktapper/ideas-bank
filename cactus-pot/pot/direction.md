@@ -5,7 +5,7 @@
 ## What it is
 
 The flower pot the cactus stands in: the *pebble pot*. A straight-sided
-cylinder, Ø92 × 76 mm, with a rolled gold-coloured foot, a field of raised
+cylinder, Ø92 × 76 mm, with a raised cocoa-coloured bottom, a field of raised
 stone-like cells above a scalloped dividing line, and a sunken cartouche on the
 front carrying *Eleanor Shellstrop's File* in three lines.
 
@@ -43,8 +43,8 @@ is what the stone field and the two-tone split are.
 
 - The pot body, in one piece: `stl/pebble-pot.stl`.
 - The same pot split four ways by colour, for a four-filament print:
-  `stl/colour/`. Gold body and grooves, silver stones, white cartouche, black
-  letters.
+  `stl/colour/`. Cocoa body, borders and raised bottom, silver stones, white
+  cartouche, black letters.
 - The same pot split at the scalloped line into two printable zones, so the base
   and the textured upper can go in different filaments with no multi-material
   on either part: `stl/pebble-pot-base.stl` and `stl/pebble-pot-upper.stl`.
@@ -126,17 +126,18 @@ colouring to the slicer, so the split lives in the geometry:
 
 | File | Filament | What it is |
 | --- | --- | --- |
-| `01-gold-body.stl` | Silk gold PLA | The body, the foot, the inside, and the grooves between the stones |
+| `01-cocoa-body.stl` | PLA Basic cocoa brown | The body, the foot, the inside, the borders round the stones and the raised bottom |
 | `02-silver-stones.stl` | Silk silver PLA | The 179 raised cells, as 179 separate closed bodies |
 | `03-white-panel.stl` | Jade white PLA | The cartouche, 1.6 mm deep behind its face |
 | `04-black-letters.stl` | Black PLA | The letters, filling the 1.0 mm engraving flush |
-| `05-purple-borders.stl` | Silk+ purple PLA | A rounded border round every stone, and the raised bottom below the scalloped line |
 
-Volumes: 333 422 + 21 926 + 3 903 + 540 + 12 154 mm³, which reconciles with the
-371 945 mm³ of `build.body_unlettered()` to 0.1 mm³. The parts are disjoint by
-construction: the wider borders bite about 18 mm³ off the stones' feet and
-140 mm³ off their own overlaps, and those are cut away rather than left for two
-filaments to argue over.
+Volumes: 345 580 + 21 926 + 3 903 + 540 mm³, which reconciles with the
+371 945 mm³ of `build.body_unlettered()` to 5 mm³ — a hundredth of a percent,
+in the grooves where the parts run into each other. The borders and the raised
+bottom were a fifth part in silk purple until 2026-10-06; they are still cut
+out of the stones, because the wider bead bites about 18 mm³ into the stones'
+feet and that material is now body colour, but they are no longer a filament of
+their own.
 
 `stl/colour/` is not tracked: it is 55 MB, and `colours.py` regenerates it
 exactly from the same seed. Load all four into the slicer at the
@@ -153,14 +154,14 @@ Every stone is outlined by a rounded bead that fills the groove around it. It
 started at `GROOVE` wide, 1.050 mm, measured back off the built field as the
 median and the minimum gap; each stone carried a quarter-round rising from
 nothing at its foot to 0.525 mm at the middle of the groove, so two neighbours
-met exactly and anything wider than nominal showed gold between them.
+met exactly and anything wider than nominal showed body colour between them.
 
 It is now 1.8x that, 1.89 mm. Each stone's quarter-round has a radius of
 0.945 mm and reaches 0.925 mm out, which is most of the way across a nominal
 groove, so neighbouring borders overlap instead of meeting: every nominal groove
 is filled solid, the crown stands about 0.84 mm off the wall rather than
 0.525 mm, and a wider-than-nominal gap gets a border 1.8x as wide instead of a
-sliver of gold. The whole border network comes out as one connected solid of
+sliver of body colour. The whole border network comes out as one connected solid of
 5 442 mm³ -- it used to be 179 separate ones of 3 666 mm³ in total.
 
 The stones still read as the raised thing: they stand 1.15 mm proud, so the
@@ -174,9 +175,8 @@ land exactly on each other make the pot stop being a volume on reload.
 ### The raised bottom
 
 Everything below the scalloped line stands 0.575 mm proud of the wall -- half
-the height of a stone -- in the same purple as the borders, so the line now
-divides a raised purple base from the stone field above it rather than being
-just a change of texture.
+the height of a stone. It is body colour, like the borders, so the line divides
+a raised base from the stone field by its own shadow rather than by colour.
 
 It is the pot's own profile grown 0.575 mm **along its normal**, not radially, so
 the band stands the same height proud of the foot's roll as it does of the
@@ -202,24 +202,24 @@ no boolean. Stacking extruded level sets is not merely slower here, it does not
 work at all -- the level sets of this shape are polygons with 179 holes, and they
 do not extrude into closed solids.
 
-Three of the five are watertight on reload. The gold body is closed as written
+Three of the four are watertight on reload. The cocoa body is closed as written
 but has about 1 600 edges where it touches itself in the narrow grooves between
 stones, which show up once a reader merges coincident vertices. Slicers handle
 that; it is not a hole.
 
-### What five colours costs
+### What four colours costs
 
 Worth knowing before the slicer is opened. Every colour on this pot spans most of
 its height -- the stones run from z 13.6 to 74.6, the cartouche from 30 to 67,
-the name from 32.5 to 64.5, and gold and purple are both everywhere now that the
-bottom is raised in purple. So all but two layers carry several filaments:
+the name from 32.5 to 64.5, and the cocoa is everywhere. So four layers in five
+carry more than one filament:
 
 | | |
 | --- | --- |
 | Layers at 0.2 mm | 380 |
-| Layers carrying more than one colour | 378 |
-| Filament changes | about 1 030 |
-| Purge, at 0.35 to 0.9 g flushed a change | 360 to 930 g |
+| Layers carrying more than one colour | 307 |
+| Filament changes | about 650 |
+| Purge, at 0.35 to 0.9 g flushed a change | 230 to 580 g |
 | The pot itself | 372 cm³, about 462 g |
 
 So the waste is of the same order as the part, and could exceed it. That is not an

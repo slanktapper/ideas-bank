@@ -2,7 +2,7 @@
 
     python3 shots.py                      # everything in renders/
     python3 shots.py --compare <old.stl>  # the two halves of 04-old-vs-new
-    python3 shots.py --colour             # the five-colour pot, every 120 deg
+    python3 shots.py --colour             # the four-colour pot, every 120 deg
     python3 shots.py --photos             # renders/photos/, a full set to look at
 """
 from __future__ import annotations
@@ -16,7 +16,6 @@ from build import PAN_Z as B_PAN_Z                      # noqa: E402
 
 STL, OUT = HERE / 'stl', HERE / 'renders'
 STONE = (0.90, 0.90, 0.92)      # the crackle zone, silver
-GOLD  = (0.85, 0.66, 0.34)      # the rolled base
 CLAY  = (0.78, 0.44, 0.33)      # single-colour, for shape only
 LIGHT = dict(ambient=0.52, key=0.52, fill=0.26, spec=0.22, edges=0.5)
 
@@ -32,18 +31,17 @@ def shot(parts, name, az, el, dist=235.0, zt=40.0):
 
 
 # the four filaments, as they read on the shelf
-GOLD_SILK   = (0.86, 0.67, 0.29)
+COCOA       = (0.44, 0.31, 0.20)      # PLA Basic cocoa brown, #6F5034;
+                                      # also the rolled base of the two-tone split
 SILVER_SILK = (0.78, 0.80, 0.84)
 JADE_WHITE  = (0.94, 0.95, 0.93)
 BLACK       = (0.09, 0.09, 0.10)
-PURPLE_SILK = (0.46, 0.26, 0.62)
 COLOUR_DIR  = STL / 'colour'
 
 
 def colour_parts():
     import colours
-    names = dict(zip(colours.PARTS,
-                     (GOLD_SILK, SILVER_SILK, JADE_WHITE, BLACK, PURPLE_SILK)))
+    names = dict(zip(colours.PARTS, (COCOA, SILVER_SILK, JADE_WHITE, BLACK)))
     missing = [n for n in names if not (COLOUR_DIR / f'{n}.stl').exists()]
     if missing:
         raise SystemExit('run colours.py first -- missing ' + ', '.join(missing))
@@ -117,7 +115,7 @@ if __name__ == '__main__':
         compare(sys.argv[2]); raise SystemExit
     pot = [{'mesh': trimesh.load(STL / 'pebble-pot.stl'), 'color': CLAY}]
     two = [{'mesh': trimesh.load(STL / 'pebble-pot-upper.stl'), 'color': STONE},
-           {'mesh': trimesh.load(STL / 'pebble-pot-base.stl'),  'color': GOLD}]
+           {'mesh': trimesh.load(STL / 'pebble-pot-base.stl'),  'color': COCOA}]
     shot(pot, '01-front.png', az=0, el=10)
     shot(pot, '02-three-quarter.png', az=42, el=16)
     shot(pot, '03-inside.png', az=30, el=55, dist=250, zt=34)

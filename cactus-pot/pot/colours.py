@@ -4,11 +4,14 @@ The pot prints as one object in four materials. Rather than paint it in the
 slicer, each colour is its own watertight solid here, so the split is in the
 geometry and survives being reopened:
 
-    gold    the body, the foot, the inside, and the grooves between the stones
+    cocoa   the body, the foot, the inside, the borders round the stones and
+            the raised bottom below the scalloped line
     silver  the raised stones themselves
     white   the smooth cartouche the name sits in
     black   the letters, filling the engraving flush
-    purple  the rounded border running round every stone, and the raised bottom
+
+The borders and the raised bottom keep their shape; they simply print in the
+body colour, so they read by their own shadow rather than by contrast.
 
 Note what this changes: on `stl/pebble-pot.stl` the name is a void cut 1.0 mm
 into the panel. Here it is *filled*, so the four parts together make the shape
@@ -26,8 +29,7 @@ import potlib as P
 OUT = pathlib.Path(__file__).resolve().parent / 'stl' / 'colour'
 PANEL_SKIN = 1.6          # how deep the white runs behind the panel face
 
-PARTS = ('01-gold-body', '02-silver-stones', '03-white-panel', '04-black-letters',
-         '05-purple-borders')
+PARTS = ('01-cocoa-body', '02-silver-stones', '03-white-panel', '04-black-letters')
 
 
 def panel_skin():
@@ -62,21 +64,20 @@ def split():
 
     cutter, skin, stone = B.text_cutter(quiet=True), panel_skin(), B.stone_solid()
 
-    # The borders and the raised bottom were unioned on and lie wholly inside the
-    # finished body, so together they are the purple part with no cutting against
-    # the body needed. They do overlap each other, and the borders now overlap
-    # each other too, so they are unioned rather than concatenated.
-    purple = P.union(B.stone_border(), B.bottom_band())
-    # The stone field likewise lies wholly inside the body, but the wider borders
-    # bite about 18 mm3 off its feet, and two filaments cannot share a voxel.
-    silver = P.diff(stone, purple)
+    # The borders and the raised bottom print in the body colour now, so they are
+    # not parts of their own. They still have to come off the stones: the wider
+    # bead bites about 18 mm3 into the stones' feet, and that material is cocoa.
+    relief = P.union(B.stone_border(), B.bottom_band())
+    silver = P.diff(stone, relief)
     black = P.intersect(solid, cutter)
     white = P.diff(P.intersect(solid, skin), cutter)
-    gold = P.diff(solid, stone, skin, cutter, purple)
+    # cut against the silver rather than the whole stone field, so the bitten
+    # feet stay with the body
+    cocoa = P.diff(solid, silver, skin, cutter)
 
     OUT.mkdir(parents=True, exist_ok=True)
     total = 0.0
-    for name, m in zip(PARTS, (gold, silver, white, black, purple)):
+    for name, m in zip(PARTS, (cocoa, silver, white, black)):
         m = tidy(m)
         m.export(OUT / f'{name}.stl')
         total += m.volume
