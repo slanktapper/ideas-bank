@@ -40,6 +40,11 @@ PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
 PAN_SINK  = 0.5               # how far the panel sits below the plain wall
 TEXT_DEPTH = 1.0
 PAN_INSET  = 5.0              # clear margin left and right of the longest line
+BEAD_W    = GROOVE            # the border round the panel is exactly as wide as
+                              # the gaps between the stones
+BEAD_OUT  = 1.1               # how far outside the panel edge its centreline runs
+BEAD_STEPS = 7                # steps in the rounded section; 7 puts each one
+                              # under a layer height, so it prints as a curve
 PAN_MARGIN = 2.5              # clear margin above and below the block of text.
                               # All three lines are set at one size and the block
                               # is centred on its inked extent, so the margin
@@ -76,6 +81,24 @@ def panel_shape():
     """The clear patch, in (arc, z). Rounded corners, like a cast cartouche."""
     r = 7.0
     return box(-PAN_W/2 + r, PAN_Z - PAN_H/2 + r, PAN_W/2 - r, PAN_Z + PAN_H/2 - r).buffer(r)
+
+
+def panel_bead():
+    """A rounded border round the cartouche, BEAD_W wide, raised off the wall.
+
+    Half-round in section, of radius BEAD_W/2, so it stands BEAD_W/2 proud of the
+    plain wall -- lower than the stones, which stand CELL_H. It is built as a
+    stack of nested bands rather than swept: at height z the half-round is
+    sqrt(a^2 - z^2) wide, so unioning one band per step gives the section. Seven
+    steps puts each riser at 0.08 mm, under any layer this will be printed at.
+    """
+    a = BEAD_W / 2
+    ring = np.asarray(
+        panel_shape().buffer(BEAD_OUT).segmentize(1.2).exterior.coords)[:-1]
+    arc = [(a*np.cos(t), a*np.sin(t))
+           for t in np.linspace(np.pi, 0.0, BEAD_STEPS + 1)]
+    sec = [(a, -1.0), (-a, -1.0)] + arc          # half-round, on a root in the wall
+    return P.sweep_on_cylinder(ring, sec, R)
 
 
 def stone_cells(seed=11):
@@ -173,7 +196,11 @@ def body_unlettered(quiet=False):
     body = P.union(body, stone_solid())
     if not quiet:
         print('with stone', body.is_watertight, len(body.faces))
-    return P.diff(body, panel_pocket())
+    body = P.diff(body, panel_pocket())
+    body = P.union(body, panel_bead())
+    if not quiet:
+        print('with bead', body.is_watertight, len(body.faces))
+    return body
 
 
 def build():

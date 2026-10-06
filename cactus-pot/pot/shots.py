@@ -35,12 +35,14 @@ GOLD_SILK   = (0.86, 0.67, 0.29)
 SILVER_SILK = (0.78, 0.80, 0.84)
 JADE_WHITE  = (0.94, 0.95, 0.93)
 BLACK       = (0.09, 0.09, 0.10)
+PURPLE_SILK = (0.46, 0.26, 0.62)
 COLOUR_DIR  = STL / 'colour'
 
 
 def colour_parts():
     import colours
-    names = dict(zip(colours.PARTS, (GOLD_SILK, SILVER_SILK, JADE_WHITE, BLACK)))
+    names = dict(zip(colours.PARTS,
+                     (GOLD_SILK, SILVER_SILK, JADE_WHITE, BLACK, PURPLE_SILK)))
     missing = [n for n in names if not (COLOUR_DIR / f'{n}.stl').exists()]
     if missing:
         raise SystemExit('run colours.py first -- missing ' + ', '.join(missing))
