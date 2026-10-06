@@ -27,7 +27,7 @@ hole's step and rebuild — the step is marked by its position, leftmost is
 −0.18 mm, rightmost is +0.18.
 
 Doing this costs about fifteen minutes and three grams. Not doing it risks
-81 sockets at the wrong size on a part that takes most of a day.
+110 sockets at the wrong size on a part that takes most of a day.
 
 ## Then the wedge
 
