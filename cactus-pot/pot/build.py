@@ -31,25 +31,39 @@ SOCKET_D  = 32.0
 SOCKET_H  = 8.0
 
 # ---- the stone field -------------------------------------------------------
-WAVE_Z    = 19.0              # mean height of the scalloped line
+WAVE_Z    = 4.3               # mean position of the scalloped line, measured as
+                              # arc length along the outer profile: 4.3 is halfway
+                              # round the foot's roll, at z = 5.86
+WAVE_A    = 0.6               # the scallops, scaled down to fit under the roll
 CELL_H    = 1.15              # how far the cells stand proud
 GROOVE    = 1.05              # width of the gap between cells
-N_CELLS   = 300
+N_CELLS   = 310               # kept in step with the taller field, for one size
+                              # of stone throughout
 
 # ---- the panel -------------------------------------------------------------
 PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
 PAN_SINK  = 0.5               # how far the panel sits below the plain wall
 TEXT_DEPTH = 1.0
 PAN_INSET  = 5.0              # clear margin left and right of the longest line
-BEAD_W    = GROOVE            # the border round each stone is exactly as wide as
-                              # the gaps between them, so two neighbouring borders
-                              # meet in the middle and fill the groove
+BEAD_W    = 1.8 * GROOVE      # the border round each stone. At 1.0x the groove
+                              # two neighbouring borders met exactly in the middle
+                              # and anything wider than nominal showed gold; at
+                              # 1.8x they overlap, so every nominal groove is
+                              # filled solid and the bead stands 1.6x taller
 BEAD_STEPS = 5                # steps in the rounded section; 5 puts each riser
                               # at 0.10 mm, under any layer this will print at
 BEAD_GAP  = 0.02              # how far short of the groove's middle each stone's
                               # half stops. Two halves that met exactly would
                               # leave a coincident pair of faces in the union,
                               # and the mesh stops being a volume on reload.
+BAND_D    = CELL_H            # the raised bottom stands as proud as the stones do
+BAND_GAP  = GROOVE            # and is held off the lowest of them by the same gap
+                              # the stones are set apart by, so the groove reads
+                              # the same all over the pot
+BAND_BITE = 0.3               # how far its skin reaches into the wall. It has to
+                              # overlap the body rather than land on it: two solids
+                              # meeting exactly leave coincident faces and the
+                              # union stops being a volume on reload.
 PAN_MARGIN = 2.5              # clear margin above and below the block of text.
                               # All three lines are set at one size and the block
                               # is centred on its inked extent, so the margin
@@ -58,10 +72,15 @@ LINES = ['Eleanor', "Shellstrop's", 'File']
 
 
 def wave(u):
-    """Height of the scalloped line, as a function of arc position."""
+    """The scalloped line, as a function of arc position round the pot.
+
+    The value is a position along the outer profile, not a height: on the straight
+    wall the two are the same, and below z = FOOT_R it keeps running round the
+    roll. See `potlib.body_point`.
+    """
     t = u / R
-    return (WAVE_Z + 4.6*np.sin(5*t + 0.4) + 2.2*np.sin(8*t + 1.9)
-                   + 1.3*np.sin(13*t + 0.7))
+    return (WAVE_Z + WAVE_A*(4.6*np.sin(5*t + 0.4) + 2.2*np.sin(8*t + 1.9)
+                             + 1.3*np.sin(13*t + 0.7)))
 
 
 def profile_outer():
@@ -91,14 +110,12 @@ def panel_shape():
 def stone_border(cells=None):
     """A rounded border round every stone, filling the grooves between them.
 
-    Each stone gets its own half of the bead: a quarter-round swept along its
-    outline, rising from nothing at the stone's foot to BEAD_W/2 at the edge of
-    its own half. Two neighbours are GROOVE apart and BEAD_W is GROOVE, so their
-    two quarters meet in the middle of the groove and make one half-round. Where
-    the gap happens to be wider than nominal they stop short, which is right --
-    it is a border round each stone, not a flood fill of the gaps.
-
-    Returned as one body per stone, each watertight, like the stones themselves.
+    Each stone gets its own half of the bead: a quarter-round of radius BEAD_W/2
+    swept along its outline, rising from nothing at the stone's foot to BEAD_W/2
+    out. BEAD_W is 1.8x the nominal groove, so at nominal spacing two neighbours'
+    quarters overlap and fill the groove solid, and a wider-than-nominal gap gets
+    a border 1.8x as wide as before rather than a sliver of body colour. The
+    overlaps are resolved here, so the result is one solid.
     Sweeping rather than stacking extruded bands matters even more here than it
     did for a single ring: the level sets of this shape are 180-hole polygons
     that do not extrude into closed solids at all.
@@ -112,8 +129,69 @@ def stone_border(cells=None):
     for c in (stone_cells() if cells is None else cells):
         # clockwise, so the sweep's normal points out of the stone
         ring = np.asarray(orient(c, -1.0).segmentize(1.8).exterior.coords)[:-1]
-        beads.append(P.sweep_on_cylinder(ring, sec, R))
-    return trimesh.util.concatenate(beads)
+        beads.append(P.sweep_on_body(ring, sec, R, FOOT_R, BASE_FLAT))
+    return P.union(*beads)
+
+
+def profile_band():
+    """The two (r, z) profiles bounding the raised bottom's skin.
+
+    The outer one is the pot's own profile grown BAND_D along its normal -- so
+    the band stands the same height proud of the foot's roll as it does of the
+    straight wall -- clipped at z = 0 so the pot still stands on the same flat
+    and keeps the same overall height. The inner one is the profile shrunk
+    BAND_BITE, so the skin overlaps the body instead of landing on it.
+    """
+    base = Polygon(profile_outer())
+    grown = base.buffer(BAND_D, join_style=2).intersection(box(0.0, 0.0, 200.0, H + 50.0))
+    inner = base.buffer(-BAND_BITE, join_style=2)
+    out = []
+    for poly in (grown, inner):
+        ring = np.asarray(orient(poly, 1.0).exterior.coords)[:-1]
+        # snap the axis edge back onto the axis: a profile that misses it by
+        # BAND_BITE would revolve into a solid with a pinhole down the middle
+        out.append([(0.0 if r < BAND_BITE + 1e-6 else float(r), float(z)) for r, z in ring])
+    return out
+
+
+def grown_field(cells=None):
+    """The stones, each grown by BAND_GAP, as one solid on the body.
+
+    Growing every stone by the gap it is set apart from its neighbours by closes
+    every groove between them, so what is left open below the field is a single
+    region: exactly the raised bottom, with the right gap round it already. Each
+    stone is grown and wrapped on its own and the overlaps are resolved by the
+    union, which keeps the seam out of it -- a single grown polygon would run all
+    the way round the pot and have nowhere to start and stop.
+    """
+    cells = stone_cells() if cells is None else cells
+    prisms = [P.wrap_to_body(
+                  P.text_prism(c.buffer(BAND_GAP, join_style=1), 2.0, over=2.0, dens=1.5),
+                  R, FOOT_R, BASE_FLAT)
+              for c in cells]
+    return P.union(*prisms)
+
+
+BAND_CUT = 20.0               # the raised bottom is cut out of the skin below
+                              # this height. Anything between it and the bottom's
+                              # own edge is under a grown stone, so the one
+                              # horizontal cut in all of this falls where nothing
+                              # is left to cut.
+
+
+def bottom_band(cells=None, grown=None):
+    """The bottom of the pot, standing as proud as the stones.
+
+    One more raised shape rather than a plinth: it is the pot's own skin below
+    BAND_CUT with the grown stones taken out of it, so it stops BAND_GAP short of
+    the lowest of them and the groove round it is the groove between any two
+    stones. It carries no border of its own -- each stone's own bead reaches
+    0.925 of the 1.05 mm across, so that groove fills like any other.
+    """
+    outer, inner = profile_band()
+    skin = P.diff(P.revolve(outer, seg=256), P.revolve(inner, seg=256))
+    skin = P.intersect(skin, P.cyl(R + 8.0, -5.0, BAND_CUT, seg=256))
+    return P.diff(skin, grown_field(cells) if grown is None else grown)
 
 
 def stone_cells(seed=11):
@@ -142,7 +220,7 @@ def stone_cells(seed=11):
     # simply wraps round when it is bent onto the cylinder
     us = np.arange(-span/2 - 30, span/2 + 31, 1.0)
     below = Polygon([(us[0], -20)] + [(u, wave(u)) for u in us] + [(us[-1], -20)])
-    field = box(us[0], 0, us[-1], H - 1.4).difference(below)
+    field = box(us[0], -15, us[-1], H - 1.4).difference(below)
     clear = panel_shape().buffer(2.2)
     cells = []
     for i in range(len(tiled)):
@@ -168,7 +246,7 @@ def stone_solid(cells=None):
     """The field of raised cells, as one solid, already wrapped onto the wall."""
     cells = stone_cells() if cells is None else cells
     prisms = [P.text_prism(c, CELL_H, over=1.2, dens=1.2) for c in cells]
-    return P.bend_to_cylinder(trimesh.util.concatenate(prisms), R)
+    return P.wrap_to_body(trimesh.util.concatenate(prisms), R, FOOT_R, BASE_FLAT)
 
 
 def panel_pocket():
@@ -214,9 +292,9 @@ def body_unlettered(quiet=False):
     if not quiet:
         print('with stone', body.is_watertight, len(body.faces))
     body = P.diff(body, panel_pocket())
-    body = P.union(body, stone_border(cells))
+    body = P.union(body, stone_border(cells), bottom_band(cells))
     if not quiet:
-        print('with borders', body.is_watertight, len(body.faces))
+        print('with borders and band', body.is_watertight, len(body.faces))
     return body
 
 
