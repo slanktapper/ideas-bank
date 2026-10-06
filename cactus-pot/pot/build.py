@@ -11,7 +11,7 @@ import pathlib
 import numpy as np, trimesh
 import potlib as P
 from text3d import Face, fit_lines
-from shapely.geometry import Polygon, box, Point
+from shapely.geometry import Polygon, box, Point, LineString
 from shapely.ops import unary_union
 from shapely.geometry.polygon import orient
 from shapely import affinity
@@ -52,13 +52,14 @@ BEAD_GAP  = 0.02              # how far short of the groove's middle each stone'
                               # half stops. Two halves that met exactly would
                               # leave a coincident pair of faces in the union,
                               # and the mesh stops being a volume on reload.
-BAND_D    = CELL_H / 2        # the raised bottom: half the height of the stones
+BAND_D    = CELL_H            # the raised bottom stands as proud as the stones do
+BAND_GAP  = GROOVE            # and is held off the lowest of them by the same gap
+                              # the stones are set apart by, so the groove reads
+                              # the same all over the pot
 BAND_BITE = 0.3               # how far its skin reaches into the wall. It has to
                               # overlap the body rather than land on it: two solids
                               # meeting exactly leave coincident faces and the
                               # union stops being a volume on reload.
-BAND_LAP  = 0.15              # how far the band runs up behind the stones' feet,
-                              # for the same reason
 PAN_MARGIN = 2.5              # clear margin above and below the block of text.
                               # All three lines are set at one size and the block
                               # is centred on its inked extent, so the margin
@@ -144,15 +145,38 @@ def profile_band():
     return out
 
 
-def above_wave(lift=BAND_LAP, seg=512):
-    """A solid filling everything above the scalloped line, as a cutter.
+def band_top(cells=None, seg=512):
+    """Where the raised bottom has to stop, as a height for each of `seg` angles.
 
-    Built directly rather than revolved, because its underside is the wave: a
-    ring at r=18 and a ring at r=R+8 both sit at wave(theta), so the surface
-    between them -- the only part any of this cuts -- is the wave itself.
+    The stones are set BAND_GAP apart, so growing them by BAND_GAP closes every
+    groove between them: what is left open below the field is one region, and its
+    lower boundary is simply the lowest grown stone at each angle. Reading it off
+    that way rather than off the scalloped line is the point of the exercise --
+    the bottom then clears the lowest stones by the same gap the stones clear each
+    other by, and the dropped slivers that used to leave bare wall just above the
+    line are swallowed.
+    """
+    cells = stone_cells() if cells is None else cells
+    span = 2*np.pi*R
+    grown = unary_union(cells).buffer(BAND_GAP, join_style=1)
+    grown = unary_union([affinity.translate(grown, dx, 0) for dx in (-span, 0, span)])
+    th = np.linspace(0, 2*np.pi, seg, endpoint=False)
+    out = []
+    for u in th * R:
+        hit = LineString([(u, -5.0), (u, H + 5.0)]).intersection(grown)
+        out.append(hit.bounds[1] if not hit.is_empty else H)
+    return th, np.asarray(out)
+
+
+def above_line(h, seg=512):
+    """A solid filling everything above the height `h` at each angle, as a cutter.
+
+    Built directly rather than revolved, because its underside is that line: a
+    ring at r=18 and a ring at r=R+8 both sit at h(theta), so the surface between
+    them -- the only part any of this cuts -- is the line itself.
     """
     th = np.linspace(0, 2*np.pi, seg, endpoint=False)
-    w = wave(th * R) + lift
+    w = np.asarray(h, float)
     r_in, r_out, z_top = 18.0, R + 8.0, H + 20.0
     ring = lambda r, z: np.c_[r*np.cos(th), r*np.sin(th), z]
     V = np.vstack([[[0.0, 0.0, w.max() + 2.0]], ring(r_in, w), ring(r_out, w),
@@ -169,11 +193,18 @@ def above_wave(lift=BAND_LAP, seg=512):
     return m
 
 
-def bottom_band():
-    """The whole bottom of the pot, standing BAND_D proud, ending at the wave."""
+def bottom_band(cells=None, seg=512):
+    """The whole bottom of the pot, standing as proud as the stones.
+
+    One more raised shape rather than a plinth: it stops BAND_GAP short of the
+    lowest stones, so the groove round it is the groove between any two stones.
+    It carries no border of its own -- each stone's own bead reaches 0.925 of the
+    1.05 mm across, so the groove below the lowest stones fills like any other.
+    """
+    _, h = band_top(cells, seg)
     grown, inner = profile_band()
     skin = P.diff(P.revolve(grown, seg=256), P.revolve(inner, seg=256))
-    return P.diff(skin, above_wave())
+    return P.diff(skin, above_line(h, seg))
 
 
 def stone_cells(seed=11):
