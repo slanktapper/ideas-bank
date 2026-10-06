@@ -23,7 +23,7 @@ one-line description. Add a row when you create a project.
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
 | 3d-tools | Shared, project-agnostic 3D helpers — currently a headless software renderer | working |
 | cantstop | 3D-printed push-your-luck dice board game — octagonal wireframe board, stackable pieces | prototype |
-| cactus-pot | Ribbed cactus for a printed flower pot, with spines printed separately and press-fitted in | prototype |
+| cactus-pot | A printed pot and the cactus that stands in it, both parametric: a stone-textured pot with the name lettered on it, and a ribbed cactus whose spines print separately and press-fit in | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 
