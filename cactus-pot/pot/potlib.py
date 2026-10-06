@@ -64,6 +64,44 @@ def text_prism(geom, depth, over=0.6, dens=1.5):
     return m
 
 
+def sweep_on_cylinder(path, section, radius):
+    """Sweep a closed 2D `section` along a closed 2D `path`, onto a cylinder.
+
+    `path` is (u, z) on the unrolled wall; `section` is (t, h) where t runs along
+    the path's own normal and h is depth out from the wall. Both are closed loops
+    given once, without a repeated last point. The result is a quad tube, so it
+    is watertight with no caps and no booleans -- which is why this exists rather
+    than stacking extruded bands: a swept bead comes out two orders of magnitude
+    lighter than the same shape unioned out of slabs.
+    """
+    P = np.asarray(path, float)
+    S = np.asarray(section, float)
+    nxt, prv = np.roll(P, -1, axis=0), np.roll(P, 1, axis=0)
+    tang = nxt - prv
+    tang /= np.linalg.norm(tang, axis=1)[:, None]
+    norm = np.c_[-tang[:, 1], tang[:, 0]]                 # in the (u, z) plane
+
+    u = P[:, 0][:, None] + norm[:, 0][:, None] * S[:, 0][None, :]
+    z = P[:, 1][:, None] + norm[:, 1][:, None] * S[:, 0][None, :]
+    r = radius + S[:, 1][None, :]
+    ang = u / radius
+    V = np.stack([r*np.cos(ang), r*np.sin(ang), z], axis=-1).reshape(-1, 3)
+
+    n, m = len(P), len(S)
+    i = np.arange(n)[:, None]; j = np.arange(m)[None, :]
+    a = i*m + j
+    b = i*m + (j + 1) % m
+    c = ((i + 1) % n)*m + (j + 1) % m
+    d = ((i + 1) % n)*m + j
+    F = np.vstack([np.stack([a, b, c], -1).reshape(-1, 3),
+                   np.stack([a, c, d], -1).reshape(-1, 3)])
+    mesh = trimesh.Trimesh(V, F, process=True)
+    mesh.merge_vertices(); mesh.update_faces(mesh.nondegenerate_faces())
+    mesh.remove_unreferenced_vertices()
+    if mesh.volume < 0: mesh.invert()
+    return mesh
+
+
 def bend_to_cylinder(mesh, radius):
     """Wrap a flat prism (x across, y up, z = outward depth) onto a cylinder.
 
@@ -92,6 +130,10 @@ def diff(a, *bs):
     for b in bs:
         a = trimesh.boolean.difference([a, b], engine=BOOL)
     return a
+
+
+def intersect(a, b):
+    return trimesh.boolean.intersection([a, b], engine=BOOL)
 
 
 def union(*ms):

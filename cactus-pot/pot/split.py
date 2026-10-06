@@ -31,11 +31,14 @@ def tidy(m):
     duplicate and zero-area triangles that only merge once the vertices do.
     Slicers care, so fix it here rather than leaving it to them.
     """
-    m.merge_vertices(merge_tex=True, merge_norm=True)
-    m.update_faces(m.nondegenerate_faces())
-    m.update_faces(m.unique_faces())
-    m.remove_unreferenced_vertices()
-    return m
+    c = m.copy()
+    c.merge_vertices(merge_tex=True, merge_norm=True)
+    c.update_faces(c.nondegenerate_faces())
+    c.update_faces(c.unique_faces())
+    c.remove_unreferenced_vertices()
+    # dropping duplicate faces closes most results but opens a few: keep the
+    # cleaned copy only when it is still closed
+    return c if c.is_watertight or not m.is_watertight else m
 
 
 if __name__ == '__main__':
