@@ -1,10 +1,13 @@
 """Three ways to print the cactus in Rob's three purples.
 
 Rob has three purple PLAs and wants a cactus that reads as three colours
-without looking like it was painted in stripes. Real cacti do colour in three
-ways, and each of the schemes below copies one of them. They are listed in
-order of what they cost to print, which is not the same order as how good they
-look.
+without looking like it was painted in stripes. The spines are a fourth
+filament, silk silver -- they were a purple to begin with and vanished
+against the body, which is in the notes under SILVER.
+
+Real cacti do colour in three ways, and each of the schemes below copies one
+of them. They are listed in order of what they cost to print, which is not
+the same order as how good they look.
 
 The pigment that makes a cactus purple is a betalain, and it is a stress
 response rather than a fixed colour. Two facts from that matter here:
@@ -48,6 +51,15 @@ RENDERS = os.path.join(HERE, "renders")
 INDIGO = (0x48, 0x29, 0x60)     # PLA Basic Indigo Purple 10701, #482960
 PURPLE = (0x5E, 0x43, 0xB7)     # PLA Basic Purple 10700,       #5E43B7
 SILK = (0x86, 0x71, 0xCB)       # PLA Silk+ Purple 13702,       #8671CB
+
+# The spines. They were the third purple to begin with and disappeared --
+# the lightest of three close purples, on a 1.9 mm needle, has nothing to
+# read against. Silver is a value apart from all three, and pale spines on a
+# dark body is what the real plants do. GEEETECH publish no hex for it, so
+# this is a reading of their own product photo; a silk silver also throws
+# back more light than any flat colour, so expect the print to read brighter
+# than the render does.
+SILVER = (0xC3, 0xC7, 0xCC)     # GEEETECH Metal Shine silk PLA, metallic silver
 
 
 def norm(c):
@@ -139,7 +151,7 @@ def main():
     shot("colour-a-crown.png",
          [{"mesh": column, "color": norm(INDIGO)},
           {"mesh": crown, "color": norm(PURPLE)},
-          {"mesh": spikes, "color": norm(SILK)}])
+          {"mesh": spikes, "color": norm(SILVER)}])
     print(f"  A: swap at z={shoulder:.0f} mm, "
           f"{100 * crown.area / body.area:.0f}% of the surface above it")
 
@@ -154,7 +166,7 @@ def main():
     shot("colour-b-ridges.png",
          [{"mesh": hollow, "color": norm(SILK)},
           {"mesh": ridge, "color": norm(INDIGO)},
-          {"mesh": spikes, "color": norm(PURPLE)}])
+          {"mesh": spikes, "color": norm(SILVER)}])
     # The same split the other way up, and the one Rob picked. Botanically
     # it is the weaker claim -- the pigment really is in the ridges -- but a
     # ridge is the part the light lands on, so putting the dark colour there
@@ -162,7 +174,7 @@ def main():
     # because that is not something a swatch tells you.
     b2 = [{"mesh": hollow, "color": norm(INDIGO)},
           {"mesh": ridge, "color": norm(SILK)},
-          {"mesh": spikes, "color": norm(PURPLE)}]
+          {"mesh": spikes, "color": norm(SILVER)}]
     shot("colour-b2-ridges-lit.png", b2)
     shot("colour-b2-side.png", b2, az=118, el=4)
     shot("colour-b2-arm.png", b2, az=150, el=14, margin=0.62)
@@ -178,7 +190,7 @@ def main():
     shot("colour-c-arms.png",
          [{"mesh": trunk, "color": norm(INDIGO)},
           {"mesh": arm, "color": norm(PURPLE)},
-          {"mesh": spikes, "color": norm(SILK)}])
+          {"mesh": spikes, "color": norm(SILVER)}])
     print(f"  C: {100 * arm.area / body.area:.0f}% of the surface is arm")
 
 

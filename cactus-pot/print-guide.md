@@ -79,11 +79,24 @@ What to look at when it comes off:
 - **Speed:** slow the outer wall right down, 30 mm/s or so. The tip is one
   extrusion wide and the toolhead is turning a 0.4 mm circle at the top of
   every spike; at normal speeds that is where they go furry.
-- **Colour:** jade white, white or the milky pink read as spines. Black looks
-  like a sea urchin, which may be the point. For the body, PLA Basic
-  Mistletoe Green — the only green there is. Cocoa Brown suits the pot's stone
-  field; the pot half picks that, not this file. `../filament.md` is the stock
-  list if either runs out.
+- **Colour:** Rob picked purple on 2026-10-06, and the scheme is `B2` in
+  `colour_options.py` — rib crests in PLA Silk+ Purple against hollows in PLA
+  Basic Indigo Purple, with **the spines in GEEETECH silk silver**.
+
+  The spines being silver is not decoration. They were a third purple to begin
+  with and disappeared: the lightest of three close purples, on a 1.9 mm
+  needle, has nothing to read against. Silver is a whole value away from all
+  three, and pale spines on a dark body is what the real plants do. It also
+  echoes the pot, whose stones are the same spool.
+
+  **The body is a per-layer colour change, and it is not cheap.** 934 layers
+  at 0.2 mm, almost every one needing both purples, so budget 93–162 g of
+  purge against a part that is about 224 g. Printing at 0.28 mm cuts that by
+  roughly a third. The spine plate is unaffected — it is one colour.
+
+  Green is still an option if the purple palls: PLA Basic Mistletoe Green is
+  the only green there is. `../filament.md` is the stock list for anything
+  here that runs out.
 
 ## Seating them
 
