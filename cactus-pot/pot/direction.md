@@ -89,6 +89,7 @@ Every dimension is a constant at the top of `build.py`. The ones that matter:
 | `R`, `H` | 46.0, 76.0 — outer radius and height. The cactus is scaled to these. |
 | `WELL_Z`, `SOCKET_D`, `SOCKET_H` | the mount: floor at 55.0, Ø32.0 × 8.0 blind socket. Changing any of these breaks the cactus. |
 | `PAN_W`, `PAN_H`, `PAN_Z` | the cartouche, 78 × 37 mm, centred 48.5 up. |
+| `PAN_INSET`, `PAN_MARGIN` | 5.0 and 2.5 mm of clear panel around the text. The three lines are set at one size and the block is centred on its *inked* extent, so the top and bottom margins come out equal. |
 | `CELL_H`, `GROOVE`, `N_CELLS` | the stone field: 1.15 proud, 1.05 gaps, 300 seeds. |
 
 ## Measured, not assumed
@@ -103,7 +104,8 @@ Off `stl/pebble-pot.stl` itself:
 | Well floor | z = 55.00, so 21.00 below the rim |
 | Socket | Ø32.00 × 8.00 deep, blind, on the axis |
 | Inner wall | r = 42.80 straight, with a 4 mm fillet into the floor — 38.80 in the corner itself, open to 42.80 by z = 59 |
-| Lettering | three lines, cap heights 9.6 / 8.9 / 9.6 mm, widest line 68.0 mm, cut 1.0 mm deep into a panel sunk 0.5 mm |
+| Lettering | three lines, all at one cap height of 8.88 mm; widest line 68.0 mm, cut 1.0 mm deep into a panel sunk 0.5 mm |
+| Text in the panel | z 32.50 to 64.50 in a panel of 30.00 to 67.00 — 2.50 mm clear above and below |
 
 `../build.py --pot stl/pebble-pot.stl` is the cactus half reading those numbers
 back and checking them against `../params.py`. It agrees: 27 of 27 fit checks
