@@ -81,6 +81,35 @@ def arm_distance(pts):
     return best
 
 
+def arm_crest(pts):
+    """Which points sit on an arm's rib crest rather than in its hollow.
+
+    The trunk's test is easy: it is a column about the z axis, so a point's
+    radius can be compared against the mean radius at that height. An arm is
+    a swept tube that bends and tapers, so there is no single axis to measure
+    from. Each point is matched to the nearest station on the arm's spine
+    instead, and its distance measured perpendicular to the spine there,
+    against the mean radius of the ring at that station.
+
+    This fades out on its own where it should. The ribs are scaled away into
+    the root flare and the rounded tip, so near either end a point sits at
+    the mean radius and nothing is called a crest -- which is what the arm
+    actually looks like.
+    """
+    out = np.zeros(len(pts), dtype=bool)
+    for spec in P.ARMS:
+        rings, line, tang = C.arm_rings(spec)
+        mean_r = np.linalg.norm(rings - line[:, None, :], axis=2).mean(1)
+        d = np.linalg.norm(pts[:, None, :] - line[None, :, :], axis=2)
+        i = d.argmin(1)
+        rel = pts - line[i]
+        along = np.einsum("ij,ij->i", rel, tang[i])
+        perp = np.linalg.norm(rel - tang[i] * along[:, None], axis=1)
+        near = d[np.arange(len(pts)), i] < 16.0
+        out |= near & (perp - mean_r[i] > 0.15 * P.ARM_RIB_DEPTH)
+    return out
+
+
 # ---------------------------------------------------------------------------
 
 def main():
@@ -120,22 +149,26 @@ def main():
     # layer rather than between layers, so it is the expensive one.
     mean = C.trunk_mean_radius(c[:, 2])
     on_arm = arm_distance(c) < 16.0
-    crest = (r - mean > 0.15 * P.RIB_DEPTH) & ~on_arm
+    crest = np.where(on_arm, arm_crest(c), r - mean > 0.15 * P.RIB_DEPTH)
     ridge, hollow = split(body, crest)
     shot("colour-b-ridges.png",
          [{"mesh": hollow, "color": norm(SILK)},
           {"mesh": ridge, "color": norm(INDIGO)},
           {"mesh": spikes, "color": norm(PURPLE)}])
-    # The same split the other way up. Botanically it is the weaker claim --
-    # the pigment really is in the ridges -- but a ridge is the part the
-    # light lands on, so putting the dark colour there cancels the shading
-    # that shows the ribs at all. Rendered both ways because that is not
-    # something a swatch tells you.
-    shot("colour-b2-ridges-lit.png",
-         [{"mesh": hollow, "color": norm(INDIGO)},
+    # The same split the other way up, and the one Rob picked. Botanically
+    # it is the weaker claim -- the pigment really is in the ridges -- but a
+    # ridge is the part the light lands on, so putting the dark colour there
+    # cancels the shading that shows the ribs at all. Rendered both ways
+    # because that is not something a swatch tells you.
+    b2 = [{"mesh": hollow, "color": norm(INDIGO)},
           {"mesh": ridge, "color": norm(SILK)},
-          {"mesh": spikes, "color": norm(PURPLE)}])
-    print(f"  B: {100 * ridge.area / body.area:.0f}% of the surface is ridge")
+          {"mesh": spikes, "color": norm(PURPLE)}]
+    shot("colour-b2-ridges-lit.png", b2)
+    shot("colour-b2-side.png", b2, az=118, el=4)
+    shot("colour-b2-arm.png", b2, az=150, el=14, margin=0.62)
+    print(f"  B: {100 * ridge.area / body.area:.0f}% of the surface is ridge, "
+          f"{100 * (crest & on_arm).sum() / max(1, on_arm.sum()):.0f}% of the "
+          f"arm faces are crest")
 
     # -- C. the arms are younger ------------------------------------------
     # An arm is years younger than the trunk it grew out of and does not
