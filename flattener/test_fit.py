@@ -524,7 +524,7 @@ def part_checks():
 
 
 def main():
-    print("twist-grip — design checks")
+    print("flattener — design checks")
     brief_checks()
     cam_checks()
     wall_checks()

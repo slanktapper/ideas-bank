@@ -235,5 +235,5 @@ def summary() -> str:
 
 
 if __name__ == "__main__":
-    print("twist-grip scroll\n")
+    print("flattener scroll\n")
     print(summary())

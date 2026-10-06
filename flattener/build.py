@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build every STL and every render for twist-grip.
+"""Build every STL and every render for flattener.
 
     python3 build.py              # everything
     python3 build.py --stl        # STLs only
@@ -22,7 +22,7 @@ import numpy as np
 import trimesh
 
 # The renderer is shared -- see ../3d-tools/direction.md. This is the only
-# thing twist-grip takes from outside its own folder.
+# thing flattener takes from outside its own folder.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "3d-tools"))
 
 import params as P

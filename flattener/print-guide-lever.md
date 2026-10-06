@@ -1,4 +1,4 @@
-# twist-grip — print guide, lever version
+# flattener — print guide, lever version
 
 For the lever design in `concept_lever.py`, not the twist design that
 `build.py` and `print-guide.md` still describe. Files are in `stl-lever/`,

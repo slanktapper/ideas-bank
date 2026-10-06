@@ -1,4 +1,4 @@
-# twist-grip — print guide
+# flattener — print guide
 
 Read this before spending filament. Nothing here has been printed yet, so
 everything below is reasoning from `../available-tools.md` and the geometry,

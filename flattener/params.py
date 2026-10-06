@@ -1,4 +1,4 @@
-"""Every dimension of twist-grip, in millimetres and degrees.
+"""Every dimension of flattener, in millimetres and degrees.
 
 Change a number here, run test_fit.py, then build.py. Nothing else in the
 project hard-codes a size; if a number appears twice, one of them is wrong.
