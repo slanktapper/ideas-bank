@@ -94,5 +94,9 @@ def diff(a, *bs):
     return a
 
 
+def intersect(a, b):
+    return trimesh.boolean.intersection([a, b], engine=BOOL)
+
+
 def union(*ms):
     return trimesh.boolean.union(list(ms), engine=BOOL)

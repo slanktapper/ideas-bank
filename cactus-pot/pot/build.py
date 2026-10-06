@@ -126,32 +126,58 @@ def stone_cells(seed=11):
     return cells
 
 
-def build():
-    body = P.diff(P.revolve(profile_outer(), seg=256),
-                  P.revolve(profile_cavity(), seg=256),
-                  P.cyl(SOCKET_D/2, WELL_Z - SOCKET_H, WELL_Z + 1.0, seg=96))
-    print('body watertight', body.is_watertight, 'volume %.0f' % body.volume)
-
+def stone_solid():
+    """The field of raised cells, as one solid, already wrapped onto the wall."""
     cells = stone_cells()
     print('cells', len(cells))
     prisms = [P.text_prism(c, CELL_H, over=1.2, dens=1.2) for c in cells]
-    stone = P.bend_to_cylinder(trimesh.util.concatenate(prisms), R)
-    body = P.union(body, stone)
-    print('with stone', body.is_watertight, len(body.faces))
+    return P.bend_to_cylinder(trimesh.util.concatenate(prisms), R)
 
-    pocket = P.bend_to_cylinder(P.text_prism(panel_shape(), 2.0, over=PAN_SINK, dens=1.2), R)
-    body = P.diff(body, pocket)
 
+def panel_pocket():
+    """The cutter that sinks the cartouche PAN_SINK below the plain wall."""
+    return P.bend_to_cylinder(P.text_prism(panel_shape(), 2.0, over=PAN_SINK, dens=1.2), R)
+
+
+def text_flat(quiet=False):
+    """The three lines as one flat shapely geometry, placed on the panel."""
     face = Face('Outfit-Bold')
     placed = fit_lines(face, LINES, PAN_W - 2*PAN_INSET, PAN_H - 2*PAN_MARGIN, 9.6)
-    for g, cap, w in placed: print(f'  line cap {cap:.2f} mm, width {w:.1f} mm')
     text = unary_union([affinity.translate(g, 0, PAN_Z) for g, _, _ in placed])
-    lo, hi = text.bounds[1], text.bounds[3]
-    print('  text z %.2f..%.2f in a panel of %.2f..%.2f -- margins %.2f above, '
-          '%.2f below' % (lo, hi, PAN_Z - PAN_H/2, PAN_Z + PAN_H/2,
-                          PAN_Z + PAN_H/2 - hi, lo - (PAN_Z - PAN_H/2)))
-    cutter = P.bend_to_cylinder(P.text_prism(text, 1.5, over=TEXT_DEPTH + PAN_SINK, dens=1.2), R)
-    body = P.diff(body, cutter)
+    if not quiet:
+        for g, cap, w in placed: print(f'  line cap {cap:.2f} mm, width {w:.1f} mm')
+        lo, hi = text.bounds[1], text.bounds[3]
+        print('  text z %.2f..%.2f in a panel of %.2f..%.2f -- margins %.2f above, '
+              '%.2f below' % (lo, hi, PAN_Z - PAN_H/2, PAN_Z + PAN_H/2,
+                              PAN_Z + PAN_H/2 - hi, lo - (PAN_Z - PAN_H/2)))
+    return text
+
+
+def text_cutter(quiet=False):
+    """The letter prisms, wrapped onto the wall. TEXT_DEPTH of this is inside."""
+    return P.bend_to_cylinder(
+        P.text_prism(text_flat(quiet), 1.5, over=TEXT_DEPTH + PAN_SINK, dens=1.2), R)
+
+
+def body_unlettered(quiet=False):
+    """The pot with its stone field and sunken panel, before the name is cut.
+
+    This is also the shape of the finished object when the lettering is *filled*
+    with a second filament rather than left as a void -- see colours.py.
+    """
+    body = P.diff(P.revolve(profile_outer(), seg=256),
+                  P.revolve(profile_cavity(), seg=256),
+                  P.cyl(SOCKET_D/2, WELL_Z - SOCKET_H, WELL_Z + 1.0, seg=96))
+    if not quiet:
+        print('body watertight', body.is_watertight, 'volume %.0f' % body.volume)
+    body = P.union(body, stone_solid())
+    if not quiet:
+        print('with stone', body.is_watertight, len(body.faces))
+    return P.diff(body, panel_pocket())
+
+
+def build():
+    body = P.diff(body_unlettered(), text_cutter())
     print('final', body.is_watertight, len(body.faces), 'volume %.0f' % body.volume)
     out = pathlib.Path(__file__).resolve().parent / 'stl'
     out.mkdir(exist_ok=True)
