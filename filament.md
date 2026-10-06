@@ -13,12 +13,11 @@ Three neighbouring files are about something else and are not substitutes:
 - `3dresearch/materials.md` — which material suits which **job**.
 
 **Keep this current.** It is the file that stops a project quietly assuming a
-colour or a material. When spools arrive, move them from *On order* to *On
-hand*; when one runs out, take it off. Date every change, Alberta time.
+colour or a material. Add what arrives, take off what runs out, and date every
+change in Alberta time. Everything listed here is Rob's to print with; he
+tracks what has physically landed, so this file does not try to.
 
-## On hand
-
-Confirmed stock, as it stood before the 2026-10-06 order below.
+## Bulk stock
 
 | Material | Amount | Colours | Notes |
 | --- | --- | --- | --- |
@@ -28,11 +27,9 @@ Confirmed stock, as it stood before the 2026-10-06 order below.
 | **ABS Refill** | 2 kg | orange | Heat resistance indoors, ~100 °C. Uses the heated chamber. |
 | Support for ABS | 0.5 kg | — | Peelable supports under ABS and ASA only. |
 
-## On order — placed 2026-10-06 MDT
+## Single spools
 
-**Not yet confirmed delivered.** Do not design a project around a colour in
-this section without checking with Rob first; move the rows up to *On hand*
-once the boxes are open.
+Added 2026-10-06 MDT.
 
 ### Bambu Lab CA
 
@@ -53,11 +50,11 @@ Colour codes are Bambu's own, which is what the AMS and the slicer show.
 
 A *refill* is filament with no spool core — it needs an empty Bambu spool to
 wind onto. The red, blue, purple, yellow and orange above are refills, so they
-top up colours rather than arriving ready to load. Blue and red already exist
-on the shelf; purple is close to the indigo purple already there but is not the
-same colour.
+top up colours rather than being ready to load on their own. Blue and red are
+also in the bulk stock above; purple is close to the indigo purple there but is
+not the same colour.
 
-The order also included a Maker's Beginner Kit (ZC002), which is tools and
+That order also included a Maker's Beginner Kit (ZC002), which is tools and
 samples rather than stock.
 
 ### Elsewhere, 1.75 mm
@@ -72,7 +69,7 @@ same brittleness. Silk prints glossy and shows layer lines and seams more than
 matte PLA does, so it flatters smooth curved surfaces and punishes flat faces
 and sharp corners.
 
-## What is still not here
+## What is not here
 
 ASA (UV-stable, outdoor), TPU (flexible), PVA (dissolvable), PC, nylon, and any
 carbon-filled composite. Orderable, but with lead time — and the abrasive ones
@@ -81,9 +78,9 @@ PLA beyond jade white, and no clear or transparent filament in any material.
 
 ## Colour notes worth keeping
 
-- The only **green** is PLA Basic Mistletoe Green, and it is in the 2026-10-06
-  order. Before that there was no green on the shelf at all, so any note older
-  than that date which assumes one was assuming wrong.
+- The only **green** is PLA Basic Mistletoe Green, added 2026-10-06. Before
+  that there was no green at all, so any note older than that date which
+  assumes one was assuming wrong.
 - **Jade white** and **milky pink** are the two pale PLAs, and they are what a
   small light-coloured part gets. There is no plain white PLA; the white in
   stock is PETG.

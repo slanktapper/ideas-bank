@@ -60,8 +60,7 @@ undersize. Design in clearance and expect to iterate a test fit.
 **The stock list lives in `filament.md` at the repository root.** It is kept there
 rather than here because it changes every time Rob orders, and a capability doc that
 goes stale is how a project ends up designed around a colour nobody owns. Read it
-before choosing a material or a colour — it also says what is *on order* but not yet
-delivered, which is not the same as being able to print with it today.
+before choosing a material or a colour.
 
 The shape of what is there, as a summary only:
 

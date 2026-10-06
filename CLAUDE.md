@@ -31,7 +31,7 @@ ideas-bank/
 ├── CLAUDE.md            # this file — how Claude works in this repo
 ├── DIRECTION.md         # repo-level direction + the project registry
 ├── available-tools.md   # physical/fabrication capability available to any project
-├── filament.md          # what filament is actually on the shelf, and what is on order
+├── filament.md          # what filament is on the shelf, by material and colour
 ├── <short-name>/        # one idea/tool per folder
 │   ├── direction.md     # what this idea is, where it is going
 │   └── ...              # that idea's own code, config, docs, data
@@ -177,10 +177,9 @@ hand, and what it explicitly cannot do are all specified there.
 
 **Colour and material come from `filament.md`,** which is the stock list and the only
 place it is maintained. Read it before naming a colour or a material in a print guide,
-a `direction.md`, or an answer to Rob. It separates what is *on hand* from what is *on
-order and not yet delivered*; the second is not something a project can be designed
-around yet. When spools arrive or run out, update that file in the same commit as
-whatever noticed.
+a `direction.md`, or an answer to Rob. Everything it lists is available to print with.
+When spools arrive or run out, update that file in the same commit as whatever noticed
+— a stale stock list is how a project ends up designed around a colour nobody owns.
 
 The failure this exists to prevent is silent omission: finishing a project that would
 have been better with a printed or cut part, without the user ever learning that option
@@ -260,6 +259,6 @@ status updates, and any timestamp you quote back from git, logs, or a file listi
 | Project folder | Self-contained; conventions come from inside it |
 | New idea | Short name → folder → `direction.md` → registry row |
 | Physical capability | Check `available-tools.md`; ask when a fit is plausible but unclear |
-| Colour or material | Check `filament.md`; on order is not the same as on hand |
+| Colour or material | Check `filament.md`; it is the only stock list, keep it current |
 | Model is "not right" | Fix the thing named, minimally; if truly impossible, options first, then wait |
 | Times and dates | Alberta time (`America/Edmonton`), zone always labelled |
