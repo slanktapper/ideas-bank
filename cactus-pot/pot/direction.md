@@ -173,6 +173,29 @@ but has about 1 600 edges where it touches itself in the narrow grooves between
 stones, which show up once a reader merges coincident vertices. Slicers handle
 that; it is not a hole.
 
+### What five colours costs
+
+Worth knowing before the slicer is opened. Every colour on this pot spans most of
+its height -- the stones and their borders run from z 13 to 75, the cartouche from
+30 to 67, the name from 32 to 64, and the gold is everywhere. So almost every
+layer carries several filaments:
+
+| | |
+| --- | --- |
+| Layers at 0.2 mm | 380 |
+| Layers carrying more than one colour | 311 |
+| Filament changes | about 960 |
+| Purge, at 0.35 to 0.9 g flushed a change | 340 to 870 g |
+| The pot itself | 367 cm³, about 455 g |
+
+So the waste is of the same order as the part, and could exceed it. That is not an
+argument against doing it -- it is a print worth the filament if the look is
+wanted -- but it should be a decision rather than a surprise. Flushing into infill
+saves little here, because a pot this thin has almost none.
+
+The two-tone split in `split.py` is the cheap end of the same idea: one change for
+the whole print, because the colours are stacked rather than interleaved.
+
 ## Printing it
 
 The two-zone split is the point of `split.py`: each half is a single colour, so
