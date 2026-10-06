@@ -17,8 +17,8 @@ product; treat them as binding.
 The root of the repository contains exactly two kinds of entries:
 
 1. **Direction `.md` files** — repo-level guidance (this file, `DIRECTION.md`,
-   `available-tools.md`, and any future direction docs). These describe intent and
-   rules, not implementation.
+   `available-tools.md`, `filament.md`, and any future direction docs). These describe
+   intent and rules, not implementation.
 2. **Project folders**, one per idea/tool/experiment, named with the project's
    **short name**.
 
@@ -31,6 +31,7 @@ ideas-bank/
 ├── CLAUDE.md            # this file — how Claude works in this repo
 ├── DIRECTION.md         # repo-level direction + the project registry
 ├── available-tools.md   # physical/fabrication capability available to any project
+├── filament.md          # what filament is actually on the shelf, and what is on order
 ├── <short-name>/        # one idea/tool per folder
 │   ├── direction.md     # what this idea is, where it is going
 │   └── ...              # that idea's own code, config, docs, data
@@ -174,6 +175,13 @@ Three responses, and the third is the one that gets forgotten:
 Consult it rather than guessing what the printer can do — build volume, materials on
 hand, and what it explicitly cannot do are all specified there.
 
+**Colour and material come from `filament.md`,** which is the stock list and the only
+place it is maintained. Read it before naming a colour or a material in a print guide,
+a `direction.md`, or an answer to Rob. It separates what is *on hand* from what is *on
+order and not yet delivered*; the second is not something a project can be designed
+around yet. When spools arrive or run out, update that file in the same commit as
+whatever noticed.
+
 The failure this exists to prevent is silent omission: finishing a project that would
 have been better with a printed or cut part, without the user ever learning that option
 existed.
@@ -252,5 +260,6 @@ status updates, and any timestamp you quote back from git, logs, or a file listi
 | Project folder | Self-contained; conventions come from inside it |
 | New idea | Short name → folder → `direction.md` → registry row |
 | Physical capability | Check `available-tools.md`; ask when a fit is plausible but unclear |
+| Colour or material | Check `filament.md`; on order is not the same as on hand |
 | Model is "not right" | Fix the thing named, minimally; if truly impossible, options first, then wait |
 | Times and dates | Alberta time (`America/Edmonton`), zone always labelled |

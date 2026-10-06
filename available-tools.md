@@ -57,20 +57,28 @@ undersize. Design in clearance and expect to iterate a test fit.
 
 ### Filament on hand
 
-| Material | Amount | Good for |
-| --- | --- | --- |
-| **PETG Basic** | 5 kg (yellow, reflex blue, orange, white, black) | The functional default. Tough, ~80 °C, chemical and oil resistant. |
-| **PLA Basic** | 5 kg (indigo purple, blue, red, black, jade white) | Prototypes, fit checks, anything decorative. Softens ~60 °C, brittle, creeps under load. |
-| PLA Pure | 1 kg (milky pink) | As PLA Basic. |
-| **ABS Refill** | 2 kg (orange) | Heat resistance indoors, ~100 °C. Uses the heated chamber. |
-| Support for ABS | 0.5 kg | Peelable supports under ABS and ASA only. |
+**The stock list lives in `filament.md` at the repository root.** It is kept there
+rather than here because it changes every time Rob orders, and a capability doc that
+goes stale is how a project ends up designed around a colour nobody owns. Read it
+before choosing a material or a colour — it also says what is *on order* but not yet
+delivered, which is not the same as being able to print with it today.
+
+The shape of what is there, as a summary only:
+
+| Material | Good for |
+| --- | --- |
+| **PETG Basic** | The functional default. Tough, ~80 °C, chemical and oil resistant. |
+| **PLA Basic**, PLA Pure, silk PLA | Prototypes, fit checks, anything decorative. Softens ~60 °C, brittle, creeps under load. |
+| **ABS Refill** | Heat resistance indoors, ~100 °C. Uses the heated chamber. |
+| Support for ABS | Peelable supports under ABS and ASA only. |
 
 Material choice by job is in `3dresearch/materials.md`; every filament Bambu sells is
 summarised in `3dresearch/filament-glossary.md`.
 
 **Not on hand:** ASA (UV-stable, outdoor), TPU (flexible), PVA (dissolvable), PC, nylon,
 and any carbon-filled composite. Those are orderable but need lead time, and the
-abrasive ones also need a hardened nozzle that has not been bought.
+abrasive ones also need a hardened nozzle that has not been bought. `filament.md` has
+the current version of this list.
 
 **No laser.** The laser and its engraving capability live on the *Laser Full Combo*, a
 different and dearer machine variant. It was not bought and cannot be added to this one
