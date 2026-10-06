@@ -17,7 +17,7 @@ here unchanged when a second project needed it.
 Two reasons, and the second is the one that justifies breaking the
 one-folder-per-idea rule.
 
-The first is ordinary: `twist-grip` needs renders, `cantstop` already had a
+The first is ordinary: `flattener` needs renders, `cantstop` already had a
 renderer, and copying a few hundred lines to get it would mean two copies
 drifting apart.
 
@@ -118,7 +118,7 @@ than being imported as a package. Two rules come with it:
   `pip install -e 3d-tools` would be tidier and would need a real package
   name, since `3d-tools` is not importable. Not worth it for two consumers.
 - **Near-plane clipping.** Worth adding the first time a camera genuinely
-  needs to sit inside a part — a bore, say, which `twist-grip` has.
+  needs to sit inside a part — a bore, say, which `flattener` has.
 - **Vertex normals.** Would make curved surfaces readable at the cost of
   hiding facet count. If it is ever added it should be an argument that
   defaults to off, not a change of behaviour.

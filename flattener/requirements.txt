@@ -1,0 +1,8 @@
+# twist-grip — parametric CAD-as-code, Python 3.10+
+# Install with:  python3 -m pip install -r requirements.txt
+
+# Meshes, the raster for the renders, and the slicer behind section views.
+-r ../3d-tools/requirements.txt
+
+manifold3d>=2.3        # the boolean engine trimesh uses; every part here is
+                       # built by cutting one solid out of another
