@@ -80,7 +80,8 @@ something else.
     python3 split.py                      # the two printable zones
     python3 colours.py                    # stl/colour/, the four-filament split
     python3 shots.py                      # renders/
-    python3 shots.py --colour             # the four-colour pot, every 120 deg
+    python3 shots.py --colour             # the five-colour pot, every 120 deg
+    python3 shots.py --photos             # renders/photos/, a full set to look at
     python3 shots.py --compare <old.stl>  # this pot beside the one we started from
 
 The build is deterministic — the Voronoi field is seeded — so `build.py` on a
