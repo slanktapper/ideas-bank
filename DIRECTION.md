@@ -23,7 +23,8 @@ one-line description. Add a row when you create a project.
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
 | 3d-tools | Shared, project-agnostic 3D helpers — currently a headless software renderer | working |
 | cantstop | 3D-printed push-your-luck dice board game — octagonal wireframe board, stackable pieces | prototype |
-| flattener | 3D-printed finger flattener — squeeze two levers, jaws close on 78 mm of finger | prototype |
+| cactus-pot | Ribbed cactus for a printed flower pot, with spines printed separately and press-fitted in | prototype |
+| flattener | 3D-printed finger flattener — squeeze two levers, jaws close on 77 mm of finger | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 

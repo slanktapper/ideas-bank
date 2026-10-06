@@ -1,0 +1,15 @@
+# cactus-pot/pot -- the pot half. Python 3.10+.
+#     python3 -m pip install -r requirements.txt
+
+# The renderer in ../../3d-tools brings numpy, pillow, trimesh, scipy, shapely
+# and mapbox_earcut with it. scipy is not optional here: the stone field is a
+# Voronoi diagram, relaxed.
+-r ../../3d-tools/requirements.txt
+
+manifold3d>=2.3        # the boolean engine. The pot is ~300 stone cells unioned
+                       # onto a revolved body and then two text cuts; trimesh's
+                       # other engines lose watertightness on it.
+
+fonttools>=4.40        # glyph outlines straight from the TTF, flattened to
+                       # polygons here, so the lettering is exact at any size
+                       # instead of traced off a raster.
