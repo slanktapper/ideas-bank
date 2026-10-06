@@ -11,7 +11,7 @@ import pathlib
 import numpy as np, trimesh
 import potlib as P
 from text3d import Face, fit_lines
-from shapely.geometry import Polygon, box, Point, LineString
+from shapely.geometry import Polygon, box, Point
 from shapely.ops import unary_union
 from shapely.geometry.polygon import orient
 from shapely import affinity
@@ -31,10 +31,14 @@ SOCKET_D  = 32.0
 SOCKET_H  = 8.0
 
 # ---- the stone field -------------------------------------------------------
-WAVE_Z    = 19.0              # mean height of the scalloped line
+WAVE_Z    = 4.3               # mean position of the scalloped line, measured as
+                              # arc length along the outer profile: 4.3 is halfway
+                              # round the foot's roll, at z = 5.86
+WAVE_A    = 0.6               # the scallops, scaled down to fit under the roll
 CELL_H    = 1.15              # how far the cells stand proud
 GROOVE    = 1.05              # width of the gap between cells
-N_CELLS   = 300
+N_CELLS   = 310               # kept in step with the taller field, for one size
+                              # of stone throughout
 
 # ---- the panel -------------------------------------------------------------
 PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
@@ -68,10 +72,15 @@ LINES = ['Eleanor', "Shellstrop's", 'File']
 
 
 def wave(u):
-    """Height of the scalloped line, as a function of arc position."""
+    """The scalloped line, as a function of arc position round the pot.
+
+    The value is a position along the outer profile, not a height: on the straight
+    wall the two are the same, and below z = FOOT_R it keeps running round the
+    roll. See `potlib.body_point`.
+    """
     t = u / R
-    return (WAVE_Z + 4.6*np.sin(5*t + 0.4) + 2.2*np.sin(8*t + 1.9)
-                   + 1.3*np.sin(13*t + 0.7))
+    return (WAVE_Z + WAVE_A*(4.6*np.sin(5*t + 0.4) + 2.2*np.sin(8*t + 1.9)
+                             + 1.3*np.sin(13*t + 0.7)))
 
 
 def profile_outer():
@@ -120,7 +129,7 @@ def stone_border(cells=None):
     for c in (stone_cells() if cells is None else cells):
         # clockwise, so the sweep's normal points out of the stone
         ring = np.asarray(orient(c, -1.0).segmentize(1.8).exterior.coords)[:-1]
-        beads.append(P.sweep_on_cylinder(ring, sec, R))
+        beads.append(P.sweep_on_body(ring, sec, R, FOOT_R, BASE_FLAT))
     return P.union(*beads)
 
 
@@ -145,66 +154,44 @@ def profile_band():
     return out
 
 
-def band_top(cells=None, seg=512):
-    """Where the raised bottom has to stop, as a height for each of `seg` angles.
+def grown_field(cells=None):
+    """The stones, each grown by BAND_GAP, as one solid on the body.
 
-    The stones are set BAND_GAP apart, so growing them by BAND_GAP closes every
-    groove between them: what is left open below the field is one region, and its
-    lower boundary is simply the lowest grown stone at each angle. Reading it off
-    that way rather than off the scalloped line is the point of the exercise --
-    the bottom then clears the lowest stones by the same gap the stones clear each
-    other by, and the dropped slivers that used to leave bare wall just above the
-    line are swallowed.
+    Growing every stone by the gap it is set apart from its neighbours by closes
+    every groove between them, so what is left open below the field is a single
+    region: exactly the raised bottom, with the right gap round it already. Each
+    stone is grown and wrapped on its own and the overlaps are resolved by the
+    union, which keeps the seam out of it -- a single grown polygon would run all
+    the way round the pot and have nowhere to start and stop.
     """
     cells = stone_cells() if cells is None else cells
-    span = 2*np.pi*R
-    grown = unary_union(cells).buffer(BAND_GAP, join_style=1)
-    grown = unary_union([affinity.translate(grown, dx, 0) for dx in (-span, 0, span)])
-    th = np.linspace(0, 2*np.pi, seg, endpoint=False)
-    out = []
-    for u in th * R:
-        hit = LineString([(u, -5.0), (u, H + 5.0)]).intersection(grown)
-        out.append(hit.bounds[1] if not hit.is_empty else H)
-    return th, np.asarray(out)
+    prisms = [P.wrap_to_body(
+                  P.text_prism(c.buffer(BAND_GAP, join_style=1), 2.0, over=2.0, dens=1.5),
+                  R, FOOT_R, BASE_FLAT)
+              for c in cells]
+    return P.union(*prisms)
 
 
-def above_line(h, seg=512):
-    """A solid filling everything above the height `h` at each angle, as a cutter.
+BAND_CUT = 20.0               # the raised bottom is cut out of the skin below
+                              # this height. Anything between it and the bottom's
+                              # own edge is under a grown stone, so the one
+                              # horizontal cut in all of this falls where nothing
+                              # is left to cut.
 
-    Built directly rather than revolved, because its underside is that line: a
-    ring at r=18 and a ring at r=R+8 both sit at h(theta), so the surface between
-    them -- the only part any of this cuts -- is the line itself.
+
+def bottom_band(cells=None, grown=None):
+    """The bottom of the pot, standing as proud as the stones.
+
+    One more raised shape rather than a plinth: it is the pot's own skin below
+    BAND_CUT with the grown stones taken out of it, so it stops BAND_GAP short of
+    the lowest of them and the groove round it is the groove between any two
+    stones. It carries no border of its own -- each stone's own bead reaches
+    0.925 of the 1.05 mm across, so that groove fills like any other.
     """
-    th = np.linspace(0, 2*np.pi, seg, endpoint=False)
-    w = np.asarray(h, float)
-    r_in, r_out, z_top = 18.0, R + 8.0, H + 20.0
-    ring = lambda r, z: np.c_[r*np.cos(th), r*np.sin(th), z]
-    V = np.vstack([[[0.0, 0.0, w.max() + 2.0]], ring(r_in, w), ring(r_out, w),
-                   ring(r_out, np.full(seg, z_top)), [[0.0, 0.0, z_top]]])
-    inn, out, top, hub = 1, 1 + seg, 1 + 2*seg, 1 + 3*seg
-    i = np.arange(seg); j = (i + 1) % seg
-    F = [np.c_[np.zeros(seg, int), inn + j, inn + i],
-         np.c_[inn + i, inn + j, out + j], np.c_[inn + i, out + j, out + i],
-         np.c_[out + i, out + j, top + j], np.c_[out + i, top + j, top + i],
-         np.c_[top + i, top + j, np.full(seg, hub)]]
-    m = trimesh.Trimesh(V, np.vstack(F), process=True)
-    m.merge_vertices(); m.update_faces(m.nondegenerate_faces())
-    if m.volume < 0: m.invert()
-    return m
-
-
-def bottom_band(cells=None, seg=512):
-    """The whole bottom of the pot, standing as proud as the stones.
-
-    One more raised shape rather than a plinth: it stops BAND_GAP short of the
-    lowest stones, so the groove round it is the groove between any two stones.
-    It carries no border of its own -- each stone's own bead reaches 0.925 of the
-    1.05 mm across, so the groove below the lowest stones fills like any other.
-    """
-    _, h = band_top(cells, seg)
-    grown, inner = profile_band()
-    skin = P.diff(P.revolve(grown, seg=256), P.revolve(inner, seg=256))
-    return P.diff(skin, above_line(h, seg))
+    outer, inner = profile_band()
+    skin = P.diff(P.revolve(outer, seg=256), P.revolve(inner, seg=256))
+    skin = P.intersect(skin, P.cyl(R + 8.0, -5.0, BAND_CUT, seg=256))
+    return P.diff(skin, grown_field(cells) if grown is None else grown)
 
 
 def stone_cells(seed=11):
@@ -233,7 +220,7 @@ def stone_cells(seed=11):
     # simply wraps round when it is bent onto the cylinder
     us = np.arange(-span/2 - 30, span/2 + 31, 1.0)
     below = Polygon([(us[0], -20)] + [(u, wave(u)) for u in us] + [(us[-1], -20)])
-    field = box(us[0], 0, us[-1], H - 1.4).difference(below)
+    field = box(us[0], -15, us[-1], H - 1.4).difference(below)
     clear = panel_shape().buffer(2.2)
     cells = []
     for i in range(len(tiled)):
@@ -259,7 +246,7 @@ def stone_solid(cells=None):
     """The field of raised cells, as one solid, already wrapped onto the wall."""
     cells = stone_cells() if cells is None else cells
     prisms = [P.text_prism(c, CELL_H, over=1.2, dens=1.2) for c in cells]
-    return P.bend_to_cylinder(trimesh.util.concatenate(prisms), R)
+    return P.wrap_to_body(trimesh.util.concatenate(prisms), R, FOOT_R, BASE_FLAT)
 
 
 def panel_pocket():
@@ -305,7 +292,7 @@ def body_unlettered(quiet=False):
     if not quiet:
         print('with stone', body.is_watertight, len(body.faces))
     body = P.diff(body, panel_pocket())
-    body = P.union(body, stone_border(cells), bottom_band())
+    body = P.union(body, stone_border(cells), bottom_band(cells))
     if not quiet:
         print('with borders and band', body.is_watertight, len(body.faces))
     return body

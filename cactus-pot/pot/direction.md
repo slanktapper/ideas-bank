@@ -98,7 +98,8 @@ Every dimension is a constant at the top of `build.py`. The ones that matter:
 | `BEAD_W` | the border round each stone: 1.89 mm, 1.8x the groove, so it fills every nominal gap solid. |
 | `BAND_D`, `BAND_GAP` | the raised bottom: 1.15 mm proud, the same as a stone, held 1.05 mm clear of the lowest stones. |
 | `PAN_INSET`, `PAN_MARGIN` | 5.0 and 2.5 mm of clear panel around the text. The three lines are set at one size and the block is centred on its *inked* extent, so the top and bottom margins come out equal. |
-| `CELL_H`, `GROOVE`, `N_CELLS` | the stone field: 1.15 proud, 1.05 gaps, 300 seeds. |
+| `CELL_H`, `GROOVE`, `N_CELLS` | the stone field: 1.15 proud, 1.05 gaps, 310 seeds, 209 stones. |
+| `WAVE_Z`, `WAVE_A` | the scalloped line: 4.3 along the profile, which is halfway round the foot's roll, with the scallops at 0.6 of their original size so they fit under it. |
 
 ## Measured, not assumed
 
@@ -108,7 +109,8 @@ Off `stl/pebble-pot.stl` itself:
 | --- | --- |
 | Overall | **94.30 × 94.30 × 76.00 mm** |
 | The body | Ø92.00 — the extra 2.30 is the stone cells standing 1.15 mm proud |
-| Watertight | yes as built, 375 348 faces, 375 288 mm³ |
+| The stone field | z 2.90 to 74.60: it runs from just under the rim to halfway round the foot's roll |
+| Watertight | yes as built, 453 930 faces, 374 771 mm³ |
 | Well floor | z = 55.00, so 21.00 below the rim |
 | Socket | Ø32.00 × 8.00 deep, blind, on the axis |
 | Inner wall | r = 42.80 straight, with a 4 mm fillet into the floor — 38.80 in the corner itself, open to 42.80 by z = 59 |
@@ -127,12 +129,12 @@ colouring to the slicer, so the split lives in the geometry:
 | File | Filament | What it is |
 | --- | --- | --- |
 | `01-cocoa-body.stl` | PLA Basic cocoa brown | The body, the foot, the inside, the borders round the stones and the raised bottom |
-| `02-silver-stones.stl` | Silk silver PLA | The 179 raised cells, as 179 separate closed bodies |
+| `02-silver-stones.stl` | Silk silver PLA | The 209 raised cells, as 209 separate closed bodies |
 | `03-white-panel.stl` | Jade white PLA | The cartouche, 1.6 mm deep behind its face |
 | `04-black-letters.stl` | Black PLA | The letters, filling the 1.0 mm engraving flush |
 
-Volumes: 349 448 + 21 942 + 3 903 + 540 mm³, which reconciles with the
-375 828 mm³ of `build.body_unlettered()` to 5 mm³ — a hundredth of a percent,
+Volumes: 340 931 + 29 942 + 3 903 + 540 mm³, which reconciles with the
+375 311 mm³ of `build.body_unlettered()` to 5 mm³ — a hundredth of a percent,
 in the grooves where the parts run into each other. The borders and the raised
 bottom were a fifth part in silk purple until 2026-10-06; they are still cut
 out of the stones, because the wider bead bites about 18 mm³ into the stones'
@@ -172,6 +174,29 @@ the wider bead runs into a stone's foot is cut off the stone. Each quarter still
 stops `BEAD_GAP` short of its own full extent, 0.02 mm, because two faces that
 land exactly on each other make the pot stop being a volume on reload.
 
+### Down the foot
+
+Until 2026-10-06 evening the stone field stopped at the straight wall and the
+whole rolled foot was smooth. It now runs on round the roll and stops about
+halfway down it, at z = 2.90 at the lowest stone.
+
+That needs a different wrap. `potlib.bend_to_cylinder` maps a flat prism onto a
+cylinder, which is exactly right above z = 20 and meaningless below it, where the
+pot is a 20 mm roll closing in on a 26 mm flat. `potlib.body_point` replaces it
+for anything that may reach down there: the flat coordinate across becomes an
+angle at R as before, the flat coordinate up becomes **arc length along the outer
+profile**, and the third becomes depth along the surface normal. Above the roll
+the two agree exactly, so nothing on the wall moved. Below it a stone 1.15 mm
+proud stands 1.15 mm proud of the curve rather than of a cylinder it is nowhere
+near, and the stones lean out with the surface instead of cutting into it.
+`wrap_to_body` and `sweep_on_body` are the prism and sweep built on it.
+
+Two consequences worth knowing. `wave` now returns a position along the profile
+rather than a height -- 4.3 is halfway round the roll, not 4.3 mm up -- and the
+scallops are scaled to 0.6 so the line clears the base. And a stone near the
+bottom is about 13% narrower in real terms than the same stone on the wall, since
+the angle it occupies is the same while the radius it sits at is smaller.
+
 ### The raised bottom
 
 Everything below the stone field stands 1.15 mm proud of the wall -- as proud as
@@ -181,13 +206,19 @@ raised shape in it, with the same groove running round it, and it is body colour
 like everything else that is not a stone, a cartouche or a letter.
 
 Where it stops is read off the stones rather than off the scalloped line, in
-`band_top`. The stones are `GROOVE` apart, so growing them by `GROOVE` closes
-every groove between them: what is left open below the field is a single region,
-and its lower boundary is just the lowest grown stone at each angle. Two things
-fall out of that. The bottom follows the real outlines of the lowest stones
-rather than a curve that happens to run near them, and the dropped slivers --
-cells too small to keep, which used to leave a crescent of bare wall just above
-the line -- are swallowed.
+`grown_field`. The stones are `GROOVE` apart, so growing every one of them by
+`GROOVE` closes every groove between them: what is left open below the field is a
+single region, which is the bottom, with the right gap round it already. So the
+bottom is simply the pot's skin below `BAND_CUT` with the grown stones taken out
+of it. Two things fall out of that. It follows the real outlines of the lowest
+stones rather than a curve that happens to run near them, and the dropped
+slivers -- cells too small to keep, which used to leave a crescent of bare wall
+just above the line -- are swallowed.
+
+Each stone is grown and wrapped on its own and the overlaps are left to the
+union. One grown polygon for the whole field would be simpler and is not
+available: it runs all the way round the pot, so it has nowhere to start and
+stop, and wrapping it would leave two faces meeting at the seam.
 
 It carries no border of its own: each stone's bead reaches 0.925 mm of the
 1.05 mm across, so the groove below the lowest stones fills like any other.
@@ -205,10 +236,9 @@ Its skin bites `BAND_BITE` = 0.3 mm into the wall, because a solid that lands
 exactly on another leaves coincident faces and the union stops being a volume on
 reload. An overlap is safe where a touch is not.
 
-The cutter that trims it is built directly rather than revolved, in
-`above_line`: a ring at r = 18 and a ring at r = R + 8 both sit at the height
-`band_top` gives for that angle, so the surface between them -- the only part of
-it that cuts anything -- is that line itself.
+`BAND_CUT` = 20.0 is the one horizontal cut in all of this, and it falls where
+there is nothing left to cut: everything between it and the bottom's own edge is
+under a grown stone already.
 
 It is swept, not stacked: `potlib.sweep_on_cylinder` runs the section along each
 cell's outline and onto the wall in one pass, giving 179 watertight bodies with
@@ -231,10 +261,10 @@ carry more than one filament:
 | | |
 | --- | --- |
 | Layers at 0.2 mm | 380 |
-| Layers carrying more than one colour | 307 |
-| Filament changes | about 650 |
-| Purge, at 0.35 to 0.9 g flushed a change | 230 to 580 g |
-| The pot itself | 376 cm³, about 467 g |
+| Layers carrying more than one colour | 360 |
+| Filament changes | about 700 |
+| Purge, at 0.35 to 0.9 g flushed a change | 245 to 630 g |
+| The pot itself | 375 cm³, about 466 g |
 
 So the waste is of the same order as the part, and could exceed it. That is not an
 argument against doing it -- it is a print worth the filament if the look is
@@ -248,7 +278,10 @@ the whole print, because the colours are stacked rather than interleaved.
 
 The two-zone split is the point of `split.py`: each half is a single colour, so
 two filaments give the reference photo's look with no purging and no multi-colour
-tool changes inside a part. Printed as one piece instead, `stl/pebble-pot.stl` is
+tool changes inside a part. It is much less of an idea than it was, now that the
+stones run down to halfway round the foot: the base half is 19 cm³ against the
+upper half's 356, a 6 mm band round the bottom rather than the smooth gold base
+of the reference photo. Printed as one piece instead, `stl/pebble-pot.stl` is
 fine — the split is about colour, not about overhangs.
 
 The scalloped line is a horizontal join and will show as a seam. That is wanted
