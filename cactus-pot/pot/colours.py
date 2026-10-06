@@ -13,11 +13,10 @@ geometry and survives being reopened:
 The borders and the raised bottom keep their shape; they simply print in the
 body colour, so they read by their own shadow rather than by contrast.
 
-Note what this changes: on `stl/pebble-pot.stl` the name is a void cut 1.0 mm
-into the panel. Here it is *filled*, so the four parts together make the shape
-of `build.body_unlettered()` -- a flush face with the letters in a second
-filament, not a recess. The single-colour pot is unchanged and still built by
-build.py.
+The letters are raised on both: `stl/pebble-pot.stl` carries them too, where they
+read by their own shadow. Here they read by colour as well. So unlike the earlier
+engraved version, the four parts together are the same shape as the one-piece
+pot.
 """
 from __future__ import annotations
 import pathlib
@@ -59,21 +58,22 @@ def tidy(m):
 
 
 def split():
-    solid = B.body_unlettered()
+    letters, skin, stone = B.text_solid(quiet=True), panel_skin(), B.stone_solid()
+    # the whole pot, lettering and all -- the letters stand proud of the panel, so
+    # unlike the engraved version they are not inside `body_unlettered`
+    solid = P.union(B.body_unlettered(), letters)
     print('solid %.0f mm3, watertight %s' % (solid.volume, solid.is_watertight))
-
-    cutter, skin, stone = B.text_cutter(quiet=True), panel_skin(), B.stone_solid()
 
     # The borders and the raised bottom print in the body colour now, so they are
     # not parts of their own. They still have to come off the stones: the wider
     # bead bites about 18 mm3 into the stones' feet, and that material is cocoa.
     relief = P.union(B.stone_border(), B.bottom_band())
     silver = P.diff(stone, relief)
-    black = P.intersect(solid, cutter)
-    white = P.diff(P.intersect(solid, skin), cutter)
+    black = letters
+    white = P.diff(P.intersect(solid, skin), letters)
     # cut against the silver rather than the whole stone field, so the bitten
     # feet stay with the body
-    cocoa = P.diff(solid, silver, skin, cutter)
+    cocoa = P.diff(solid, silver, skin, letters)
 
     OUT.mkdir(parents=True, exist_ok=True)
     total = 0.0

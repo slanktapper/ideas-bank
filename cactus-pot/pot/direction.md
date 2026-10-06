@@ -110,11 +110,11 @@ Off `stl/pebble-pot.stl` itself:
 | Overall | **94.30 × 94.30 × 76.00 mm** |
 | The body | Ø92.00 — the extra 2.30 is the stone cells standing 1.15 mm proud |
 | The stone field | z 2.90 to 74.60: it runs from just under the rim to halfway round the foot's roll |
-| Watertight | yes as built, 453 930 faces, 374 771 mm³ |
+| Watertight | yes as built, 636 734 faces, 375 825 mm³ |
 | Well floor | z = 55.00, so 21.00 below the rim |
 | Socket | Ø32.00 × 8.00 deep, blind, on the axis |
 | Inner wall | r = 42.80 straight, with a 4 mm fillet into the floor — 38.80 in the corner itself, open to 42.80 by z = 59 |
-| Lettering | three lines, all at one cap height of 8.88 mm; widest line 68.0 mm, cut 1.0 mm deep into a panel sunk 0.5 mm |
+| Lettering | three lines, all at one cap height of 8.88 mm; widest line 68.0 mm, standing 1.0 mm off a panel sunk 0.5 mm, with a 0.4 mm roll on the top edge |
 | Text in the panel | z 32.50 to 64.50 in a panel of 30.00 to 67.00 — 2.50 mm clear above and below |
 
 `../build.py --pot stl/pebble-pot.stl` is the cactus half reading those numbers
@@ -131,10 +131,10 @@ colouring to the slicer, so the split lives in the geometry:
 | `01-cocoa-body.stl` | PLA Basic cocoa brown | The body, the foot, the inside, the borders round the stones and the raised bottom |
 | `02-silver-stones.stl` | Silk silver PLA | The 209 raised cells, as 209 separate closed bodies |
 | `03-white-panel.stl` | Jade white PLA | The cartouche, 1.6 mm deep behind its face |
-| `04-black-letters.stl` | Black PLA | The letters, filling the 1.0 mm engraving flush |
+| `04-black-letters.stl` | Black PLA | The letters, standing 1.0 mm off the panel with a rolled edge |
 
-Volumes: 340 931 + 29 942 + 3 903 + 540 mm³, which reconciles with the
-375 311 mm³ of `build.body_unlettered()` to 5 mm³ — a hundredth of a percent,
+Volumes: 340 931 + 29 942 + 4 118 + 840 mm³, which reconciles with the
+375 825 mm³ of the finished pot to 5 mm³ — a hundredth of a percent,
 in the grooves where the parts run into each other. The borders and the raised
 bottom were a fifth part in silk purple until 2026-10-06; they are still cut
 out of the stones, because the wider bead bites about 18 mm³ into the stones'
@@ -146,9 +146,9 @@ exactly from the same seed. Load all four into the slicer at the
 origin and assign a filament to each; they are disjoint, so nothing needs
 painting by hand.
 
-**This is a different object from `stl/pebble-pot.stl`.** There the name is a
-void cut into the panel. Here it is filled, so the face is flush and the letters
-read by colour rather than by shadow. The single-colour pot is unchanged.
+The letters are raised on both: `stl/pebble-pot.stl` carries them too, where they
+read by their own shadow. Here they read by colour as well, so unlike the earlier
+engraved version the four parts together are the same shape as the one-piece pot.
 
 ### The borders
 
@@ -173,6 +173,20 @@ Overlapping borders are unioned rather than concatenated, and the 18 mm³ where
 the wider bead runs into a stone's foot is cut off the stone. Each quarter still
 stops `BEAD_GAP` short of its own full extent, 0.02 mm, because two faces that
 land exactly on each other make the pot stop being a volume on reload.
+
+### The lettering
+
+The three lines stand 1.0 mm off the panel face rather than being cut into it,
+with a 0.4 mm roll turning the top edge over. The roll is cut as nested prisms:
+at height t into the top 0.4 mm the outline is pulled in by r - sqrt(r² - t²),
+and each step is a prism from the back of the letter up to that height, so the
+steps nest and their union is one solid rather than a stack of slices with seams
+between them. 0.4 mm is the largest roll the typeface takes -- half the narrowest
+stroke in Outfit Bold at this size is about 0.7 mm.
+
+The panel is sunk 0.5 mm, so the letters top out 0.5 mm outside the wall and
+0.65 mm inside the stones: the cartouche frame still stands over them and takes
+the knocks.
 
 ### Down the foot
 

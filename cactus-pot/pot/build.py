@@ -43,7 +43,11 @@ N_CELLS   = 310               # kept in step with the taller field, for one size
 # ---- the panel -------------------------------------------------------------
 PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
 PAN_SINK  = 0.5               # how far the panel sits below the plain wall
-TEXT_DEPTH = 1.0
+TEXT_RAISE = 1.0              # how far the letters stand off the panel face
+TEXT_R     = 0.4              # the roll on their top edge. Half the narrowest
+                              # stroke is about 0.7 mm, so 0.4 rolls over without
+                              # eating a stroke away
+TEXT_STEPS = 4                # steps in the roll; 4 puts each riser at 0.1 mm
 PAN_INSET  = 5.0              # clear margin left and right of the longest line
 BEAD_W    = 1.8 * GROOVE      # the border round each stone. At 1.0x the groove
                               # two neighbouring borders met exactly in the middle
@@ -268,18 +272,35 @@ def text_flat(quiet=False):
     return text
 
 
-def text_cutter(quiet=False):
-    """The letter prisms, wrapped onto the wall. TEXT_DEPTH of this is inside."""
-    return P.bend_to_cylinder(
-        P.text_prism(text_flat(quiet), 1.5, over=TEXT_DEPTH + PAN_SINK, dens=1.2), R)
+def text_solid(quiet=False):
+    """The letters, standing TEXT_RAISE off the panel with a rolled top edge.
+
+    The roll is cut as a stack: at height t into the top TEXT_R of the letter the
+    outline is pulled in by r - sqrt(r^2 - t^2), which is a quarter-round turning
+    the top edge over. Each step is a prism from the back of the letter up to that
+    height, so the steps nest and their union is the letter; being nested rather
+    than stacked is what keeps it one solid with no seams between slices.
+
+    The letters sit in a panel sunk PAN_SINK, so at TEXT_RAISE proud of its face
+    they top out 0.65 mm below the stones and the cartouche still protects them.
+    """
+    flat = text_flat(quiet)
+    prisms = []
+    for k in range(TEXT_STEPS + 1):
+        t = TEXT_R * k / TEXT_STEPS
+        d = TEXT_R - float(np.sqrt(max(TEXT_R*TEXT_R - t*t, 0.0)))
+        poly = flat if d <= 0 else flat.buffer(-d, join_style=1)
+        if poly.is_empty: continue
+        # the panel face is PAN_SINK below the wall, so TEXT_RAISE off that face
+        # is TEXT_RAISE - PAN_SINK out from the wall
+        prisms.append(P.bend_to_cylinder(
+            P.text_prism(poly, TEXT_RAISE - PAN_SINK - TEXT_R + t,
+                         over=PAN_SINK + 0.6, dens=1.2), R))
+    return P.union(*prisms)
 
 
 def body_unlettered(quiet=False):
-    """The pot with its stone field and sunken panel, before the name is cut.
-
-    This is also the shape of the finished object when the lettering is *filled*
-    with a second filament rather than left as a void -- see colours.py.
-    """
+    """The pot with its stone field and sunken panel, before the name goes on."""
     body = P.diff(P.revolve(profile_outer(), seg=256),
                   P.revolve(profile_cavity(), seg=256),
                   P.cyl(SOCKET_D/2, WELL_Z - SOCKET_H, WELL_Z + 1.0, seg=96))
@@ -299,7 +320,7 @@ def body_unlettered(quiet=False):
 
 
 def build():
-    body = P.diff(body_unlettered(), text_cutter())
+    body = P.union(body_unlettered(), text_solid())
     print('final', body.is_watertight, len(body.faces), 'volume %.0f' % body.volume)
     out = pathlib.Path(__file__).resolve().parent / 'stl'
     out.mkdir(exist_ok=True)
