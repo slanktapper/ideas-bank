@@ -44,6 +44,13 @@ def tidy(m):
 if __name__ == '__main__':
     stl = pathlib.Path(__file__).resolve().parent / 'stl'
     pot = trimesh.load(stl / 'pebble-pot.stl')
+    if not pot.is_volume:
+        # The borders pinch against the wall at about a hundred edges, which an
+        # STL round trip turns into edges with four faces on them. Slicers do not
+        # care; the boolean engine refuses to start. Build it in memory instead.
+        print('the written pot is not a volume on reload -- rebuilding in memory')
+        import build
+        pot = build.build()
     ws = wave_solid()
     print('wave solid watertight', ws.is_watertight)
     base = trimesh.boolean.intersection([pot, ws], engine='manifold')
