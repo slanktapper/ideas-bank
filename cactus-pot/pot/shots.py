@@ -1,0 +1,48 @@
+"""Renders of the pot, through the shared software renderer in ../../3d-tools.
+
+    python3 shots.py                      # everything in renders/
+    python3 shots.py --compare <old.stl>  # the two halves of 04-old-vs-new
+"""
+from __future__ import annotations
+import pathlib, sys
+import numpy as np, trimesh
+
+HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent.parent / '3d-tools'))
+import render as R                                      # noqa: E402
+
+STL, OUT = HERE / 'stl', HERE / 'renders'
+STONE = (0.90, 0.90, 0.92)      # the crackle zone, silver
+GOLD  = (0.85, 0.66, 0.34)      # the rolled base
+CLAY  = (0.78, 0.44, 0.33)      # single-colour, for shape only
+LIGHT = dict(ambient=0.52, key=0.52, fill=0.26, spec=0.22, edges=0.5)
+
+
+def shot(parts, name, az, el, dist=235.0, zt=40.0):
+    tgt = (0.0, 0.0, zt)
+    eye = R.orbit_eye(np.array(tgt), dist, az, el)
+    img = R.render(parts, eye=eye, target=tgt, width=1250, height=1000,
+                   fov_deg=30.0, supersample=2, **LIGHT)
+    OUT.mkdir(exist_ok=True)
+    img.save(OUT / name)
+    print(OUT / name)
+
+
+def compare(source):
+    """04-old-vs-new.png: the pot we started from and this one, same camera."""
+    for path, name in ((source, 'old'), (STL / 'pebble-pot.stl', 'new')):
+        shot([{'mesh': trimesh.load(path), 'color': CLAY}], f'04-{name}.png',
+             az=0, el=10)
+    print('the two halves of 04-old-vs-new.png; join them side by side')
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 2 and sys.argv[1] == '--compare':
+        compare(sys.argv[2]); raise SystemExit
+    pot = [{'mesh': trimesh.load(STL / 'pebble-pot.stl'), 'color': CLAY}]
+    two = [{'mesh': trimesh.load(STL / 'pebble-pot-upper.stl'), 'color': STONE},
+           {'mesh': trimesh.load(STL / 'pebble-pot-base.stl'),  'color': GOLD}]
+    shot(pot, '01-front.png', az=0, el=10)
+    shot(pot, '02-three-quarter.png', az=42, el=16)
+    shot(pot, '03-inside.png', az=30, el=55, dist=250, zt=34)
+    shot(two, '05-two-tone-above.png', az=35, el=48, dist=255, zt=34)
