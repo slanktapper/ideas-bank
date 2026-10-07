@@ -93,10 +93,31 @@ Measured off the real mesh with `build.py --pot`, not guessed:
 | Cavity wall, at the floor | r 40.6 |
 
 So the cactus stands on the floor, 21 mm of it hidden inside the pot, with a
-Ø31.30 spigot in the Ø32.00 socket and 13.7 mm of air to the pot's wall. Its
-trunk is Ø52–55 and it is 175 mm tall, 147 of which is above the rim — the
-assembly stands about 223 mm. `test_fit.py` checks all four of those numbers
-against `params.py`, and `build.py --pot` fails loudly if the pot changes.
+Ø31.30 spigot in the Ø32.00 socket and never less than 14.9 mm of air to the
+pot's wall. `test_fit.py` checks those against `params.py`, and
+`build.py --pot` fails loudly if the pot changes.
+
+The finished sizes, measured off `stl/cactus.stl` and `pot/stl/pebble-pot.stl`
+rather than worked out from the parameters:
+
+| | |
+| --- | --- |
+| Pot | Ø94.3 × 76.0, standing on a Ø67.6 flat |
+| Cactus body | 186.7 tall; 7.4 of that is spigot, below the soil line |
+| Trunk | Ø59.2 at its widest, z=50; Ø45.1 at the crown |
+| Span, arms only | 132.2 × 87.1 |
+| Span, with all 110 spines | 151.9 × 106.2 |
+| Above the pot's rim | 158.3 |
+| **The assembly** | **234.3 tall, 151.9 across** |
+
+The spines add nothing to the height — `AREOLE_CROWN_KEEP` stops pads before
+the apex, so the crown is the highest point of the object.
+
+An earlier version of this section said Ø52–55, 175 mm tall, 147 above the
+rim and about 223 overall. All four were wrong against the mesh, and nothing
+caught it because a paragraph is not a test. `test_fit.py` now prints the
+envelope on every run, so the numbers are in front of whoever changes the
+shape next.
 
 ### The interface, as a contract
 

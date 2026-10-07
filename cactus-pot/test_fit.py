@@ -39,6 +39,20 @@ def head(title):
 
 # ---------------------------------------------------------------------------
 
+def _spikes_in_for_size(body, sites):
+    """Every spike seated, just to measure the object with its spines on."""
+    one = C.spike()
+    out = []
+    for p, n, rake, swing in sites:
+        m = C._frame_from_normal(C._rake(n, rake, swing))
+        m[:3, 3] = p - C._rake(n, rake, swing) * (P.PIN_SHANK_L
+                                                  - P.AREOLE_RISE * 0.25)
+        s = one.copy()
+        s.apply_transform(m)
+        out.append(s)
+    return trimesh.util.concatenate(out)
+
+
 def pot_clearance(body, path):
     """Compare the real profiles, height by height, inside the pot.
 
@@ -408,6 +422,19 @@ def main():
     print(f"       unsupported-facing area above the soil line: {frac * 100:.1f}%")
     check(frac < 0.12, "most of the part carries itself",
           f"{frac * 100:.1f}% needs support (the arms' undersides)")
+
+    # The finished envelope, printed rather than asserted. There is nothing
+    # here to check against -- these are what the shape came out as, not
+    # targets -- but direction.md quoted four of them and had drifted wrong
+    # on all four, so they belong where someone changing the shape will see
+    # them.
+    whole = trimesh.util.concatenate([body, _spikes_in_for_size(body, sites)])
+    e, be = whole.extents, body.extents
+    above_rim = whole.bounds[1][2] - P.POT_FLOOR_TO_RIM
+    print(f"       cactus body {be[2]:.1f} tall, {be[0]:.1f} x {be[1]:.1f} "
+          f"across; with spines {e[0]:.1f} x {e[1]:.1f}")
+    print(f"       assembly {76.0 + above_rim:.1f} tall "
+          f"({above_rim:.1f} of cactus above a 76.0 pot)")
 
     spike_n = spike.face_normals
     spike_down = np.degrees(np.arcsin(np.clip(-spike_n[:, 2], -1, 1)))
