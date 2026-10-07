@@ -74,6 +74,29 @@ def _union(meshes):
     return trimesh.boolean.union(meshes, engine=ENGINE)
 
 
+def _clean(mesh):
+    """Drop the slivers a boolean leaves behind, so the STL reloads solid.
+
+    socket_cutter() overlaps its bore, relief and proud stub by 1e-6 mm to
+    be certain they unite. The union is correct and the mesh is watertight in
+    memory, but those overlaps leave zero-area triangles and vertex pairs a
+    micron apart -- and an STL is a soup of triangles with no shared indices,
+    so on reload those pairs merge, the faces that used them collapse, and
+    what was a solid comes back with holes in it. Cleaning before export
+    costs nothing: it removes no volume at all, only degenerate faces that
+    enclose none.
+
+    It is not a repair tool. It fixes this kind of damage and no other --
+    see `direction.md` on what it does not fix.
+    """
+    m = mesh.copy()
+    m.merge_vertices()
+    m.update_faces(m.nondegenerate_faces(height=1e-8))
+    m.remove_unreferenced_vertices()
+    m.fix_normals()
+    return m
+
+
 def _difference(base, cutters):
     cutters = [m for m in cutters if m is not None and len(m.faces)]
     if not cutters:
@@ -804,4 +827,4 @@ def test_hole() -> trimesh.Trimesh:
     top = np.array([0.0, 0.0, P.TEST_HOLE_T])
     up = np.array([0.0, 0.0, 1.0])
     with_pad = _union([tab, areole_pad(top, up)])
-    return _difference(with_pad, [socket_cutter(top, up)])
+    return _clean(_difference(with_pad, [socket_cutter(top, up)]))

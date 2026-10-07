@@ -137,6 +137,29 @@ changes size much from Ø92 × 76 should take the cactus's proportions with it.
 
 ## Open questions
 
+- **`cactus.stl` does not reload watertight, and never has.** Found while
+  checking the single pair: every part built from booleans is watertight in
+  memory and some of them are not once written out. An STL is a soup of
+  triangles with no shared vertex indices, so vertex pairs a micron apart --
+  which `socket_cutter()`'s deliberate 1e-6 overlaps leave behind -- merge on
+  reload and tear the faces that used them.
+
+  `_clean()` fixes the single pair completely, at zero change in volume, and
+  `test_fit.py` now checks the round trip rather than only the mesh in
+  memory. It does **not** fix the two big ones:
+
+  | | open edges on reload |
+  | --- | --- |
+  | `test-hole.stl` | 0, after `_clean()` |
+  | `test-print-wedge.stl` | 4038 |
+  | `cactus.stl` | 51264 |
+
+  51264 is far past slivers, so the cause there is something else and is not
+  yet known. Slicers repair this class of damage silently and the cactus has
+  presumably always sliced, which is exactly why it went unnoticed -- nobody
+  looks at a file that prints. Worth running down before a day of filament
+  rides on it, but it is a real investigation, not a tidy-up.
+
 - **Does −0.06 hold?** It is the right number on paper and the coupon exists
   because paper is not the same as PETG at 240 °C. Print the coupon, find the
   hole the spike seats in, and add that hole's engraved number to

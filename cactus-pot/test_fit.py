@@ -11,6 +11,7 @@ socket and the overhangs are numbers someone has looked at.
 
 from __future__ import annotations
 
+import os
 import sys
 
 import numpy as np
@@ -194,6 +195,21 @@ def main():
     check(hole.is_volume and hole.body_count == 1,
           "the test hole is one closed solid",
           f"{len(hole.faces)} faces, {hole.volume / 1000:.2f} cm3")
+
+    # Watertight in memory is not the same as watertight on disk. An STL has
+    # no shared vertex indices, so a pair of vertices a micron apart -- which
+    # socket_cutter's 1e-6 overlaps leave behind -- merge on reload and tear
+    # the faces that used them. This is the check that matters to a slicer,
+    # and the only one that would have caught it.
+    import tempfile
+    tmp = tempfile.mktemp(suffix=".stl")
+    hole.export(tmp)
+    reloaded = trimesh.load(tmp, force="mesh")
+    os.unlink(tmp)
+    check(reloaded.is_watertight,
+          "the test hole is still watertight after a round trip through STL",
+          f"{len(reloaded.vertices)} vertices on reload, "
+          f"{reloaded.volume / 1000:.2f} cm3")
 
     # The bore, measured by cutting the tab in half way down the hole. Not
     # by sampling vertices in a band: a cylinder carries vertices only on its
