@@ -35,10 +35,18 @@ green body, with no multi-material printing on the big part at all.
 - The cactus body: ribbed trunk, two arms, areole pads, 110 spike sockets, and
   a spigot that drops into the socket in the pot's floor.
 - The spike: one part, printed many times.
-- A fit-test coupon that steps the socket diameter either side of nominal —
-  with each step engraved beside its hole, so the answer can be read off the
-  part instead of counted from an end — and a wedge of the real trunk that
-  proves the joint on the curved ribbed wall it actually lives on.
+- Three test prints, in the order you would reach for them: a single pair —
+  one socket in a tab and one spine, as `test-hole` and `test-spine` — that
+  says in five minutes whether the fit is anywhere near; a fit-test coupon
+  that steps the socket diameter either side of nominal, with each step
+  engraved beside its hole so the answer can be read off the part instead of
+  counted from an end; and a wedge of the real trunk that proves the joint on
+  the curved ribbed wall it actually lives on.
+
+  All three cut their sockets with the same `socket_cutter()` the cactus
+  uses, so a test is never of a simplified hole. The single pair carries its
+  areole pad for the same reason: the collar lands on a dome, and a flat tab
+  would be testing a joint that does not get printed.
 - Renders, so the shape is judged before filament is spent.
 
 **Does not:**

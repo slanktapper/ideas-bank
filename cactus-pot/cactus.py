@@ -783,3 +783,25 @@ def fit_coupon() -> trimesh.Trimesh:
         cutters.append(c)
         cutters += engrave(coupon_label(ds), x, P.COUPON_MARK_Y, P.COUPON_T)
     return _difference(block, cutters)
+
+
+def test_hole() -> trimesh.Trimesh:
+    """One socket in a tab, built the way the cactus builds its sockets.
+
+    Deliberately not a drilled cylinder. The pad goes on first and the cut
+    goes through it with socket_cutter(), so the mouth is countersunk, the
+    relief is under the bore and the collar lands on a dome -- which is the
+    difference between testing the joint and testing a hole.
+
+    Bored straight down rather than at SPIKE_RAKE_DEG: raked into a flat tab
+    the bore would break out of the side, and the raked case already has a
+    test of its own in test_section(), on the curved ribbed wall where it
+    actually happens.
+    """
+    tab = trimesh.creation.box([P.TEST_HOLE_W, P.TEST_HOLE_W, P.TEST_HOLE_T])
+    tab.apply_translation([0, 0, P.TEST_HOLE_T / 2])
+
+    top = np.array([0.0, 0.0, P.TEST_HOLE_T])
+    up = np.array([0.0, 0.0, 1.0])
+    with_pad = _union([tab, areole_pad(top, up)])
+    return _difference(with_pad, [socket_cutter(top, up)])

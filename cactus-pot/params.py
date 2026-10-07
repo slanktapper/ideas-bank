@@ -272,6 +272,30 @@ COUPON_MARK_DEPTH = 0.6     # three layers at 0.2. Deep enough to read as
 COUPON_MARK_Y = -3.6    # where the row of numbers sits
 
 # ---------------------------------------------------------------------------
+# THE SINGLE PAIR — one hole, one spine
+# ---------------------------------------------------------------------------
+# The smallest thing that answers "does a spike go in and stay in": one
+# socket in a tab you can hold, and one spike to push into it. The coupon
+# ladders seven diameters and the wedge proves the joint on the real curved
+# wall; this is the five-minute version that comes before either, for when
+# the question is simply whether the number in SOCKET_COMP is anywhere near
+# right in this filament.
+#
+# It is the *real* socket, not a drilled hole: socket_cutter() gives it the
+# countersunk mouth and the debris relief, and the areole pad is unioned on
+# first, so the spike's collar lands on a dome exactly as it does on the
+# cactus. Without the pad the collar seats on flat plastic and the thing
+# worth testing -- that the collar bottoms on the pad before the pin bottoms
+# in the hole -- is not being tested at all.
+
+TEST_HOLE_W = 18.0      # across the tab. Wide enough to hold between finger
+                        # and thumb and push a spike in without it skating
+                        # across the bench.
+TEST_HOLE_T = SOCKET_DEPTH + SOCKET_RELIEF_L + 2.0    # 6.4: the bore and its
+                        # relief go 4.4 down, and what is left under them is
+                        # a 2 mm floor rather than a membrane.
+
+# ---------------------------------------------------------------------------
 # TEST PRINT
 # ---------------------------------------------------------------------------
 # A wedge cut out of the real trunk, so the fit is proved on the geometry it

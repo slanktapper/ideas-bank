@@ -10,8 +10,30 @@ than geometry. Machine is the H2D; see `../available-tools.md`.
 | `stl/cactus.stl` | 1 | 187 mm tall, stands on the flat end of its spigot |
 | `stl/spikes-x72.stl` | 2 plates | 110 sockets, so print a few spare |
 | `stl/spike.stl` | — | the single part, to arrange your own plate |
+| `stl/test-hole.stl` + `stl/test-spine.stl` | 1 each | **the five-minute check** — one socket, one spine |
 | `stl/fit-test-coupon.stl` | 1 | **print this first** — 80 mm, labelled |
 | `stl/test-print-wedge.stl` | 1 | **and this second** — 150° of the real trunk |
+
+## The single pair, if you only have five minutes
+
+`test-hole.stl` is one socket in an 18 mm tab; `test-spine.stl` is one spike.
+Separate files, so each goes on the plate on its own. Together they are about
+two grams.
+
+It is the real socket, not a drilled hole — the areole pad is on the tab, the
+mouth is countersunk and the relief is under the bore — so the spike seats
+the way it will on the cactus: the collar lands on the pad, and the pin stops
+short of the bottom of the hole.
+
+What it tells you is only whether `SOCKET_COMP` is in the right country. It
+cannot tell you *which way* to move it, because there is one hole and nothing
+to compare it against. If the spike will not start, or drops straight
+through, print the coupon and read the answer off that. If it goes in with
+firm thumb pressure and stays, print the coupon anyway — but expect the
+middle hole to win.
+
+The bore is vertical here. On the cactus it is raked 34° into a curved,
+ribbed wall, and that case has its own test in the wedge.
 
 ## Print the coupon first
 

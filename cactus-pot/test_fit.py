@@ -185,6 +185,52 @@ def main():
     check(not missing, "every hole in the coupon is labelled on the mesh",
           f"{P.COUPON_N} holes, {len(on_floor)} vertices of groove floor")
 
+    # -- the single pair ----------------------------------------------------
+    # test-hole and test-spine: the five-minute version of the coupon. The
+    # checks that matter are that it really is the same socket as the cactus
+    # carries, measured on the mesh rather than assumed from params.
+    head("the single pair")
+    hole = C.test_hole()
+    check(hole.is_volume and hole.body_count == 1,
+          "the test hole is one closed solid",
+          f"{len(hole.faces)} faces, {hole.volume / 1000:.2f} cm3")
+
+    # The bore, measured by cutting the tab in half way down the hole. Not
+    # by sampling vertices in a band: a cylinder carries vertices only on its
+    # two end rings, so a band taken mid-bore is empty and the measurement
+    # comes back NaN rather than wrong, which is its own kind of trap.
+    v = hole.vertices
+    z_mid = P.TEST_HOLE_T - P.SOCKET_DEPTH / 2
+    seg = trimesh.intersections.mesh_plane(
+        hole, plane_normal=[0, 0, 1], plane_origin=[0, 0, z_mid])
+    pts = seg.reshape(-1, 3)
+    rad = np.linalg.norm(pts[:, :2], axis=1)
+    bore_d = 2 * float(np.median(rad[rad < P.TEST_HOLE_W / 4]))
+    check(abs(bore_d - P.SOCKET_D) < 0.05,
+          "the bore is the same diameter as every socket on the cactus",
+          f"Ø{bore_d:.2f} against SOCKET_D {P.SOCKET_D:.2f}")
+
+    deepest = float(v[np.linalg.norm(v[:, :2], axis=1) < P.SOCKET_D][:, 2].min())
+    cut = P.TEST_HOLE_T - deepest
+    check(abs(cut - (P.SOCKET_DEPTH + P.SOCKET_RELIEF_L)) < 0.1,
+          "the bore and its relief are cut to full depth",
+          f"{cut:.2f} mm below the face")
+    check(deepest > 1.0, "a floor is left under the hole",
+          f"{deepest:.2f} mm of material")
+
+    # The pad has to be there, or the collar seats on flat plastic and the
+    # joint being tested is not the one that gets printed.
+    check(hole.bounds[1][2] > P.TEST_HOLE_T + 0.2,
+          "the areole pad stands proud of the tab",
+          f"{hole.bounds[1][2] - P.TEST_HOLE_T:.2f} mm up")
+    check(P.PIN_SHANK_L < P.SOCKET_DEPTH - 0.3,
+          "the collar lands on the pad before the pin lands in the hole",
+          f"pin {P.PIN_SHANK_L} into a {P.SOCKET_DEPTH} bore")
+    check(hole.extents[0] < P.BED[0] and spike.extents[2] < 325.0,
+          "both halves of the pair fit the bed",
+          f"{np.round(hole.extents, 1).tolist()} and "
+          f"{np.round(spike.extents, 1).tolist()}")
+
     # -- the sockets --------------------------------------------------------
     head("sockets")
     check(len(sites) > 0, "there are sockets", f"{len(sites)} of them")
