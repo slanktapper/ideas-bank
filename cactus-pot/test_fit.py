@@ -100,6 +100,12 @@ def pot_clearance(body, path):
 
 
 def main():
+    # Resolved up front: the printing section measures the pot's real height
+    # for the assembly line, and the clearance check at the end uses the same
+    # path. It used to be looked up only at the end.
+    import build
+    path = build.pot_path(sys.argv[1:])
+
     body, sites = C.cactus()
     spike = C.spike()
     plate = C.spike_plate()
@@ -125,13 +131,14 @@ def main():
     check(-0.12 <= P.PRESS_FIT <= -0.02,
           "the fit is an interference a thumb can still seat",
           f"{P.PRESS_FIT:+.2f} mm (want -0.02 .. -0.12)")
-    check(P.PIN_SHANK_L < P.SOCKET_DEPTH - 0.3,
-          "the pin bottoms on the collar, not on the hole",
-          f"pin {P.PIN_SHANK_L} into a {P.SOCKET_DEPTH} bore")
-    check(P.SPIKE_COLLAR_D > P.SOCKET_D + 2 * P.SOCKET_MOUTH_CHAMFER + 0.2,
-          "the collar covers the countersunk mouth",
-          f"collar Ø{P.SPIKE_COLLAR_D} over a Ø"
-          f"{P.SOCKET_D + 2 * P.SOCKET_MOUTH_CHAMFER:.2f} mouth")
+    check(abs(P.PIN_SHANK_L - P.SOCKET_DEPTH) < 1e-9,
+          "the post fills the bore, so bottoming out is what seats it",
+          f"post {P.PIN_SHANK_L} into a {P.SOCKET_DEPTH} bore")
+    # Nothing covers the mouth any more, so the chamfer is what shows at
+    # the surface and it has to stay a lead-in rather than a feature.
+    check(P.SOCKET_MOUTH_CHAMFER <= 0.4 * P.NOZZLE + 0.1,
+          "the mouth chamfer is small enough to read as a joint, not a gap",
+          f"{P.SOCKET_MOUTH_CHAMFER:.2f} mm around a Ø{P.SOCKET_D:.2f} post")
     check(P.PIN_SHANK_D >= 3 * P.NOZZLE,
           "the pin is thick enough to be more than two perimeters",
           f"Ø{P.PIN_SHANK_D:.2f} on a {P.NOZZLE} nozzle")
@@ -253,9 +260,9 @@ def main():
     check(hole.bounds[1][2] > P.TEST_HOLE_T + 0.2,
           "the areole pad stands proud of the tab",
           f"{hole.bounds[1][2] - P.TEST_HOLE_T:.2f} mm up")
-    check(P.PIN_SHANK_L < P.SOCKET_DEPTH - 0.3,
-          "the collar lands on the pad before the pin lands in the hole",
-          f"pin {P.PIN_SHANK_L} into a {P.SOCKET_DEPTH} bore")
+    check(P.SOCKET_RELIEF_L >= 0.5,
+          "there is somewhere for a blob to go under the post",
+          f"{P.SOCKET_RELIEF_L} mm of relief below a {P.SOCKET_DEPTH} bore")
     check(hole.extents[0] < P.BED[0] and spike.extents[2] < 325.0,
           "both halves of the pair fit the bed",
           f"{np.round(hole.extents, 1).tolist()} and "
@@ -389,7 +396,7 @@ def main():
 
     # -- seated spikes ------------------------------------------------------
     head("assembly")
-    tips = mouths + axes * (P.SPIKE_L + P.SPIKE_COLLAR_H)
+    tips = mouths + axes * P.SPIKE_L
     d = np.linalg.norm(tips[:, None, :] - tips[None, :, :], axis=2)
     np.fill_diagonal(d, np.inf)
     check(float(d.min()) > 3.0, "seated spikes do not touch each other",
@@ -431,17 +438,32 @@ def main():
     whole = trimesh.util.concatenate([body, _spikes_in_for_size(body, sites)])
     e, be = whole.extents, body.extents
     above_rim = whole.bounds[1][2] - P.POT_FLOOR_TO_RIM
+    # The pot's height is measured off the mesh when there is one. It used to
+    # be the literal 76.0, which went wrong the moment the pot was scaled --
+    # the one number here not taken from something real.
+    pot_h = None
+    if path and os.path.exists(path):
+        pot_h = float(trimesh.load(path, force="mesh").extents[2])
     print(f"       cactus body {be[2]:.1f} tall, {be[0]:.1f} x {be[1]:.1f} "
           f"across; with spines {e[0]:.1f} x {e[1]:.1f}")
-    print(f"       assembly {76.0 + above_rim:.1f} tall "
-          f"({above_rim:.1f} of cactus above a 76.0 pot)")
+    if pot_h:
+        print(f"       assembly {pot_h + above_rim:.1f} tall "
+              f"({above_rim:.1f} of cactus above a {pot_h:.1f} pot)")
 
+    # With the collar gone the spike is a solid of revolution that only
+    # ever narrows, so nothing on it faces down at all -- and the flat end
+    # of the post is now the whole of its first layer.
     spike_n = spike.face_normals
     spike_down = np.degrees(np.arcsin(np.clip(-spike_n[:, 2], -1, 1)))
-    collar = spike.area_faces[(spike_down > 45) &
-                              (spike.triangles_center[:, 2] > 0.5)].sum()
-    check(collar < 10.0, "the spike needs no support but its own collar",
-          f"{collar:.1f} mm2 of flat underside, bridged off the pin")
+    over = spike.area_faces[(spike_down > 45) &
+                            (spike.triangles_center[:, 2] > 0.5)].sum()
+    check(over < 1.0, "the spike has no overhang above its own base",
+          f"{over:.1f} mm2 facing down")
+    foot = np.pi * (P.PIN_SHANK_D / 2) ** 2
+    check(foot > 4.0,
+          "the post is a wide enough footprint to print the needle on it",
+          f"Ø{P.PIN_SHANK_D:.2f} = {foot:.1f} mm2 under a "
+          f"{P.SPIKE_L:.0f} mm needle")
 
     # -- the pot ------------------------------------------------------------
     head("pot")
@@ -459,8 +481,6 @@ def main():
           "no spine sits down inside the pot",
           f"lowest at {P.AREOLE_Z_MIN}, rim at {P.POT_FLOOR_TO_RIM}")
 
-    import build
-    path = build.pot_path(sys.argv[1:])
     if path:
         pot_clearance(body, path)
     else:

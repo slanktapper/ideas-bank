@@ -25,6 +25,27 @@ LAYER = 0.20            # a sane default layer for a decorative part this size
 BED = (325.0, 320.0)    # single-nozzle build area; the plate check uses it
 
 # ---------------------------------------------------------------------------
+# THE TWO DIALS
+# ---------------------------------------------------------------------------
+# Every length below is written as its original design number times SCALE, so
+# the shape that was drawn and argued over stays legible and the size is one
+# number. Rob asked for everything 25% bigger on 2026-10-07.
+#
+# What is NOT multiplied by it: anything a 0.4 mm nozzle decides. PRESS_FIT,
+# SOCKET_COMP, PIN_COMP, SPIGOT_CLEAR, the mouth chamfer and the engraving on
+# the coupon are all compensations for what hot plastic does on its way out of
+# a fixed-size hole, and the nozzle does not get 25% bigger with the model.
+# Scaling them would quietly take the interference from 0.06 to 0.075 mm.
+SCALE = 1.25
+
+# The spine's own thickness, which does not follow SCALE. Rob asked for 3x;
+# a 3x pin needs a Ø5.86 socket and the rib crest it has to sit on measures
+# 3.0 mm, so the hole broke out of the crest into the hollows either side and
+# 31 of 110 pads came out drowned. 1.9x is the most the existing ribs carry:
+# it puts a Ø3.76 socket on a crest that is 3.8 mm wide at this scale.
+SPINE_THICK = 1.9
+
+# ---------------------------------------------------------------------------
 # POT — the two numbers the cactus shares with the printed pot
 # ---------------------------------------------------------------------------
 # PROVISIONAL until the pot mesh is measured. `build.py --pot <stl>` prints
@@ -38,10 +59,10 @@ BED = (325.0, 320.0)    # single-nozzle build area; the plate check uses it
 # --pot <path> to measure a different one.
 POT_STL = "pot/stl/pebble-pot.stl"
 
-POT_BORE_D = 32.00      # the blind socket in the pot's inner floor
-POT_SOCKET_DEPTH = 8.00 # how deep that socket goes
-POT_FLOOR_TO_RIM = 21.0 # the cactus's first 21 mm are down inside the pot
-POT_INNER_R = 38.80     # the pot's inner wall, at its tightest, above the
+POT_BORE_D = 32.00 * SCALE      # the blind socket in the pot's inner floor
+POT_SOCKET_DEPTH = 8.00 * SCALE # how deep that socket goes
+POT_FLOOR_TO_RIM = 21.0 * SCALE # the cactus's first 21 mm are down inside the pot
+POT_INNER_R = 38.80 * SCALE     # the pot's inner wall, at its tightest, above the
                         # floor. Deliberately the TIGHTER of the two pots
                         # measured. The pebble pot is filleted where its wall
                         # meets its floor, so it is 38.8 right in that corner
@@ -53,9 +74,9 @@ POT_TOL = 0.50          # how far the measured pot may differ before the build s
 SPIGOT_CLEAR = 0.35     # the spigot is this much under the bore, per side:
                         # a drop-in fit, not a press fit. The cactus should
                         # lift out, and it is a long lever arm.
-SPIGOT_H = 7.40         # shorter than the socket, so the cactus lands on the
+SPIGOT_H = 7.40 * SCALE         # shorter than the socket, so the cactus lands on the
                         # pot's floor rather than on the bottom of the hole
-SPIGOT_CHAMFER = 0.60   # lead-in so it finds the bore without a fight
+SPIGOT_CHAMFER = 0.60 * SCALE   # lead-in so it finds the bore without a fight
 SPIGOT_R = 0.5 * (POT_BORE_D - 2 * SPIGOT_CLEAR)
 
 # ---------------------------------------------------------------------------
@@ -67,16 +88,16 @@ SPIGOT_R = 0.5 * (POT_BORE_D - 2 * SPIGOT_CLEAR)
 # going up rather than a constant tube, and a crown that is flattened and
 # slightly sunken instead of a hemisphere.
 
-TRUNK_H = 168.0         # soil line to the top of the crown
-TRUNK_R_BASE = 26.0     # radius at the soil line (mean, before ribbing)
-TRUNK_R_MID = 27.6      # the slight swell a real trunk carries low down
-TRUNK_R_TOP = 21.4      # tapered in at the shoulder
+TRUNK_H = 168.0 * SCALE         # soil line to the top of the crown
+TRUNK_R_BASE = 26.0 * SCALE     # radius at the soil line (mean, before ribbing)
+TRUNK_R_MID = 27.6 * SCALE      # the slight swell a real trunk carries low down
+TRUNK_R_TOP = 21.4 * SCALE      # tapered in at the shoulder
 TRUNK_MID_FRAC = 0.22   # height fraction where the swell peaks
 
 RIB_COUNT = 15          # saguaros run 12-24. An odd count stops the eye
                         # pairing ribs across the silhouette, which is what
                         # makes a ribbed column look machined.
-RIB_DEPTH = 3.60        # crest-to-valley, at mid height
+RIB_DEPTH = 3.60 * SCALE        # crest-to-valley, at mid height
 RIB_SHARPNESS = 0.78    # 0 = sinusoid, 1 = crests pinched and valleys wide,
                         # which is how an areole-bearing rib actually sits
 RIB_TWIST_DEG = 7.0     # total twist over the full height: nothing in nature
@@ -87,13 +108,13 @@ RIB_FADE_TOP = 0.90     # ribs shallow out towards the crown (height fraction
 RIB_FADE_BASE = 0.04    # and die into the soil line, so the spigot's shoulder
                         # is a clean circle
 
-WOBBLE_AMP = 0.68       # low-frequency asymmetry on the whole column. Small,
+WOBBLE_AMP = 0.68 * SCALE       # low-frequency asymmetry on the whole column. Small,
 WOBBLE_TURNS = 1.6      # and the single biggest thing separating "grown" from
                         # "revolved". Without it the trunk is a lathe part.
 
 CROWN_FLAT_FRAC = 0.46  # how much of the top radius is the flattened crown
-CROWN_RISE = 11.4        # how far the crown lifts above the shoulder
-CROWN_DIMPLE = 2.00     # the apical depression, where a saguaro grows from
+CROWN_RISE = 11.4 * SCALE        # how far the crown lifts above the shoulder
+CROWN_DIMPLE = 2.00 * SCALE     # the apical depression, where a saguaro grows from
 
 # ---------------------------------------------------------------------------
 # ARMS
@@ -104,12 +125,14 @@ CROWN_DIMPLE = 2.00     # the apical depression, where a saguaro grows from
 # symmetric pair is the single most cartoonish thing a cactus can do.
 
 ARMS = (
-    dict(z_frac=0.42, bearing=28.0, length=88.0, r=12.4, elbow=0.50, rise=0.95),
-    dict(z_frac=0.66, bearing=214.0, length=64.0, r=10.4, elbow=0.46, rise=0.90),
+    dict(z_frac=0.42, bearing=28.0, length=88.0 * SCALE, r=12.4 * SCALE,
+         elbow=0.50, rise=0.95),
+    dict(z_frac=0.66, bearing=214.0, length=64.0 * SCALE, r=10.4 * SCALE,
+         elbow=0.46, rise=0.90),
 )
 ARM_RIB_COUNT = 11      # fewer ribs on a thinner stem, as in the real plant
-ARM_RIB_DEPTH = 2.40
-ARM_BLEND = 3.2         # radius of the fillet where an arm meets the trunk.
+ARM_RIB_DEPTH = 2.40 * SCALE
+ARM_BLEND = 3.2 * SCALE         # radius of the fillet where an arm meets the trunk.
                         # An un-filleted join is both ugly and a stress riser
                         # in a printed part that will be picked up by an arm.
 
@@ -122,14 +145,16 @@ ARM_BLEND = 3.2         # radius of the fillet where an arm meets the trunk.
 # down, under AREOLE_MIN_SEP; it is not as simple as evenly up a rib, and the
 # reason it is not is written there.
 
-AREOLE_R = 2.60         # radius of the pad
-AREOLE_RISE = 0.70      # how far it stands off the crest
+AREOLE_R = 2.60 * SCALE         # radius of the pad. Grown with the spine: a Ø5.86
+                        # socket in the Ø5.20 pad it used to be would have
+                        # been a hole with a hairline of pad around it.
+AREOLE_RISE = 0.70 * SCALE      # how far it stands off the crest
 AREOLE_Z_JITTER = 2.1   # DEAD. Kept only so an old params file is obviously
                         # stale rather than silently different: the trunk's
                         # pads are not stepped up a rib at all now, and the
                         # arms' pads are not stepped either. Spacing is the
                         # dial now: see AREOLE_MIN_SEP.
-AREOLE_Z_MIN = 24.0     # none below this. The pot's rim stands 21 mm above
+AREOLE_Z_MIN = 24.0 * SCALE     # none below this. The pot's rim stands 21 mm above
                         # its floor and the trunk is 13 mm clear of the pot's
                         # inner wall, so a spine down there would either be
                         # invisible or foul the pot going in.
@@ -159,7 +184,10 @@ AREOLE_CROWN_KEEP = 0.96  # and none above this height fraction
 # left between them after printing is PRESS_FIT -- a light interference that
 # a thumb can seat and that holds without glue.
 
-PIN_D = 1.90            # nominal joint diameter. Below ~1.6 the pin is one
+PIN_D = 1.90 * SPINE_THICK            # 3x the 1.90 it was: Rob asked for a spine three
+                        # times thicker, and with the collar gone this is
+                        # also the footprint the part prints on.
+                        # Nominal joint diameter. Below ~1.6 the pin is one
                         # perimeter with no infill and shears off in the hole;
                         # above ~2.4 the pad has to grow to hold it and the
                         # spike stops looking like a spine.
@@ -173,18 +201,20 @@ SOCKET_D = PIN_D + SOCKET_COMP              # 2.06 modelled -> ~1.90 printed
 PIN_SHANK_D = PIN_D - PRESS_FIT - PIN_COMP  # 1.86 modelled -> ~1.96 printed
                                             # 1.96 into 1.90 = the 0.06 bite
 
-SOCKET_DEPTH = 3.40     # bored this deep. Deeper would hold better and it
+SOCKET_DEPTH = 3.40 * SCALE     # bored this deep. Deeper would hold better and it
                         # cannot be had: a raked bore cuts a long chord, and
                         # on the thinner arm this is what leaves 2 mm of wall
                         # under the hole. test_fit.py measures it.
-PIN_SHANK_L = 2.80      # the pin is shorter than the bore, so the collar
-                        # lands on the pad and a blob in the hole's bottom
-                        # cannot hold the spike proud
+PIN_SHANK_L = SOCKET_DEPTH   # the post fills the bore exactly. With no
+                        # collar there is nothing else to stop it: the post
+                        # bottoms on the floor of the bore, and that is what
+                        # sets how much spine stands out. Shorter and the
+                        # spine would sink; longer and it would stand proud.
 SOCKET_MOUTH_CHAMFER = 0.25   # a lead-in, so the pin self-centres instead of
                               # peeling the mouth of the hole. Small, because
                               # the collar has to cover it.
 SOCKET_RELIEF_D = 0.60  # a narrower blind extension past the bore's bottom:
-SOCKET_RELIEF_L = 1.00  # somewhere for stringing and a first-layer blob to
+SOCKET_RELIEF_L = 1.00 * SCALE  # somewhere for stringing and a first-layer blob to
                         # go, so neither can hold the spike proud. It is
                         # narrower than the bore so it never touches the pin.
 
@@ -195,19 +225,30 @@ SOCKET_RELIEF_L = 1.00  # somewhere for stringing and a first-layer blob to
 # smaller than the one below, which is the only orientation that gives a
 # needle a clean taper and no supports. The collar doubles as its own brim.
 
-SPIKE_L = 12.0          # exposed length above the pad. Was 16.0; Rob asked
+SPIKE_L = 12.0 * SCALE          # exposed length above the pad. Was 16.0; Rob asked
                         # for 75% of it on 2026-10-06, and shorter spines
                         # read as a saguaro's rather than a hedgehog's.
                         # The socket, the pin and the collar are untouched,
                         # so a printed spike still seats the same way.
-SPIKE_TIP_D = 0.42      # one nozzle width. A true point cannot be printed;
+SPIKE_TIP_D = 0.42 * SPINE_THICK      # 3x, in step with the rest of the spine. One
+                        # nozzle width was the old limit; A true point cannot be printed;
                         # 0.42 is the smallest honest number and it still
                         # feels sharp to a fingertip.
 SPIKE_BELLY = 0.18      # how much the needle bows out from a straight cone,
                         # 0 = cone, 1 = strongly convex. A real spine is not
                         # a straight taper.
-SPIKE_COLLAR_D = 2.90   # seats on the areole, hides the socket mouth, and
-SPIKE_COLLAR_H = 0.55   # gives the part a first layer worth printing
+# No collar. Rob asked for a plain post in a plain hole, so the washer that
+# used to sit between the needle and the pad is gone. Two things it was
+# quietly doing have to be picked up elsewhere:
+#
+#   * it covered the socket's countersunk mouth. SOCKET_MOUTH_CHAMFER is now
+#     the only thing at the surface, so it is kept small -- it is a lead-in
+#     for the post, not a feature.
+#   * it was the spike's first layer, a flat Ø2.90 disc that held a 12 mm
+#     needle upright on the bed. Without it the part stands on the end of
+#     the post itself, so the post's diameter is now also the footprint it
+#     prints on. At Ø1.86 that is marginal and wants a brim; at the 3x
+#     thickness it is ample, which is the version this is drawn for.
 SPIKE_FLOOR_DEG = -14.0  # no spine may hang lower than this off horizontal:
                          # its socket would be a hole in a roof. The arm
                          # undersides are where this bites.
@@ -288,7 +329,7 @@ COUPON_MARK_Y = -3.6    # where the row of numbers sits
 # worth testing -- that the collar bottoms on the pad before the pin bottoms
 # in the hole -- is not being tested at all.
 
-TEST_HOLE_W = 18.0      # across the tab. Wide enough to hold between finger
+TEST_HOLE_W = 18.0 * SCALE      # across the tab. Wide enough to hold between finger
                         # and thumb and push a spike in without it skating
                         # across the bench.
 TEST_HOLE_T = SOCKET_DEPTH + SOCKET_RELIEF_L + 2.0    # 6.4: the bore and its
@@ -337,7 +378,7 @@ SEG_SOCKET = 32
 # still reproducible and a socket does not wander between two builds.
 
 SEED = 20261005
-AREOLE_Z_SCATTER = 1.4      # +/- mm on a pad's position along its rib. Small
+AREOLE_Z_SCATTER = 1.4 * SCALE      # +/- mm on a pad's position along its rib. Small
                             # on purpose: the rib-to-rib stagger below is
                             # what stops the pads reading as rows, and a
                             # scatter bigger than half that stagger just
@@ -364,8 +405,8 @@ AREOLE_Z_SCATTER = 1.4      # +/- mm on a pad's position along its rib. Small
 # physical meaning and the count follows from it. 14.5 lands 65 on the trunk,
 # which is where the per-rib layout it replaced had got to. Smaller means
 # more spines and more evenings with tweezers.
-AREOLE_MIN_SEP = 14.5
-ARM_AREOLE_MIN_SEP = 11.0   # the same for an arm, which is a thinner stem
+AREOLE_MIN_SEP = 14.5 * SCALE
+ARM_AREOLE_MIN_SEP = 11.0 * SCALE   # the same for an arm, which is a thinner stem
                             # carrying a smaller spine, so they sit closer
 AREOLE_FILL_TRIES = 600     # consecutive rejections before calling it full
 AREOLE_LADDER_TOL = 2.0     # three pads up one crest whose two gaps agree

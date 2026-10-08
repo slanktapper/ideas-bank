@@ -175,8 +175,9 @@ def _spikes_in(sites):
         s = one.copy()
         axis = C._rake(n, rake, swing)
         m = C._frame_from_normal(axis)
-        # the collar sits on the pad, so the part drops by the pin's length
-        m[:3, 3] = p - axis * (P.PIN_SHANK_L - P.AREOLE_RISE * 0.25)
+        # the post bottoms on the floor of the bore, so the part's own
+        # z=0 -- the flat end of the post -- lands SOCKET_DEPTH in
+        m[:3, 3] = p - axis * P.SOCKET_DEPTH
         s.apply_transform(m)
         out.append(s)
     return trimesh.util.concatenate(out)
@@ -224,7 +225,7 @@ def build_renders(pot=None, pot_floor=0.0):
     axis = C._rake(n, rake, swing)
     one = C.spike()
     m = C._frame_from_normal(axis)
-    m[:3, 3] = p - axis * (P.PIN_SHANK_L - P.AREOLE_RISE * 0.25)
+    m[:3, 3] = p - axis * P.SOCKET_DEPTH
     one.apply_transform(m)
 
     block = trimesh.creation.box([13.0, 13.0, 13.0])
@@ -282,7 +283,7 @@ def build_renders(pot=None, pot_floor=0.0):
         s = one.copy()
         axis = C._rake(n, rake, swing)
         m = C._frame_from_normal(axis)
-        m[:3, 3] = p - axis * (P.PIN_SHANK_L - P.AREOLE_RISE * 0.25)
+        m[:3, 3] = p - axis * P.SOCKET_DEPTH
         s.apply_transform(m)
         seated.append(s)
     parts = [{"mesh": wedge, "color": GREEN}]
@@ -303,7 +304,7 @@ def build_renders(pot=None, pot_floor=0.0):
 
     seated_one = one.copy()
     seated_one.apply_translation(
-        [0.0, 0.0, P.TEST_HOLE_T - P.PIN_SHANK_L + P.AREOLE_RISE * 0.25])
+        [0.0, 0.0, P.TEST_HOLE_T + P.AREOLE_RISE - P.SOCKET_DEPTH])
     shot("15-single-pair-seated.png",
          [{"mesh": hole, "color": GREEN},
           {"mesh": seated_one, "color": SPIKE_C}], 24, 12)

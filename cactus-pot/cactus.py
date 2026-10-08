@@ -613,7 +613,16 @@ def cactus(with_sockets=True, with_arms=True):
 # ---------------------------------------------------------------------------
 
 def spike() -> trimesh.Trimesh:
-    """Pin, collar, needle. Standing on the pin's flat end, point up."""
+    """Post and needle, in one taper. Standing on the post's flat end.
+
+    There is no collar. The spike is a plain post that goes into a plain
+    hole, and the needle starts at the post's own diameter, so nothing
+    steps, flares or washers where the two meet. What stops it going in is
+    the post bottoming on the floor of the bore -- which is why PIN_SHANK_L
+    is SOCKET_DEPTH exactly rather than short of it, and why SOCKET_RELIEF
+    matters more than it used to: with no collar to cover the mouth, a blob
+    in the hole bottom now shows as a spine standing proud.
+    """
     theta = np.linspace(0.0, 2 * np.pi, P.SEG_SPIKE, endpoint=False)
 
     def ring(z, r):
@@ -627,14 +636,11 @@ def spike() -> trimesh.Trimesh:
     rings.append(ring(lead, pin_r))
     rings.append(ring(P.PIN_SHANK_L, pin_r))
 
-    # collar: a flat washer, which is also the part's first layer
-    rings.append(ring(P.PIN_SHANK_L, P.SPIKE_COLLAR_D / 2))
-    rings.append(ring(P.PIN_SHANK_L + P.SPIKE_COLLAR_H, P.SPIKE_COLLAR_D / 2))
-
-    # needle: a convex taper, not a straight cone
-    z0 = P.PIN_SHANK_L + P.SPIKE_COLLAR_H
-    r0 = P.SPIKE_COLLAR_D / 2 * 0.60
-    rings.append(ring(z0 + 1e-3, r0))
+    # needle: a convex taper, not a straight cone, rising straight out of
+    # the post at the post's own radius. No step, so the joint is invisible
+    # once seated and the part has nothing on it that reads as a washer.
+    z0 = P.PIN_SHANK_L
+    r0 = pin_r
     for u in np.linspace(0.0, 1.0, 26)[1:]:
         shape = (1.0 - u) ** (1.0 + P.SPIKE_BELLY * 1.6)
         r = P.SPIKE_TIP_D / 2 + (r0 - P.SPIKE_TIP_D / 2) * shape
