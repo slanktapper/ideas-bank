@@ -175,11 +175,21 @@ changes size much from Ø92 × 76 should take the cactus's proportions with it.
   | `test-print-wedge.stl` | 4038 |
   | `cactus.stl` | 51264 |
 
-  51264 is far past slivers, so the cause there is something else and is not
-  yet known. Slicers repair this class of damage silently and the cactus has
-  presumably always sliced, which is exactly why it went unnoticed -- nobody
-  looks at a file that prints. Worth running down before a day of filament
-  rides on it, but it is a real investigation, not a tidy-up.
+  **Mostly answered, 2026-10-08.** It was not a different fault after all.
+  `socket_cutter()`'s stub -- the bit that breaks the cut through the pad --
+  was only as wide as the bore, so the countersink's rim was left uncut and
+  every one of the 110 sockets shed slivers where the cone ran tangent to
+  the pad's dome. Widening the stub to the countersink's rim took
+  `cactus.stl` from 51264 open edges to **0**: it reloads watertight.
+
+  The wedge is still open, at 2614 edges. It is an intersection of the
+  finished trunk with a box, so the suspicion is the cut face rather than
+  the sockets, but that is not measured yet.
+
+  The lesson worth keeping is the one about the test: nothing caught any of
+  this for months because the suite asked the mesh in memory whether it was
+  closed, and that is not the question a slicer asks. The round-trip check
+  on the single pair is what turned it up.
 
 - **Does −0.06 hold?** It is the right number on paper and the coupon exists
   because paper is not the same as PETG at 240 °C. Print the coupon, find the

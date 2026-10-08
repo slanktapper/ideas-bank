@@ -263,6 +263,22 @@ def main():
     check(P.SOCKET_RELIEF_L >= 0.5,
           "there is somewhere for a blob to go under the post",
           f"{P.SOCKET_RELIEF_L} mm of relief below a {P.SOCKET_DEPTH} bore")
+    # the two-hole piece: same socket, twice, at the trunk's own spacing
+    pair = C.test_spine_pair()
+    tmp = tempfile.mktemp(suffix=".stl")
+    pair.export(tmp)
+    rp = trimesh.load(tmp, force="mesh")
+    os.unlink(tmp)
+    check(pair.is_volume and pair.body_count == 1 and rp.is_watertight,
+          "the spine-pair tab is one solid, on disk as well as in memory",
+          f"{pair.body_count} body, {len(pair.faces)} faces")
+    check(abs(P.TEST_PAIR_SEP - P.AREOLE_MIN_SEP) < 1e-9,
+          "the two holes sit at the spacing the trunk uses",
+          f"{P.TEST_PAIR_SEP:.1f} mm apart")
+    seps = [v for v in (P.TEST_PAIR_SEP - 2 * P.AREOLE_R,)]
+    check(seps[0] > 1.0, "the two pads do not run into each other",
+          f"{seps[0]:.1f} mm of plain tab between them")
+
     check(hole.extents[0] < P.BED[0] and spike.extents[2] < 325.0,
           "both halves of the pair fit the bed",
           f"{np.round(hole.extents, 1).tolist()} and "
@@ -313,11 +329,24 @@ def main():
     # the bore: material there means the pad is really raised, air there
     # means it drowned in the body it was grown on. (Probing on the axis
     # proves nothing -- the bore is drilled straight through that point.)
-    side = np.cross(axes, np.array([0.0, 0.0, 1.0]))
+    # Step along the SURFACE, not across the spike. The probe used to go
+    # perpendicular to the raked axis, which leans 34 degrees out of the
+    # skin, so the 0.10 nudge along the normal lifted it clear of the pad on
+    # the uphill side. That was harmless with a Ø2.06 mouth in a Ø5.20 pad
+    # and flagged 11 good pads once the mouth went to Ø4.27 in a Ø6.50 one.
+    # Measured along the normal's own tangent it is 0 of 109, and it still
+    # bites: flatten AREOLE_RISE to 0.05 and all 109 fail.
+    side = np.cross(np.array([n for _, n, _, _ in sites]),
+                    np.array([0.0, 0.0, 1.0]))
     side /= np.linalg.norm(side, axis=1, keepdims=True)
+    # Outside the mouth, which is the bore plus its countersink -- not the
+    # bore alone. The stub that breaks the cut through the pad is as wide as
+    # the countersink's rim, so a probe at the bore's radius sits in the
+    # cleared mouth and reads as drowned even on a pad standing perfectly
+    # proud.
     probe = (mouths
              + np.array([n for _, n, _, _ in sites]) * 0.10
-             + side * (P.SOCKET_D / 2 + 0.18))
+             + side * (P.SOCKET_D / 2 + P.SOCKET_MOUTH_CHAMFER + 0.18))
     proud = body.contains(probe)
     check(bool(np.all(proud)), "every areole stands proud of the skin",
           f"{int(np.sum(~proud))} flush or drowned of {len(sites)}")

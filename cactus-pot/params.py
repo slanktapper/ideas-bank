@@ -435,3 +435,13 @@ def rib_profile(theta: np.ndarray, count: int, sharpness: float) -> np.ndarray:
     c = np.cos(theta * count)
     warped = np.sign(c) * np.abs(c) ** (1.0 - 0.55 * sharpness)
     return 0.5 * warped
+
+
+# Two sockets in one tab, at the spacing they sit at on the trunk. The single
+# hole says whether a spine goes in; this says what two of them look like next
+# to each other, which is the question the new thickness actually raises --
+# a spine you judge on its own always looks reasonable. It is also the piece
+# to be rough with: seat both, then pull one out and keep the other, so the
+# destructive test and the kept reference are the same print.
+TEST_PAIR_SEP = AREOLE_MIN_SEP      # the real trunk spacing, not a guess
+TEST_PAIR_W = TEST_PAIR_SEP + 4 * AREOLE_R + 6.0

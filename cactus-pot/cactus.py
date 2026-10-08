@@ -558,8 +558,15 @@ def socket_cutter(p, n, rake=0.0, swing=0.0) -> trimesh.Trimesh:
     cs.apply_translation([0, 0, P.SOCKET_MOUTH_CHAMFER * 2.0 - 0.001])
     parts.append(cs)
 
-    # a stub proud of the surface, so the cut always breaks through the pad
-    proud = trimesh.creation.cylinder(radius=d / 2, height=2.0,
+    # A stub proud of the surface, so the cut always breaks through the pad.
+    # As wide as the countersink's rim, not just the bore: at the bore's own
+    # radius the cone's slant runs almost tangent to the pad's dome, and the
+    # lens of pad caught between the two survives the cut as a loose disc
+    # 0.05 mm thick. On the trunk the pads sit on a curved ribbed wall and
+    # the two never line up, so this only showed on the flat test tabs --
+    # where it made the part two bodies and not a solid at all.
+    proud = trimesh.creation.cylinder(radius=d / 2 + P.SOCKET_MOUTH_CHAMFER,
+                                      height=2.0,
                                       sections=P.SEG_SOCKET)
     proud.apply_translation([0, 0, 1.0])
     parts.append(proud)
@@ -834,3 +841,22 @@ def test_hole() -> trimesh.Trimesh:
     up = np.array([0.0, 0.0, 1.0])
     with_pad = _union([tab, areole_pad(top, up)])
     return _clean(_difference(with_pad, [socket_cutter(top, up)]))
+
+
+def test_spine_pair() -> trimesh.Trimesh:
+    """Two sockets in one tab, at the spacing they have on the trunk.
+
+    Same construction as test_hole(), twice: real pads, real socket_cutter(),
+    bored vertically. What it adds over one hole is the thing a single spine
+    cannot show you -- whether two of them at AREOLE_MIN_SEP read as spines
+    or as a row of pegs, now that they are nearly twice the diameter they
+    were.
+    """
+    tab = trimesh.creation.box([P.TEST_PAIR_W, P.TEST_HOLE_W, P.TEST_HOLE_T])
+    tab.apply_translation([0, 0, P.TEST_HOLE_T / 2])
+
+    up = np.array([0.0, 0.0, 1.0])
+    tops = [np.array([dx, 0.0, P.TEST_HOLE_T])
+            for dx in (-P.TEST_PAIR_SEP / 2, P.TEST_PAIR_SEP / 2)]
+    solid = _union([tab] + [areole_pad(t, up) for t in tops])
+    return _clean(_difference(solid, [socket_cutter(t, up) for t in tops]))

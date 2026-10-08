@@ -146,6 +146,8 @@ def build_stl():
         # each goes on the plate on its own
         ("test-hole.stl", C.test_hole()),
         ("test-spine.stl", C.spike()),
+        # two sockets at the real trunk spacing, for judging a pair
+        ("test-spine-pair.stl", C.test_spine_pair()),
     ]
     for name, mesh in out:
         path = os.path.join(STL, name)
