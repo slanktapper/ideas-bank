@@ -438,6 +438,24 @@ def main():
           "no spike hangs below the floor angle",
           f"lowest lean {low:.0f}°, floor {P.SPIKE_FLOOR_DEG:.0f}°")
 
+    # -- the colour split ---------------------------------------------------
+    # Not about fit, but it decides how the part gets painted in the slicer,
+    # so getting it wrong does cost filament. The rule that broke: the arms'
+    # "is this face on an arm" gate was a hardcoded 16.0 mm, true until the
+    # model grew, and at the 25% scale arm 0's surface reaches 19.5. Every
+    # face past the gate was handed to the trunk's rule -- which measures
+    # from the Z axis -- and came back "crest", so the arm's root went solid
+    # light purple. This is the invariant that was silently false.
+    head("the colour split")
+    import colour_options as CO
+    for i, spec in enumerate(P.ARMS):
+        rings, line, _ = C.arm_rings(spec)
+        surf = float(np.linalg.norm(rings - line[:, None, :], axis=2).max())
+        reach = CO.arm_reach(spec)
+        check(reach > surf,
+              f"arm {i}: the colour gate reaches past the arm's own surface",
+              f"gate {reach:.1f} mm against a surface at {surf:.1f}")
+
     # -- printing -----------------------------------------------------------
     head("printing")
     for name, m in (("cactus", body), ("spike plate", plate),

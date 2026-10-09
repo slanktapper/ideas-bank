@@ -118,7 +118,10 @@ def cactus_colour_parts(seat_deg=0.0):
     c = CO.face_centres(body)
     r = np.linalg.norm(c[:, :2], axis=1)
     mean = C.trunk_mean_radius(c[:, 2])
-    on_arm = CO.arm_distance(c) < 16.0
+    # CO.on_arm_mask, not a distance against a hardcoded number: the arms
+    # outgrew the old 16.0 at the 25% scale and their roots were being
+    # coloured by the trunk's rule.
+    on_arm = CO.on_arm_mask(c)
     crest = np.where(on_arm, CO.arm_crest(c), r - mean > 0.15 * P.RIB_DEPTH)
     ridge, hollow = CO.split(body, crest)
 
