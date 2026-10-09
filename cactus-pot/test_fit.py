@@ -156,9 +156,13 @@ def main():
     labels = [C.coupon_label(d) for d in steps]
     check(len(set(labels)) == len(labels),
           "every hole gets its own label", " ".join(labels))
-    check(abs(P.COUPON_STEP - abs(P.PRESS_FIT)) < 1e-9,
-          "one step of the ladder is one press fit",
-          f"step {P.COUPON_STEP:.2f} against a fit of {P.PRESS_FIT:+.2f}")
+    # The ladder used to step by one whole PRESS_FIT so the winner was
+    # unmistakable. It is a fine ladder now, which gives that up on purpose:
+    # what it has to stay is readable, so the labels must still differ.
+    check(P.COUPON_STEP >= 0.01,
+          "the ladder steps by something the engraving can still label",
+          f"{P.COUPON_STEP:.2f} mm per hole, "
+          f"{P.COUPON_STEP * (P.COUPON_N - 1):.2f} mm end to end")
 
     check(P.COUPON_MARK_STROKE >= P.NOZZLE,
           "the engraved stroke is at least one extrusion wide",

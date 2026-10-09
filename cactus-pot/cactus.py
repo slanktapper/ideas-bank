@@ -268,7 +268,7 @@ def _arm_spine(spec):
     """
     bearing = np.radians(spec["bearing"])
     z_root = spec["z_frac"] * P.TRUNK_H
-    r_root = trunk_mean_radius(np.array([z_root]))[0] - 2.0
+    r_root = trunk_mean_radius(np.array([z_root]))[0] - P.ARM_ROOT_INSET
     out = np.array([np.cos(bearing), np.sin(bearing), 0.0])
 
     p0 = out * r_root + np.array([0, 0, z_root])
@@ -292,6 +292,10 @@ def arm_rings(spec):
     ribs = P.rib_profile(theta, P.ARM_RIB_COUNT, P.RIB_SHARPNESS)
 
     n_pts = len(pts)
+    # distance along the spine from the root, for the flare
+    arc = np.concatenate([[0.0],
+                          np.cumsum(np.linalg.norm(np.diff(pts, axis=0),
+                                                   axis=1))])
     rings = np.empty((n_pts, len(theta), 3))
     up = np.array([0.0, 0.0, 1.0])
     for i, (p, t) in enumerate(zip(pts, tang)):
@@ -302,8 +306,11 @@ def arm_rings(spec):
         v = np.cross(t, u)
         s = i / (n_pts - 1)
 
-        # a root flare for the fillet into the trunk, and a rounded tip
-        flare = P.ARM_BLEND * np.exp(-(s / 0.10) ** 2)
+        # A root flare for the fillet into the trunk, and a rounded tip.
+        # The flare decays over a distance ALONG THE SPINE rather than over a
+        # fraction of the arm, so the long arm and the short one grow out of
+        # the trunk the same way.
+        flare = P.ARM_BLEND * np.exp(-(arc[i] / P.ARM_BLEND_REACH) ** 2)
         tip = np.sqrt(max(1e-9, 1.0 - max(0.0, (s - 0.86) / 0.14) ** 2))
         r = (spec["r"] * (1.0 - 0.22 * s) + flare) * tip
         rib_scale = np.clip(min(s / 0.14, (1 - s) / 0.10), 0.0, 1.0)

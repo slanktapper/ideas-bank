@@ -130,9 +130,21 @@ ARMS = (
     dict(z_frac=0.66, bearing=214.0, length=64.0 * SCALE, r=10.4 * SCALE,
          elbow=0.46, rise=0.90),
 )
+# Where an arm becomes the trunk. The flare used to decay over a FRACTION of
+# the arm's length -- 10% of it -- which meant the long arm and the short one
+# blended over different distances, and 4 mm of swell was not enough for
+# either: the arm met the trunk at nearly full width and crossed it in a
+# crease, so the cactus read as three pieces stuck together rather than one
+# plant. These are millimetres along the spine, so both arms blend alike.
+ARM_BLEND_REACH = 26.0 * SCALE   # how far down the arm the flare reaches
+ARM_ROOT_INSET = 7.0 * SCALE     # how far inside the trunk the spine starts,
+                                 # so the widest part of the flare is buried
+                                 # and the arm grows out instead of poking
+                                 # through
+
 ARM_RIB_COUNT = 11      # fewer ribs on a thinner stem, as in the real plant
 ARM_RIB_DEPTH = 2.40 * SCALE
-ARM_BLEND = 3.2 * SCALE         # radius of the fillet where an arm meets the trunk.
+ARM_BLEND = 9.0 * SCALE         # radius of the fillet where an arm meets the trunk.
                         # An un-filleted join is both ugly and a stress riser
                         # in a printed part that will be picked up by an arm.
 
@@ -275,11 +287,20 @@ SPIKE_RAKE_DEG = 34.0   # how far the spike leans up from the surface normal.
 
 COUPON_N = 7            # odd, so one hole is the model as drawn and is
                         # labelled 0. Three steps either side of it.
-COUPON_STEP = 0.06      # one step of hole diameter, and deliberately the same
-                        # size as PRESS_FIT: the winning hole's label is then
-                        # exactly how far SOCKET_COMP has to move, and a
-                        # neighbour is one whole press fit away rather than a
-                        # distinction nobody can feel with a thumb.
+COUPON_STEP = 0.01      # Rob printed the 0.06 ladder on 2026-10-09: 0 won
+                        # and +06 was "way too big", so the answer is inside
+                        # one step of nominal and the coarse ladder cannot
+                        # say where. This is the fine ladder, +/-0.03 across
+                        # seven holes.
+                        #
+                        # It was 0.06, chosen to equal PRESS_FIT so a
+                        # neighbour was one whole press fit away and the
+                        # winner was obvious. That property is deliberately
+                        # given up here: 0.01 is below what the process
+                        # repeats to, so the middle holes may well feel
+                        # identical -- and if they do, that IS the answer.
+                        # It means 0 is right and the fit is already as close
+                        # as this printer can place it.
 COUPON_PITCH = 10.5     # hole to hole. Set by the label -- "-18" is 8.1 mm of
                         # engraving and wants a gutter either side. It was 7.0
                         # when the holes were unlabelled.

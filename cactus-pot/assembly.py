@@ -184,7 +184,45 @@ def laid_out(pot, cactus, gap=34.0):
     return out
 
 
+# The turnaround Rob asked for. Azimuth is the camera's position around the
+# pot, and positive is the camera moving to its RIGHT: at az=0 the screen's
+# right-hand direction is +y, so winding az up brings the side that was on
+# your right round towards you, exactly as walking right around an object
+# does. 0 is dead on the name.
+TURN = (("direct", 0.0), ("30-right", 30.0),
+        ("60-left", -60.0), ("90-right", 90.0))
+
+
+def turnaround():
+    """The finished object in its real filaments, from four bearings.
+
+    One camera distance and one orthographic height for all four, so they
+    are comparable with each other: what changes between them is the object
+    turning, not the lens.
+    """
+    path = os.path.join(HERE, P.POT_STL)
+    _, floor = build.measure_pot(path)
+    parts = pot_colour_parts(floor) + cactus_colour_parts(SEAT_DEG)
+    meshes = [p["mesh"] for p in parts]
+    lo = min(m.bounds[0][2] for m in meshes)
+    hi = max(m.bounds[1][2] for m in meshes)
+    tgt = np.array([0.0, 0.0, (lo + hi) / 2])
+    height = (hi - lo) * 1.06
+
+    for name, az in TURN:
+        eye = R.orbit_eye(tgt, 900.0, az, 8)
+        img = R.render(parts, eye=eye, target=tuple(tgt),
+                       ortho_height=height, width=1050, height=1350,
+                       supersample=2, **LIGHT)
+        img.save(os.path.join(RENDERS, f"assembly-turn-{name}.png"))
+        print(f"renders/assembly-turn-{name}.png   az {az:+.0f}")
+
+
 def main():
+    if "--turn" in sys.argv[1:]:
+        os.makedirs(RENDERS, exist_ok=True)
+        turnaround()
+        return
     os.makedirs(RENDERS, exist_ok=True)
 
     path = os.path.join(HERE, P.POT_STL)
