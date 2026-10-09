@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 import trimesh
+from scipy import sparse
 
 import params as P
 
@@ -589,12 +590,51 @@ def socket_cutter(p, n, rake=0.0, swing=0.0) -> trimesh.Trimesh:
 # the assembled cactus
 # ---------------------------------------------------------------------------
 
+def relax_arm_seams(mesh):
+    """Pull the mesh across the corner where each arm meets the trunk.
+
+    This is the fillet. A union leaves arm and trunk meeting along a curve
+    with a hard tangent break; smoothing the vertices in a ball around each
+    arm's root rounds that break into a blend, which is what makes the
+    cactus read as one plant rather than three glued together.
+
+    Weighted by distance from the root and squared, so it is strongest
+    exactly at the seam and has died to nothing by ARM_SEAM_REACH -- the
+    ribs further out along the arm and further down the trunk never move.
+    """
+    w = np.zeros(len(mesh.vertices))
+    for spec in P.ARMS:
+        root = _arm_spine(spec)[0]
+        d = np.linalg.norm(mesh.vertices - root, axis=1)
+        w = np.maximum(w, np.clip(1.0 - d / P.ARM_SEAM_REACH, 0.0, 1.0) ** 2)
+    if not (w > 0).any():
+        return mesh
+
+    e = mesh.edges_unique
+    n = len(mesh.vertices)
+    A = sparse.coo_matrix((np.ones(len(e) * 2),
+                           (np.r_[e[:, 0], e[:, 1]],
+                            np.r_[e[:, 1], e[:, 0]])),
+                          shape=(n, n)).tocsr()
+    deg = np.asarray(A.sum(axis=1)).ravel()
+    deg[deg == 0] = 1.0
+
+    v = mesh.vertices.copy()
+    move = (w * P.ARM_SEAM_STRENGTH)[:, None]
+    for _ in range(P.ARM_SEAM_SWEEPS):
+        v = v + move * (A @ v / deg[:, None] - v)
+    out = mesh.copy()
+    out.vertices = v
+    return out
+
+
 def cactus(with_sockets=True, with_arms=True):
     body = trunk_body()
     sites = trunk_areoles()
     if with_arms:
         arms = [arm_body(spec) for spec in P.ARMS]
         body = _union([body] + arms)
+        body = relax_arm_seams(body)
         for spec in P.ARMS:
             sites += arm_areoles(spec)
 
@@ -605,6 +645,17 @@ def cactus(with_sockets=True, with_arms=True):
     probe = np.array([p + n * 0.35 for p, n, _, _ in sites])
     buried = body.contains(probe)
     sites = [s for s, b in zip(sites, buried) if not b]
+
+    # And any site the seam fillet has left behind. Sites are worked out from
+    # the analytic surface, but relaxing the seam MOVES that surface -- so a
+    # pad near an arm's root can end up hanging in the air off the skin it
+    # was placed on, which unions as a loose blob rather than a bump. Drop
+    # anything the finished body has pulled away from. A real saguaro is
+    # sparse in the crotch of an arm anyway.
+    if with_arms and len(sites):
+        gap = trimesh.proximity.signed_distance(
+            body, np.array([p for p, _, _, _ in sites]))
+        sites = [s for s, g in zip(sites, gap) if g > -P.AREOLE_RISE * 0.5]
 
     # Drop any site whose spine would hang below SPIKE_FLOOR_DEG. A saguaro
     # does carry spines under its arms, but the socket for one is a hole
@@ -619,7 +670,13 @@ def cactus(with_sockets=True, with_arms=True):
 
     if with_sockets:
         body = _difference(body, [socket_cutter(*s) for s in sites])
-    return body, sites
+
+    # Cleaned before it leaves, same as the test tabs. Relaxing the seam
+    # drags a couple of vertices onto each other -- one coincident pair was
+    # enough to tear 42514 edges on reload, because an STL has no shared
+    # vertex indices and the pair merges back into one. Costs no volume at
+    # all: the faces it drops enclose none.
+    return _clean(body), sites
 
 
 # ---------------------------------------------------------------------------

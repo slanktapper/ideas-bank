@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 
 import numpy as np
 import trimesh
@@ -118,6 +119,19 @@ def main():
               f"{len(m.faces)} faces, {m.volume / 1000:.1f} cm3")
     check(body.body_count == 1, "the cactus is one piece",
           f"{body.body_count} bodies")
+
+    # The cactus through a round trip, not just in memory. The single pair
+    # has had this check since Wednesday and the cactus did not, which is
+    # how relaxing the arm seams got to tear 42514 edges on reload -- one
+    # coincident vertex pair -- while every in-memory check stayed green.
+    tmp = tempfile.mktemp(suffix=".stl")
+    body.export(tmp)
+    rb = trimesh.load(tmp, force="mesh")
+    os.unlink(tmp)
+    check(rb.is_watertight,
+          "the cactus is still watertight after a round trip through STL",
+          f"{len(rb.vertices)} vertices on reload, "
+          f"{rb.volume / 1000:.1f} cm3")
 
     # -- the press fit ------------------------------------------------------
     # The only numbers in this project that decide whether a spike stays in.
@@ -226,7 +240,6 @@ def main():
     # socket_cutter's 1e-6 overlaps leave behind -- merge on reload and tear
     # the faces that used them. This is the check that matters to a slicer,
     # and the only one that would have caught it.
-    import tempfile
     tmp = tempfile.mktemp(suffix=".stl")
     hole.export(tmp)
     reloaded = trimesh.load(tmp, force="mesh")

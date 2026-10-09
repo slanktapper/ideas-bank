@@ -142,6 +142,24 @@ ARM_ROOT_INSET = 7.0 * SCALE     # how far inside the trunk the spine starts,
                                  # and the arm grows out instead of poking
                                  # through
 
+# The seam, where an arm becomes the trunk.
+#
+# Fattening the arm's root and swelling the trunk were both tried and both
+# failed, for the same reason: a boolean union meets along a curve with a
+# hard tangent break, and adding material to either side moves the break
+# rather than softening it. The big shoulder was worse than no shoulder --
+# at size it stopped reading as a swelling and started reading as a cuff.
+#
+# So the fillet is made the way a fillet actually is: by pulling material
+# across the corner. After the arms are unioned on, the mesh is relaxed in a
+# ball around each arm's root, hard at the root and fading to nothing by
+# ARM_SEAM_REACH, which leaves the ribs further up the arm and down the
+# trunk untouched.
+ARM_SEAM_REACH = 35.0 * SCALE    # how far from the root the relaxing reaches
+ARM_SEAM_SWEEPS = 30             # Laplacian sweeps
+ARM_SEAM_STRENGTH = 0.65         # how far a vertex moves towards its
+                                 # neighbours' average each sweep
+
 ARM_RIB_COUNT = 11      # fewer ribs on a thinner stem, as in the real plant
 ARM_RIB_DEPTH = 2.40 * SCALE
 ARM_BLEND = 9.0 * SCALE         # radius of the fillet where an arm meets the trunk.
