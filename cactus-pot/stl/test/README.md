@@ -1,38 +1,65 @@
-# Arm-junction tests, 2026-10-09
+# Arm-junction tests, second set — 2026-10-09
 
-Four whole cactuses that differ only in how the arm meets the trunk. Built to
-settle a complaint Rob made looking up at the model from below: the arm read
-as a separate piece, and the arm's grooves *faded* as they approached the
-trunk instead of simply intersecting it.
+A 2×2 on the flare, with the inset fixed at 12. Each was built by reloading
+`params.py` from disk first, so every case starts from the committed
+baseline and only the three numbers below differ — nothing carries over from
+the case before it.
 
-| | `ARM_BLEND` | `ARM_BLEND_REACH` | `ARM_ROOT_INSET` | Sockets |
-| --- | --- | --- | --- | --- |
-| `test-arm-a.stl` | 1 | 5 | 8.75 (unchanged) | 109 |
-| `test-arm-b.stl` | 5 | 10 | 8.75 (unchanged) | 105 |
-| `test-arm-c.stl` | 1 | 1 | 12 | 109 |
-| `test-arm-d.stl` | 0 | 0 | 12 | 109 |
+| | `ARM_BLEND` | `ARM_BLEND_REACH` | `ARM_ROOT_INSET` | Volume | Sockets |
+| --- | --- | --- | --- | --- | --- |
+| `test-arm-a.stl` | 1 | 1 | 12 | 764.358 cm³ | 109 |
+| `test-arm-b.stl` | 1 | 4 | 12 | 764.369 cm³ | 109 |
+| `test-arm-c.stl` | 3 | 1 | 12 | 764.358 cm³ | 109 |
+| `test-arm-d.stl` | 3 | 4 | 12 | 764.395 cm³ | 109 |
 
-Millimetres as given, not design numbers times `SCALE`. All four are 233.4 mm
-tall and reload watertight.
+Millimetres as given, not design numbers times `SCALE`. All four 233.4 mm
+tall, watertight on reload, seam relaxation off (`ARM_SEAM_SWEEPS = 0`).
 
-**The seam relaxation is off in all four** (`ARM_SEAM_SWEEPS = 0`). It smooths
-a 43.75 mm ball around each arm root with 30 Laplacian sweeps, which would
-have flattened most of the difference between these and gone on erasing the
-grooves at the seam — the thing being judged. These show what the flare alone
-does.
+## These four are, in practice, the same model
 
-What they showed:
+Look at the volumes. **a and c are identical to the milligram and have the
+same vertex count**, despite one having three times the other's flare. The
+spread across all four is 0.04 cm³ on an 800 cm³ part — boolean noise.
 
-- **d** is the one that answers the complaint. No flare at all, so the arm
-  arrives at full diameter with full-depth grooves and simply stops at the
-  intersection. **c** is nearly the same.
-- **b** still wears a sleeve: the root swells into an unribbed cone before
-  the grooves begin. It also loses four spines — the fatter root swallows
-  pad sites, which then drop out as buried.
-- **The hard line on the underside survives in all four, d included.** The
-  flare never caused it; the boolean intersection does. No value of these
-  three numbers removes it.
+The reason, measured on arm 0:
 
-These are a decision aid, not parts. Nothing builds them — they were made by
-overriding the three parameters and re-running `cactus()`. Once the junction
-is settled, the winning numbers go into `params.py` and this folder can go.
+| | |
+| --- | --- |
+| Arm spine leaves the trunk wall at | **arc 14.0 mm** |
+| Flare still above 0.05 mm at reach 1 | arc 0 – 1.8 mm |
+| Flare still above 0.05 mm at reach 4 | arc 0 – 7.1 mm |
+
+At an inset of 12 the arm's first 14 mm are inside the trunk, and a flare
+with a reach of 1–4 mm has died long before that. It is buried. Neither
+`ARM_BLEND` nor `ARM_BLEND_REACH` can reach the visible surface at this
+inset, so the 2×2 has nothing to vary.
+
+How far in the arm starts, against where it emerges:
+
+| `ARM_ROOT_INSET` | spine leaves the wall at |
+| --- | --- |
+| 0 | 1.8 mm |
+| 2 | 3.6 mm |
+| 4 | 5.3 mm |
+| 6 | 7.1 mm |
+| 8.75 | 10.6 mm |
+| 12 | 14.0 mm |
+
+For the flare to show at all, `ARM_BLEND_REACH` has to be comparable with
+that emergence distance, or the inset has to come down to meet it.
+
+## What this means for the junction
+
+An inset of 12 **is** the pure intersection — the arm arrives at full
+diameter with full-depth grooves and simply stops at the trunk. That is what
+the first set's `d` (blend 0, reach 0, inset 12) was, and all four of these
+are the same thing by another route.
+
+So the flare is settled: at this inset it does nothing. What is left is the
+hard line on the underside, which is the boolean intersection curve and was
+never the flare's doing. That needs either a light seam relaxation — far
+weaker than the 30 sweeps tried before, enough to take the tangent break off
+without touching the grooves — or a smaller inset so the flare has somewhere
+to act.
+
+The first set is in git history at `63edba7` if those are wanted back.
