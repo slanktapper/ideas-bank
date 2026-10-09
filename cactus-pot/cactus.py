@@ -634,6 +634,50 @@ def relax_arm_seams(mesh):
     return out
 
 
+def _insertable(body, sites):
+    """True for each site whose spine has a clear run in along its axis."""
+    ray = trimesh.ray.ray_triangle.RayMeshIntersector(body)
+    r = P.PIN_SHANK_D / 2
+
+    # The rays have to START clear of the skin. A ring at the post's radius,
+    # launched from just above a raked mouth, dips back into the surface --
+    # the axis leans 34 degrees, so the far side of the ring is still buried
+    # -- and every one of them registers an instant hit. At 0.6 mm out that
+    # reported 99 of 110 sockets blocked, which would have deleted nearly
+    # every spine on the cactus. The ring clears the skin by about
+    # r * tan(rake) plus the pad it sits on, so start beyond that and take
+    # the head start off the distance required.
+    start = r * np.tan(np.radians(P.SPIKE_RAKE_DEG)) + P.AREOLE_RISE + 0.6
+    need = P.SPIKE_CLEAR_L - start
+
+    origins, dirs, owner = [], [], []
+    for i, (p, n, rake, swing) in enumerate(sites):
+        a = _rake(n, rake, swing)
+        u = np.cross(a, [0.0, 0.0, 1.0])
+        if np.linalg.norm(u) < 1e-6:
+            u = np.cross(a, [1.0, 0.0, 0.0])
+        u /= np.linalg.norm(u)
+        v = np.cross(a, u)
+        ring = [np.zeros(3)] + [np.cos(t) * u * r + np.sin(t) * v * r
+                                for t in np.linspace(0, 2 * np.pi, 8,
+                                                     endpoint=False)]
+        for off in ring:
+            origins.append(p + a * start + off)
+            dirs.append(a)
+            owner.append(i)
+
+    origins = np.array(origins)
+    dirs = np.array(dirs)
+    owner = np.array(owner)
+    hit, which, _ = ray.intersects_location(origins, dirs, multiple_hits=False)
+    clear = np.full(len(sites), np.inf)
+    if len(hit):
+        d = np.linalg.norm(hit - origins[which], axis=1)
+        for o, dist in zip(owner[which], d):
+            clear[o] = min(clear[o], dist)
+    return clear >= need
+
+
 def cactus(with_sockets=True, with_arms=True):
     body = trunk_body()
     sites = trunk_areoles()
@@ -670,6 +714,20 @@ def cactus(with_sockets=True, with_arms=True):
     sites = [s for s in sites
              if _rake(s[1], s[2], s[3])[2]
              > np.sin(np.radians(P.SPIKE_FLOOR_DEG))]
+
+    # Drop any socket a spine cannot physically be got into. The hole is
+    # straight and raked, so the only way in is along its own axis -- and
+    # where an arm passes over the trunk, or inside the crook of a joint,
+    # that line can run straight back into the cactus. The fit being perfect
+    # does not help if the spine cannot reach the hole.
+    #
+    # Measured by sweeping the post's own diameter along the axis: the
+    # centre line plus a ring of rays at the post's radius, which is the
+    # volume the spine passes through going in. Tested against the body
+    # before the pads go on; a pad is under a millimetre proud and never the
+    # thing in the way, where a whole arm is.
+    if len(sites):
+        sites = [s for s, ok in zip(sites, _insertable(body, sites)) if ok]
 
     pads = [areole_pad(p, n) for p, n, _, _ in sites]
     body = _union([body] + pads)

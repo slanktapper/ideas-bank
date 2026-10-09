@@ -368,6 +368,16 @@ def main():
     check(bool(np.all(proud)), "every areole stands proud of the skin",
           f"{int(np.sum(~proud))} flush or drowned of {len(sites)}")
 
+    # Every socket must be one a spine can actually be got into. The hole
+    # is straight and raked, so the only approach is along its own axis, and
+    # on a cactus with arms that line can run back into the body. Rob found
+    # these by eye on the printed model; nothing in here was looking for
+    # them.
+    check(bool(C._insertable(body, sites).all()),
+          "every socket has a clear run in along its own axis",
+          f"{len(sites)} sockets, {P.SPIKE_CLEAR_L:.0f} mm of clear air "
+          f"needed for a {P.SPIKE_L + P.PIN_SHANK_L:.0f} mm spine")
+
     # -- the arrangement ----------------------------------------------------
     # Rob complained twice about how the spines are laid out: first that they
     # read as rows, then that they read as columns. Both are checked here on

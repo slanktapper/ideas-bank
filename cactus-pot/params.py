@@ -136,8 +136,8 @@ ARMS = (
 # either: the arm met the trunk at nearly full width and crossed it in a
 # crease, so the cactus read as three pieces stuck together rather than one
 # plant. These are millimetres along the spine, so both arms blend alike.
-ARM_BLEND_REACH = 26.0 * SCALE   # how far down the arm the flare reaches
-ARM_ROOT_INSET = 7.0 * SCALE     # how far inside the trunk the spine starts,
+ARM_BLEND_REACH = 12.0   # how far down the arm the flare reaches
+ARM_ROOT_INSET = 12.0     # how far inside the trunk the spine starts,
                                  # so the widest part of the flare is buried
                                  # and the arm grows out instead of poking
                                  # through
@@ -156,13 +156,19 @@ ARM_ROOT_INSET = 7.0 * SCALE     # how far inside the trunk the spine starts,
 # ARM_SEAM_REACH, which leaves the ribs further up the arm and down the
 # trunk untouched.
 ARM_SEAM_REACH = 35.0 * SCALE    # how far from the root the relaxing reaches
-ARM_SEAM_SWEEPS = 30             # Laplacian sweeps
+ARM_SEAM_SWEEPS = 0              # Laplacian sweeps. OFF: the junction Rob
+                                 # chose on 2026-10-09 was test-arm-d, and
+                                 # every one of those test files was built
+                                 # with the relaxing off. Turning it back on
+                                 # would hand him a model he has not seen.
+                                 # The flare at blend 3 / reach 12 is doing
+                                 # the work instead.
 ARM_SEAM_STRENGTH = 0.65         # how far a vertex moves towards its
                                  # neighbours' average each sweep
 
 ARM_RIB_COUNT = 11      # fewer ribs on a thinner stem, as in the real plant
 ARM_RIB_DEPTH = 2.40 * SCALE
-ARM_BLEND = 9.0 * SCALE         # radius of the fillet where an arm meets the trunk.
+ARM_BLEND = 3.0         # radius of the fillet where an arm meets the trunk.
                         # An un-filleted join is both ugly and a stress riser
                         # in a printed part that will be picked up by an arm.
 
@@ -282,6 +288,14 @@ SPIKE_BELLY = 0.18      # how much the needle bows out from a straight cone,
 SPIKE_FLOOR_DEG = -14.0  # no spine may hang lower than this off horizontal:
                          # its socket would be a hole in a roof. The arm
                          # undersides are where this bites.
+# A socket is a straight hole, so a spine can only go in along its axis. If
+# anything of the cactus stands on that line -- the trunk above an arm, the
+# far side of a crook -- the spine cannot be got in at all, however good the
+# fit is. Rob found several of these by eye on the printed model. This is how
+# much clear air a socket needs along its own axis: the spine's whole length
+# plus room to hold it.
+SPIKE_CLEAR_L = SPIKE_L + PIN_SHANK_L + 12.0
+
 SPIKE_RAKE_DEG = 34.0   # how far the spike leans up from the surface normal.
                         # Spines on a saguaro point up and out, not straight
                         # out, and this one number does more for realism than
