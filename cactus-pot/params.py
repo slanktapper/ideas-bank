@@ -103,10 +103,20 @@ RIB_SHARPNESS = 0.78    # 0 = sinusoid, 1 = crests pinched and valleys wide,
 RIB_TWIST_DEG = 7.0     # total twist over the full height: nothing in nature
                         # runs dead straight, and 7 degrees is below the point
                         # where it reads as a deliberate spiral
-RIB_FADE_TOP = 0.90     # ribs shallow out towards the crown (height fraction
-                        # where fading starts)
-RIB_FADE_BASE = 0.04    # and die into the soil line, so the spigot's shoulder
-                        # is a clean circle
+RIB_FADE_TOP = 0.90     # height fraction where the fade towards the crown
+                        # starts, and ...
+RIB_TIP_KEEP = 1.00     # ... how much rib depth is still there at the top of
+                        # it. At 1.0 there is no fade: the ribs run at full
+                        # depth right up to TRUNK_H, which is what carries
+                        # them over the crown, because the crown's rings are
+                        # the ring at TRUNK_H scaled down -- ribs and all --
+                        # so they converge at the apical depression the way a
+                        # saguaro's do. It used to be 0, and the top 21 mm of
+                        # the plant came out as a turned dome with no ribs on
+                        # it at all. The crest colour part simply stopped
+                        # there, which is how it was noticed.
+RIB_FADE_BASE = 0.04    # Ribs die into the soil line, so the spigot's
+                        # shoulder is a clean circle
 
 WOBBLE_AMP = 0.68 * SCALE       # low-frequency asymmetry on the whole column. Small,
 WOBBLE_TURNS = 1.6      # and the single biggest thing separating "grown" from
@@ -168,6 +178,14 @@ ARM_SEAM_STRENGTH = 0.65         # how far a vertex moves towards its
 
 ARM_RIB_COUNT = 11      # fewer ribs on a thinner stem, as in the real plant
 ARM_RIB_DEPTH = 2.40 * SCALE
+ARM_RIB_FADE_TIP = 0.90     # the arm's own RIB_FADE_TOP: where the fade to
+                            # ARM_RIB_TIP_KEEP starts, as a fraction along the
+                            # spine. This was a bare 0.10 inside arm_rings.
+ARM_RIB_TIP_KEEP = 1.00     # and how much survives. At 1.0 the ribs shrink
+                            # only with the tip's own rounding, so they close
+                            # on the tip instead of flattening out before it.
+ARM_RIB_ROOT_RAMP = 0.14    # fraction of the arm over which the ribs come up
+                            # out of the trunk. Was bare too.
 ARM_BLEND = 3.0         # radius of the fillet where an arm meets the trunk.
                         # An un-filleted join is both ugly and a stress riser
                         # in a printed part that will be picked up by an arm.

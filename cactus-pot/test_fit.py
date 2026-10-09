@@ -483,6 +483,39 @@ def main():
               f"arm {i}: the colour gate reaches past the arm's own surface",
               f"gate {reach:.1f} mm against a surface at {surf:.1f}")
 
+    # The crest filament is whatever stands outside the mean radius, so it
+    # exists only where there are ribs. Fade the ribs out before the top and
+    # the silk part simply stops: it used to end at 210.6 mm under a body
+    # that went to 224.1. Measured on the rings the crown is actually built
+    # from -- the dome is the ring at TRUNK_H scaled down, so the rib depth
+    # there is the rib depth the crown inherits.
+    th = np.linspace(0.0, 2 * np.pi, 721)
+    r_top = C.trunk_radius(th, np.full_like(th, P.TRUNK_H))
+    depth_top = float(r_top.max() - r_top.min())
+    r_mid = C.trunk_radius(th, np.full_like(th, 0.5 * P.TRUNK_H))
+    depth_mid = float(r_mid.max() - r_mid.min())
+    check(depth_top > 0.75 * depth_mid,
+          "the ribs are still there at the top of the trunk, so the crown "
+          "gets them",
+          f"{depth_top:.2f} mm peak-to-valley against {depth_mid:.2f} at "
+          f"mid height")
+
+    # And the same at the arm tips, where the ribs should close on the tip
+    # with its rounding rather than flatten out short of it.
+    for i, spec in enumerate(P.ARMS):
+        rings, line, _ = C.arm_rings(spec)
+        d = np.linalg.norm(rings - line[:, None, :], axis=2)
+        n_pts = len(line)
+        near = int(round(0.95 * (n_pts - 1)))
+        half = int(round(0.50 * (n_pts - 1)))
+        ratio = ((d[near].max() - d[near].min())
+                 / max(1e-9, d[near].mean())
+                 * d[half].mean() / max(1e-9, d[half].max() - d[half].min()))
+        check(ratio > 0.75,
+              f"arm {i}: the ribs still cut as deep near the tip, in "
+              f"proportion to the arm's own radius",
+              f"{ratio:.2f} of the mid-arm proportion")
+
     # -- printing -----------------------------------------------------------
     head("printing")
     for name, m in (("cactus", body), ("spike plate", plate),

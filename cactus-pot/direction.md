@@ -71,15 +71,16 @@ No GUI, no CAD application, no OpenSCAD.
     python3 build.py --stl            # just the printable files
     python3 build.py --renders        # just the pictures
     python3 build.py --pot <pot.stl>  # measure the pot, and render it seated
-    python3 test_fit.py               # 26 checks; all have to pass
-    python3 test_fit.py --pot <stl>   # 27, the last one against a real pot
+    python3 colours.py                # stl/colour/ -- the two body filaments
+    python3 test_fit.py               # 57 checks; all have to pass
+    python3 test_fit.py --pot <stl>   # 58, the last one against a real pot
 
 Every dimension lives in `params.py`. The two that matter most:
 
 | | |
 | --- | --- |
 | `PRESS_FIT` | the *printed* interference, −0.06 mm. Negative is a bite. |
-| `AREOLE_MIN_SEP` | how close two pads may get: 14.5 mm on the trunk, 11.0 on an arm. It is what sets the spike count — 110 — because pads are drawn until the part will not take another. |
+| `AREOLE_MIN_SEP` | how close two pads may get: 14.5 mm on the trunk, 11.0 on an arm. It is what sets the spike count — 99 — because pads are drawn until the part will not take another, and only the ones a spine can actually be pushed into are kept. |
 
 ## The pot, measured
 
@@ -102,22 +103,24 @@ rather than worked out from the parameters:
 
 | | |
 | --- | --- |
-| Pot | Ø94.3 × 76.0, standing on a Ø67.6 flat |
-| Cactus body | 186.7 tall; 7.4 of that is spigot, below the soil line |
-| Trunk | Ø59.2 at its widest, z=50; Ø45.1 at the crown |
-| Span, arms only | 132.2 × 87.1 |
-| Span, with all 110 spines | 151.9 × 106.2 |
-| Above the pot's rim | 158.3 |
-| **The assembly** | **234.3 tall, 151.9 across** |
+| Pot | Ø117.9 × 95.0 |
+| Cactus body | 233.5 tall; 9.2 of that is spigot, below the soil line |
+| Trunk | Ø74.3 at its widest, z=46; Ø59.7 at the crown shoulder |
+| Span, arms only | 149.1 × 98.8 |
+| Span, with all 99 spines | 172.0 × 122.3 |
+| Above the pot's rim | 198.0 |
+| **The assembly** | **293.0 tall, 172.0 across** |
 
 The spines add nothing to the height — `AREOLE_CROWN_KEEP` stops pads before
 the apex, so the crown is the highest point of the object.
 
 An earlier version of this section said Ø52–55, 175 mm tall, 147 above the
 rim and about 223 overall. All four were wrong against the mesh, and nothing
-caught it because a paragraph is not a test. `test_fit.py` now prints the
+caught it because a paragraph is not a test. The version after it was right
+when written and went stale the moment `SCALE` went to 1.25 — every number
+in it was the design figure, not the printed one. `test_fit.py` prints the
 envelope on every run, so the numbers are in front of whoever changes the
-shape next.
+shape next; this table is copied from that line rather than worked out.
 
 ### The interface, as a contract
 
@@ -248,3 +251,42 @@ changes size much from Ø92 × 76 should take the cactus's proportions with it.
   all of it under the two arms. PETG interface layers under a PLA body give
   breakaway supports from filament already on the shelf — see
   `../available-tools.md`.
+
+## The three filaments, as parts
+
+`colours.py` writes the body as two solids for a multi-material plate, which
+is the arrangement the pot already uses — load `01` as the object, add `02` to
+it as a part, assign a filament to each:
+
+| | | |
+| --- | --- | --- |
+| `stl/colour/01-hollow-indigo.stl` | PLA Basic Indigo Purple | the rib valleys, 744.15 cm³ |
+| `stl/colour/02-crest-silk.stl` | PLA Silk+ Purple | the rib crests, 22.63 cm³ |
+| `stl/spikes-x72.stl` | GEEETECH silk silver | the 99 spines, on their own plate |
+
+Both are real booleans against a core solid built by holding `rib_profile` at
+a constant, not a face-group split: those are open shells and a slicer is
+entitled to make nonsense of them. The run checks that the two add back up to
+the cactus — 766.77 cm³ against 766.77 — and that each survives the trip
+through an STL with its volume intact.
+
+### The ribs run to the tip
+
+They did not. `RIB_FADE_TOP` faded them to nothing by `TRUNK_H`, and because
+the crown is built by scaling the ring at `TRUNK_H` down over the dome, a ring
+with no ribs in it makes a dome with no ribs on it. The top 14 mm of the plant
+was a turned bulb. It showed up in the crest part before it showed up in the
+silhouette: `02-crest-silk.stl` stopped at 210.6 mm while the body went on to
+224.1, so the silk simply ended.
+
+`RIB_TIP_KEEP` is how much rib depth survives that fade, and at 1.0 there is
+no fade: full depth to `TRUNK_H`, then the dome tapers ribs and all, 5.93 mm
+peak-to-valley at the shoulder closing to 2.85 at the apical depression — the
+way a saguaro's converge. `ARM_RIB_TIP_KEEP` does the same for the arms, where
+the ribs now shrink with the tip's own rounding rather than flattening out
+a few millimetres short of it. The crest part reaches 224.2 mm, which is the
+top.
+
+Dropping the fade cost seven spine sites — 106 to 99. Deeper ribs at the top
+of the trunk mean more pads up there that the insertability sweep cannot find
+a straight path into, and it drops them rather than ship a hole nothing fits.

@@ -154,12 +154,21 @@ def _rib_scale(z: np.ndarray) -> np.ndarray:
 
     Nothing below the top of the base flare: ribs on a cone that is still
     growing would be chased by the clip and come out as a frill.
+
+    At the other end the fade runs to RIB_TIP_KEEP rather than to zero, and
+    that number matters more than it looks: the crown is built by scaling the
+    ring at TRUNK_H down over the dome, so whatever rib depth survives to
+    TRUNK_H is what the crown gets, tapering with the radius and converging
+    at the apex. Fade to zero and the top of the plant is a lathe part.
     """
     t = np.clip(z / P.TRUNK_H, 0.0, 1.0)
     flare_top = (P.TRUNK_R_BASE - P.SPIGOT_R) / P.TRUNK_H
     base = np.clip((t - flare_top - P.RIB_FADE_BASE) / 0.10, 0.0, 1.0)
-    top = np.clip((1.0 - t) / (1.0 - P.RIB_FADE_TOP), 0.0, 1.0)
-    return base * (top ** 0.8)
+    # guarded: RIB_FADE_TOP at 1.0 is a legitimate "no fade at all", and
+    # unguarded it is a divide by zero that comes out NaN, not absent.
+    span = max(1e-9, 1.0 - P.RIB_FADE_TOP)
+    top = np.clip((1.0 - t) / span, 0.0, 1.0) ** 0.8
+    return base * (P.RIB_TIP_KEEP + (1.0 - P.RIB_TIP_KEEP) * top)
 
 
 def trunk_radius(theta: np.ndarray, z: np.ndarray) -> np.ndarray:
@@ -320,8 +329,17 @@ def arm_rings(spec):
             flare = P.ARM_BLEND * np.exp(-(arc[i] / P.ARM_BLEND_REACH) ** 2)
         tip = np.sqrt(max(1e-9, 1.0 - max(0.0, (s - 0.86) / 0.14) ** 2))
         r = (spec["r"] * (1.0 - 0.22 * s) + flare) * tip
-        rib_scale = np.clip(min(s / 0.14, (1 - s) / 0.10), 0.0, 1.0)
-        rr = r + P.ARM_RIB_DEPTH * rib_scale * ribs
+        # The arm's end of the same story as _rib_scale's: fade to
+        # ARM_RIB_TIP_KEEP, not to zero, and then let the ribs shrink with
+        # `tip` -- the arm's own rounding-off -- exactly as the trunk's ribs
+        # shrink with the crown's radius. They close on the tip rather than
+        # flattening out a few millimetres short of it.
+        span = max(1e-9, 1.0 - P.ARM_RIB_FADE_TIP)
+        tip_fade = np.clip((1.0 - s) / span, 0.0, 1.0)
+        rib_scale = min(
+            np.clip(s / P.ARM_RIB_ROOT_RAMP, 0.0, 1.0),
+            P.ARM_RIB_TIP_KEEP + (1.0 - P.ARM_RIB_TIP_KEEP) * tip_fade)
+        rr = r + P.ARM_RIB_DEPTH * rib_scale * tip * ribs
         rings[i] = p + rr[:, None] * u[None, :] + 0.0 * v
         rings[i] = (p[None, :]
                     + (rr * np.cos(theta))[:, None] * u[None, :]
