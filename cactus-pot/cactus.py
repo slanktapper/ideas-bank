@@ -311,7 +311,13 @@ def arm_rings(spec):
         # The flare decays over a distance ALONG THE SPINE rather than over a
         # fraction of the arm, so the long arm and the short one grow out of
         # the trunk the same way.
-        flare = P.ARM_BLEND * np.exp(-(arc[i] / P.ARM_BLEND_REACH) ** 2)
+        # Guarded: at REACH 0 the root term is 0/0 and the flare comes out
+        # NaN rather than absent, which silently poisons the whole ring.
+        # Either number at zero means no flare at all.
+        if P.ARM_BLEND <= 0.0 or P.ARM_BLEND_REACH <= 0.0:
+            flare = 0.0
+        else:
+            flare = P.ARM_BLEND * np.exp(-(arc[i] / P.ARM_BLEND_REACH) ** 2)
         tip = np.sqrt(max(1e-9, 1.0 - max(0.0, (s - 0.86) / 0.14) ** 2))
         r = (spec["r"] * (1.0 - 0.22 * s) + flare) * tip
         rib_scale = np.clip(min(s / 0.14, (1 - s) / 0.10), 0.0, 1.0)
