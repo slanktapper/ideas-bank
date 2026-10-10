@@ -302,33 +302,46 @@ with a 7 mm hop across a rib valley between them. Most of the travel moves
 in the print belong to the smallest, oozier third of the material.
 
 `stringing.py` writes a coupon that reproduces that rather than a generic
-stringing cube: the real trunk, cut to 36 mm at mid height, split by the same
-two booleans into the same two solids. Three stacked 12 mm bands differ only
-in where the cut is made:
+stringing cube: the real trunk's skin at `Z_SRC`, split by the same two
+booleans into the same two solids, on a foot shaped like the cactus's own,
+with three spine sockets in it. 67 mm across, 30 mm tall, 150 layers, 15
+islands per layer at 6.0 mm of arc and a 7.0 mm hop -- the cactus's own
+numbers.
 
-| band | `CREST_THRESHOLD` | silk arc | hop |
-| --- | --- | --- | --- |
-| bottom | 0.15, as shipped | 6.3 mm | 7.3 mm |
-| middle | −0.25 | 7.9 mm | 5.4 mm |
-| top | −0.45 | 10.5 mm | 2.4 mm |
+**The foot is styled, not copied.** The real bottom 30 mm of the cactus has
+nothing in it to test: the base flare runs to z=12.9, ribs do not start
+until z=21.2 and reach only 42% depth by z=30, and `AREOLE_Z_MIN` is 30.0,
+so the lowest pad the model will ever place sits exactly at the height cap.
+A literal slice would be a smooth cone with no silk and no holes. What is
+copied is the shape: a true 45° cone, as the trunk's own base clip makes,
+but starting from a wider radius so it finishes in 7 mm instead of 13.
 
-Bottom to top the hop shortens about 3x. If the top band strings as badly as
-the bottom, geometry is not the answer.
+`FOOT_BIAS` exists because the foot has no ribs, so body and core are the
+same cone down there and a boolean between coincident surfaces is how a mesh
+comes back with holes in it. The core is built 1 mm fatter through the foot,
+tapering to exactly zero where the ribs come up -- so the split is untouched
+everywhere it matters, and the foot prints in one colour, which is right
+anyway.
 
-**The threshold is a weaker lever than it looks.** A first draft used
-0.15 / 0.00 / −0.15 and measured 6.0 / 6.5 / 7.0 mm — three bands that differ
-by nothing, because the rib profile is steep through its middle and the cut
-barely moves there. It only bites past −0.25. Measured, not assumed; the
-numbers above come from `rib_profile` itself.
+**A site's third field is not its rake.** `cactus._rake` applies
+`SPIKE_RAKE_DEG` itself and adds the field on top, so it carries the
+per-site scatter. Passing `SPIKE_RAKE_DEG` into it doubles the lean to 68°,
+at which angle the insertion sweep finds the lower side of the post still
+buried in the skin and reports every socket blocked -- which is how it was
+caught, at 0 of 3. The build now prints each socket's lean and flags one
+that falls outside `SPIKE_RAKE_DEG ± SPIKE_RAKE_SCATTER`.
 
-An earlier attempt to measure the islands by clustering the silk mesh's
-vertices by angle in a thin band of height reported 0.0 mm for one band and
-could not find another — the vertices bunch at the band joints. Asking the
-profile is both exact and cheaper.
+**The threshold is a weaker lever than it looks.** An earlier three-band
+version of this coupon swept `CREST_THRESHOLD`; its first draft used
+0.15 / 0.00 / −0.15 and measured 6.0 / 6.5 / 7.0 mm of arc -- three bands
+that differ by nothing, because the rib profile is steep through its middle
+and the cut barely moves there. It only bites past −0.25. That coupon is in
+git history at `d64e112`, 36 mm tall, sweeping 0.15 to −0.45, if the
+geometry question comes back after the drying one is settled.
 
 **Worth checking in the slicer before committing to the full part.** Two
 filaments on one object means a colour change on essentially every layer:
-about 180 on this coupon, about **1015 on the cactus**, each with its own
+about 150 on this coupon, about **1015 on the cactus**, each with its own
 purge. `filament.md` already notes that a part split into separately printed
 pieces is usually cheaper than one printed in two colours, and this is the
 part that tests whether that applies here.
