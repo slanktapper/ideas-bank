@@ -72,6 +72,7 @@ No GUI, no CAD application, no OpenSCAD.
     python3 build.py --renders        # just the pictures
     python3 build.py --pot <pot.stl>  # measure the pot, and render it seated
     python3 colours.py                # stl/colour/ -- the two body filaments
+    python3 stringing.py              # stl/stringing/ -- the silk test coupon
     python3 test_fit.py               # 57 checks; all have to pass
     python3 test_fit.py --pot <stl>   # 58, the last one against a real pot
 
@@ -290,3 +291,44 @@ top.
 Dropping the fade cost seven spine sites — 106 to 99. Deeper ribs at the top
 of the trunk mean more pads up there that the insertability sweep cannot find
 a straight path into, and it drops them rather than ship a hole nothing fits.
+
+### The silk strings, and why this part is the reason
+
+PLA Silk+ Purple started throwing hairs. Silk PLA strings more than matte --
+the additives that make it glossy drop the melt viscosity -- but the part is
+doing most of the work. The silk is **2.95%** of the cactus by volume and
+**15 separate islands on every one of 1015 layers**, each about 6 mm of arc
+with a 7 mm hop across a rib valley between them. Most of the travel moves
+in the print belong to the smallest, oozier third of the material.
+
+`stringing.py` writes a coupon that reproduces that rather than a generic
+stringing cube: the real trunk, cut to 36 mm at mid height, split by the same
+two booleans into the same two solids. Three stacked 12 mm bands differ only
+in where the cut is made:
+
+| band | `CREST_THRESHOLD` | silk arc | hop |
+| --- | --- | --- | --- |
+| bottom | 0.15, as shipped | 6.3 mm | 7.3 mm |
+| middle | −0.25 | 7.9 mm | 5.4 mm |
+| top | −0.45 | 10.5 mm | 2.4 mm |
+
+Bottom to top the hop shortens about 3x. If the top band strings as badly as
+the bottom, geometry is not the answer.
+
+**The threshold is a weaker lever than it looks.** A first draft used
+0.15 / 0.00 / −0.15 and measured 6.0 / 6.5 / 7.0 mm — three bands that differ
+by nothing, because the rib profile is steep through its middle and the cut
+barely moves there. It only bites past −0.25. Measured, not assumed; the
+numbers above come from `rib_profile` itself.
+
+An earlier attempt to measure the islands by clustering the silk mesh's
+vertices by angle in a thin band of height reported 0.0 mm for one band and
+could not find another — the vertices bunch at the band joints. Asking the
+profile is both exact and cheaper.
+
+**Worth checking in the slicer before committing to the full part.** Two
+filaments on one object means a colour change on essentially every layer:
+about 180 on this coupon, about **1015 on the cactus**, each with its own
+purge. `filament.md` already notes that a part split into separately printed
+pieces is usually cheaper than one printed in two colours, and this is the
+part that tests whether that applies here.
