@@ -17,38 +17,50 @@ from shapely.geometry.polygon import orient
 from shapely import affinity
 from scipy.spatial import Voronoi
 
+# The size dial. Rob asked for everything 25% bigger on 2026-10-07, and the
+# cactus half took the same 1.25 in its own params.py -- the two have to agree
+# or the spigot stops fitting the socket. Every length below is its original
+# design number times SCALE, so the shape stays readable and the size is one
+# number.
+#
+# Not scaled: BEAD_GAP and BAND_BITE, which are not shape at all. They are the
+# fractions of a millimetre that keep two solids from meeting exactly, because
+# coincident faces stop the union being a volume on reload. They depend on the
+# boolean engine, not on how big the pot is.
+SCALE = 1.25
+
 # ---- the pot itself --------------------------------------------------------
-R, H      = 46.0, 76.0        # outer radius, overall height
-WALL      = 3.2
-FOOT_R    = 20.0              # radius of the roll into the base
-BASE_FLAT = 26.0              # flat the pot stands on
+R, H      = 46.0 * SCALE, 76.0 * SCALE        # outer radius, overall height
+WALL      = 3.2 * SCALE
+FOOT_R    = 20.0 * SCALE              # radius of the roll into the base
+BASE_FLAT = 26.0 * SCALE              # flat the pot stands on
 
 # The well and its socket are copied from the pot we started from, so the cactus
 # being built alongside this still drops straight in: a 21 mm well, with a blind
 # 32.00 mm by 8.00 mm socket in the middle of its floor.
-WELL_Z    = 55.0              # inner floor height -- 21 mm below the rim
-SOCKET_D  = 32.0
-SOCKET_H  = 8.0
+WELL_Z    = 55.0 * SCALE              # inner floor height -- 21 mm below the rim
+SOCKET_D  = 32.0 * SCALE
+SOCKET_H  = 8.0 * SCALE
 
 # ---- the stone field -------------------------------------------------------
-WAVE_Z    = 4.3               # mean position of the scalloped line, measured as
+WAVE_Z    = 4.3 * SCALE               # mean position of the scalloped line, measured as
                               # arc length along the outer profile: 4.3 is halfway
                               # round the foot's roll, at z = 5.86
-WAVE_A    = 0.6               # the scallops, scaled down to fit under the roll
-CELL_H    = 1.15              # how far the cells stand proud
-GROOVE    = 1.05              # width of the gap between cells
+WAVE_A    = 0.6 * SCALE               # the scallops, scaled down to fit under the roll
+CELL_H    = 1.15 * SCALE              # how far the cells stand proud
+GROOVE    = 1.05 * SCALE              # width of the gap between cells
 N_CELLS   = 310               # kept in step with the taller field, for one size
                               # of stone throughout
 
 # ---- the panel -------------------------------------------------------------
-PAN_W, PAN_H, PAN_Z = 78.0, 37.0, 48.5
-PAN_SINK  = 0.5               # how far the panel sits below the plain wall
-TEXT_RAISE = 1.0              # how far the letters stand off the panel face
-TEXT_R     = 0.4              # the roll on their top edge. Half the narrowest
+PAN_W, PAN_H, PAN_Z = 78.0 * SCALE, 37.0 * SCALE, 48.5 * SCALE
+PAN_SINK  = 0.5 * SCALE               # how far the panel sits below the plain wall
+TEXT_RAISE = 1.0 * SCALE              # how far the letters stand off the panel face
+TEXT_R     = 0.4 * SCALE              # the roll on their top edge. Half the narrowest
                               # stroke is about 0.7 mm, so 0.4 rolls over without
                               # eating a stroke away
 TEXT_STEPS = 4                # steps in the roll; 4 puts each riser at 0.1 mm
-PAN_INSET  = 5.0              # clear margin left and right of the longest line
+PAN_INSET  = 5.0 * SCALE              # clear margin left and right of the longest line
 BEAD_W    = 1.8 * GROOVE      # the border round each stone. At 1.0x the groove
                               # two neighbouring borders met exactly in the middle
                               # and anything wider than nominal showed gold; at
@@ -68,7 +80,7 @@ BAND_BITE = 0.3               # how far its skin reaches into the wall. It has t
                               # overlap the body rather than land on it: two solids
                               # meeting exactly leave coincident faces and the
                               # union stops being a volume on reload.
-PAN_MARGIN = 2.5              # clear margin above and below the block of text.
+PAN_MARGIN = 2.5 * SCALE              # clear margin above and below the block of text.
                               # All three lines are set at one size and the block
                               # is centred on its inked extent, so the margin
                               # that comes out top and bottom is this number.
@@ -176,7 +188,7 @@ def grown_field(cells=None):
     return P.union(*prisms)
 
 
-BAND_CUT = 20.0               # the raised bottom is cut out of the skin below
+BAND_CUT = 20.0 * SCALE               # the raised bottom is cut out of the skin below
                               # this height. Anything between it and the bottom's
                               # own edge is under a grown stone, so the one
                               # horizontal cut in all of this falls where nothing

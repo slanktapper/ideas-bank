@@ -83,6 +83,33 @@ def face_centres(mesh):
     return mesh.triangles.mean(axis=1)
 
 
+def arm_reach(spec):
+    """How far an arm's own surface gets from its centreline, plus a margin.
+
+    This replaces a hardcoded 16.0 that was true until the model grew. Arm 0's
+    surface now reaches 19.5 mm from its spine -- it was 15.6 before the 25%
+    scale, which is why nobody noticed -- so a 16.0 gate left the whole root
+    of that arm outside "on an arm". Those faces fell through to the trunk's
+    rule, which compares a point's distance from the Z AXIS against the
+    trunk's radius; a point out on an arm is far from the axis by definition,
+    so 62% of them came back "crest" and the arm's root went solid light
+    purple while its tip stayed correctly ribbed.
+    """
+    rings, line, _ = C.arm_rings(spec)
+    surf = np.linalg.norm(rings - line[:, None, :], axis=2)
+    return float(surf.max()) + 0.25 * P.ARM_BLEND
+
+
+def on_arm_mask(pts):
+    """True where a point belongs to an arm rather than to the trunk."""
+    out = np.zeros(len(pts), dtype=bool)
+    for spec in P.ARMS:
+        _, line, _ = C.arm_rings(spec)
+        d = np.linalg.norm(pts[:, None, :] - line[None, :, :], axis=2).min(1)
+        out |= d < arm_reach(spec)
+    return out
+
+
 def arm_distance(pts):
     """Distance from each point to the nearer arm's centreline."""
     best = np.full(len(pts), np.inf)
@@ -117,7 +144,7 @@ def arm_crest(pts):
         rel = pts - line[i]
         along = np.einsum("ij,ij->i", rel, tang[i])
         perp = np.linalg.norm(rel - tang[i] * along[:, None], axis=1)
-        near = d[np.arange(len(pts)), i] < 16.0
+        near = d[np.arange(len(pts)), i] < arm_reach(spec)
         out |= near & (perp - mean_r[i] > 0.15 * P.ARM_RIB_DEPTH)
     return out
 
@@ -160,7 +187,7 @@ def main():
     # the hollows stay pale. Needs the printer to change colour inside a
     # layer rather than between layers, so it is the expensive one.
     mean = C.trunk_mean_radius(c[:, 2])
-    on_arm = arm_distance(c) < 16.0
+    on_arm = on_arm_mask(c)
     crest = np.where(on_arm, arm_crest(c), r - mean > 0.15 * P.RIB_DEPTH)
     ridge, hollow = split(body, crest)
     shot("colour-b-ridges.png",
@@ -186,7 +213,7 @@ def main():
     # An arm is years younger than the trunk it grew out of and does not
     # match it. Printed as separate parts they are three plain single-colour
     # prints, and the arms stop needing support into the bargain.
-    arm, trunk = split(body, arm_distance(c) < 16.0)
+    arm, trunk = split(body, on_arm_mask(c))
     shot("colour-c-arms.png",
          [{"mesh": trunk, "color": norm(INDIGO)},
           {"mesh": arm, "color": norm(PURPLE)},

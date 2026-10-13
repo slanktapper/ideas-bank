@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 import trimesh
+from scipy import sparse
 
 import params as P
 
@@ -74,6 +75,29 @@ def _union(meshes):
     return trimesh.boolean.union(meshes, engine=ENGINE)
 
 
+def _clean(mesh):
+    """Drop the slivers a boolean leaves behind, so the STL reloads solid.
+
+    socket_cutter() overlaps its bore, relief and proud stub by 1e-6 mm to
+    be certain they unite. The union is correct and the mesh is watertight in
+    memory, but those overlaps leave zero-area triangles and vertex pairs a
+    micron apart -- and an STL is a soup of triangles with no shared indices,
+    so on reload those pairs merge, the faces that used them collapse, and
+    what was a solid comes back with holes in it. Cleaning before export
+    costs nothing: it removes no volume at all, only degenerate faces that
+    enclose none.
+
+    It is not a repair tool. It fixes this kind of damage and no other --
+    see `direction.md` on what it does not fix.
+    """
+    m = mesh.copy()
+    m.merge_vertices()
+    m.update_faces(m.nondegenerate_faces(height=1e-8))
+    m.remove_unreferenced_vertices()
+    m.fix_normals()
+    return m
+
+
 def _difference(base, cutters):
     cutters = [m for m in cutters if m is not None and len(m.faces)]
     if not cutters:
@@ -130,12 +154,21 @@ def _rib_scale(z: np.ndarray) -> np.ndarray:
 
     Nothing below the top of the base flare: ribs on a cone that is still
     growing would be chased by the clip and come out as a frill.
+
+    At the other end the fade runs to RIB_TIP_KEEP rather than to zero, and
+    that number matters more than it looks: the crown is built by scaling the
+    ring at TRUNK_H down over the dome, so whatever rib depth survives to
+    TRUNK_H is what the crown gets, tapering with the radius and converging
+    at the apex. Fade to zero and the top of the plant is a lathe part.
     """
     t = np.clip(z / P.TRUNK_H, 0.0, 1.0)
     flare_top = (P.TRUNK_R_BASE - P.SPIGOT_R) / P.TRUNK_H
     base = np.clip((t - flare_top - P.RIB_FADE_BASE) / 0.10, 0.0, 1.0)
-    top = np.clip((1.0 - t) / (1.0 - P.RIB_FADE_TOP), 0.0, 1.0)
-    return base * (top ** 0.8)
+    # guarded: RIB_FADE_TOP at 1.0 is a legitimate "no fade at all", and
+    # unguarded it is a divide by zero that comes out NaN, not absent.
+    span = max(1e-9, 1.0 - P.RIB_FADE_TOP)
+    top = np.clip((1.0 - t) / span, 0.0, 1.0) ** 0.8
+    return base * (P.RIB_TIP_KEEP + (1.0 - P.RIB_TIP_KEEP) * top)
 
 
 def trunk_radius(theta: np.ndarray, z: np.ndarray) -> np.ndarray:
@@ -245,7 +278,7 @@ def _arm_spine(spec):
     """
     bearing = np.radians(spec["bearing"])
     z_root = spec["z_frac"] * P.TRUNK_H
-    r_root = trunk_mean_radius(np.array([z_root]))[0] - 2.0
+    r_root = trunk_mean_radius(np.array([z_root]))[0] - P.ARM_ROOT_INSET
     out = np.array([np.cos(bearing), np.sin(bearing), 0.0])
 
     p0 = out * r_root + np.array([0, 0, z_root])
@@ -269,6 +302,10 @@ def arm_rings(spec):
     ribs = P.rib_profile(theta, P.ARM_RIB_COUNT, P.RIB_SHARPNESS)
 
     n_pts = len(pts)
+    # distance along the spine from the root, for the flare
+    arc = np.concatenate([[0.0],
+                          np.cumsum(np.linalg.norm(np.diff(pts, axis=0),
+                                                   axis=1))])
     rings = np.empty((n_pts, len(theta), 3))
     up = np.array([0.0, 0.0, 1.0])
     for i, (p, t) in enumerate(zip(pts, tang)):
@@ -279,12 +316,30 @@ def arm_rings(spec):
         v = np.cross(t, u)
         s = i / (n_pts - 1)
 
-        # a root flare for the fillet into the trunk, and a rounded tip
-        flare = P.ARM_BLEND * np.exp(-(s / 0.10) ** 2)
+        # A root flare for the fillet into the trunk, and a rounded tip.
+        # The flare decays over a distance ALONG THE SPINE rather than over a
+        # fraction of the arm, so the long arm and the short one grow out of
+        # the trunk the same way.
+        # Guarded: at REACH 0 the root term is 0/0 and the flare comes out
+        # NaN rather than absent, which silently poisons the whole ring.
+        # Either number at zero means no flare at all.
+        if P.ARM_BLEND <= 0.0 or P.ARM_BLEND_REACH <= 0.0:
+            flare = 0.0
+        else:
+            flare = P.ARM_BLEND * np.exp(-(arc[i] / P.ARM_BLEND_REACH) ** 2)
         tip = np.sqrt(max(1e-9, 1.0 - max(0.0, (s - 0.86) / 0.14) ** 2))
         r = (spec["r"] * (1.0 - 0.22 * s) + flare) * tip
-        rib_scale = np.clip(min(s / 0.14, (1 - s) / 0.10), 0.0, 1.0)
-        rr = r + P.ARM_RIB_DEPTH * rib_scale * ribs
+        # The arm's end of the same story as _rib_scale's: fade to
+        # ARM_RIB_TIP_KEEP, not to zero, and then let the ribs shrink with
+        # `tip` -- the arm's own rounding-off -- exactly as the trunk's ribs
+        # shrink with the crown's radius. They close on the tip rather than
+        # flattening out a few millimetres short of it.
+        span = max(1e-9, 1.0 - P.ARM_RIB_FADE_TIP)
+        tip_fade = np.clip((1.0 - s) / span, 0.0, 1.0)
+        rib_scale = min(
+            np.clip(s / P.ARM_RIB_ROOT_RAMP, 0.0, 1.0),
+            P.ARM_RIB_TIP_KEEP + (1.0 - P.ARM_RIB_TIP_KEEP) * tip_fade)
+        rr = r + P.ARM_RIB_DEPTH * rib_scale * tip * ribs
         rings[i] = p + rr[:, None] * u[None, :] + 0.0 * v
         rings[i] = (p[None, :]
                     + (rr * np.cos(theta))[:, None] * u[None, :]
@@ -535,8 +590,15 @@ def socket_cutter(p, n, rake=0.0, swing=0.0) -> trimesh.Trimesh:
     cs.apply_translation([0, 0, P.SOCKET_MOUTH_CHAMFER * 2.0 - 0.001])
     parts.append(cs)
 
-    # a stub proud of the surface, so the cut always breaks through the pad
-    proud = trimesh.creation.cylinder(radius=d / 2, height=2.0,
+    # A stub proud of the surface, so the cut always breaks through the pad.
+    # As wide as the countersink's rim, not just the bore: at the bore's own
+    # radius the cone's slant runs almost tangent to the pad's dome, and the
+    # lens of pad caught between the two survives the cut as a loose disc
+    # 0.05 mm thick. On the trunk the pads sit on a curved ribbed wall and
+    # the two never line up, so this only showed on the flat test tabs --
+    # where it made the part two bodies and not a solid at all.
+    proud = trimesh.creation.cylinder(radius=d / 2 + P.SOCKET_MOUTH_CHAMFER,
+                                      height=2.0,
                                       sections=P.SEG_SOCKET)
     proud.apply_translation([0, 0, 1.0])
     parts.append(proud)
@@ -552,12 +614,95 @@ def socket_cutter(p, n, rake=0.0, swing=0.0) -> trimesh.Trimesh:
 # the assembled cactus
 # ---------------------------------------------------------------------------
 
+def relax_arm_seams(mesh):
+    """Pull the mesh across the corner where each arm meets the trunk.
+
+    This is the fillet. A union leaves arm and trunk meeting along a curve
+    with a hard tangent break; smoothing the vertices in a ball around each
+    arm's root rounds that break into a blend, which is what makes the
+    cactus read as one plant rather than three glued together.
+
+    Weighted by distance from the root and squared, so it is strongest
+    exactly at the seam and has died to nothing by ARM_SEAM_REACH -- the
+    ribs further out along the arm and further down the trunk never move.
+    """
+    w = np.zeros(len(mesh.vertices))
+    for spec in P.ARMS:
+        root = _arm_spine(spec)[0]
+        d = np.linalg.norm(mesh.vertices - root, axis=1)
+        w = np.maximum(w, np.clip(1.0 - d / P.ARM_SEAM_REACH, 0.0, 1.0) ** 2)
+    if not (w > 0).any():
+        return mesh
+
+    e = mesh.edges_unique
+    n = len(mesh.vertices)
+    A = sparse.coo_matrix((np.ones(len(e) * 2),
+                           (np.r_[e[:, 0], e[:, 1]],
+                            np.r_[e[:, 1], e[:, 0]])),
+                          shape=(n, n)).tocsr()
+    deg = np.asarray(A.sum(axis=1)).ravel()
+    deg[deg == 0] = 1.0
+
+    v = mesh.vertices.copy()
+    move = (w * P.ARM_SEAM_STRENGTH)[:, None]
+    for _ in range(P.ARM_SEAM_SWEEPS):
+        v = v + move * (A @ v / deg[:, None] - v)
+    out = mesh.copy()
+    out.vertices = v
+    return out
+
+
+def _insertable(body, sites):
+    """True for each site whose spine has a clear run in along its axis."""
+    ray = trimesh.ray.ray_triangle.RayMeshIntersector(body)
+    r = P.PIN_SHANK_D / 2
+
+    # The rays have to START clear of the skin. A ring at the post's radius,
+    # launched from just above a raked mouth, dips back into the surface --
+    # the axis leans 34 degrees, so the far side of the ring is still buried
+    # -- and every one of them registers an instant hit. At 0.6 mm out that
+    # reported 99 of 110 sockets blocked, which would have deleted nearly
+    # every spine on the cactus. The ring clears the skin by about
+    # r * tan(rake) plus the pad it sits on, so start beyond that and take
+    # the head start off the distance required.
+    start = r * np.tan(np.radians(P.SPIKE_RAKE_DEG)) + P.AREOLE_RISE + 0.6
+    need = P.SPIKE_CLEAR_L - start
+
+    origins, dirs, owner = [], [], []
+    for i, (p, n, rake, swing) in enumerate(sites):
+        a = _rake(n, rake, swing)
+        u = np.cross(a, [0.0, 0.0, 1.0])
+        if np.linalg.norm(u) < 1e-6:
+            u = np.cross(a, [1.0, 0.0, 0.0])
+        u /= np.linalg.norm(u)
+        v = np.cross(a, u)
+        ring = [np.zeros(3)] + [np.cos(t) * u * r + np.sin(t) * v * r
+                                for t in np.linspace(0, 2 * np.pi, 8,
+                                                     endpoint=False)]
+        for off in ring:
+            origins.append(p + a * start + off)
+            dirs.append(a)
+            owner.append(i)
+
+    origins = np.array(origins)
+    dirs = np.array(dirs)
+    owner = np.array(owner)
+    hit, which, _ = ray.intersects_location(origins, dirs, multiple_hits=False)
+    clear = np.full(len(sites), np.inf)
+    if len(hit):
+        d = np.linalg.norm(hit - origins[which], axis=1)
+        for o, dist in zip(owner[which], d):
+            clear[o] = min(clear[o], dist)
+    return clear >= need
+
+
 def cactus(with_sockets=True, with_arms=True):
     body = trunk_body()
     sites = trunk_areoles()
     if with_arms:
         arms = [arm_body(spec) for spec in P.ARMS]
         body = _union([body] + arms)
+        body = relax_arm_seams(body)
         for spec in P.ARMS:
             sites += arm_areoles(spec)
 
@@ -569,6 +714,17 @@ def cactus(with_sockets=True, with_arms=True):
     buried = body.contains(probe)
     sites = [s for s, b in zip(sites, buried) if not b]
 
+    # And any site the seam fillet has left behind. Sites are worked out from
+    # the analytic surface, but relaxing the seam MOVES that surface -- so a
+    # pad near an arm's root can end up hanging in the air off the skin it
+    # was placed on, which unions as a loose blob rather than a bump. Drop
+    # anything the finished body has pulled away from. A real saguaro is
+    # sparse in the crotch of an arm anyway.
+    if with_arms and len(sites):
+        gap = trimesh.proximity.signed_distance(
+            body, np.array([p for p, _, _, _ in sites]))
+        sites = [s for s, g in zip(sites, gap) if g > -P.AREOLE_RISE * 0.5]
+
     # Drop any site whose spine would hang below SPIKE_FLOOR_DEG. A saguaro
     # does carry spines under its arms, but the socket for one is a hole
     # drilled into a roof: it prints as a sagging ellipse and the spike it
@@ -577,12 +733,32 @@ def cactus(with_sockets=True, with_arms=True):
              if _rake(s[1], s[2], s[3])[2]
              > np.sin(np.radians(P.SPIKE_FLOOR_DEG))]
 
+    # Drop any socket a spine cannot physically be got into. The hole is
+    # straight and raked, so the only way in is along its own axis -- and
+    # where an arm passes over the trunk, or inside the crook of a joint,
+    # that line can run straight back into the cactus. The fit being perfect
+    # does not help if the spine cannot reach the hole.
+    #
+    # Measured by sweeping the post's own diameter along the axis: the
+    # centre line plus a ring of rays at the post's radius, which is the
+    # volume the spine passes through going in. Tested against the body
+    # before the pads go on; a pad is under a millimetre proud and never the
+    # thing in the way, where a whole arm is.
+    if len(sites):
+        sites = [s for s, ok in zip(sites, _insertable(body, sites)) if ok]
+
     pads = [areole_pad(p, n) for p, n, _, _ in sites]
     body = _union([body] + pads)
 
     if with_sockets:
         body = _difference(body, [socket_cutter(*s) for s in sites])
-    return body, sites
+
+    # Cleaned before it leaves, same as the test tabs. Relaxing the seam
+    # drags a couple of vertices onto each other -- one coincident pair was
+    # enough to tear 42514 edges on reload, because an STL has no shared
+    # vertex indices and the pair merges back into one. Costs no volume at
+    # all: the faces it drops enclose none.
+    return _clean(body), sites
 
 
 # ---------------------------------------------------------------------------
@@ -590,7 +766,16 @@ def cactus(with_sockets=True, with_arms=True):
 # ---------------------------------------------------------------------------
 
 def spike() -> trimesh.Trimesh:
-    """Pin, collar, needle. Standing on the pin's flat end, point up."""
+    """Post and needle, in one taper. Standing on the post's flat end.
+
+    There is no collar. The spike is a plain post that goes into a plain
+    hole, and the needle starts at the post's own diameter, so nothing
+    steps, flares or washers where the two meet. What stops it going in is
+    the post bottoming on the floor of the bore -- which is why PIN_SHANK_L
+    is SOCKET_DEPTH exactly rather than short of it, and why SOCKET_RELIEF
+    matters more than it used to: with no collar to cover the mouth, a blob
+    in the hole bottom now shows as a spine standing proud.
+    """
     theta = np.linspace(0.0, 2 * np.pi, P.SEG_SPIKE, endpoint=False)
 
     def ring(z, r):
@@ -604,14 +789,11 @@ def spike() -> trimesh.Trimesh:
     rings.append(ring(lead, pin_r))
     rings.append(ring(P.PIN_SHANK_L, pin_r))
 
-    # collar: a flat washer, which is also the part's first layer
-    rings.append(ring(P.PIN_SHANK_L, P.SPIKE_COLLAR_D / 2))
-    rings.append(ring(P.PIN_SHANK_L + P.SPIKE_COLLAR_H, P.SPIKE_COLLAR_D / 2))
-
-    # needle: a convex taper, not a straight cone
-    z0 = P.PIN_SHANK_L + P.SPIKE_COLLAR_H
-    r0 = P.SPIKE_COLLAR_D / 2 * 0.60
-    rings.append(ring(z0 + 1e-3, r0))
+    # needle: a convex taper, not a straight cone, rising straight out of
+    # the post at the post's own radius. No step, so the joint is invisible
+    # once seated and the part has nothing on it that reads as a washer.
+    z0 = P.PIN_SHANK_L
+    r0 = pin_r
     for u in np.linspace(0.0, 1.0, 26)[1:]:
         shape = (1.0 - u) ** (1.0 + P.SPIKE_BELLY * 1.6)
         r = P.SPIKE_TIP_D / 2 + (r0 - P.SPIKE_TIP_D / 2) * shape
@@ -657,6 +839,103 @@ def test_section(body=None) -> trimesh.Trimesh:
     return trimesh.boolean.intersection([body, wedge], engine=ENGINE)
 
 
+# Seven-segment characters, drawn from boxes. The pot half of this project
+# sets real type from real glyph outlines, and that machinery is deliberately
+# not reached for here: the two halves do not import from each other, and a
+# gauge wants chunky strokes that survive a 0.4 nozzle more than it wants a
+# typeface. Seven segments give both, in a table short enough to read.
+#
+#      aaa        a = top      d = bottom
+#     f   b       b = upper r  e = lower l
+#      ggg        c = lower r  f = upper l
+#     e   c       g = middle
+#      ddd
+_SEGMENTS = {
+    "0": "abcdef", "1": "bc",     "2": "abdeg",  "3": "abcdg", "4": "bcfg",
+    "5": "acdfg",  "6": "acdefg", "7": "abc",    "8": "abcdefg", "9": "abcdfg",
+}
+
+
+def _char_boxes(ch: str, h: float, w: float, s: float):
+    """One character as a list of (cx, cy, sx, sy) boxes in its own frame.
+
+    The frame is the digit's box: x from 0 to w, y from 0 to h. Every segment
+    is drawn s/2 long at each end, so the corners of a digit meet solidly
+    instead of leaving a notch the slicer has to decide about.
+    """
+    if ch == "-":
+        return [(w / 2, h / 2, w + s, s)]
+    if ch == "+":
+        return [(w / 2, h / 2, w + s, s), (w / 2, h / 2, s, w + s)]
+
+    seg = _SEGMENTS[ch]
+    out = []
+    for name, y in (("a", h), ("g", h / 2), ("d", 0.0)):
+        if name in seg:
+            out.append((w / 2, y, w + s, s))
+    for name, x, y in (("f", 0.0, h * 0.75), ("b", w, h * 0.75),
+                       ("e", 0.0, h * 0.25), ("c", w, h * 0.25)):
+        if name in seg:
+            out.append((x, y, s, h / 2 + s))
+    # a 1 is the only character whose ink is all down one edge of its box;
+    # left where it falls it reads as a gap with a stroke beside it
+    if ch == "1":
+        out = [(cx - w / 2, cy, sx, sy) for cx, cy, sx, sy in out]
+    return out
+
+
+def engrave(text: str, cx: float, cy: float, z_top: float,
+            h=None, w=None, stroke=None, gap=None, depth=None):
+    """Cutters that sink `text` into a face lying at z = z_top.
+
+    Centred on (cx, cy). Returns boxes to subtract, not a mesh to add: the
+    numbers are engraved rather than raised because a raised digit on a top
+    face is a 0.8 mm island the nozzle has to start from nothing, and because
+    a coupon gets handled.
+    """
+    h = P.COUPON_MARK_H if h is None else h
+    w = P.COUPON_MARK_W if w is None else w
+    stroke = P.COUPON_MARK_STROKE if stroke is None else stroke
+    gap = P.COUPON_MARK_GAP if gap is None else gap
+    depth = P.COUPON_MARK_DEPTH if depth is None else depth
+
+    advance = w + stroke + gap
+    total = advance * len(text) - gap
+    x0 = cx - total / 2 + stroke / 2
+    y0 = cy - h / 2
+
+    out = []
+    for i, ch in enumerate(text):
+        for bx, by, sx, sy in _char_boxes(ch, h, w, stroke):
+            box = trimesh.creation.box([sx, sy, depth * 2])
+            box.apply_translation([x0 + advance * i + bx, y0 + by, z_top])
+            out.append(box)
+    return out
+
+
+def coupon_steps():
+    """The step each hole is drilled at, in millimetres, left to right.
+
+    Symmetric about 0, so the middle hole is the socket exactly as modelled
+    and its label is the one that means "change nothing".
+    """
+    k = np.arange(P.COUPON_N) - (P.COUPON_N - 1) // 2
+    return k * P.COUPON_STEP
+
+
+def coupon_label(ds: float) -> str:
+    """A step as it is engraved: hundredths of a millimetre, signed.
+
+    Hundredths rather than millimetres because "-18" is three characters of
+    engraving and "-0.18" is five, on a part where every character costs a
+    millimetre of coupon. The leading zero on the sixes keeps all six signed
+    labels the same width, so the row reads as a scale rather than as seven
+    unrelated numbers.
+    """
+    n = int(round(ds * 100))
+    return "0" if n == 0 else f"{'+' if n > 0 else '-'}{abs(n):02d}"
+
+
 def fit_coupon() -> trimesh.Trimesh:
     """A test block of sockets stepping either side of SOCKET_D.
 
@@ -665,19 +944,65 @@ def fit_coupon() -> trimesh.Trimesh:
     the first-layer squish. So it gets measured instead: print the coupon and
     a handful of spikes, find the hole the spike seats firmly in, and set
     SOCKET_COMP from the step that won.
+
+    Each hole carries that step engraved beside it. The holes differ by
+    0.06 mm and nothing about looking at them says which is which, so an
+    unlabelled coupon only answers the question while you still remember
+    which end you counted from.
     """
-    steps = np.arange(-3, 4) * 0.06         # +/- 0.18 in 0.06 steps
-    pitch = 7.0
-    w = pitch * len(steps) + 6.0
-    block = trimesh.creation.box([w, 14.0, P.SOCKET_DEPTH + 3.0])
-    block.apply_translation([0, 0, (P.SOCKET_DEPTH + 3.0) / 2])
+    steps = coupon_steps()
+    w = P.COUPON_PITCH * P.COUPON_N + 2 * P.COUPON_MARGIN
+    block = trimesh.creation.box([w, P.COUPON_DEPTH_Y, P.COUPON_T])
+    block.apply_translation([0, 0, P.COUPON_T / 2])
 
     cutters = []
     for i, ds in enumerate(steps):
-        x = -w / 2 + 3.0 + pitch * (i + 0.5)
+        x = -w / 2 + P.COUPON_MARGIN + P.COUPON_PITCH * (i + 0.5)
         c = trimesh.creation.cylinder(radius=(P.SOCKET_D + ds) / 2,
                                       height=P.SOCKET_DEPTH * 2,
                                       sections=P.SEG_SOCKET)
-        c.apply_translation([x, 0.0, P.SOCKET_DEPTH + 3.0])
+        c.apply_translation([x, P.COUPON_HOLE_Y, P.COUPON_T])
         cutters.append(c)
+        cutters += engrave(coupon_label(ds), x, P.COUPON_MARK_Y, P.COUPON_T)
     return _difference(block, cutters)
+
+
+def test_hole() -> trimesh.Trimesh:
+    """One socket in a tab, built the way the cactus builds its sockets.
+
+    Deliberately not a drilled cylinder. The pad goes on first and the cut
+    goes through it with socket_cutter(), so the mouth is countersunk, the
+    relief is under the bore and the collar lands on a dome -- which is the
+    difference between testing the joint and testing a hole.
+
+    Bored straight down rather than at SPIKE_RAKE_DEG: raked into a flat tab
+    the bore would break out of the side, and the raked case already has a
+    test of its own in test_section(), on the curved ribbed wall where it
+    actually happens.
+    """
+    tab = trimesh.creation.box([P.TEST_HOLE_W, P.TEST_HOLE_W, P.TEST_HOLE_T])
+    tab.apply_translation([0, 0, P.TEST_HOLE_T / 2])
+
+    top = np.array([0.0, 0.0, P.TEST_HOLE_T])
+    up = np.array([0.0, 0.0, 1.0])
+    with_pad = _union([tab, areole_pad(top, up)])
+    return _clean(_difference(with_pad, [socket_cutter(top, up)]))
+
+
+def test_spine_pair() -> trimesh.Trimesh:
+    """Two sockets in one tab, at the spacing they have on the trunk.
+
+    Same construction as test_hole(), twice: real pads, real socket_cutter(),
+    bored vertically. What it adds over one hole is the thing a single spine
+    cannot show you -- whether two of them at AREOLE_MIN_SEP read as spines
+    or as a row of pegs, now that they are nearly twice the diameter they
+    were.
+    """
+    tab = trimesh.creation.box([P.TEST_PAIR_W, P.TEST_HOLE_W, P.TEST_HOLE_T])
+    tab.apply_translation([0, 0, P.TEST_HOLE_T / 2])
+
+    up = np.array([0.0, 0.0, 1.0])
+    tops = [np.array([dx, 0.0, P.TEST_HOLE_T])
+            for dx in (-P.TEST_PAIR_SEP / 2, P.TEST_PAIR_SEP / 2)]
+    solid = _union([tab] + [areole_pad(t, up) for t in tops])
+    return _clean(_difference(solid, [socket_cutter(t, up) for t in tops]))

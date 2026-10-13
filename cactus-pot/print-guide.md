@@ -10,24 +10,61 @@ than geometry. Machine is the H2D; see `../available-tools.md`.
 | `stl/cactus.stl` | 1 | 187 mm tall, stands on the flat end of its spigot |
 | `stl/spikes-x72.stl` | 2 plates | 110 sockets, so print a few spare |
 | `stl/spike.stl` | — | the single part, to arrange your own plate |
-| `stl/fit-test-coupon.stl` | 1 | **print this first** |
+| `stl/test-hole.stl` + `stl/test-spine.stl` | 1 each | **the five-minute check** — one socket, one spine |
+| `stl/fit-test-coupon.stl` | 1 | **print this first** — 80 mm, labelled |
 | `stl/test-print-wedge.stl` | 1 | **and this second** — 150° of the real trunk |
+
+## The single pair, if you only have five minutes
+
+`test-hole.stl` is one socket in an 18 mm tab; `test-spine.stl` is one spike.
+Separate files, so each goes on the plate on its own. Together they are about
+two grams.
+
+It is the real socket, not a drilled hole — the areole pad is on the tab, the
+mouth is countersunk and the relief is under the bore — so the spike seats
+the way it will on the cactus: the collar lands on the pad, and the pin stops
+short of the bottom of the hole.
+
+What it tells you is only whether `SOCKET_COMP` is in the right country. It
+cannot tell you *which way* to move it, because there is one hole and nothing
+to compare it against. If the spike will not start, or drops straight
+through, print the coupon and read the answer off that. If it goes in with
+firm thumb pressure and stays, print the coupon anyway — but expect the
+middle hole to win.
+
+The bore is vertical here. On the cactus it is raked 34° into a curved,
+ribbed wall, and that case has its own test in the wedge.
 
 ## Print the coupon first
 
 The coupon has seven holes stepping 0.06 mm either side of the modelled
-socket. Print it with the same filament, nozzle and flow you will use for the
-cactus, print a handful of spikes alongside it, and push a spike into each
-hole.
+socket, and each hole carries its own step engraved under it in hundredths of
+a millimetre:
+
+    -18   -12   -06    0   +06   +12   +18
+
+Print it flat, engraving up, no supports, with the same filament, nozzle and
+flow you will use for the cactus. Print a handful of spikes alongside it, and
+push a spike into each hole.
 
 What you want is the hole a spike enters with firm thumb pressure and stays
-in when the coupon is turned over. If that is the middle hole, the model is
-right. If it is one of the others, change `SOCKET_COMP` in `params.py` by that
-hole's step and rebuild — the step is marked by its position, leftmost is
-−0.18 mm, rightmost is +0.18.
+in when the coupon is turned over. If that is the hole marked `0`, the model
+is right. If it is one of the others, **add that hole's number to
+`SOCKET_COMP`** in `params.py` — the numbers are hundredths, so `+06` makes
+0.16 into 0.22 — and rebuild.
 
-Doing this costs about fifteen minutes and three grams. Not doing it risks
+One step of the ladder is 0.06 mm, which is deliberately the same as
+`PRESS_FIT`: a neighbouring hole is one whole press fit away, not a
+difference a thumb cannot feel. So there should be one obvious winner rather
+than three holes that all seem fine.
+
+Doing this costs about twenty-five minutes and five grams. Not doing it risks
 110 sockets at the wrong size on a part that takes most of a day.
+
+The numbers are the difference between a coupon that answers the question
+once and one that still answers it in six months, next to a second coupon
+printed in a different filament. Seven identical holes in a plain block only
+mean something while you still remember which end you counted from.
 
 ## Then the wedge
 

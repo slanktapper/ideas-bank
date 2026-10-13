@@ -142,6 +142,12 @@ def build_stl():
         (f"spikes-x{P.SPIKE_PLATE_N}.stl", C.spike_plate()),
         ("fit-test-coupon.stl", C.fit_coupon()),
         ("test-print-wedge.stl", C.test_section()),
+        # the smallest pair: one socket, one spine, as separate files so
+        # each goes on the plate on its own
+        ("test-hole.stl", C.test_hole()),
+        ("test-spine.stl", C.spike()),
+        # two sockets at the real trunk spacing, for judging a pair
+        ("test-spine-pair.stl", C.test_spine_pair()),
     ]
     for name, mesh in out:
         path = os.path.join(STL, name)
@@ -156,6 +162,13 @@ def build_stl():
 # renders
 # ---------------------------------------------------------------------------
 
+def _beside(mesh, dx):
+    """A copy shifted along x, for laying two parts out in one frame."""
+    m = mesh.copy()
+    m.apply_translation([dx, 0.0, 0.0])
+    return m
+
+
 def _spikes_in(sites):
     """A spike seated in every socket, for the assembled renders."""
     one = C.spike()
@@ -164,8 +177,9 @@ def _spikes_in(sites):
         s = one.copy()
         axis = C._rake(n, rake, swing)
         m = C._frame_from_normal(axis)
-        # the collar sits on the pad, so the part drops by the pin's length
-        m[:3, 3] = p - axis * (P.PIN_SHANK_L - P.AREOLE_RISE * 0.25)
+        # the post bottoms on the floor of the bore, so the part's own
+        # z=0 -- the flat end of the post -- lands SOCKET_DEPTH in
+        m[:3, 3] = p - axis * P.SOCKET_DEPTH
         s.apply_transform(m)
         out.append(s)
     return trimesh.util.concatenate(out)
@@ -213,7 +227,7 @@ def build_renders(pot=None, pot_floor=0.0):
     axis = C._rake(n, rake, swing)
     one = C.spike()
     m = C._frame_from_normal(axis)
-    m[:3, 3] = p - axis * (P.PIN_SHANK_L - P.AREOLE_RISE * 0.25)
+    m[:3, 3] = p - axis * P.SOCKET_DEPTH
     one.apply_transform(m)
 
     block = trimesh.creation.box([13.0, 13.0, 13.0])
@@ -245,9 +259,19 @@ def build_renders(pot=None, pot_floor=0.0):
     shot("08-spike.png", [{"mesh": one, "color": SPIKE_C}], 30, 12, margin=1.1)
     plate = C.spike_plate()
     shot("09-spike-plate.png", [{"mesh": plate, "color": SPIKE_C}], 40, 34)
+    # The coupon is a gauge, so the shot has to be one its numbers can be
+    # read off. That rules out the three-quarter view the other parts get:
+    # from 270 the camera is on the side the engraving reads from -- from 90
+    # it looks at the top face from behind and every label comes out
+    # mirrored -- and a high elevation keeps the digits nearly square on.
+    # More ambient than the default, because a 0.6 mm groove in a flat face
+    # is all shadow and no silhouette.
     coupon = C.fit_coupon()
-    shot("10-fit-coupon.png", [{"mesh": coupon, "color": (0.62, 0.64, 0.70)}],
-         40, 40)
+    cam = R.frame([coupon], 270, 68, margin=1.02)
+    R.render([{"mesh": coupon, "color": (0.62, 0.64, 0.70)}],
+             ambient=0.42, key=0.72, **cam).save(
+        os.path.join(RENDERS, "10-fit-coupon.png"))
+    print("renders/10-fit-coupon.png")
 
     # the test print, with its spikes in, since that is how it gets judged
     wedge = C.test_section()
@@ -261,7 +285,7 @@ def build_renders(pot=None, pot_floor=0.0):
         s = one.copy()
         axis = C._rake(n, rake, swing)
         m = C._frame_from_normal(axis)
-        m[:3, 3] = p - axis * (P.PIN_SHANK_L - P.AREOLE_RISE * 0.25)
+        m[:3, 3] = p - axis * P.SOCKET_DEPTH
         s.apply_transform(m)
         seated.append(s)
     parts = [{"mesh": wedge, "color": GREEN}]
@@ -270,6 +294,22 @@ def build_renders(pot=None, pot_floor=0.0):
                       "color": SPIKE_C})
     shot("13-test-print.png", parts, 0, 14)
     print(f"  test print carries {len(inside)} sockets")
+
+    # The single pair, side by side and then seated. This is the five-minute
+    # print, so the shot is the two parts as they go on the plate plus what
+    # they make -- there is nothing else to say about it.
+    hole = C.test_hole()
+    one = C.spike()
+    apart = [{"mesh": hole, "color": GREEN},
+             {"mesh": _beside(one, P.TEST_HOLE_W * 0.8), "color": SPIKE_C}]
+    shot("14-single-pair.png", apart, 24, 18)
+
+    seated_one = one.copy()
+    seated_one.apply_translation(
+        [0.0, 0.0, P.TEST_HOLE_T + P.AREOLE_RISE - P.SOCKET_DEPTH])
+    shot("15-single-pair-seated.png",
+         [{"mesh": hole, "color": GREEN},
+          {"mesh": seated_one, "color": SPIKE_C}], 24, 12)
 
     # The whole point of the exercise, if a pot was given: the cactus in it.
     # The pot mesh is translated so its cavity floor lands on z=0, which is
