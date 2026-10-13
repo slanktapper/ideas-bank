@@ -25,6 +25,7 @@ one-line description. Add a row when you create a project.
 | cantstop | 3D-printed push-your-luck dice board game — octagonal wireframe board, stackable pieces | prototype |
 | cactus-pot | A printed pot and the cactus that stands in it, both parametric: a stone-textured pot with the name lettered on it, and a ribbed cactus whose spines print separately and press-fit in | prototype |
 | flattener | 3D-printed finger flattener — squeeze two levers, jaws close on 77 mm of finger | prototype |
+| wire-tags | 3D-printed cable tags — a lettered plate with a C-clip at each end, the two facing opposite ways, parametric on cable diameter | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 
