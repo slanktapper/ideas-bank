@@ -1,0 +1,18 @@
+# wire-tags -- parametric CAD as code, Python 3.10+
+# Install with:  python3 -m pip install -r requirements.txt
+
+# The renderer lives in ../3d-tools and brings numpy, pillow, trimesh, scipy,
+# shapely and mapbox_earcut with it.
+-r ../3d-tools/requirements.txt
+
+manifold3d>=2.3        # the boolean engine. Every clip is a union with the
+                       # plate and then three cuts out of it; trimesh's other
+                       # engines refuse meshes this one handles fine.
+
+matplotlib>=3.8        # glyph outlines for glyphs.py, via TextPath. It also
+                       # carries DejaVu Sans Bold, which is the typeface the
+                       # tags are set in -- so there is no font file here.
+
+networkx>=3.0          # trimesh reaches for it when capping a section whose
+                       # cut has more than one loop in it, which is every
+                       # section through a clip. Only the renders need it.
