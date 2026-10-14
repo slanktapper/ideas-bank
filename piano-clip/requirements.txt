@@ -1,0 +1,16 @@
+# piano-clip -- parametric CAD-as-code, Python 3.10+
+#     python3 -m pip install -r requirements.txt
+
+# The renderer in ../3d-tools brings numpy, pillow, trimesh, scipy, shapely
+# and mapbox_earcut. shapely is not optional here: every shape in this model
+# is a side-view outline extruded along the keyboard, and shapely is what
+# holds those outlines.
+-r ../3d-tools/requirements.txt
+
+manifold3d>=2.3        # the boolean engine. The body is a cabinet, a music
+                       # rest and two spring blades unioned into one solid,
+                       # and the black keys are 31 boxes unioned into another.
+
+# NOT NEEDED. trimesh reaches for networkx in section()/to_planar(), which is
+# how the slot gap was verified during development -- but that check reads the
+# shapely profile directly instead, precisely so this stays off the list.
