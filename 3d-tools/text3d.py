@@ -2,6 +2,13 @@
 
 fontTools gives the outlines; the curves are flattened here rather than by a
 rasteriser, so the polygons stay exact at any size.
+
+This file knows about typefaces and nothing else -- no part, no project, no
+material. It was written inside `cactus-pot` for the name on the pot, and was
+extracted here unchanged when `filament-labels` needed the same lettering.
+What it hands back is 2D shapely geometry; turning that into a prism, a cut or
+an inlay is the calling project's business, which is where the extrusion depth,
+the draft and the clearances belong.
 """
 from __future__ import annotations
 import os, pathlib
@@ -11,9 +18,10 @@ from fontTools.pens.recordingPen import RecordingPen
 from shapely.geometry import Polygon, MultiPolygon
 from shapely.ops import unary_union
 
-# The typeface ships with the project: Outfit, SIL Open Font License, in font/.
-# Point POT_FONT_DIR at another directory to set the name in a different face.
-FONT_DIR = os.environ.get('POT_FONT_DIR',
+# Outfit, SIL Open Font License, in font/ beside this file -- the default face
+# for any project here. Two ways to use another one, in order of preference:
+# pass `font_dir=` to Face(), or set TEXT3D_FONT_DIR for a whole run.
+FONT_DIR = os.environ.get('TEXT3D_FONT_DIR',
                           str(pathlib.Path(__file__).resolve().parent / 'font'))
 
 
@@ -31,8 +39,8 @@ def _bez(p0, pts, n):
 
 
 class Face:
-    def __init__(self, name='Outfit-Bold'):
-        self.font = TTFont(f'{FONT_DIR}/{name}.ttf')
+    def __init__(self, name='Outfit-Bold', font_dir=None):
+        self.font = TTFont(f'{font_dir or FONT_DIR}/{name}.ttf')
         self.gs = self.font.getGlyphSet()
         self.upm = self.font['head'].unitsPerEm
         self.cmap = self.font.getBestCmap()

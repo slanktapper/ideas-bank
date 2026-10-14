@@ -1,9 +1,11 @@
-# 3d-tools — shared rendering helpers for the projects in this repository.
+# 3d-tools — shared helpers for the projects in this repository: render.py
+# (the rasteriser) and text3d.py (glyph outlines from a TTF).
 # Python 3.10+.  Install with:  python3 -m pip install -r requirements.txt
 #
 # This list was established by installing into an empty virtualenv and adding
-# packages until test_render.py passed, not by copying a sibling project's
-# list. Everything here is needed; nothing here is needed only by cantstop.
+# packages until test_render.py and test_text3d.py passed, not by copying a
+# sibling project's list. Everything here is needed by one of the two tools;
+# nothing here is needed only by a project that uses them.
 
 numpy>=1.26            # the z-buffer, the projection, all of the arithmetic
 pillow>=10.0           # PNG output and the supersample downscale
@@ -15,6 +17,12 @@ trimesh>=4.0           # the Trimesh meshes render() is handed, and the slicer
 scipy>=1.11
 shapely>=2.0
 mapbox_earcut>=1.0
+
+# text3d.py only. Glyph outlines come straight out of the TTF and are
+# flattened to polygons here, so lettering is exact at any size instead of
+# traced off a raster. shapely above does the ring algebra that turns those
+# outlines into polygons with their counters as holes.
+fontTools>=4.40
 
 # OPTIONAL — annotate() only, to find a scalable TrueType font on disk.
 # Without it labels fall back to PIL's built-in bitmap font: smaller, but the
