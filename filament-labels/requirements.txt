@@ -1,0 +1,32 @@
+# filament-labels -- parametric tags for the filament bins. Python 3.10+.
+#     python3 -m pip install -r requirements.txt
+
+# The shared tools in ../3d-tools bring numpy, pillow, trimesh, scipy, shapely,
+# mapbox_earcut and fontTools with them. Two of those this project leans on
+# directly: text3d.py for the glyph outlines the words are cut from, and
+# render.py for the renders. mapbox_earcut is not optional here even for the
+# STLs -- every solid in build.py starts as a shapely polygon and is
+# triangulated on its way to becoming a prism.
+-r ../3d-tools/requirements.txt
+
+manifold3d>=2.3        # the boolean engine. Two differences per tag, one of
+                       # them against a polygon with a hole in every counter.
+                       # trimesh's other engines are not reliable on coplanar
+                       # faces, and coplanar faces are the whole design here:
+                       # the colour part is built as the exact complement of
+                       # the white one.
+
+# Renders only -- `python3 build.py --no-renders` needs neither, and the STLs
+# are byte-identical without them. Both are reached from render.section(),
+# which caps the cut face: trimesh builds an enclosure tree over the loops it
+# finds, which wants an R-tree index and a directed graph.
+#
+# ../3d-tools/requirements.txt says these two are NOT NEEDED, and for its own
+# check suite that is still true. It stops being true the moment a section cut
+# crosses a face with holes in it. A plane through the middle of "PETG" opens
+# seven loops at once -- six in the white skin, where the letters and the
+# counter inside the P cut it into pieces, and one in the colour. That is
+# exactly the case that sends trimesh looking for these two. Measured, not
+# guessed, and verified by blocking each import and re-running the build.
+networkx>=3.0
+rtree>=1.0
