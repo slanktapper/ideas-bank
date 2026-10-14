@@ -21,10 +21,11 @@ one-line description. Add a row when you create a project.
 | Short name | Description | Status |
 | --- | --- | --- |
 | 3dresearch | Research into 3D printers — machines, technologies, materials, costs | working |
-| 3d-tools | Shared, project-agnostic 3D helpers — currently a headless software renderer | working |
+| 3d-tools | Shared, project-agnostic 3D helpers — a headless software renderer, and glyph outlines from a TTF | working |
 | cantstop | 3D-printed push-your-luck dice board game — octagonal wireframe board, stackable pieces | prototype |
 | cactus-pot | A printed pot and the cactus that stands in it, both parametric: a stone-textured pot with the name lettered on it, and a ribbed cactus whose spines print separately and press-fit in | prototype |
 | flattener | 3D-printed finger flattener — squeeze two levers, jaws close on 77 mm of finger | prototype |
+| filament-labels | Two-colour PLA/PETG/ABS tags for the filament bins — jade white skin, letters coming through it, printed face down | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 
