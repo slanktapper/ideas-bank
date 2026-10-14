@@ -64,13 +64,20 @@ is what the stone field and the two-tone split are.
 ## Stack
 
 Python 3.10+, `numpy` + `trimesh` with the `manifold3d` boolean engine, `shapely`
-for the 2D work, `scipy` for the Voronoi field, `fontTools` for the glyph
-outlines. Renders go through `../../3d-tools/render.py`. No GUI, no CAD
+for the 2D work, `scipy` for the Voronoi field. Renders go through
+`../../3d-tools/render.py` and the glyph outlines through
+`../../3d-tools/text3d.py`, which brings `fontTools` with it. No GUI, no CAD
 application.
 
-The typeface ships with the project: Outfit Bold, SIL Open Font License, in
-`font/`. `POT_FONT_DIR` overrides the directory if the name should be set in
-something else.
+The typeface no longer ships with this project. `text3d.py` and Outfit Bold
+(SIL Open Font License) moved to `../../3d-tools/font/` when `filament-labels`
+needed the same lettering, so there is one copy rather than two drifting
+apart. Same module, same font file, same polygons: `stl/pebble-pot.stl` is
+unchanged by the move, byte for byte, which is how the move was checked.
+
+`Face(font_dir=...)`, or `TEXT3D_FONT_DIR` for a whole run, overrides the
+directory if the name should be set in something else — it was `POT_FONT_DIR`
+while the module lived here.
 
     python3 -m pip install -r requirements.txt
 

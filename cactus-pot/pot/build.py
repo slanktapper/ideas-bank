@@ -7,10 +7,16 @@ every line wraps the same amount, which is what went wrong on the pot we started
 from.
 """
 from __future__ import annotations
-import pathlib
+import pathlib, sys
 import numpy as np, trimesh
 import potlib as P
-from text3d import Face, fit_lines
+
+# The lettering moved to ../../3d-tools when filament-labels needed the same
+# glyph outlines; the font went with it. Same module, same font file, same
+# polygons -- stl/pebble-pot.stl is unchanged by the move, byte for byte.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent
+                       / '3d-tools'))
+from text3d import Face, fit_lines                      # noqa: E402
 from shapely.geometry import Polygon, box, Point
 from shapely.ops import unary_union
 from shapely.geometry.polygon import orient
