@@ -5,8 +5,10 @@
 ## What it is
 
 Three tags that say **PLA**, **PETG** and **ABS**, to tape to the side of the bins
-the filament lives in. Each is an 80 × 30 × 1.2 mm rounded slab in two colours:
+the filament lives in. Each is an 80 × 30 × 3.0 mm rounded slab in two colours:
 a jade white background with the word in black, indigo purple or cocoa brown.
+At 3 mm it is a plaque rather than a sticker — rigid, no flex, nothing for a
+knocked corner to peel back.
 
 They print face down, so the face you read is the one that was against the plate
 and carries its texture. The lettering is not engraved or raised — it is the
@@ -23,7 +25,7 @@ filament is a bin of white filament whether the white is PLA or PETG, and the tw
 want different temperatures, different bed prep and different expectations about
 what the part will do at 70 °C. The label has to survive being handled, so a
 printed tag beats a paper one; and since the printer has eight slots, a two-colour
-tag costs one job rather than a trip to a label maker.
+tag costs an evening on the plate rather than a trip to a label maker.
 
 ## Scope
 
@@ -61,7 +63,11 @@ working minimum is about 0.60 mm, and bright white over black — the ABS tag �
 0.80 mm. Printing face-down makes it worse rather than better: the first layer is
 squashed into the plate texture, so in the valleys the skin is thinner than its
 nominal 0.20 mm. So the skin is 4 layers, with the letter colour filling the
-remaining 0.40 mm behind it.
+remaining 2.20 mm behind it.
+
+Thickness is the one number that does not touch this. The skin is set by opacity,
+so making the tag thicker spends letter colour and no more jade white at all: the
+white has stayed at 5.6 g through every version.
 
 The saving is still most of what was asked for: the white went from the whole tag
 to a skin, 9.5 g down to 5.6 g across the three. `build.py` prints what 2, 3, 4 and
@@ -93,9 +99,9 @@ that was checked.
 
 | | |
 | --- | --- |
-| `TAG_W`, `TAG_H`, `TAG_T` | 80 × 30 × 1.20 mm — 6 layers at 0.20 |
+| `TAG_W`, `TAG_H`, `TAG_T` | 80 × 30 × 3.00 mm — 15 layers at 0.20 |
 | `WHITE_D` | 0.80 mm of jade white, 4 layers, on the printed face |
-| `COLOUR_BEHIND` | 0.40 mm of letter colour behind the skin |
+| `COLOUR_BEHIND` | 2.20 mm of letter colour behind the skin |
 | `CORNER_R` | 4.0 mm, so a knocked corner does not lift the tape |
 | cap height | 18.12 mm, solved — not set by hand. See below |
 | `MARGIN_X`, `MARGIN_Y` | 7.0 and 5.0 mm of clear tag around the word |
@@ -121,9 +127,12 @@ three different heights, which is visible when the tags are side by side.
 - **Does 0.80 mm actually hide black?** It should. The first tag printed settles it,
   and the answer is a number in `params.py` either way. Print the ABS tag first —
   black is the worst case of the three.
-- **Tape, or something better.** Taped on is what was asked for. If the tape lets go
-  in a cold garage, the cheap fix is a 3M VHB square; the expensive one is modelling
-  the bin and clipping on.
+- **Tape, or something better.** Taped on is what was asked for, and 3 mm makes it
+  more of a question than 1.2 mm did: a thicker tag stands further off the bin, so a
+  knock has more leverage on the adhesive. Nothing has been changed for it, because
+  the tag being rigid also means it will not peel progressively the way a thin one
+  does — it either holds or it comes off whole. If it comes off, the cheap fix is a
+  3M VHB square; the expensive one is modelling the bin and clipping on.
 - **No PETG or ABS tag in its own material.** There is an argument that the PETG tag
   should be printed in PETG so the label is also a sample of the material. It cannot
   be, for the colour reasons above, and it would mean a separate job in a different

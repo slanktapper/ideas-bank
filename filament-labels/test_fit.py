@@ -4,7 +4,7 @@
     python3 test_fit.py
 
 A label is a simple part, so these checks are not about whether it is
-printable -- a 1.2 mm slab always is. They are about the three things that
+printable -- a flat slab always is. They are about the three things that
 would come off the printer looking fine and still be wrong:
 
 1.  The lettering reading BACKWARDS. The word is in the face at z=0, which is

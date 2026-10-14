@@ -291,11 +291,11 @@ def export_renders(built, cap, face, verbose=True):
         print(f"  {path.name}")
 
     # The drawing the whole design turns on: a section across a letter stem,
-    # showing 0.80 mm of jade white with 0.40 mm of colour behind it. It has to
-    # be a dead-on orthographic close-up. A 1.2 mm stack seen across an 80 mm
-    # tag is a sliver, and tilting the camera even 2 degrees lets the far end
-    # of the tag show above the cut face, which reads as extra layers that are
-    # not there.
+    # showing the jade white skin with the letter colour behind it. It has to
+    # be a dead-on orthographic close-up: the skin is 0.80 mm on an 80 mm tag,
+    # so at full width it is a sliver whatever the tag's total thickness, and
+    # tilting the camera even 2 degrees lets the far end of the tag show above
+    # the cut face, which reads as extra layers that are not there.
     from shapely.geometry import LineString
 
     white, colour_mesh, word, filament = built['pla']
@@ -323,7 +323,10 @@ def export_renders(built, cap, face, verbose=True):
             cut.append({"mesh": faces, "color": R.tint(colour)})
 
     w, h = 1400, 560
-    window = 3.4                             # mm of height in frame
+    # Height in frame, derived rather than typed: the tag fills two thirds of
+    # the drawing whatever TAG_LAYERS is set to, so changing the thickness
+    # cannot silently crop the section or shrink it to a line.
+    window = P.TAG_T * 1.5
     target = (x_view, y_cut, P.TAG_T / 2)
     # Camera on the far side of the cut plane from the kept half, so what it
     # sees is the cut face itself and not the tag's outer edge.

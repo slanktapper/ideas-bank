@@ -1,26 +1,27 @@
 # filament-labels — print guide
 
-Three tags, six STLs, one job. Everything below assumes the files in `stl/` as
-`build.py` writes them.
+Three tags, six STLs. Everything below assumes the files in `stl/` as `build.py`
+writes them. Read §6 before you decide whether to put all three on one plate —
+at 3 mm the answer changed.
 
 ## 1. The parts
 
 | File | Filament | Volume |
 | --- | --- | --- |
 | `abs-white.stl` | PLA Basic Jade White | 1.53 cm³ |
-| `abs-colour.stl` | PLA Basic Black | 1.34 cm³ |
+| `abs-colour.stl` | PLA Basic Black | 5.63 cm³ |
 | `pla-white.stl` | PLA Basic Jade White | 1.59 cm³ |
-| `pla-colour.stl` | PLA Basic Indigo Purple | 1.27 cm³ |
+| `pla-colour.stl` | PLA Basic Indigo Purple | 5.57 cm³ |
 | `petg-white.stl` | PLA Basic Jade White | 1.43 cm³ |
-| `petg-colour.stl` | PLA Basic Cocoa Brown | 1.44 cm³ |
+| `petg-colour.stl` | PLA Basic Cocoa Brown | 5.73 cm³ |
 
-8.6 cm³ of PLA in total, about 10.7 g — 5.6 g of it jade white. All four colours
-are in `../filament.md`; the cocoa brown is the single spool, code 10802.
+21.5 cm³ of PLA in total, about 26.6 g — 5.6 g of it jade white, which is the same
+5.6 g it was at 1.2 mm. Thickness is bought entirely in letter colour. These are
+solid volumes; sparse infill will cut the colour figure, since at 3 mm there is
+finally room for some between the solid top and bottom.
 
-**Four slots, so one job.** Two AMS 2 Pro units give eight, and this needs four.
-Printing the three tags separately would not save purge — the flushes scale with
-the number of two-colour layers, and that is the same either way — so there is no
-reason to split the job.
+All four colours are in `../filament.md`; the cocoa brown is the single spool,
+code 10802. Four slots of the eight.
 
 ## 2. Do not rotate anything
 
@@ -57,11 +58,11 @@ part to that tag's colour.
 | Layer height | **0.20 mm**, and not something else — see below |
 | Plate | Textured PEI. The texture is the finish on the readable face |
 | Supports | None. Nothing overhangs |
-| Brim | Not needed. A 1.2 mm slab with a 24 cm² footprint is not going anywhere |
-| Infill | Irrelevant — at 1.2 mm it is all solid layers regardless |
+| Brim | Not needed. A 3 mm slab with a 24 cm² footprint is not going anywhere |
+| Infill | Now worth setting. At 3 mm there are layers between the solid top and bottom that do not have to be solid, and they are all letter colour |
 
 **0.20 mm is not a suggestion.** Every depth in the design is a whole number of
-layers: 6 for the tag, 4 for the white skin. At 0.25 mm the white skin becomes
+layers: 15 for the tag, 4 for the white skin. At 0.25 mm the white skin becomes
 three layers and change, the slicer rounds it, and the number that stops the black
 showing through the white quietly stops being the number that was checked. If you
 want a different layer height, change `LAYER` in `params.py` and rebuild — the
@@ -83,16 +84,34 @@ What `build.py` says each choice costs, across all three tags:
 | **4 layers, 0.80 mm** | **5.6 g — what is built** |
 | 5 layers, 1.00 mm | 7.0 g |
 
-## 6. What to expect from the purge
+## 6. Print them as three jobs, not one plate
 
-The parts are tiny and the flushing will not be. Layers 1–4 carry all four
-filaments and layers 5–6 carry three, so there are roughly twenty colour changes
-in the job. Depending on the flush volumes, the purge can be comparable to the
-8.6 cm³ of actual tag — the slicer's own estimate is the number to look at before
-starting, not this paragraph.
+**This is the opposite of the advice that was here at 1.2 mm, and the thickness is
+why.** The purge scales with how many layers contain more than one filament, and
+raising the tag from 6 layers to 15 added eleven layers that are pure letter
+colour — but only if a tag is alone on the plate.
 
-Nothing about that is avoidable at this size; it is the cost of a two-colour part,
-and it is still one job and about ten grams of filament.
+Put all three on one plate and those eleven layers still hold three different
+colours, one per tag, so the printer swaps filament three times a layer for the
+whole upper two thirds of the job:
+
+| | Filament loads |
+| --- | --- |
+| All three on one plate | 4 layers × 4 colours + 11 × 3 = **49** |
+| One tag at a time | 4 × 2 + 11 × 1, three times = **24 changes** |
+
+Roughly **twice the purge** for the convenience of a single job. At 6 layers these
+came out level, which is why the earlier advice went the other way; at 15 they do
+not.
+
+So: three jobs, or one plate with the print sequence set to **by object** if your
+slicer will do that alongside the AMS — worth a look, since it gets the same saving
+in one go, and at 3 mm tall there is no toolhead clearance problem. If it refuses,
+three separate jobs give exactly the same result for the cost of two more plate
+heats.
+
+Either way the slicer's own flush estimate is the number to look at before
+starting, not this table.
 
 ## 7. The counters are meant to be islands
 
@@ -104,9 +123,9 @@ four bodies for ABS, three for PLA, two for PETG.
 
 ## 8. After printing
 
-Peel off the plate cold. The tags are 1.2 mm and will flex; they are PLA, so they
-will also snap if you fold them — lift from a corner rather than levering from the
-middle.
+Peel off the plate cold. At 3 mm they are rigid and will not flex out of shape the
+way the 1.2 mm version would have — but they are still PLA, so they will snap
+rather than bend if you lever at them. Lift from a corner.
 
 Tape to the bin with whatever is to hand. PLA softens around 60 °C, which a garage
 in Alberta will never see, so there is nothing to worry about there.

@@ -3,7 +3,7 @@
 The number that matters is how deep the white runs:
 
     WHITE_D   0.80 mm   the jade white background, 4 layers, on the printed face
-    TAG_T     1.20 mm   the tag, so 0.40 mm of letter colour behind the white
+    TAG_T     3.00 mm   the tag, so 2.20 mm of letter colour behind the white
 
 Rob asked for the white to be the thin part, to spend as little jade white as
 possible, and that is what this is. It costs something, and the cost is why
@@ -33,18 +33,21 @@ LAYER = 0.20
 # ---- the tag --------------------------------------------------------------
 TAG_W = 80.0              # along the lettering
 TAG_H = 30.0              # up the side of the bin
-TAG_LAYERS = 6
-TAG_T = round(TAG_LAYERS * LAYER, 6)      # 1.20 mm -- stiff enough not to curl
+TAG_LAYERS = 15
+TAG_T = round(TAG_LAYERS * LAYER, 6)      # 3.00 mm -- rigid, a plaque not a sticker
 CORNER_R = 4.0            # rounded corners, so a bumped edge does not lift
 
 # ---- the two filaments, through the thickness ------------------------------
 WHITE_LAYERS = 4
 WHITE_D = round(WHITE_LAYERS * LAYER, 6)          # 0.80 mm of jade white
-COLOUR_BEHIND = round(TAG_T - WHITE_D, 6)         # 0.40 mm of letter colour
+COLOUR_BEHIND = round(TAG_T - WHITE_D, 6)         # 2.20 mm of letter colour
 
-# round() above is not fussiness: 6 * 0.20 is 1.2000000000000002 in binary
-# floating point, and that tail propagates into every assertion about a layer
-# count and into the STL's own coordinates.
+# round() above is not fussiness, even though 15 * 0.20 happens to land on
+# exactly 3.0. The tail comes and goes with the layer count -- 6 * 0.20 is
+# 1.2000000000000002 and 7 * 0.20 is 1.4000000000000001 -- so a thickness that
+# is clean today stops being clean the next time TAG_LAYERS is touched, and
+# that tail propagates into every assertion about a layer count and into the
+# STL's own coordinates.
 
 # ---- the lettering --------------------------------------------------------
 MARGIN_X = 7.0            # clear tag each side of the widest word
