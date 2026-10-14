@@ -13,9 +13,10 @@ would come off the printer looking fine and still be wrong:
     in a render, after the first version had already been built, and it is the
     check most likely to save a reprint.
 
-2.  The white skin being too THIN to hide the colour behind it. Rob asked for
-    two layers; two layers of a pale filament over black reads grey. The floor
-    here is 0.60 mm, and the set is built at 0.80.
+2.  The white LETTERS being too thin to cover the body behind them. Two layers
+    of a pale filament over black reads grey, and grey letters on a black tag
+    is the label failing rather than looking slightly off. The floor here is
+    0.60 mm, and the set is built at 0.80.
 
 3.  The two parts not adding up to the tag -- a gap, or an overlap, between
     the white and the colour. Either shows as a seam or as a slicer resolving
@@ -55,10 +56,10 @@ def layer_checks():
     check("the tag is a whole number of layers",
           abs(P.TAG_T / P.LAYER - round(P.TAG_T / P.LAYER)) < 1e-9,
           f"{P.TAG_T:.2f} mm = {round(P.TAG_T/P.LAYER)} x {P.LAYER:.2f}")
-    check("the white skin is a whole number of layers",
+    check("the white letters are a whole number of layers",
           abs(P.WHITE_D / P.LAYER - round(P.WHITE_D / P.LAYER)) < 1e-9,
           f"{P.WHITE_D:.2f} mm = {P.WHITE_LAYERS} x {P.LAYER:.2f}")
-    check("the white is thick enough to hide the colour behind it",
+    check("the white letters are thick enough to cover the body behind them",
           P.WHITE_D >= OPACITY_FLOOR - 1e-9,
           f"{P.WHITE_D:.2f} mm against a {OPACITY_FLOOR:.2f} mm floor "
           f"-- this is the check Rob's '2 layers' question failed")
@@ -87,17 +88,22 @@ def geometry_checks(built, cap):
               f"out by {total-slab.volume:+.2e} -- no gap, no overlap")
 
         wz, cz = white.bounds, colour.bounds
-        check(f"{word}: the white is a skin on the printed face",
+        check(f"{word}: the white letters sit in the printed face",
               abs(wz[0][2]) < 1e-6 and abs(wz[1][2] - P.WHITE_D) < 1e-6,
               f"z {wz[0][2]:.3f}..{wz[1][2]:.3f}, and z=0 is the face "
               f"against the plate")
         check(f"{word}: the colour runs the full thickness",
               abs(cz[0][2]) < 1e-6 and abs(cz[1][2] - P.TAG_T) < 1e-6,
-              f"z {cz[0][2]:.3f}..{cz[1][2]:.3f} -- the letters reach the "
-              f"printed face")
-        check(f"{word}: the colour is one solid, not loose tiles in a pocket",
+              f"z {cz[0][2]:.3f}..{cz[1][2]:.3f}")
+        check(f"{word}: the colour is one solid",
               colour.body_count == 1,
-              "letters continuous with the body behind them, nothing to glue")
+              "the body, and the counter inside each P or A, all joined "
+              "through the colour above the letters")
+        check(f"{word}: every letter is capped by colour, not open at the back",
+              P.WHITE_D < P.TAG_T - 1e-9,
+              f"{P.TAG_T - P.WHITE_D:.2f} mm of colour over the letters, so a "
+              f"letter is trapped from above and can only be pushed out "
+              f"through the face it is welded to")
 
 
 def lettering_checks(built, cap, face):
@@ -155,15 +161,15 @@ def lettering_checks(built, cap, face):
 def print_checks(built, cap, face):
     print("what the slicer will see")
     for key, (white, colour, word, _) in built.items():
-        # Counters are islands: the hole in a P or an A is white, and the
-        # letter encircles it, so it cannot touch the rest of the skin. That
-        # is expected, not a fault -- every island sits flat on the plate and
-        # welds to the colour beside it. Worth pinning so it is never
-        # "fixed" by someone filling the counters in.
-        check(f"{word}: white is a skin plus one island per counter",
-              white.body_count >= 1,
-              f"{white.body_count} bodies = 1 skin + "
-              f"{white.body_count-1} enclosed counter(s)")
+        # The white is now the glyphs and nothing else, so it comes out as one
+        # body per letter -- separate by definition, since letters do not
+        # touch. That is expected, not a fault: each sits flat on the plate
+        # from layer one, welds PLA-to-PLA to the colour around it, and is
+        # roofed by colour above. Worth pinning so nobody "fixes" it by
+        # joining the letters with a bar.
+        check(f"{word}: the white is one body per letter",
+              white.body_count == len(word),
+              f"{white.body_count} bodies for {len(word)} letters")
 
     # A stem has to be wide enough that the slicer lays real extrusions in it
     # rather than a thin-wall gap fill. Two 0.4 mm lines is the floor.

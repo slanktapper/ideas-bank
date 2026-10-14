@@ -1,15 +1,14 @@
 """Three two-colour tags -- PLA, PETG, ABS -- to tape to the side of a bin.
 
 Each tag is a rounded slab printed face down, so the visible face picks up the
-plate texture. Through the thickness it is two filaments: a jade white skin
-four layers deep on the printed face, and the letter colour behind it, coming
-through that skin to form the word. Two STLs per tag, one per filament, which
-puts the colour split in the geometry rather than in a slicer painting session
-that has to be redone every time the model changes.
+plate texture. The body is solid letter colour through all 3 mm; the word is
+jade white, inlaid four layers deep into the printed face. Two STLs per tag,
+one per filament, which puts the colour split in the geometry rather than in a
+slicer painting session that has to be redone every time the model changes.
 
-Rob asked for it this way round to spend as little jade white as possible. The
-white is the thin part, so it is the part that can ghost -- hence four layers
-rather than two. params.py has that argument in full.
+The white is the thin part and the small part -- just the glyphs -- so it is
+the part that can ghost, which is why it is four layers and not two. params.py
+has that argument in full.
 
 The lettered face is the one at z=0. The STLs come out that way round, so they
 load lettering-down with no rotation -- see print-guide.md.
@@ -175,22 +174,27 @@ def plate_layout():
 def tag(face, word, cap):
     """(white, colour) for one tag, as two watertight meshes that interlock.
 
-    `white` is the jade white skin on the printed face, WHITE_D deep, with the
-    word punched out of it. `colour` is everything else: the letters filling
-    those holes, and the slab behind the skin that they join onto -- one solid,
-    because the letters are continuous with the body behind them rather than
-    being loose tiles sitting in a pocket. Nothing in the set needs gluing.
+    `white` is the letters, WHITE_D deep, and nothing else -- so it comes back
+    as one body per letter, which is correct and not a fault. `colour` is all
+    the rest in one solid: the body, the edges, the back, and the counter
+    inside each P and A, which joins the rest through the 2.20 mm of colour
+    sitting over the letters.
+
+    That roof is what makes the loose-looking letters safe. Each one is welded
+    PLA-to-PLA to the colour around it, sits flat on the plate from layer one,
+    and is covered by colour above, so there is nowhere for it to go. Nothing
+    needs gluing.
     """
     letters_2d = word_polygon(face, word, cap)
     slab = prism(outline(), P.TAG_T)
 
+    # The white is now the letters and nothing else.
+    white = prism(letters_2d, P.WHITE_D)
+
     # Down through z=0 so the cut face is not coincident with the tag face.
     cutter = prism(letters_2d, P.WHITE_D + 0.1, z=-0.1)
-    skin = prism(outline(), P.WHITE_D)
-    white = trimesh.boolean.difference([skin, cutter], engine='manifold')
-
     # The complement, so white + colour is exactly the slab by construction.
-    colour = trimesh.boolean.difference([slab, white], engine='manifold')
+    colour = trimesh.boolean.difference([slab, cutter], engine='manifold')
     return white, colour
 
 
@@ -207,8 +211,8 @@ def build(verbose=True):
               f"(width allows {by_w:.2f}, height allows {by_h:.2f}, "
               f"ceiling {P.MAX_CAP:.2f})")
         print(f"tag {P.TAG_W:.0f} x {P.TAG_H:.0f} x {P.TAG_T:.2f} mm: "
-              f"jade white skin {P.WHITE_D:.2f} mm ({P.WHITE_LAYERS} layers at "
-              f"{P.LAYER:.2f}), letter colour behind it "
+              f"white letters {P.WHITE_D:.2f} mm deep ({P.WHITE_LAYERS} layers "
+              f"at {P.LAYER:.2f}), body colour over them "
               f"{P.COLOUR_BEHIND:.2f} mm")
 
     built = {}
@@ -318,11 +322,12 @@ def export_renders(built, cap, face, verbose=True):
         print(f"  {path.name}")
 
     # The drawing the whole design turns on: a section across a letter stem,
-    # showing the jade white skin with the letter colour behind it. It has to
-    # be a dead-on orthographic close-up: the skin is 0.80 mm on an 80 mm tag,
-    # so at full width it is a sliver whatever the tag's total thickness, and
-    # tilting the camera even 2 degrees lets the far end of the tag show above
-    # the cut face, which reads as extra layers that are not there.
+    # showing the white letter set into the printed face with colour over the
+    # back of it. It has to be a dead-on orthographic close-up: the white is
+    # 0.80 mm on an 80 mm tag, so at full width it is a sliver whatever the
+    # tag's total thickness, and tilting the camera even 2 degrees lets the far
+    # end of the tag show above the cut face, which reads as extra layers that
+    # are not there.
     from shapely.geometry import LineString
 
     white, colour_mesh, word, filament = built['pla']
@@ -363,18 +368,19 @@ def export_renders(built, cap, face, verbose=True):
 
     # Anchor the callouts to the real geometry rather than to guessed pixels.
     # face_up() has turned the tag over, so the printed face is the TOP of the
-    # section: white skin above, letter colour below.
-    pts = [(x_view - 3.6, y_cut, P.TAG_T - P.WHITE_D / 2),   # clear of the stem
+    # section. The white is now a letter sitting IN that face, so its callout
+    # anchors on the stem itself rather than clear of it.
+    pts = [(x_view, y_cut, P.TAG_T - P.WHITE_D / 2),         # in the stem
            (x_view + 3.6, y_cut, P.COLOUR_BEHIND / 2)]
     px = R.screen_of(pts, eye=eye, target=target, width=w, height=h,
                      ortho_height=window)
     # The two labels go to opposite sides, so neither leader has to cross the
     # letter stem that the drawing exists to show.
     R.annotate(img, [
-        {"text": f"jade white {P.WHITE_D:.2f} mm, {P.WHITE_LAYERS} layers",
+        {"text": f"white letter {P.WHITE_D:.2f} mm, {P.WHITE_LAYERS} layers",
          "px": tuple(px[0]), "to": (int(w * 0.24), int(h * 0.14)),
          "align": "right"},
-        {"text": f"letter colour {P.COLOUR_BEHIND:.2f} mm behind it",
+        {"text": f"colour body, {P.COLOUR_BEHIND:.2f} mm over the letter",
          "px": tuple(px[1]), "to": (int(w * 0.62), int(h * 0.86))},
     ])
     path = RENDERS / '05-inlay-section.png'

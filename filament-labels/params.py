@@ -1,25 +1,30 @@
 """Every dimension of a filament label, and the filament each part prints in.
 
-The number that matters is how deep the white runs:
+A coloured tag with the word in white. The number that matters is how deep the
+white runs:
 
-    WHITE_D   0.80 mm   the jade white background, 4 layers, on the printed face
-    TAG_T     3.00 mm   the tag, so 2.20 mm of letter colour behind the white
+    WHITE_D   0.80 mm   the white LETTERS, 4 layers, from the printed face
+    TAG_T     3.00 mm   the tag, so 2.20 mm of colour over the back of them
 
-Rob asked for the white to be the thin part, to spend as little jade white as
-possible, and that is what this is. It costs something, and the cost is why
-WHITE_D is 0.80 and not the 0.40 he first suggested.
+The white is the letters and nothing else. Everything else -- background,
+edges, back, and the counter inside each P and A -- is the letter colour,
+solid through all 3 mm.
 
-A light filament over a dark one is the direction that ghosts. 0.40 mm of
-white over black reads grey, not white. The working minimum for a pale colour
-hiding a dark one is about 0.60 mm, and bright white over black wants 0.80 mm.
-Printing face-down makes it worse rather than better: the first layer is
-squashed into the plate texture, so in the valleys the skin is thinner than
-its nominal 0.20 mm. 4 layers is the number that is safe over black, which is
-the worst of the three.
+WHITE_D is 0.80 rather than the 0.40 first suggested, and the reason survives
+every rearrangement this design has been through, because it is about one
+interface rather than about the layout. A light filament over a dark one is
+the direction that ghosts, and white letters with a dark body behind them are
+exactly that interface. 0.40 mm of white over black reads grey, not white. The
+working minimum for a pale colour hiding a dark one is about 0.60 mm, and
+bright white over black wants 0.80 mm. Printing face-down makes it worse
+rather than better: the first layer is squashed into the plate texture, so in
+the valleys the white is thinner than its nominal 0.20 mm. 4 layers is the
+number that is safe over black, the worst of the three.
 
-The saving is real either way -- the white went from the whole tag to a skin.
-build.py prints what each choice actually costs in grams, so the 3-layer
-version is one number away if the black tag turns out fine at 0.60 mm.
+What did change is how little of it there is. The white was the whole tag,
+then a skin over the whole face, and is now just the glyphs: 5.6 g down to
+1.5 g for a set of three. The background no longer costs any white at all,
+because the background is no longer white.
 """
 from __future__ import annotations
 
@@ -39,8 +44,8 @@ CORNER_R = 4.0            # rounded corners, so a bumped edge does not lift
 
 # ---- the two filaments, through the thickness ------------------------------
 WHITE_LAYERS = 4
-WHITE_D = round(WHITE_LAYERS * LAYER, 6)          # 0.80 mm of jade white
-COLOUR_BEHIND = round(TAG_T - WHITE_D, 6)         # 2.20 mm of letter colour
+WHITE_D = round(WHITE_LAYERS * LAYER, 6)          # 0.80 mm deep white letters
+COLOUR_BEHIND = round(TAG_T - WHITE_D, 6)         # 2.20 mm of colour over them
 
 # round() above is not fussiness, even though 15 * 0.20 happens to land on
 # exactly 3.0. The tail comes and goes with the layer count -- 6 * 0.20 is
@@ -63,8 +68,8 @@ MARGIN_X = 7.0            # clear tag each side of the widest word
 MARGIN_Y = 5.0            # clear tag above and below the letters
 MAX_CAP = 20.0            # a ceiling, in case a future tag is much taller
 
-# The letters and their pocket are cut from one polygon, so their walls
-# coincide exactly and no white hairline can appear between them. If a slicer
+# The letters and their pockets are cut from one polygon, so their walls
+# coincide exactly and no dark hairline can appear around a letter. If a slicer
 # ever does leave one, grow the letters by a hair -- 0.02 mm is well under what
 # a 0.4 mm nozzle resolves, and will not change how the word reads.
 LETTER_GROW = 0.0
@@ -72,7 +77,7 @@ LETTER_GROW = 0.0
 FACE = 'Outfit-Bold'      # from ../3d-tools/font
 
 # ---- the three tags -------------------------------------------------------
-# Colours are from ../filament.md and nothing else. The background is PLA Basic
+# Colours are from ../filament.md and nothing else. The lettering is PLA Basic
 # Jade White, which is the only pale PLA on the shelf -- there is no plain white
 # PLA at all, and the white in stock is PETG.
 #
@@ -81,11 +86,11 @@ FACE = 'Outfit-Bold'      # from ../3d-tools/font
 # in PETG. Those two cannot be the same part: available-tools.md notes that PLA
 # and PETG barely bond, and leans on exactly that for breakaway supports. A PLA
 # letter set into a PETG tag is a part designed to shed its lettering. So the
-# whole set is PLA, and the background is jade white.
+# whole set is PLA, and the lettering is jade white.
 WHITE_FILAMENT = 'PLA Basic Jade White'
 
 TAGS = (
-    # key     word     letter + body filament             filament.md says
+    # key     word     the body colour                    filament.md says
     ('abs',  'ABS',  'PLA Basic Black'),           # bulk stock
     ('pla',  'PLA',  'PLA Basic Indigo Purple'),   # bulk stock
     ('petg', 'PETG', 'PLA Basic Cocoa Brown'),     # single spool, code 10802
