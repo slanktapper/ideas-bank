@@ -31,7 +31,8 @@ tag costs an evening on the plate rather than a trip to a label maker.
 
 **It does:** three tags, one per material, at one size, generated from one set of
 parameters. Colour and material come from `../filament.md`, which is the only
-stock list.
+stock list. It also lays out a plate, because these are printed in batches of one
+type — 24 fit, and a batch costs no more purge than a single tag does.
 
 **It deliberately does not:**
 
@@ -91,7 +92,7 @@ that was checked.
 
     python3 build.py                # stl/ and renders/
     python3 build.py --no-renders   # just the STLs, a couple of seconds
-    python3 test_fit.py             # 37 checks, about 2 seconds
+    python3 test_fit.py             # 42 checks, about 2 seconds
 
 `print-guide.md` is what to do with the files once they exist.
 
@@ -105,6 +106,7 @@ that was checked.
 | `CORNER_R` | 4.0 mm, so a knocked corner does not lift the tape |
 | cap height | 18.12 mm, solved — not set by hand. See below |
 | `MARGIN_X`, `MARGIN_Y` | 7.0 and 5.0 mm of clear tag around the word |
+| `BED_W`, `BED_D` | 300 × 320 mm — the **dual-nozzle** envelope, 24 tags a plate |
 
 **The cap height is solved, and "PETG" is what solves it.** All three words are set
 at one size, the largest at which the widest of them still fits the panel, so the
@@ -137,6 +139,10 @@ three different heights, which is visible when the tags are side by side.
   should be printed in PETG so the label is also a sample of the material. It cannot
   be, for the colour reasons above, and it would mean a separate job in a different
   material for one tag. Noted and rejected, not forgotten.
+- **How many of each.** Unanswered, and it does not need answering in code: a
+  plate holds 24 of one type and the purge is the same at any count, so the number
+  is whatever Rob wants on the day. `plate_layout()` fills the plate; printing six
+  means deleting eighteen in the slicer.
 - **The other bins.** This does three materials because that is what is on the shelf.
   Mistletoe green, silk gold and the rest are colours rather than materials, and a
   colour label is a different idea — probably a swatch, not a word.

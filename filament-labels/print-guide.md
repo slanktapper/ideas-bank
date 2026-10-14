@@ -1,8 +1,10 @@
 # filament-labels — print guide
 
 Three tags, six STLs. Everything below assumes the files in `stl/` as `build.py`
-writes them. Read §6 before you decide whether to put all three on one plate —
-at 3 mm the answer changed.
+writes them.
+
+**One tag type per plate, as many copies as you want.** That is the whole of the
+plate strategy, and §6 says why it is also the cheap one. 24 fit.
 
 ## 1. The parts
 
@@ -21,7 +23,23 @@ solid volumes; sparse infill will cut the colour figure, since at 3 mm there is
 finally room for some between the solid top and bottom.
 
 All four colours are in `../filament.md`; the cocoa brown is the single spool,
-code 10802. Four slots of the eight.
+code 10802.
+
+**Two filaments per plate, not four**, because a plate holds one tag type. The H2D
+has two nozzles on the toolhead, so jade white can live in one and the letter
+colour in the other, and the machine stops swapping filament altogether.
+
+Per tag the total is always the same 7.16 cm³ — about 8.9 g, of which roughly
+1.9 g is jade white — because white plus colour is exactly the slab. So a plate
+costs:
+
+| Copies | Jade white | Letter colour | Total |
+| --- | --- | --- | --- |
+| 6 | 11 g | 42 g | 53 g |
+| 12 | 23 g | 84 g | 107 g |
+| 24 — a full plate | 46 g | 168 g | 213 g |
+
+Solid volumes again; sparse infill comes off the colour column.
 
 ## 2. Do not rotate anything
 
@@ -84,34 +102,41 @@ What `build.py` says each choice costs, across all three tags:
 | **4 layers, 0.80 mm** | **5.6 g — what is built** |
 | 5 layers, 1.00 mm | 7.0 g |
 
-## 6. Print them as three jobs, not one plate
+## 6. One tag type per plate, and copies are free
 
-**This is the opposite of the advice that was here at 1.2 mm, and the thickness is
-why.** The purge scales with how many layers contain more than one filament, and
-raising the tag from 6 layers to 15 added eleven layers that are pure letter
-colour — but only if a tag is alone on the plate.
+The thing that costs is **mixing types on one plate**, not the number of tags.
 
-Put all three on one plate and those eleven layers still hold three different
-colours, one per tag, so the printer swaps filament three times a layer for the
-whole upper two thirds of the job:
+Eleven of the fifteen layers are pure letter colour. On a plate of one type that
+means eleven layers with a single filament in them and nothing to swap — and that
+holds whether the plate carries one tag or twenty-four, because every copy wants
+the same two filaments in the same four layers. Copies are free:
 
-| | Filament loads |
+| Plate | Filament loads |
 | --- | --- |
-| All three on one plate | 4 layers × 4 colours + 11 × 3 = **49** |
-| One tag at a time | 4 × 2 + 11 × 1, three times = **24 changes** |
+| 1 tag, one type | 4 skin layers × 2 = **8** |
+| 24 tags, one type | 4 × 2 = **8** — identical |
+| All three types together | 4 × 4 + 11 × 3 = **49** |
 
-Roughly **twice the purge** for the convenience of a single job. At 6 layers these
-came out level, which is why the earlier advice went the other way; at 15 they do
-not.
+So purge is a cost per *plate*, not per tag. A dozen of something costs the same
+flushing as one of it, which is the argument for running a decent batch of each
+while that colour is loaded.
 
-So: three jobs, or one plate with the print sequence set to **by object** if your
-slicer will do that alongside the AMS — worth a look, since it gets the same saving
-in one go, and at 3 mm tall there is no toolhead clearance problem. If it refuses,
-three separate jobs give exactly the same result for the cost of two more plate
-heats.
+**On the H2D it is smaller still.** Two filaments means one per nozzle rather than
+one nozzle swapping between two, so what is left are nozzle changes, not filament
+flushes. That is the machine doing what it was bought for, and it is why a
+two-colour plate is not worth splitting up. How little it actually wastes is the
+slicer's estimate to give, not this paragraph.
 
-Either way the slicer's own flush estimate is the number to look at before
-starting, not this table.
+**24 fit on a plate**, three across by eight down — 252 × 282 mm inside the
+300 × 320 mm dual-nozzle envelope, with a 10 mm margin all round and 6 mm between
+tags. `renders/06-a-plate-of-one-type.png` is the layout, and `test_fit.py` checks
+it still fits if the tag size changes.
+
+Mind that it is the **dual-nozzle** envelope. The 325 mm figure in
+`../available-tools.md` is the single-nozzle one and does not apply to a two-colour
+print; laying out to it would cost 25 mm the machine does not have.
+
+The bed is not the constraint here. Print the number of each you actually want.
 
 ## 7. The counters are meant to be islands
 

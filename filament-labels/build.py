@@ -145,6 +145,33 @@ def prism(geom, height, z=0.0):
     return m
 
 
+def plate_layout():
+    """How many tags fit a plate, and where they go.
+
+    One tag TYPE per plate, as many copies as fit -- which is how these get
+    printed, and the reason it matters is purge rather than tidiness. A plate
+    of one type is two filaments, so the colour changes happen in the four
+    skin layers and nowhere else, however many copies are on it. Twenty-four
+    tags cost the same flushing as one.
+
+    Returns (cols, rows, [(x, y), ...]) with each position the lower-left
+    corner of a tag.
+    """
+    usable_w = P.BED_W - 2 * P.BED_MARGIN
+    usable_d = P.BED_D - 2 * P.BED_MARGIN
+    cols = int((usable_w + P.TAG_GAP) // (P.TAG_W + P.TAG_GAP))
+    rows = int((usable_d + P.TAG_GAP) // (P.TAG_H + P.TAG_GAP))
+
+    span_w = cols * P.TAG_W + (cols - 1) * P.TAG_GAP
+    span_d = rows * P.TAG_H + (rows - 1) * P.TAG_GAP
+    x0 = (P.BED_W - span_w) / 2          # centred, rather than crowded into a corner
+    y0 = (P.BED_D - span_d) / 2
+
+    pos = [(x0 + c * (P.TAG_W + P.TAG_GAP), y0 + r * (P.TAG_H + P.TAG_GAP))
+           for r in range(rows) for c in range(cols)]
+    return cols, rows, pos
+
+
 def tag(face, word, cap):
     """(white, colour) for one tag, as two watertight meshes that interlock.
 
@@ -356,12 +383,58 @@ def export_renders(built, cap, face, verbose=True):
         print(f"  {path.name}  (section at the '{word}' stem nearest centre)")
 
 
+def export_plate_render(built, verbose=True):
+    """A plate of one tag type, which is how these actually get printed.
+
+    Worth drawing rather than asserting, because the thing to see is how much
+    bed is left over: the constraint on a batch is not the machine, it is how
+    many labels anybody wants.
+    """
+    cols, rows, pos = plate_layout()
+    key = 'abs'
+    white, colour, word, filament = built[key]
+
+    # The bed itself, as a thin slab under everything, so the margin reads.
+    bed = trimesh.creation.box(extents=(P.BED_W, P.BED_D, 1.0))
+    bed.apply_translation((P.BED_W / 2, P.BED_D / 2, -0.5))
+    parts = [{"mesh": bed, "color": (0.80, 0.81, 0.84)}]
+
+    for (x, y) in pos:
+        for mesh, col in ((white, P.RGB[P.WHITE_FILAMENT]),
+                          (colour, P.RGB[filament])):
+            parts.append({"mesh": R.placed(face_up(mesh), (x, y, 0.0)),
+                          "color": col})
+
+    meshes = [p["mesh"] for p in parts]
+    w, h = 1100, 1150
+    img = R.render(parts, width=w, height=h,
+                   **R.frame(meshes, azimuth_deg=-90, elevation_deg=90,
+                             margin=1.03))
+    span_w = cols * P.TAG_W + (cols - 1) * P.TAG_GAP
+    span_d = rows * P.TAG_H + (rows - 1) * P.TAG_GAP
+    px = R.screen_of([(P.BED_W / 2, P.BED_D - P.BED_MARGIN / 2, 0.0)],
+                     **R.frame(meshes, azimuth_deg=-90, elevation_deg=90,
+                               margin=1.03), width=w, height=h)
+    R.annotate(img, [
+        {"text": f"{cols} x {rows} = {len(pos)} tags, {span_w:.0f} x "
+                 f"{span_d:.0f} mm on the {P.BED_W:.0f} x {P.BED_D:.0f} "
+                 f"dual-nozzle bed",
+         "px": tuple(px[0]), "to": (int(w * 0.5), int(h * 0.035))},
+    ])
+    path = RENDERS / '06-a-plate-of-one-type.png'
+    img.save(path)
+    if verbose:
+        print(f"  {path.name}  ({len(pos)} x {word}, two filaments, "
+              f"{P.WHITE_LAYERS*2} filament loads for the whole plate)")
+
+
 def main():
     do_renders = '--no-renders' not in sys.argv
     built, cap, face = build()
     export_stls(built)
     if do_renders:
         export_renders(built, cap, face)
+        export_plate_render(built)
     return 0
 
 

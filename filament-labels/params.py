@@ -49,6 +49,15 @@ COLOUR_BEHIND = round(TAG_T - WHITE_D, 6)         # 2.20 mm of letter colour
 # that tail propagates into every assertion about a layer count and into the
 # STL's own coordinates.
 
+# ---- the plate ------------------------------------------------------------
+# Bambu Lab H2D, from ../available-tools.md. The DUAL-nozzle envelope is the one
+# that applies: two filaments means both nozzles are in play, which costs 25 mm
+# in X against the single-nozzle figure. Using 325 here would lay out a plate
+# that does not fit the machine it is going to be printed on.
+BED_W, BED_D = 300.0, 320.0
+BED_MARGIN = 10.0         # kept clear all round, for clips and first-layer edge
+TAG_GAP = 6.0             # between neighbouring tags
+
 # ---- the lettering --------------------------------------------------------
 MARGIN_X = 7.0            # clear tag each side of the widest word
 MARGIN_Y = 5.0            # clear tag above and below the letters

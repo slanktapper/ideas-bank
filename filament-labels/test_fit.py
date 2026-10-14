@@ -179,6 +179,48 @@ def print_checks(built, cap, face):
               f"{narrowest:.2f} mm at mid-height, against a 0.80 mm floor")
 
 
+def plate_checks():
+    print("the plate")
+    cols, rows, pos = B.plate_layout()
+    span_w = cols * P.TAG_W + (cols - 1) * P.TAG_GAP
+    span_d = rows * P.TAG_H + (rows - 1) * P.TAG_GAP
+
+    check("a plate holds a useful number of one type",
+          len(pos) >= 1, f"{cols} across x {rows} down = {len(pos)} tags")
+    check("the layout fits the bed with its margin intact",
+          span_w <= P.BED_W - 2 * P.BED_MARGIN + 1e-9 and
+          span_d <= P.BED_D - 2 * P.BED_MARGIN + 1e-9,
+          f"{span_w:.0f} x {span_d:.0f} mm inside "
+          f"{P.BED_W-2*P.BED_MARGIN:.0f} x {P.BED_D-2*P.BED_MARGIN:.0f}")
+
+    # The single-nozzle envelope is 325 mm in X and does not apply: a plate of
+    # these is two filaments, so both nozzles are in play and X is 300. Laying
+    # out to 325 would cost 25 mm the machine has not got on this job.
+    check("the layout is inside the DUAL-nozzle envelope",
+          P.BED_W <= 300.0 + 1e-9,
+          f"BED_W is {P.BED_W:.0f} mm, which is the dual-nozzle figure from "
+          f"../available-tools.md, not the 325 single-nozzle one")
+
+    # No two tags may overlap, and none may hang off the bed.
+    worst = min(P.BED_W - (x + P.TAG_W) for x, _ in pos)
+    worst = min(worst, min(P.BED_D - (y + P.TAG_H) for _, y in pos))
+    worst = min(worst, min(x for x, _ in pos), min(y for _, y in pos))
+    check("every tag is clear of the bed edge",
+          worst >= P.BED_MARGIN - 1e-9,
+          f"closest approach {worst:.1f} mm against a {P.BED_MARGIN:.0f} mm margin")
+
+    gaps = []
+    for i, (x, y) in enumerate(pos):
+        for (x2, y2) in pos[i+1:]:
+            if abs(y2 - y) < 1e-9:
+                gaps.append(abs(x2 - x) - P.TAG_W)
+            elif abs(x2 - x) < 1e-9:
+                gaps.append(abs(y2 - y) - P.TAG_H)
+    check("no two tags touch or overlap",
+          min(gaps) >= P.TAG_GAP - 1e-9,
+          f"tightest neighbour gap {min(gaps):.1f} mm")
+
+
 def main():
     print("filament-labels — fit checks")
     built, cap, face = B.build(verbose=False)
@@ -186,6 +228,7 @@ def main():
     geometry_checks(built, cap)
     lettering_checks(built, cap, face)
     print_checks(built, cap, face)
+    plate_checks()
 
     print()
     if FAILS:
