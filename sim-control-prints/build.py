@@ -167,6 +167,72 @@ def stub():
     return trimesh.boolean.difference([body] + cuts, engine="manifold")
 
 
+def label_polys(text, size, at):
+    """Glyph outlines as a shapely polygon, counters and all.
+
+    Accumulating rings with symmetric_difference applies the even-odd rule,
+    which is what keeps the middle of an O a hole instead of a disc. It
+    matters here: the label is engraved rather than cut through precisely so
+    those counters stay attached to the card.
+    """
+    from matplotlib.textpath import TextPath
+    from matplotlib.font_manager import FontProperties
+    from shapely.geometry import Polygon as ShPoly
+
+    tp = TextPath((0, 0), text, size=size,
+                  prop=FontProperties(family="DejaVu Sans", weight="bold"))
+    out = None
+    for ring in tp.to_polygons():
+        if len(ring) < 3:
+            continue
+        poly = ShPoly(ring).buffer(0)
+        out = poly if out is None else out.symmetric_difference(poly)
+    minx, miny, maxx, maxy = out.bounds
+    return translate_poly(out, at[0] - (minx + maxx) / 2.0,
+                          at[1] - (miny + maxy) / 2.0)
+
+
+def translate_poly(poly, dx, dy):
+    from shapely.affinity import translate
+    return translate(poly, dx, dy)
+
+
+def gauge():
+    """A four-layer card in the shape of the cap's mating face.
+
+    Not a scale model and not a part: a question. Offer it up to the end of
+    the extrusion and three things fall out at once -- whether the holes line
+    up on 39 mm, whether its straight back edge sits flush with the back of
+    the extrusion (any step is the error in BOSS_Y, read straight off), and
+    whether a 25 mm lip in that position clears the base plate through the
+    pedal's travel.
+
+    The holes are CLEAR_D, the same as the real part, so that the card
+    answers the question that actually matters: if this bolts on, the cap
+    bolts on.
+    """
+    plate = trimesh.creation.extrude_polygon(profile(), P.GAUGE_T)
+
+    cuts = []
+    for sx in (-1, 1):
+        h = trimesh.creation.cylinder(radius=P.CLEAR_D / 2.0,
+                                      height=P.GAUGE_T + 4.0, sections=64)
+        h.apply_translation([sx * P.HOLE_PITCH / 2.0, P.BOSS_Y, P.GAUGE_T / 2.0])
+        cuts.append(h)
+
+    text = label_polys(f"BOSS Y {P.BOSS_Y:.1f}", 7.0,
+                       (0.0, P.EXT_DEPTH + P.LIP_H * 0.55))
+    # One glyph at a time: extrude_polygon takes a Polygon, and a word is a
+    # MultiPolygon.
+    glyphs = getattr(text, "geoms", [text])
+    for gp in glyphs:
+        eng = trimesh.creation.extrude_polygon(gp, P.GAUGE_ENGRAVE + 1.0)
+        eng.apply_translation([0, 0, P.GAUGE_T - P.GAUGE_ENGRAVE])
+        cuts.append(eng)
+
+    return trimesh.boolean.difference([plate] + cuts, engine="manifold")
+
+
 def bolt():
     """An M5 x 16 socket cap screw, drawn where it ends up."""
     parts = []
@@ -342,8 +408,58 @@ def run_checks(m):
     check("fits the H2D bed", all(hi - lo < np.array([325, 320, 325])),
           " x ".join(f"{v:.1f}" for v in (hi - lo)) + " mm")
 
+    run_gauge_checks(m)
+
     print(f"\n{len(FAILURES)} failed")
     return not FAILURES
+
+
+def run_gauge_checks(cap_mesh):
+    print("\n  -- the alignment gauge --")
+    g = gauge()
+    glo, ghi = g.bounds
+    clo, chi = cap_mesh.bounds
+
+    check("gauge is watertight", g.is_watertight)
+    check("gauge is one body", len(g.split(only_watertight=False)) == 1)
+    check("gauge is exactly GAUGE_LAYERS layers thick",
+          abs((ghi[2] - glo[2]) - P.GAUGE_T) < TOL,
+          f"{ghi[2] - glo[2]:.2f} mm = {P.GAUGE_LAYERS} x {P.GAUGE_T / P.GAUGE_LAYERS:.1f}")
+    check("gauge silhouette is the cap's silhouette",
+          abs((ghi[0] - glo[0]) - (chi[0] - clo[0])) < TOL
+          and abs((ghi[1] - glo[1]) - (chi[1] - clo[1])) < TOL,
+          f"{ghi[0] - glo[0]:.1f} x {ghi[1] - glo[1]:.1f} mm")
+    check("gauge back edge is at y = 0, to read the step against",
+          abs(glo[1]) < TOL)
+
+    axes = [(-P.HOLE_PITCH / 2.0, P.BOSS_Y), (P.HOLE_PITCH / 2.0, P.BOSS_Y)]
+    zs = np.linspace(0.1, P.GAUGE_T - 0.1, 5)
+    on_axis = np.array([[x, y, z] for x, y in axes for z in zs])
+    check("gauge bolt holes go right through", not g.contains(on_axis).any())
+
+    def gring(rad, z, n=20):
+        a = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        return np.array([[x + rad * np.cos(t), y + rad * np.sin(t), z]
+                         for x, y in axes for t in a])
+
+    check("gauge holes are the same clearance as the cap's",
+          not g.contains(gring(P.CLEAR_D / 2 - 0.1, P.GAUGE_T / 2)).any()
+          and g.contains(gring(P.CLEAR_D / 2 + 0.3, P.GAUGE_T / 2)).all())
+
+    # The label is engraved, not cut through -- otherwise the counters of the
+    # O and the B drop out as loose discs on a 0.8 mm card.
+    plain = trimesh.creation.extrude_polygon(profile(), P.GAUGE_T).volume
+    holes = 2 * np.pi * (P.CLEAR_D / 2) ** 2 * P.GAUGE_T
+    check("the label actually engraved something",
+          g.volume < plain - holes - 1.0,
+          f"{plain - holes - g.volume:.1f} mm3 of lettering")
+    xs = np.linspace(-14, 14, 15)
+    ys = np.linspace(P.EXT_DEPTH + P.LIP_H * 0.55 - 4,
+                     P.EXT_DEPTH + P.LIP_H * 0.55 + 4, 7)
+    floor = np.array([[x, y, 0.1] for x in xs for y in ys])
+    check("the label left a floor and did not cut through",
+          g.contains(floor).all())
+    return g
 
 
 # --- renders ----------------------------------------------------------------
@@ -427,6 +543,12 @@ def write_renders(m):
 
     # looking along X: the only view that shows the lip standing off the
     # ribbed face, which is the whole point of the part
+    # az 290, not the 52 the other shots use: from the +X +Y side the camera
+    # looks back along +X and the engraved label renders mirrored. Checked
+    # with screen_of rather than squinted at.
+    shot("07-gauge.png", [{"mesh": gauge(), "color": (0.85, 0.55, 0.15)}],
+         290, 50, margin=1.06)
+
     shot("06-side-elevation.png",
          [{"mesh": st, "color": GREY}, {"mesh": m, "color": PETG}],
          0, 0, margin=1.04, ortho=True, w=1100, h=1300)
@@ -442,7 +564,11 @@ def main():
         return 1
     STL.mkdir(exist_ok=True)
     m.export(STL / "footrest-end-cap.stl")
+    g = gauge()
+    g.export(STL / "alignment-gauge.stl")
     print(f"\nstl\n  footrest-end-cap.stl   {m.volume / 1000:.2f} cm3, print 4x")
+    print(f"  alignment-gauge.stl    {g.volume / 1000:.2f} cm3, "
+          f"{P.GAUGE_LAYERS} layers, print 1 first")
     write_renders(m)
     return 0
 

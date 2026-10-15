@@ -1,8 +1,37 @@
 # Printing the foot rest end cap
 
-**Do not print four of these yet.** Two of the dimensions the cap is built on
-are provisional — see *Before you print* below. Print one, offer it up, then
-commit to the set.
+**Print the alignment gauge first.** It is four layers and about two grams,
+and it settles the one dimension the cap cannot be wrong about. Only then
+print a cap; only after that fits, print the other three.
+
+## First: the alignment gauge
+
+| | |
+| --- | --- |
+| File | `stl/alignment-gauge.stl` |
+| Size | 52.6 × 40.0 × **0.8 mm** — four layers at 0.2 |
+| Volume | 1.6 cm³, about 2 g |
+| Quantity | 1 |
+
+It is the cap's own silhouette as a card, with the same two clearance holes
+in the same two places, and `BOSS Y 5.5` engraved on it so a later one can be
+told apart. Print it flat, engraved side up, any material — PLA is fine, this
+one is not going underfoot.
+
+Then hold it against the end of a foot rest and read three things off it:
+
+1. **Do both bolts go through into the bosses?** If yes, the 39 mm pitch is
+   right and the cap will bolt on.
+2. **Does the straight back edge sit flush with the back of the extrusion?**
+   This is the one that matters. Any step between the card's back edge and
+   the aluminium's back face *is* the error in `BOSS_Y`, readable straight
+   off with a rule. Tell me which way it sits proud and by how much.
+3. **Does the lip clear everything?** The card is the full silhouette, so
+   hold it on the *bottom* end and work the pedal through its travel. If the
+   top of the card fouls the base plate or the linkage, a 25 mm lip will too,
+   and better to find out on two grams of plastic.
+
+If all three are good, the numbers are confirmed and the cap is ready.
 
 ## The part
 
@@ -72,7 +101,8 @@ chamfer in the slicer.
 
 ## Before you print
 
-Width (52 mm) and depth (15 mm) are measured. Two numbers are not:
+The gauge above answers most of this. Width (52 mm) and depth (15 mm) are
+measured. Two numbers are not:
 
 - **`BOSS_Y` (5.5 mm)** — how far the bolt centres sit from the flat back.
   **If this is wrong the cap will not bolt on at all**, so it is the one to

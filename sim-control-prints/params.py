@@ -143,6 +143,14 @@ CH_OUTER   = 0.0         # chamfer around the Z = CAP_L face -- deliberately
 
 # --- print ------------------------------------------------------------------
 
+GAUGE_LAYERS = 4
+GAUGE_T    = GAUGE_LAYERS * 0.2
+                         # The alignment gauge: the cap's own silhouette, four
+                         # layers thick. It answers the question the cap
+                         # cannot be wrong about -- where the bolt centres sit
+                         # relative to the flat back -- for about a gram.
+GAUGE_ENGRAVE = 0.4      # two layers, so the label leaves two layers of floor
+
 MATERIAL   = "PETG Basic"    # see ../filament.md; black and white are in stock
 NOZZLE     = 0.4
 LAYER      = 0.2

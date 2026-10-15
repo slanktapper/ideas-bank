@@ -123,6 +123,23 @@ The outer body is built as the convex hull of four stacked outlines rather
 than by chamfering with booleans. The outline is convex, so the hull *is* the
 chamfered prism, and it is manifold by construction.
 
+## The alignment gauge
+
+`stl/alignment-gauge.stl` is the cap's silhouette as a four-layer card —
+0.8 mm, about two grams — with the same holes in the same places and
+`BOSS Y 5.5` engraved on it.
+
+It exists because the part's one unconfirmed dimension is also its most
+dangerous. The card answers it without committing a cap: offer it up, and the
+step between its straight back edge and the extrusion's back face *is* the
+error in `BOSS_Y`. Being the full silhouette, it answers the base-plate
+clearance question in the same motion.
+
+The label is engraved rather than cut through. On a 0.8 mm card a cut-through
+`O` drops its counter out as a loose disc, so the glyph outlines are
+accumulated with `symmetric_difference` — the even-odd rule — and sunk two
+layers into a two-layer floor, which `build.py` checks both ways round.
+
 ## Stack
 
 Python, matching the three sibling 3D projects. `trimesh` with `manifold3d`
@@ -139,7 +156,7 @@ reaches for a graph. `requirements.txt` says so and says why.
 ```bash
 cd sim-control-prints
 python3 -m pip install -r requirements.txt
-python3 build.py          # 30 checks, then the STL and six renders
+python3 build.py          # 39 checks, then two STLs and seven renders
 ```
 
 It will not write files if a check fails, and the exit code is non-zero.
