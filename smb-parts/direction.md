@@ -42,9 +42,22 @@ is chosen will likely need:
 - if parts are modelled: OpenSCAD, CadQuery or build123d, per `available-tools.md`
 - if renders are wanted: `3d-tools/render.py` is the repo's shared renderer
 
+`fetch-maps.sh` is bash and curl, and deliberately boring: it is plumbing for
+getting the source images, not a vote on what the project is written in.
+
 ## How to run
 
-Nothing to run yet.
+Nothing to build yet. The one runnable thing is the map fetch:
+
+```bash
+cd smb-parts
+./fetch-maps.sh            # fetch any missing maps into maps/, then report dimensions
+./fetch-maps.sh --report   # dimensions of what is already on disk
+```
+
+It is idempotent — a map already present is left alone — and it rejects anything
+that is not a real GIF, so a 404 page served as `mario-3-2.gif` is not quietly
+stored. It needs `ian-albert.com` to be reachable; see `maps-source.md`.
 
 ## Open questions
 

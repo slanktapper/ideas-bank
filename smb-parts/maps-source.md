@@ -75,13 +75,42 @@ with `<world>` 1–8 and `<level>` 1–4 — 32 files.
 
 All 32 share the directory above, so the table lists bare filenames to stay readable.
 
-## Getting them, when that is wanted
+## Getting them
 
-Either route works; neither has been taken yet.
+`fetch-maps.sh` in this folder pulls all 32 into `maps/` and reports each one's real
+dimensions. It is written and tested; what it lacks is network access.
 
-1. **Allow the domain.** Add `ian-albert.com` under Network access → Allowed domains
-   in the environment's settings, leaving "Allow package managers" ticked. Then a
-   session can pull all 32 and measure them. Steps:
+**Attempted 2026-10-15 11:40 MDT and it failed, 32 for 32.** Every request died at
+the egress proxy with a 403 before leaving the container. The Wayback Machine is
+blocked too, so there is no second route from here — only GitHub and the package
+mirrors are reachable. Nothing partial was written.
+
+Two ways forward:
+
+1. **Allow the domain, then run the script.** Add `ian-albert.com` under Network
+   access → Allowed domains in the environment's settings (the cloud environment
+   menu in the session's title bar, then Edit), leaving "Allow package managers"
+   ticked. Steps:
    <https://code.claude.com/docs/en/cloud-environments#network-access>
-2. **Commit them by hand.** Download locally and add them to this folder. Note the
-   repo has no large-file handling set up, and these are reportedly big images.
+   Then `cd smb-parts && ./fetch-maps.sh`.
+2. **Supply the files.** Download them in a browser and commit them to
+   `smb-parts/maps/` under the same `mario-<world>-<level>.gif` names, or attach them
+   to the conversation. `./fetch-maps.sh --report` will then confirm the set is
+   complete and print the dimensions.
+
+Either way, once the maps are on disk, measure them and clear the warning above.
+
+## A size question worth answering before committing them
+
+These are large images — Albert's collection is described in the 100–900 megapixel
+range — and this repository has no Git LFS or other large-file handling configured.
+32 full-level GIFs may well be the biggest thing in it. Worth a deliberate decision
+rather than finding out after the fact:
+
+- commit them as-is and accept the repository size
+- commit them and set up Git LFS first
+- keep them out of git (a `maps/.gitignore`) and treat `fetch-maps.sh` as the way
+  anyone gets them, since the source is a stable public URL
+
+No decision has been made; Rob asked for them in the repo, so option one is the
+default unless the real file sizes argue otherwise.
