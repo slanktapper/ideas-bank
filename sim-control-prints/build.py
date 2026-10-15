@@ -57,14 +57,15 @@ def profile(pad=0.0):
     without any arc arithmetic. Convexity is not incidental -- chamfering
     below relies on it.
     """
-    w, d = P.CAP_W + 2 * pad, P.EXT_DEPTH + P.LIP_H + 2 * pad
-    y0, y1 = -pad, d - pad
+    w = P.CAP_W + 2 * pad
+    y0 = -P.BACK_EXT - pad
+    y1 = P.EXT_DEPTH + P.LIP_H + pad
     rb, rt = P.R_BACK + pad, P.R_TIP + pad
     discs = [
-        Point(-w / 2 + rb + pad, y0 + rb).buffer(rb, quad_segs=32),
-        Point(+w / 2 - rb - pad, y0 + rb).buffer(rb, quad_segs=32),
-        Point(-w / 2 + rt + pad, y1 - rt).buffer(rt, quad_segs=32),
-        Point(+w / 2 - rt - pad, y1 - rt).buffer(rt, quad_segs=32),
+        Point(-w / 2 + rb, y0 + rb).buffer(rb, quad_segs=32),
+        Point(+w / 2 - rb, y0 + rb).buffer(rb, quad_segs=32),
+        Point(-w / 2 + rt, y1 - rt).buffer(rt, quad_segs=32),
+        Point(+w / 2 - rt, y1 - rt).buffer(rt, quad_segs=32),
     ]
     return unary_union(discs).convex_hull
 
@@ -119,11 +120,23 @@ def stub():
     Not a part and never printed: it stands where the aluminium stands so a
     render shows the cap in context rather than floating.
     """
-    r = P.EXT_DEPTH / 2.0
-    sect = unary_union([
-        Point(-P.EXT_WIDTH / 2 + r, r).buffer(r, quad_segs=32),
-        Point(+P.EXT_WIDTH / 2 - r, r).buffer(r, quad_segs=32),
-    ]).convex_hull
+    # Crowned, not flat. The foot face rises CROWN above the side edges on a
+    # circular arc, so the rib grooves have to follow it rather than sit on
+    # one plane -- cut at a constant y and only the middle few would show.
+    half = P.EXT_WIDTH / 2.0
+    arc_r = (half ** 2 + P.CROWN ** 2) / (2.0 * P.CROWN)
+    arc_cy = P.EXT_DEPTH - arc_r
+
+    def crown_y(x):
+        return arc_cy + np.sqrt(max(arc_r ** 2 - x ** 2, 0.0))
+
+    r = P.EDGE_DEPTH / 2.0
+    xs = np.linspace(-half, half, 121)
+    sect = unary_union(
+        [Point(-half + r, r).buffer(r, quad_segs=32),
+         Point(+half - r, r).buffer(r, quad_segs=32)]
+        + [Point(x, crown_y(x)).buffer(1e-6) for x in xs]
+    ).convex_hull
     body = trimesh.creation.extrude_polygon(sect, STUB_LEN)
     body.apply_translation([0, 0, -STUB_LEN])
 
@@ -132,7 +145,7 @@ def stub():
     for i in range(n + 1):
         x = -(n * RIB_PITCH) / 2.0 + i * RIB_PITCH
         g = trimesh.creation.cylinder(radius=RIB_R, height=STUB_LEN + 2, sections=20)
-        g.apply_translation([x, P.EXT_DEPTH, -STUB_LEN / 2.0])
+        g.apply_translation([x, crown_y(x), -STUB_LEN / 2.0])
         cuts.append(g)
     for sx in (-1, 1):
         h = trimesh.creation.cylinder(radius=P.BOLT_D / 2.0, height=30.0, sections=40)
@@ -173,9 +186,11 @@ def run_checks(m):
     proud = (P.CAP_W - P.EXT_WIDTH) / 2.0
     check("cap is not noticeably proud of the extrusion", proud <= 0.5,
           f"{proud:.2f} mm a side")
-    check("depth is EXT_DEPTH + LIP_H",
-          abs((hi[1] - lo[1]) - (P.EXT_DEPTH + P.LIP_H)) < TOL,
+    check("depth is BACK_EXT + EXT_DEPTH + LIP_H",
+          abs((hi[1] - lo[1]) - (P.BACK_EXT + P.EXT_DEPTH + P.LIP_H)) < TOL,
           f"{hi[1] - lo[1]:.2f} mm")
+    check("cap reaches behind the extrusion by no more than 1 mm",
+          P.BACK_EXT <= 1.0, f"{P.BACK_EXT:.2f} mm")
     check("length along the axis is CAP_L", abs((hi[2] - lo[2]) - P.CAP_L) < TOL,
           f"{hi[2] - lo[2]:.2f} mm")
     check("lip stands LIP_H proud of the ribbed face",
@@ -195,8 +210,8 @@ def run_checks(m):
           f"{P.CBORE_D:.1f} > {P.HEAD_D:.1f} mm")
 
     # --- the counterbore has to live inside EXT_DEPTH, which is tight -------
-    wall_back = P.BOSS_Y - P.CBORE_D / 2.0
-    wall_front = P.EXT_DEPTH - P.BOSS_Y - P.CBORE_D / 2.0
+    wall_back = P.BOSS_Y + P.BACK_EXT - P.CBORE_D / 2.0
+    wall_front = P.EXT_DEPTH + P.LIP_H - P.BOSS_Y - P.CBORE_D / 2.0
     check("wall behind the counterbore, on paper", wall_back >= P.MIN_WALL,
           f"{wall_back:.2f} >= {P.MIN_WALL:.2f} mm")
     check("wall in front of the counterbore, on paper",

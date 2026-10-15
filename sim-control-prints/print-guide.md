@@ -9,8 +9,8 @@ commit to the set.
 | | |
 | --- | --- |
 | File | `stl/footrest-end-cap.stl` |
-| Size | 50.8 × 37.0 × 13.0 mm |
-| Volume | 22.8 cm³ solid; expect 15–18 g each at the settings below |
+| Size | 52.0 × 40.4 × 13.0 mm |
+| Volume | 25.7 cm³ solid; expect 17–20 g each at the settings below |
 | Quantity | **4** — two ends, two pedals. One STL does all four. |
 
 The same part serves the top and the bottom of a foot rest, and the left and
@@ -36,7 +36,7 @@ up and the counterbores open at the top.
 
 That orientation is chosen, not incidental:
 
-- A 50.8 × 37 mm first layer, so nothing needs a brim.
+- A 52 × 40.4 mm first layer, so nothing needs a brim.
 - **No supports anywhere.** The only overhang is the 1 mm chamfer round the
   mating face, which is 45°. The counterbore is a hole that gets *wider* as
   it rises, so its step is an upward-facing ledge, not a ceiling.
@@ -68,19 +68,14 @@ chamfer in the slicer.
 
 ## Before you print
 
-Two numbers in `params.py` are still provisional, both marked as such:
+Width (52 mm) and depth (15 mm) are measured. Two numbers are not:
 
-- **`EXT_DEPTH` (12.0 mm)** — the extrusion's front-to-back thickness. Taken
-  from a photograph, not a caliper. If this is wrong the cap will not sit
-  flush with the back of the extrusion, and the walls round the counterbores
-  change with it.
-- **`BOSS_Y` (6.0 mm)** — assumes the tapped boss is centred in that
-  thickness. **If this is wrong the cap will not bolt on at all**, so it is
-  the one worth a second look.
-
-`EXT_WIDTH` (50.0 mm) is derived from the photograph too, but it matters
-least: the cap is already 0.4 mm proud of it on each side, because the
-counterbores need the edge distance.
+- **`BOSS_Y` (5.5 mm)** — how far the bolt centres sit from the flat back.
+  **If this is wrong the cap will not bolt on at all**, so it is the one to
+  check. A depth gauge from the back face to the hole does it.
+- **`CROWN` (4.0 mm)** — how much higher the middle of the foot face is than
+  the side edges. It only reaches the part through `BOSS_Y`, so a millimetre
+  either way is survivable.
 
 Change the numbers in `params.py`, run `python3 build.py`, and the STL and
 every render regenerate.
@@ -90,6 +85,7 @@ every render regenerate.
 - **The bottom cap and the base plate.** A 25 mm lip at the lower end of the
   foot rest sweeps through an arc as the pedal moves. Check it clears the
   base plate and the linkage at full travel before printing the other three.
-- **The back of the cap and the pedal arm.** The cap is flush with the back
-  of the extrusion, so it should miss the arm entirely — but the arm is close
-  there, and the photograph does not settle it.
+- **The back of the cap and the pedal arm.** The cap reaches 0.4 mm *behind*
+  the extrusion's back face, to keep material behind the bolt heads. That is
+  little enough to ignore unless the arm is hard up against the end of the
+  extrusion — worth a glance when the first one goes on.

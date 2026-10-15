@@ -47,17 +47,21 @@ bolts to, so they are recorded here rather than buried in code.
 | | |
 | --- | --- |
 | Mounting face | the **end face** of the ribbed foot rest extrusion |
-| Bosses | 2, blind tapped, one in each corner lobe |
+| Bosses | 2, tapped, one in each corner lobe |
 | Hole spacing | **39 mm ± 0.5** (measured) |
 | Thread | **M5** |
-| Extrusion width | **≈50 mm** (derived: end face spans 1.283 × the 39 mm hole pitch) |
-| Boss inset | **≈5.5 mm** from each outer edge |
-| Bolts on hand | **M5 × 16 mm** |
+| Extrusion width | **52 mm** (measured) |
+| Extrusion depth | **15 mm** (measured, at the deepest point) |
+| Foot face | **crowned across the width**, not flat |
+| Crown height | **≈4 mm** (PROVISIONAL) |
+| Boss centre, from the back | **≈5.5 mm** (PROVISIONAL, derived from the crown) |
+| Bolts on hand | **M5 × 16 mm**, socket cap head |
 
-Derived figures are marked as such. The width and inset come from pixel
-measurement of a photograph scaled against the known 39 mm pitch, not from
-calipers — good to about a millimetre, and worth confirming before a final
-print.
+The crown is the thing the photograph hides. The foot face rises on a gentle
+arc from the side edges to the middle, so "15 mm deep" is the depth at the
+crown and the edges are shallower. Tracking the line of rib ends across the
+end face gave 28 px of noise on a 740 px chord — enough to confirm the curve
+exists, nowhere near enough to size it.
 
 **The 16 mm bolt is the real constraint.** M5 into aluminium wants 8–10 mm of
 thread engagement, which leaves only 6–8 mm of part thickness above the boss
@@ -66,8 +70,10 @@ is a hardware-store item and removes the problem entirely.
 
 ### Still to confirm
 
+- **Boss centre to the flat back.** The critical one. Everything else can be
+  a millimetre out and the cap still fits.
+- Crown height, if it is easy to get at.
 - Tapped depth of the bosses — sets how much of a 16 mm bolt is usable.
-- Extrusion width and boss inset, by caliper rather than by photograph.
 - Whether both ends of the extrusion carry the same boss pattern.
 
 ## How it works
@@ -80,18 +86,28 @@ is the whole of it.
 
     mount    2 x M5 at 39 mm, counterbored 9.2 mm
     bolt     16 mm = 7 grip + 9 engagement
-    cap      50.8 x 37.0 x 13.0 mm, 22.8 cm3, print 4x
-    lip      25 mm proud of the ribbed face
+    cap      52.0 x 40.4 x 13.0 mm, 25.7 cm3, print 4x
+    lip      25 mm proud of the crown
 
-**The outer face is deliberately not chamfered.** The boss sits 6 mm from the
-back of a 12 mm extrusion, so a 9.2 mm counterbore leaves 1.4 mm of wall
-beside a bolt head. A 1 mm chamfer on that face took it to 0.4 mm — less than
-one perimeter — and three separate arithmetic checks said pass, because
-arithmetic does not know about chamfers. The check that found it measures the
-mesh instead, and it then found a second thin wall nobody had thought to look
-for: the counterbores are 5.5 mm from the side edges, so they only had 0.9 mm
-of material outboard. The cap is now 50.8 mm rather than 50 mm wide for that
-reason alone, which leaves it 0.4 mm proud of the extrusion on each side.
+**The crown turns out to change almost nothing.** The lip is a full-width
+wall standing 25 mm above the highest point of the face, so the cap is solid
+from the back of the extrusion all the way up, and the curve is interior to
+it — there is no surface of the part that follows the arc. What the crown
+does change is where the bosses sit: it pulls them to about 5.5 mm from the
+back rather than the 7.5 mm a flat 15 mm bar would give, and that is the one
+number the part cannot be wrong about.
+
+**The outer face is deliberately not chamfered**, and the cap reaches 0.4 mm
+behind the extrusion. Both are the counterbore's doing. With the boss 5.5 mm
+from the back, a 9.2 mm bore leaves 0.9 mm of wall behind a bolt head; a 1 mm
+chamfer on the outer face would have taken it to nothing. Three separate
+arithmetic checks called the original version fine, because arithmetic does
+not know about chamfers. Replacing them with one that samples the mesh all
+round each counterbore caught it, and immediately caught a second thin wall
+nobody had thought to look for — the bores sit 5.5 mm from the side edges and
+had 0.9 mm of material outboard. `CAP_W` and `BACK_EXT` are both derived from
+that clearance now, which is why they came back to 52.0 mm and 0.4 mm on
+their own when the real width arrived.
 
 The outer body is built as the convex hull of four stacked outlines rather
 than by chamfering with booleans. The outline is convex, so the hull *is* the
@@ -113,7 +129,7 @@ reaches for a graph. `requirements.txt` says so and says why.
 ```bash
 cd sim-control-prints
 python3 -m pip install -r requirements.txt
-python3 build.py          # 26 checks, then the STL and six renders
+python3 build.py          # 28 checks, then the STL and six renders
 ```
 
 It will not write files if a check fails, and the exit code is non-zero.
@@ -121,9 +137,11 @@ It will not write files if a check fails, and the exit code is non-zero.
 
 ## Open questions
 
-- **`EXT_DEPTH` and `BOSS_Y` are still guesses.** 12.0 mm and 6.0 mm, from a
-  photograph. `BOSS_Y` is the dangerous one: if the tapped boss is not
-  centred in the thickness, the cap does not bolt on at all.
+- **`BOSS_Y` is still a guess**, 5.5 mm, derived from an unmeasured crown.
+  It is the dangerous one: if the tapped boss is not centred in the corner
+  lobe the cap does not bolt on at all.
+- **`CROWN` is still a guess**, 4.0 mm. It only reaches the part through
+  `BOSS_Y`, `EDGE_DEPTH` and the render stub.
 - **Does the bottom cap clear the base plate?** A 25 mm lip at the lower end
   swings through an arc as the pedal moves. Unknown until one is held
   against the hardware.
