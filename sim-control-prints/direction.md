@@ -55,7 +55,7 @@ bolts to, so they are recorded here rather than buried in code.
 | Foot face | **crowned across the width**, not flat |
 | Crown height | **≈4 mm** (PROVISIONAL) |
 | Boss centre, from the back | **≈5.5 mm** (PROVISIONAL, derived from the crown) |
-| Bolts on hand | **M5 × 16 mm**, socket cap head |
+| Bolts on hand | **M5 × 16 mm**, **domed** head, 10 mm across (measured) |
 
 The crown is the thing the photograph hides. The foot face rises on a gentle
 arc from the side edges to the middle, so "15 mm deep" is the depth at the
@@ -84,9 +84,9 @@ M5 × 16 bolt wants 9 mm of thread in the aluminium, leaving 7 mm of grip,
 and a socket cap head is 5 mm tall and sits 1 mm below the surface. 7 + 5 + 1
 is the whole of it.
 
-    mount    2 x M5 at 39 mm, counterbored 9.2 mm
-    bolt     16 mm = 7 grip + 9 engagement
-    cap      52.0 x 40.4 x 13.0 mm, 25.7 cm3, print 4x
+    mount    2 x M5 at 39 mm, 11.0 mm pocket, open at the back
+    bolt     16 mm = 7 grip + 9 engagement, 10 mm domed head
+    cap      52.6 x 40.0 x 13.0 mm, 25.3 cm3, print 4x
     lip      25 mm proud of the crown
 
 **The crown turns out to change almost nothing.** The lip is a full-width
@@ -97,17 +97,27 @@ does change is where the bosses sit: it pulls them to about 5.5 mm from the
 back rather than the 7.5 mm a flat 15 mm bar would give, and that is the one
 number the part cannot be wrong about.
 
-**The outer face is deliberately not chamfered**, and the cap reaches 0.4 mm
-behind the extrusion. Both are the counterbore's doing. With the boss 5.5 mm
-from the back, a 9.2 mm bore leaves 0.9 mm of wall behind a bolt head; a 1 mm
-chamfer on the outer face would have taken it to nothing. Three separate
-arithmetic checks called the original version fine, because arithmetic does
-not know about chamfers. Replacing them with one that samples the mesh all
-round each counterbore caught it, and immediately caught a second thin wall
-nobody had thought to look for — the bores sit 5.5 mm from the side edges and
-had 0.9 mm of material outboard. `CAP_W` and `BACK_EXT` are both derived from
-that clearance now, which is why they came back to 52.0 mm and 0.4 mm on
-their own when the real width arrived.
+**The bolt pocket is open at the back, on purpose.** The head is domed and
+10 mm across, which an 11 mm pocket swallows — but the bosses are only 5.5 mm
+from the flat back, so a closed bore would have left 0 mm of material behind
+it. The alternatives were to push the whole cap behind the extrusion, into
+the pedal arm, where nothing has been measured, or to drop the counterbore
+and let the heads stand proud.
+
+Opening it costs nothing real, and that is checkable rather than asserted.
+The head is 5.0 mm in radius and the back face is 5.5 mm from the bolt axis,
+so **the head itself never reaches the back** — only clearance air is being
+let out. The ring it bears on at the bottom of the pocket is complete, and
+`build.py` samples it to prove so. `OPEN_BACK` is derived, so a real `BOSS_Y`
+of 6.7 mm or more closes the bore again with nothing else changing.
+
+**The outer face is deliberately not chamfered**, which is the same
+constraint seen earlier. Three arithmetic checks once called a version fine
+that had 0.4 mm of wall beside a head, because arithmetic does not know about
+chamfers. Replacing them with checks that sample the mesh caught it, and then
+caught a second thin wall nobody had thought to look for — the bores sit near
+the side edges too. `CAP_W` is derived from that clearance, which is why it
+sits at 52.6 mm rather than the extrusion's 52.
 
 The outer body is built as the convex hull of four stacked outlines rather
 than by chamfering with booleans. The outline is convex, so the hull *is* the
@@ -129,7 +139,7 @@ reaches for a graph. `requirements.txt` says so and says why.
 ```bash
 cd sim-control-prints
 python3 -m pip install -r requirements.txt
-python3 build.py          # 28 checks, then the STL and six renders
+python3 build.py          # 30 checks, then the STL and six renders
 ```
 
 It will not write files if a check fails, and the exit code is non-zero.
@@ -142,6 +152,10 @@ It will not write files if a check fails, and the exit code is non-zero.
   lobe the cap does not bolt on at all.
 - **`CROWN` is still a guess**, 4.0 mm. It only reaches the part through
   `BOSS_Y`, `EDGE_DEPTH` and the render stub.
+- **`HEAD_H` is assumed at 5.0 mm.** The photo puts the dome nearer 4.7.
+  Overstating it only sinks the head deeper, so it is not worth chasing.
+- **The open back is untested in the hand.** It should be invisible once
+  bolted, since the extrusion is behind it, but nobody has seen one yet.
 - **Does the bottom cap clear the base plate?** A 25 mm lip at the lower end
   swings through an arc as the pedal moves. Unknown until one is held
   against the hardware.

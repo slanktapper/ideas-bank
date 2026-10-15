@@ -9,8 +9,8 @@ commit to the set.
 | | |
 | --- | --- |
 | File | `stl/footrest-end-cap.stl` |
-| Size | 52.0 × 40.4 × 13.0 mm |
-| Volume | 25.7 cm³ solid; expect 17–20 g each at the settings below |
+| Size | 52.6 × 40.0 × 13.0 mm |
+| Volume | 25.3 cm³ solid; expect 17–20 g each at the settings below |
 | Quantity | **4** — two ends, two pedals. One STL does all four. |
 
 The same part serves the top and the bottom of a foot rest, and the left and
@@ -36,16 +36,19 @@ up and the counterbores open at the top.
 
 That orientation is chosen, not incidental:
 
-- A 52 × 40.4 mm first layer, so nothing needs a brim.
+- A 52.6 × 40 mm first layer, so nothing needs a brim.
 - **No supports anywhere.** The only overhang is the 1 mm chamfer round the
   mating face, which is 45°. The counterbore is a hole that gets *wider* as
   it rises, so its step is an upward-facing ledge, not a ceiling.
 - The mating face comes off the smooth bed flat, which is what it has to be.
+- The two bolt pockets are **open at the back edge** of the cap. That is
+  deliberate, not a modelling slip — see `direction.md`. They print as open
+  slots and need nothing special.
 
 | | |
 | --- | --- |
 | Nozzle / layer | 0.4 mm / 0.2 mm |
-| Walls | **4** — the wall beside each counterbore is only 1.4 mm, so it wants to be solid perimeter rather than infill |
+| Walls | **4** — the material beside each bolt pocket is only 1.3 mm, so it wants to be solid perimeter rather than infill |
 | Infill | 25 %, gyroid |
 | Supports | none |
 | Brim | none |
@@ -62,7 +65,8 @@ chamfer in the slicer.
    boss is tapped shallower than 9 mm the bolt will jam before it clamps —
    tell me and I will raise `GRIP` to suit.
 2. Offer the cap up with the lip pointing **away from the extrusion**, on the
-   ribbed side.
+   ribbed side. The open side of the bolt pockets faces the back, where the
+   extrusion closes them off.
 3. Nip both bolts up finger-tight, check the cap is square to the face, then
    tighten gently. This is plastic: snug, not torqued.
 

@@ -58,7 +58,7 @@ def profile(pad=0.0):
     below relies on it.
     """
     w = P.CAP_W + 2 * pad
-    y0 = -P.BACK_EXT - pad
+    y0 = -pad
     y1 = P.EXT_DEPTH + P.LIP_H + pad
     rb, rt = P.R_BACK + pad, P.R_TIP + pad
     discs = [
@@ -107,6 +107,19 @@ def bolt_holes(mesh):
                                        height=cb_h, sections=64)
         cb.apply_translation([x, P.BOSS_Y, P.GRIP + cb_h / 2.0])
         cuts.append(cb)
+
+        if P.OPEN_BACK:
+            # Run the pocket out through the back face instead of leaving a
+            # skin of material no slicer would print. The head is HEAD_D/2
+            # in radius and the back face is BOSS_Y away, so the head itself
+            # stops short of it -- only clearance air is being let out, and
+            # the bearing ring it sits on is untouched.
+            depth = P.BOSS_Y + 5.0
+            slot = trimesh.creation.box(
+                extents=[P.CBORE_D, depth, cb_h])
+            slot.apply_translation(
+                [x, P.BOSS_Y - depth / 2.0, P.GRIP + cb_h / 2.0])
+            cuts.append(slot)
     return trimesh.boolean.difference([mesh] + cuts, engine="manifold")
 
 
@@ -163,10 +176,17 @@ def bolt():
                                           height=P.BOLT_LEN, sections=40)
         shank.apply_translation([x, P.BOSS_Y, P.CAP_L - P.HEAD_SINK - P.HEAD_H
                                  - P.BOLT_LEN / 2.0])
-        head = trimesh.creation.cylinder(radius=P.HEAD_D / 2.0,
-                                         height=P.HEAD_H, sections=40)
-        head.apply_translation([x, P.BOSS_Y, P.CAP_L - P.HEAD_SINK - P.HEAD_H / 2.0])
-        parts += [shank, head]
+        # A domed head, since that is what it is. The spherical cap through
+        # base radius HEAD_D/2 and height HEAD_H has sphere radius
+        # (r^2 + h^2) / 2h, which at 5 and 5 comes out a hemisphere.
+        r, h = P.HEAD_D / 2.0, P.HEAD_H
+        sph_r = (r ** 2 + h ** 2) / (2.0 * h)
+        dome = trimesh.creation.icosphere(subdivisions=3, radius=sph_r)
+        dome.apply_translation([0, 0, h - sph_r])
+        dome = trimesh.intersections.slice_mesh_plane(
+            dome, plane_normal=[0, 0, 1], plane_origin=[0, 0, 0], cap=True)
+        dome.apply_translation([x, P.BOSS_Y, P.CAP_L - P.HEAD_SINK - h])
+        parts += [shank, dome]
     return trimesh.util.concatenate(parts)
 
 
@@ -186,11 +206,9 @@ def run_checks(m):
     proud = (P.CAP_W - P.EXT_WIDTH) / 2.0
     check("cap is not noticeably proud of the extrusion", proud <= 0.5,
           f"{proud:.2f} mm a side")
-    check("depth is BACK_EXT + EXT_DEPTH + LIP_H",
-          abs((hi[1] - lo[1]) - (P.BACK_EXT + P.EXT_DEPTH + P.LIP_H)) < TOL,
+    check("depth is EXT_DEPTH + LIP_H",
+          abs((hi[1] - lo[1]) - (P.EXT_DEPTH + P.LIP_H)) < TOL,
           f"{hi[1] - lo[1]:.2f} mm")
-    check("cap reaches behind the extrusion by no more than 1 mm",
-          P.BACK_EXT <= 1.0, f"{P.BACK_EXT:.2f} mm")
     check("length along the axis is CAP_L", abs((hi[2] - lo[2]) - P.CAP_L) < TOL,
           f"{hi[2] - lo[2]:.2f} mm")
     check("lip stands LIP_H proud of the ribbed face",
@@ -210,10 +228,20 @@ def run_checks(m):
           f"{P.CBORE_D:.1f} > {P.HEAD_D:.1f} mm")
 
     # --- the counterbore has to live inside EXT_DEPTH, which is tight -------
-    wall_back = P.BOSS_Y + P.BACK_EXT - P.CBORE_D / 2.0
     wall_front = P.EXT_DEPTH + P.LIP_H - P.BOSS_Y - P.CBORE_D / 2.0
-    check("wall behind the counterbore, on paper", wall_back >= P.MIN_WALL,
-          f"{wall_back:.2f} >= {P.MIN_WALL:.2f} mm")
+    if P.OPEN_BACK:
+        # The bore is open at the back on purpose. What has to be true is
+        # that the head never reaches the back face -- otherwise it is not a
+        # pocket with a side missing, it is a head hanging out of the part.
+        head_clear = P.BOSS_Y - P.HEAD_D / 2.0
+        check("counterbore is open at the back, deliberately", True,
+              f"{P.CBORE_WALL_BACK:.2f} mm of wall was unprintable")
+        check("the head itself still stops short of the back face",
+              head_clear > 0.0, f"{head_clear:.2f} mm to spare")
+    else:
+        check("wall behind the counterbore, on paper",
+              P.CBORE_WALL_BACK >= P.MIN_WALL,
+              f"{P.CBORE_WALL_BACK:.2f} >= {P.MIN_WALL:.2f} mm")
     check("wall in front of the counterbore, on paper",
           wall_front >= P.MIN_WALL,
           f"{wall_front:.2f} >= {P.MIN_WALL:.2f} mm")
@@ -249,12 +277,45 @@ def run_checks(m):
     # pass. This one asks the mesh: is there MIN_WALL of material all the way
     # round each counterbore, at every height it exists, including the last
     # layer. Measure the part, not the plan.
+    rad = P.CBORE_D / 2 + P.MIN_WALL
     wall_zs = np.linspace(P.GRIP + 0.3, P.CAP_L - 0.05, 12)
-    shell = np.vstack([ring(P.CBORE_D / 2 + P.MIN_WALL, z) for z in wall_zs])
-    inside = m.contains(shell)
+    shell = np.vstack([ring(rad, z) for z in wall_zs])
+
+    # Which samples are allowed to be air. Not "anything behind the back
+    # face" -- that would also forgive the pocket eating sideways into the
+    # cap. Only samples inside the slot that was cut on purpose: behind the
+    # bolt axis, and no further out than the bore is wide.
+    dx = np.abs(np.abs(shell[:, 0]) - P.HOLE_PITCH / 2)
+    dy = shell[:, 1] - P.BOSS_Y
+    opened = (dy < 0) & (dx <= P.CBORE_D / 2 + 1e-6) if P.OPEN_BACK \
+        else np.zeros(len(shell), bool)
+    ok = m.contains(shell) | opened
     check("measured: MIN_WALL of material all round every counterbore",
-          inside.all(),
-          f"{inside.sum()}/{len(inside)} sample points in material")
+          ok.all(),
+          f"{ok.sum()}/{len(ok)} in material, {opened.sum()} in the opening")
+
+    # And the slot stays a slot: material still stands immediately either
+    # side of it, all the way down the open back. Probed just outboard of
+    # the bore rather than out at `rad`, which on the outboard side lands
+    # within a hair of the cap's own edge and tests the sample point rather
+    # than the part.
+    flanks = np.array([[sx * P.HOLE_PITCH / 2 + ox * (P.CBORE_D / 2 + 0.3), y, z]
+                       for sx in (-1, 1) for ox in (-1, 1)
+                       for y in (1.5, 2.5, 3.5, 4.5)
+                       for z in wall_zs])
+    flank_ok = m.contains(flanks)
+    check("measured: the slot does not break out of the cap's sides",
+          flank_ok.all(), f"{flank_ok.sum()}/{len(flank_ok)} beside the slots")
+    edge = P.CAP_W / 2 - P.HOLE_PITCH / 2 - P.CBORE_D / 2
+    check("material outboard of each bore, to the cap's edge",
+          edge >= P.MIN_WALL, f"{edge:.2f} >= {P.MIN_WALL:.2f} mm")
+
+    # The whole case for opening the back is that the head still has a
+    # complete ring to bear on. Check it rather than assert it.
+    bearing = ring(P.HEAD_D / 2 - 0.2, P.GRIP - 0.3)
+    seated = m.contains(bearing)
+    check("measured: the head bears on a complete ring of material",
+          seated.all(), f"{seated.sum()}/{len(seated)} of the bearing ring")
 
     # --- the mating face is flat where it meets aluminium -------------------
     xs = np.linspace(-P.EXT_WIDTH / 2 + 3, P.EXT_WIDTH / 2 - 3, 9)

@@ -52,8 +52,16 @@ BOSS_Y     = EDGE_DEPTH / 2.0
 
 BOLT_D     = 5.0         # M5
 BOLT_LEN   = 16.0        # what Rob has on the shelf
-HEAD_D     = 8.5         # ISO 4762 socket cap head, M5
-HEAD_H     = 5.0
+HEAD_D     = 10.0        # measured with calipers. The head is DOMED -- a
+                         # button or pan head, not the flat-topped socket cap
+                         # this was first drawn for. Measured off a photo
+                         # against a tape it reads nearer 9 mm, but a caliper
+                         # beats a blurred photograph and a clearance pocket
+                         # is the right place to err large.
+HEAD_H     = 5.0         # PROVISIONAL. The photo puts the dome at about
+                         # 4.7 mm. Overstating it is safe: the counterbore
+                         # floor is fixed at GRIP, so a shorter head simply
+                         # sits deeper and the bolt still gets its 7 and 9.
 ENGAGE_MIN = 1.5 * BOLT_D    # 7.5 mm, the usual minimum into aluminium
 
 GRIP       = 7.0         # bolt length spent inside the cap; the rest threads
@@ -61,9 +69,14 @@ GRIP       = 7.0         # bolt length spent inside the cap; the rest threads
 HEAD_SINK  = 1.0         # how far below the outer face the head finishes
 
 CLEAR_D    = BOLT_D + 0.6    # 5.6, a free-fit hole for an M5 shank
-CBORE_D    = HEAD_D + 0.7    # 9.2. Deliberately tight: every extra tenth here
-                             # comes straight off the wall beside the head,
-                             # which EXT_DEPTH has very little of to spare.
+CBORE_D    = HEAD_D + 1.0    # 11.0. Wider clearance than a cap head would
+                             # get, for two reasons: a domed head has to drop
+                             # in freely rather than slide down a matching
+                             # bore, and FDM prints holes undersize. The back
+                             # of the bore is open anyway (see OPEN_BACK), so
+                             # the tenths no longer come off a wall that
+                             # cannot afford them -- only off CAP_W, which
+                             # has room.
 
 # --- the cap ----------------------------------------------------------------
 
@@ -85,15 +98,28 @@ CAP_W      = max(EXT_WIDTH,
                          # it means this re-solves itself when EXT_WIDTH is
                          # finally measured.
 
-BACK_EXT   = max(0.0, MIN_WALL + WALL_SLACK + CBORE_D / 2.0 - BOSS_Y)
-                         # how far the cap reaches behind the extrusion's
-                         # back face. Normally zero. The crown pulls the
-                         # bosses closer to the back -- BOSS_Y is 5.5 rather
-                         # than 7.5 -- which leaves a 9.2 mm counterbore only
-                         # 0.9 mm of wall behind it. Reaching back by the
-                         # shortfall fixes that and nothing else; it is
-                         # derived, so it returns to zero the moment a real
-                         # BOSS_Y says it can.
+CBORE_WALL_BACK = BOSS_Y - CBORE_D / 2.0
+OPEN_BACK  = CBORE_WALL_BACK < MIN_WALL
+                         # Whether the counterbore is left open at the back.
+                         #
+                         # With BOSS_Y at 5.5 and a 10 mm head, a closed bore
+                         # leaves 0.15 mm of material behind it -- a third of
+                         # an extrusion width, which no slicer will produce.
+                         # The alternatives were to push the cap 1.15 mm
+                         # behind the extrusion, where the pedal arm is and
+                         # nothing has been measured, or to drop the
+                         # counterbore and let the heads stand proud.
+                         #
+                         # Opening the pocket costs nothing real. The head is
+                         # 5.0 mm in radius and the back face is BOSS_Y away,
+                         # so the head itself never reaches it: the only
+                         # thing removed is clearance air and that 0.15 mm
+                         # skin. The head's full bearing ring on the
+                         # counterbore floor survives, and build.py checks
+                         # that rather than assuming it.
+                         #
+                         # Derived, so a real BOSS_Y of 6.65 or more closes
+                         # the bore again with no other change.
 
 R_BACK     = 2.0         # Corner radius at the back edge of the XY profile.
                          # The aluminium's own lobes are rounder than this --
