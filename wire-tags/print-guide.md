@@ -58,7 +58,13 @@ Each tag is 1.7–2.1 cm³ — a few minutes and a couple of grams.
 
 ## Print the fit coupon first
 
-`fit-coupon.stl` is one part in one colour, 82 × 18 mm, about ten minutes.
+`fit-coupon-<d>mm.stl` is one part in one colour, about 80 × 18 mm and ten
+minutes. **Print it at the size you are about to use** — the coupon answers
+for one nominal diameter, so build the one you need:
+
+```bash
+python3 build.py --coupon --diameter 3.5
+```
 
 It carries five clips at the nominal diameter **−0.4, −0.2, 0.0, +0.2, +0.4**,
 engraved on the top face beside each station, with the mouths alternating so

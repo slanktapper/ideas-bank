@@ -3,6 +3,7 @@
 
     python3 build.py                        # the starter set, the coupon, renders
     python3 build.py --label SCANNER --diameter 5.2
+    python3 build.py --coupon --diameter 3.5    # just a coupon, at that size
     python3 build.py --stl                  # STLs only
     python3 build.py --renders              # renders only
     python3 build.py --fast                 # half-res renders
@@ -66,16 +67,19 @@ def write(mesh: trimesh.Trimesh, name: str) -> None:
     print(f"  stl/{name}.stl  {len(mesh.faces):6d} faces  {mesh.volume:8.1f} mm3")
 
 
-def build_stls(labels) -> None:
-    print("tags")
+def build_stls(labels, coupon_d: float) -> None:
+    if labels:
+        print("tags")
     for label, d in labels:
         body, letters, p = T.build(d, label)
         n = slug(label, d)
         write(body, f"{n}-body")
         write(letters, f"{n}-text")
+    # The coupon is only worth printing at the size you are about to use, so
+    # it carries its diameter in the name and follows --diameter.
     print("fit coupon")
-    body, info = T.coupon(P.CABLE_D)
-    write(body, "fit-coupon")
+    body, info = T.coupon(coupon_d)
+    write(body, f"fit-coupon-{coupon_d:g}mm")
 
 
 # ------------------------------------------------------------------ renders
@@ -85,8 +89,8 @@ def _save(img, name: str) -> None:
     print(f"  renders/{name}")
 
 
-def r_tag(scale: float) -> None:
-    body, letters, p = T.build(P.CABLE_D, "USB-C")
+def r_tag(scale: float, label: str = "USB-C", d: float = None) -> None:
+    body, letters, p = T.build(P.CABLE_D if d is None else d, label)
     rod = cable_rod(p)
     parts = [{"mesh": body, "color": BODY}, {"mesh": letters, "color": TEXT},
              {"mesh": rod, "color": CABLE}]
@@ -186,8 +190,8 @@ def r_sizes(scale: float) -> None:
     _save(R.annotate(img, items, font_size=int(20 * scale)), "04-sizes.png")
 
 
-def r_coupon(scale: float) -> None:
-    body, info = T.coupon(P.CABLE_D)
+def r_coupon(scale: float, d: float = None) -> None:
+    body, info = T.coupon(P.CABLE_D if d is None else d)
     parts = [{"mesh": body, "color": BODY}]
     w, h = int(1500 * scale), int(620 * scale)
     lo, hi = R.bounds_of([body])
@@ -232,26 +236,34 @@ def main() -> int:
     ap.add_argument("--label", help="build one tag with this word on it")
     ap.add_argument("--diameter", type=float, default=P.CABLE_D,
                     help="cable diameter in mm (default %(default)s)")
+    ap.add_argument("--coupon", action="store_true",
+                    help="the fit coupon on its own, at --diameter")
     ap.add_argument("--stl", action="store_true", help="STLs only")
     ap.add_argument("--renders", action="store_true", help="renders only")
     ap.add_argument("--fast", action="store_true", help="half-resolution renders")
     args = ap.parse_args()
 
-    labels = [(args.label.upper(), args.diameter)] if args.label else P.STARTER
+    if args.coupon:
+        labels = []
+    elif args.label:
+        labels = [(args.label.upper(), args.diameter)]
+    else:
+        labels = P.STARTER
     do_stl = args.stl or not args.renders
     do_png = args.renders or not args.stl
     scale = 0.5 if args.fast else 1.0
 
     t0 = time.time()
     if do_stl:
-        build_stls(labels)
+        build_stls(labels, args.diameter)
     if do_png:
         print("renders")
-        r_tag(scale)
-        r_section(scale)
-        r_sizes(scale)
-        r_coupon(scale)
-        r_set(scale, labels)
+        r_coupon(scale, args.diameter)
+        if labels:
+            r_tag(scale, *labels[0][:1], labels[0][1])
+            r_section(scale)
+            r_sizes(scale)
+            r_set(scale, labels)
     print(f"done in {time.time() - t0:.1f}s")
     return 0
 
