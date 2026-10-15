@@ -156,7 +156,7 @@ reaches for a graph. `requirements.txt` says so and says why.
 ```bash
 cd sim-control-prints
 python3 -m pip install -r requirements.txt
-python3 build.py          # 39 checks, then two STLs and seven renders
+python3 build.py          # 38 checks, then two STLs and seven renders
 ```
 
 It will not write files if a check fails, and the exit code is non-zero.
