@@ -51,13 +51,18 @@ Nothing to build yet. The one runnable thing is the map fetch:
 
 ```bash
 cd smb-parts
-./fetch-maps.sh            # fetch any missing maps into maps/, then report dimensions
-./fetch-maps.sh --report   # dimensions of what is already on disk
+./fetch-maps.sh --check    # verify and measure every GIF in maps/ (the default)
+./fetch-maps.sh --fetch    # download the 32 main levels from ian-albert.com
 ```
 
-It is idempotent — a map already present is left alone — and it rejects anything
-that is not a real GIF, so a 404 page served as `mario-3-2.gif` is not quietly
-stored. It needs `ian-albert.com` to be reachable; see `maps-source.md`.
+`--check` is the one to run after dropping files into `maps/` by hand. It reads
+whatever GIFs are actually there rather than assuming a filename list, so it copes
+with the sub-area maps whose names are not known up front: it measures each one,
+ticks off the 32 main levels, lists anything else it found, and rejects files that
+are not really GIFs — a 404 page saved as `mario-3-2.gif` is caught, not counted.
+
+`--fetch` only knows the 32 main levels and needs `ian-albert.com` to be reachable;
+see `maps-source.md`. It is not the way to get the full set.
 
 ## Open questions
 

@@ -30,7 +30,19 @@ The two things here that are *not* guesses are facts about the game itself: SMB 
 
 Clear this warning once the maps are in hand and measured.
 
-## Inferred pattern
+## The set is bigger than 32 — about 50 files
+
+Rob downloaded the collection on 2026-10-15 MDT and reports **50 GIFs**, not 32. So
+the pattern below covers the *main levels only* and is not the whole set. The other
+~18 are presumably the sub-areas — the underground and underwater rooms reached by
+pipes, the cloud bonus areas, and whatever else the site maps separately — but their
+names and contents are unknown here until the files land. `./fetch-maps.sh --check`
+lists anything it does not recognise, which is how the real names get recorded.
+
+This is exactly what the warning above was for: the 32 was an inference from two
+URLs, and it was short by about 18.
+
+## Inferred pattern, main levels only
 
 ```
 https://ian-albert.com/games/super_mario_bros_maps/mario-<world>-<level>.gif
