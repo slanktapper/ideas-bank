@@ -5,8 +5,10 @@
 ## What it is
 
 Physical parts derived from the *Super Mario Bros.* (NES, 1985) level maps. The
-source is Ian Albert's stitched full-level maps — one image per level, covering all
-32 levels from World 1-1 to World 8-4. See `maps-source.md` for the URLs.
+source is Ian Albert's stitched full-level maps, all 50 files of which are now in
+`maps/`: the 32 main levels from World 1-1 to World 8-4, 13 maps of the rooms off
+them, and 5 whole-game wallpapers that are not level data. Measurements and the
+source URL are in `maps-source.md`.
 
 What gets *made* from them is not decided. This folder exists so the idea and its
 source are recorded; the form is the next conversation.
@@ -68,16 +70,16 @@ see `maps-source.md`. It is not the way to get the full set.
 
 - **What is a "part"?** The three candidates under Scope. This is the one question
   that blocks everything else.
-- **How the maps reach the repo.** This session's network policy denies
-  `ian-albert.com` (403 at the egress proxy; the host does not resolve for the fetch
-  tool either), so no map has been downloaded or measured. Routes: allow the domain
-  in the environment's network settings, or commit the files by hand.
-- **Real map dimensions are unknown.** SMB tiles are 16 × 16 px and a level is 15
-  tiles tall, but no figure here has been measured against an actual file — see the
-  warning in `maps-source.md`.
-- **Scale.** Tile-to-millimetre is the decision that sizes everything. A level is
-  roughly 200 tiles long, so the choice is between a wall-length piece and something
-  that fits a shelf.
+- **Scale.** Tile-to-millimetre is the decision that sizes everything, and it is now
+  a question with real numbers behind it. The playfield is **14 tiles tall** (224 px),
+  and levels run from 159.5 tiles (`4-3`) to 389.5 tiles (`8-1`). At 10 mm per tile
+  that is a 140 mm tall strip between 1.6 m and 3.9 m long; at 5 mm, 70 mm tall and
+  0.8–1.9 m. Either way the height fits the bed comfortably and the length is the
+  thing to decide.
+- **The 16 px grid does not divide the maps cleanly.** Only 6 of the 32 levels have a
+  width that is a multiple of 16; 20 are half a tile over and 6 are 1 or 6 px over.
+  Any slicing has to decide what happens to the leftover column rather than assume it
+  away. See `maps-source.md`.
 - **Material and colour.** From `filament.md` once the form is settled, not before.
   Worth knowing early: the SMB palette wants browns, reds, blues and greens, and the
   only green on the shelf is PLA Basic Mistletoe Green. Pipes are the obvious problem.
