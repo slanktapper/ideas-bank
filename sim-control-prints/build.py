@@ -549,6 +549,11 @@ def write_renders(m):
     shot("07-gauge.png", [{"mesh": gauge(), "color": (0.85, 0.55, 0.15)}],
          290, 50, margin=1.06)
 
+    # Imported here, not at the top: drawing.py imports this module back for
+    # profile(), and at module level that is a cycle.
+    import drawing
+    print(f"  {Path(drawing.draw()).name}")
+
     shot("06-side-elevation.png",
          [{"mesh": st, "color": GREY}, {"mesh": m, "color": PETG}],
          0, 0, margin=1.04, ortho=True, w=1100, h=1300)

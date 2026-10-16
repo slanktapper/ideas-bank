@@ -4,6 +4,10 @@
 and it settles the one dimension the cap cannot be wrong about. Only then
 print a cap; only after that fits, print the other three.
 
+`renders/08-drawing.png` is the dimensioned drawing — every size and
+diameter on one sheet, with a table of what each parameter does and which
+ones are still assumptions.
+
 ## First: the alignment gauge
 
 | | |

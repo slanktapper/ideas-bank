@@ -123,6 +123,18 @@ The outer body is built as the convex hull of four stacked outlines rather
 than by chamfering with booleans. The outline is convex, so the hull *is* the
 chamfered prism, and it is manifold by construction.
 
+## The drawing
+
+`renders/08-drawing.png` is the dimensioned drawing: three orthographic
+views, every diameter called out, and a table of every parameter with where
+its value comes from — measured, provisional, derived, or free to taste.
+
+`drawing.py` generates it from `params.py` and from the same outline the STL
+is built from, so the drawing cannot drift away from the part. Change a
+number, re-run, and the STL and the drawing move together. It is projected
+rather than rendered: a dimension on a perspective render is wrong by a few
+percent, and this one is meant to be read off.
+
 ## The alignment gauge
 
 `stl/alignment-gauge.stl` is the cap's silhouette as a four-layer card —
@@ -156,7 +168,7 @@ reaches for a graph. `requirements.txt` says so and says why.
 ```bash
 cd sim-control-prints
 python3 -m pip install -r requirements.txt
-python3 build.py          # 38 checks, then two STLs and seven renders
+python3 build.py          # 38 checks, two STLs, seven renders, the drawing
 ```
 
 It will not write files if a check fails, and the exit code is non-zero.
