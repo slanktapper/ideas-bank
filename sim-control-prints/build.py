@@ -115,12 +115,22 @@ def bolt_holes(mesh):
             # stops short of it -- only clearance air is being let out, and
             # the bearing ring it sits on is untouched.
             depth = P.BOSS_Y + 5.0
-            slot = trimesh.creation.box(
-                extents=[P.CBORE_D, depth, cb_h])
+            slot = trimesh.creation.box(extents=[P.CBORE_D, depth, cb_h])
             slot.apply_translation(
                 [x, P.BOSS_Y - depth / 2.0, P.GRIP + cb_h / 2.0])
             cuts.append(slot)
-    return trimesh.boolean.difference([mesh] + cuts, engine="manifold")
+
+    # Union the cutters before subtracting them, rather than handing six
+    # overlapping solids to one difference. Three of them share the z = GRIP
+    # plane, and resolving that inside a single difference left two pairs of
+    # exactly coincident vertices on the clearance-hole circle. The mesh
+    # still reported watertight, one body, Euler -2 -- because the duplicates
+    # kept the face indices apart -- and then collapsed into a non-manifold
+    # pinch the moment it was written to STL and read back, which is the
+    # version a slicer sees. Unioning first makes manifold3d resolve that
+    # degeneracy once, on its own, and the exported file comes back clean.
+    cutter = trimesh.boolean.union(cuts, engine="manifold")
+    return trimesh.boolean.difference([mesh, cutter], engine="manifold")
 
 
 def cap():
@@ -230,7 +240,8 @@ def gauge():
         eng.apply_translation([0, 0, P.GAUGE_T - P.GAUGE_ENGRAVE])
         cuts.append(eng)
 
-    return trimesh.boolean.difference([plate] + cuts, engine="manifold")
+    cutter = trimesh.boolean.union(cuts, engine="manifold")
+    return trimesh.boolean.difference([plate, cutter], engine="manifold")
 
 
 def bolt():
@@ -559,6 +570,33 @@ def write_renders(m):
          0, 0, margin=1.04, ortho=True, w=1100, h=1300)
 
 
+def verify_exports(files):
+    """Read each STL back off disk and check the file, not the mesh.
+
+    This exists because the checks above all passed on a cap whose STL was
+    not watertight. An in-memory mesh can carry two coincident vertices and
+    still report watertight, one body, the right Euler number -- the face
+    indices keep them apart. Write it out and read it back and they merge
+    into a non-manifold pinch. The file is what the slicer opens, so the
+    file is what has to be checked.
+    """
+    print("\nexported files")
+    ok = True
+    for name, mem in files.items():
+        disk = trimesh.load(STL / name)
+        bodies = len(disk.split(only_watertight=False))
+        good = (disk.is_watertight and bodies == 1
+                and disk.euler_number == mem.euler_number
+                and abs(disk.volume - mem.volume) < 1e-3)
+        ok &= good
+        if not good:
+            FAILURES.append(f"export {name}")
+        print(f"  {'pass' if good else 'FAIL'}  {name}   watertight "
+              f"{disk.is_watertight}, {bodies} body, Euler "
+              f"{disk.euler_number} (mesh {mem.euler_number})")
+    return ok
+
+
 def main():
     print(f"cap  {P.EXT_WIDTH:.1f} x {P.EXT_DEPTH + P.LIP_H:.1f} x {P.CAP_L:.1f} mm"
           f"   lip {P.LIP_H:.0f} mm proud   M5 at {P.HOLE_PITCH:.1f} mm")
@@ -571,6 +609,9 @@ def main():
     m.export(STL / "footrest-end-cap.stl")
     g = gauge()
     g.export(STL / "alignment-gauge.stl")
+    if not verify_exports({"footrest-end-cap.stl": m, "alignment-gauge.stl": g}):
+        print("\nexported files failed verification -- do not print these")
+        return 1
     print(f"\nstl\n  footrest-end-cap.stl   {m.volume / 1000:.2f} cm3, print 4x")
     print(f"  alignment-gauge.stl    {g.volume / 1000:.2f} cm3, "
           f"{P.GAUGE_LAYERS} layers, print 1 first")

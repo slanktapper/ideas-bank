@@ -168,10 +168,21 @@ reaches for a graph. `requirements.txt` says so and says why.
 ```bash
 cd sim-control-prints
 python3 -m pip install -r requirements.txt
-python3 build.py          # 38 checks, two STLs, seven renders, the drawing
+python3 build.py          # 38 checks, two STLs (verified on disk),
+                          # seven renders and the drawing
 ```
 
 It will not write files if a check fails, and the exit code is non-zero.
+
+**The checks then read both STLs back off disk and check those too**, which
+is not belt and braces. Every check passed on a cap whose exported STL was
+not watertight: the mesh carried two coincident vertices on the
+clearance-hole circle, and the face indices kept them apart well enough to
+report watertight, one body, the right Euler number. Written out and read
+back they merged into a non-manifold pinch — and the file is what a slicer
+opens. The cause was handing six overlapping cutters, three of them sharing
+the `z = GRIP` plane, to a single boolean difference; unioning the cutters
+first resolves it. The gauge had the same fault and the same cure.
 `print-guide.md` is the one to read before printing.
 
 ## Open questions
