@@ -159,7 +159,8 @@ def draw():
     hx, hy = ox - half * SC, oy - P.BOSS_Y * SC
     d.line([(hx - P.CBORE_D / 2 * SC * 0.71, hy + P.CBORE_D / 2 * SC * 0.71),
             (170, 1118)], fill=DIMC, width=2)
-    d.text((170, 1110), f"\u2300 {P.CLEAR_D:.1f} through \u2014 M{P.BOLT_D:.0f} clearance",
+    d.text((170, 1110),
+           f"\u2300 {P.CLEAR_D:.1f} bolt hole, through \u2014 for M{P.BOLT_D:.0f}",
            font=F, fill=DIMC)
     d.text((170, 1146),
            f"\u2300 {P.CBORE_D:.1f} pocket \u00d7 {P.CAP_L - P.GRIP:.0f} deep, "
@@ -248,7 +249,7 @@ def draw():
         ("BOLT_LEN", P.BOLT_LEN, "hardware", "with the head, this sets CAP_L"),
         ("HEAD_D", P.HEAD_D, "measured", "domed head, across"),
         ("HEAD_H", P.HEAD_H, "provisional", "over-stating it is safe"),
-        ("CLEAR_D", P.CLEAR_D, "derived", "BOLT_D + 0.6"),
+        ("CLEAR_D", P.CLEAR_D, "choice", "THE BOLT HOLE \u2014 BOLT_D + 1.6"),
         ("CBORE_D", P.CBORE_D, "derived", "HEAD_D + 1.0; domes need the room"),
         ("GRIP", P.GRIP, "choice", "bolt inside the cap; the rest threads in"),
         ("LIP_H", P.LIP_H, "taste", "how hard a stop you want"),

@@ -68,7 +68,11 @@ GRIP       = 7.0         # bolt length spent inside the cap; the rest threads
                          # into the boss. 7 + 9 = 16, and 9 > 7.5.
 HEAD_SINK  = 1.0         # how far below the outer face the head finishes
 
-CLEAR_D    = BOLT_D + 0.6    # 5.6, a free-fit hole for an M5 shank
+CLEAR_D    = BOLT_D + 1.6    # 6.6 -- THE BOLT HOLE. Was BOLT_D + 0.6, a
+                             # normal free fit; opened by 1 mm on request.
+                             # The extra slop is not wasted: 0.8 mm of float
+                             # a side lets the cap find the bosses even if
+                             # BOSS_Y is a little out, which it may be.
 CBORE_D    = HEAD_D + 1.0    # 11.0. Wider clearance than a cap head would
                              # get, for two reasons: a domed head has to drop
                              # in freely rather than slide down a matching
