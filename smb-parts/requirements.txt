@@ -1,0 +1,6 @@
+-r ../3d-tools/requirements.txt
+
+manifold3d>=2.3        # the boolean engine. Every panel is a union of the
+                       # channel and one extruded body per NES colour, and
+                       # the hill in the 1-1 opening is a ring with four
+                       # holes in it -- trimesh's other engines choke.

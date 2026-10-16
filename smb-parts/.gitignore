@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+
+# the venv the build runs in; make it with
+#   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/

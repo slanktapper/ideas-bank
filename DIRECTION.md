@@ -25,7 +25,7 @@ one-line description. Add a row when you create a project.
 | cantstop | 3D-printed push-your-luck dice board game — octagonal wireframe board, stackable pieces | prototype |
 | cactus-pot | A printed pot and the cactus that stands in it, both parametric: a stone-textured pot with the name lettered on it, and a ribbed cactus whose spines print separately and press-fit in | prototype |
 | flattener | 3D-printed finger flattener — squeeze two levers, jaws close on 77 mm of finger | prototype |
-| smb-parts | Physical parts derived from the Super Mario Bros. level maps — what kind of part is not yet decided | idea |
+| smb-parts | A Mario frieze for a shelf edge: four printed panels clip over the board into a 900 mm rail, 25 mm tall, with pixel art cropped straight from the real level maps | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 
