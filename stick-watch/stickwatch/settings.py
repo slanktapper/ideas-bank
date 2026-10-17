@@ -310,9 +310,10 @@ class WidgetEditor(QWidget):
             self.spins[key] = s
             sform.addRow(title, s)
 
-        if wcfg.kind == KIND_RUDDER or (wcfg.kind == KIND_THROTTLE and wcfg.subkind == "heli"):
+        if wcfg.kind == KIND_RUDDER:
             spin("dot_mm", "Dot at centre", 2.0, 200.0, wcfg.dot_mm)
             spin("dot_max_mm", "Dot at full", 2.0, 300.0, wcfg.dot_max_mm)
+            spin("track_mm", "Track length", 10.0, 600.0, wcfg.track_mm, step=5.0)
         if wcfg.kind == KIND_JOYSTICK:
             b = QSpinBox()
             b.setRange(1, 12)
@@ -326,9 +327,8 @@ class WidgetEditor(QWidget):
         else:
             self.boxes = None
         if wcfg.kind == KIND_THROTTLE:
-            spin("bar_h_mm", "Track height", 10.0, 400.0, wcfg.bar_h_mm, step=5.0)
-            if wcfg.subkind != "heli":
-                spin("bar_w_mm", "Bar width", 5.0, 200.0, wcfg.bar_w_mm)
+            spin("bar_h_mm", "Bar height", 10.0, 400.0, wcfg.bar_h_mm, step=5.0)
+            spin("bar_w_mm", "Bar width", 5.0, 200.0, wcfg.bar_w_mm)
         form.addRow(self.size_box)
 
         self.sub_label.setVisible(wcfg.kind == KIND_THROTTLE)
@@ -345,8 +345,6 @@ class WidgetEditor(QWidget):
             return
         self.cfg.kind = self.kind.currentData()
         self.cfg.subkind = self.subkind.currentData() if self.cfg.kind == KIND_THROTTLE else ""
-        if self.cfg.kind == KIND_THROTTLE and self.cfg.subkind == "heli" and self.cfg.bar_h_mm < 100:
-            self.cfg.bar_h_mm = 110.0
         self.kind_changed.emit()
 
     def _emit(self) -> None:
@@ -360,6 +358,8 @@ class WidgetEditor(QWidget):
             self.cfg.boxes = self.boxes.value()
         if self.cfg.dot_max_mm < self.cfg.dot_mm:
             self.cfg.dot_max_mm = self.cfg.dot_mm
+        if self.cfg.track_mm < self.cfg.dot_max_mm:
+            self.cfg.track_mm = self.cfg.dot_max_mm
         self.changed.emit()
 
     def refresh_devices(self) -> None:

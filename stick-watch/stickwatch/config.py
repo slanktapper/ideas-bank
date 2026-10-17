@@ -129,14 +129,15 @@ class WidgetConfig:
     y: int = 40
     deadzone: float = 0.05          # fraction of full travel
 
-    # Rudder dot, and the travelling dot on the heli collective.
+    # The travelling dot on the rudder slider and the heli collective.
     dot_mm: float = 19.0
     dot_max_mm: float = 30.0
+    track_mm: float = 110.0         # rudder slider length, centre to centre
 
     # Joystick field.
     boxes: int = 4
     box_step_mm: float = 10.0       # centre to the edge of box 1, then 2x, 3x...
-    centre_dot_mm: float = 6.0
+    centre_dot_mm: float = 3.0
     cursor_mm: float = 10.0
 
     # Plane throttle bar.
@@ -171,6 +172,7 @@ class WidgetConfig:
             "deadzone": self.deadzone,
             "dot_mm": self.dot_mm,
             "dot_max_mm": self.dot_max_mm,
+            "track_mm": self.track_mm,
             "boxes": self.boxes,
             "box_step_mm": self.box_step_mm,
             "centre_dot_mm": self.centre_dot_mm,
@@ -196,9 +198,10 @@ class WidgetConfig:
         w.deadzone = _clamp(float(d.get("deadzone", 0.05)), 0.0, 0.9)
         w.dot_mm = _clamp(float(d.get("dot_mm", 19.0)), 2.0, 200.0)
         w.dot_max_mm = _clamp(float(d.get("dot_max_mm", 30.0)), w.dot_mm, 300.0)
+        w.track_mm = _clamp(float(d.get("track_mm", 110.0)), w.dot_max_mm, 600.0)
         w.boxes = int(_clamp(int(d.get("boxes", 4)), 1, 12))
         w.box_step_mm = _clamp(float(d.get("box_step_mm", 10.0)), 2.0, 100.0)
-        w.centre_dot_mm = _clamp(float(d.get("centre_dot_mm", 6.0)), 0.0, 100.0)
+        w.centre_dot_mm = _clamp(float(d.get("centre_dot_mm", 3.0)), 0.0, 100.0)
         w.cursor_mm = _clamp(float(d.get("cursor_mm", 10.0)), 2.0, 200.0)
         w.bar_h_mm = _clamp(float(d.get("bar_h_mm", 80.0)), 10.0, 400.0)
         w.bar_w_mm = _clamp(float(d.get("bar_w_mm", 22.0)), 5.0, 200.0)

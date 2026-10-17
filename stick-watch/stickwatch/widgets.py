@@ -174,8 +174,13 @@ class StickWidget(QWidget):
 
 
 class RudderWidget(StickWidget):
-    """A single dot: black at centre / in deadzone, red left, green right,
-    growing from `dot_mm` at neutral to `dot_max_mm` at full deflection."""
+    """A horizontal slider with dead centre in the middle.
+
+    The dot travels the track with the pedals and carries the size and colour
+    language too: black at centre / in the deadzone, red growing to the left,
+    green growing to the right, from `dot_mm` up to `dot_max_mm` at full
+    deflection. Position says where you are, size and colour say how far.
+    """
 
     def __init__(self, *a, **kw):
         self.value = 0.0
@@ -186,36 +191,54 @@ class RudderWidget(StickWidget):
             self.value = v
             self.update()
 
+    def track_len_mm(self) -> float:
+        return max(self.cfg.track_mm, self.cfg.dot_max_mm)
+
     def content_size_mm(self) -> tuple[float, float]:
-        d = self.cfg.dot_max_mm
-        extra = 16.0 if self.show_value else 0.0
-        return (d + extra + 1.0, d + 1.0)
+        extra = 17.0 if self.show_value else 0.0
+        return (self.track_len_mm() + extra, self.cfg.dot_max_mm + 1.0)
 
     def paint_content(self, p: QPainter, r: QRectF) -> None:
         d_max = self.mm(self.cfg.dot_max_mm)
-        cx = r.left() + d_max / 2.0
+        length = self.mm(self.track_len_mm())
+        travel = (length - d_max) / 2.0
+        cx = r.left() + length / 2.0
         cy = r.center().y()
+
+        rail = max(2.0, self.mm(1.6))
+        p.setPen(Qt.NoPen)
+        p.setBrush(TRACK)
+        p.drawRect(QRectF(cx - travel, cy - rail / 2.0, travel * 2, rail))
+
+        p.setPen(QPen(GRID, max(1.0, self.mm(0.35))))
+        for frac in (-1.0, -0.5, 0.5, 1.0):
+            x = cx + travel * frac
+            h = d_max * (0.42 if abs(frac) == 0.5 else 0.6)
+            p.drawLine(QPointF(x, cy - h / 2), QPointF(x, cy + h / 2))
+
+        # Dead centre, spanning the full height of the track.
+        p.setPen(QPen(GRID_OUTER, max(2.0, self.mm(0.9))))
+        p.drawLine(QPointF(cx, r.top()), QPointF(cx, r.bottom()))
 
         mag = min(1.0, abs(self.value))
         dia = self.mm(_lerp(self.cfg.dot_mm, self.cfg.dot_max_mm, mag))
-
+        x = cx + max(-1.0, min(1.0, self.value)) * travel
         if self.value == 0.0:
-            fill = NEUTRAL
-            edge = NEUTRAL_EDGE
+            p.setPen(QPen(CURSOR, max(2.0, self.mm(0.8))))
+            p.setBrush(NEUTRAL)
         else:
             fill = LEFT if self.value < 0 else RIGHT
-            edge = fill.darker(160)
-
-        p.setPen(QPen(edge, max(1.0, self.mm(0.5))))
-        p.setBrush(fill)
-        p.drawEllipse(QPointF(cx, cy), dia / 2.0, dia / 2.0)
+            p.setPen(QPen(fill.darker(160), max(1.0, self.mm(0.5))))
+            p.setBrush(fill)
+        p.drawEllipse(QPointF(x, cy), dia / 2.0, dia / 2.0)
 
         if self.show_value:
-            p.setFont(self._font(4.5, bold=True))
-            box = QRectF(cx + d_max / 2.0 + self.mm(1.5), cy - self.mm(4),
-                         self.mm(14), self.mm(8))
+            p.setFont(self._font(4.2, bold=True))
+            box = QRectF(cx + length / 2.0 + self.mm(1.5), cy - self.mm(3.5),
+                         self.mm(15.5), self.mm(7))
             self._text(p, box, Qt.AlignLeft | Qt.AlignVCenter,
-                       f"{self.value * 100:+.0f}%", TEXT)
+                       "CTR" if self.value == 0.0 else f"{self.value * 100:+.0f}%",
+                       TEXT if self.value == 0.0 else TEXT_DIM)
 
 
 class JoystickWidget(StickWidget):
@@ -305,11 +328,13 @@ class JoystickWidget(StickWidget):
                        f"R {self.x_value * 100:+.0f}%   P {self.y_value * 100:+.0f}%", TEXT)
 
 
-class ThrottlePlaneWidget(StickWidget):
-    """Idle-to-stop bar: fill height is the percentage, with a large numeral."""
+class _BarWidget(StickWidget):
+    """Shared frame for the two throttles: a vertical bar and a numeral."""
+
+    NUMERAL_MM = 11.0
 
     def __init__(self, *a, **kw):
-        self.value = 0.0   # 0..1
+        self.value = 0.0
         super().__init__(*a, **kw)
 
     def set_value(self, v: float) -> None:
@@ -318,100 +343,97 @@ class ThrottlePlaneWidget(StickWidget):
             self.update()
 
     def content_size_mm(self) -> tuple[float, float]:
-        return (max(self.cfg.bar_w_mm, 26.0), self.cfg.bar_h_mm + 11.0)
+        return (max(self.cfg.bar_w_mm, 26.0), self.cfg.bar_h_mm + self.NUMERAL_MM)
+
+    def bar_rect(self, r: QRectF) -> QRectF:
+        w = self.mm(self.cfg.bar_w_mm)
+        return QRectF(r.center().x() - w / 2.0, r.top(), w, self.mm(self.cfg.bar_h_mm))
 
     def paint_content(self, p: QPainter, r: QRectF) -> None:
-        bar_w = self.mm(self.cfg.bar_w_mm)
-        bar_h = self.mm(self.cfg.bar_h_mm)
-        num_h = self.mm(11.0)
-        bar = QRectF(r.center().x() - bar_w / 2.0, r.top(), bar_w, bar_h)
-
+        bar = self.bar_rect(r)
         p.setPen(Qt.NoPen)
         p.setBrush(TRACK)
         p.drawRect(bar)
 
-        v = max(0.0, min(1.0, self.value))
-        if v > 0:
-            fh = bar_h * v
-            p.setBrush(FILL)
-            p.drawRect(QRectF(bar.left(), bar.bottom() - fh, bar_w, fh))
+        self.paint_fill(p, bar)
 
         p.setPen(QPen(GRID, max(1.0, self.mm(0.3))))
-        for frac in (0.25, 0.5, 0.75):
-            y = bar.bottom() - bar_h * frac
+        for frac in self.tick_fractions():
+            y = bar.bottom() - bar.height() * frac
             p.drawLine(QPointF(bar.left(), y), QPointF(bar.right(), y))
+
+        self.paint_over(p, bar)
+
         p.setPen(QPen(GRID_OUTER, max(1.0, self.mm(0.5))))
         p.setBrush(Qt.NoBrush)
         p.drawRect(bar)
 
         p.setFont(self._font(9.0, bold=True))
-        self._text(p, QRectF(r.left(), bar.bottom(), r.width(), num_h),
-                   Qt.AlignHCenter | Qt.AlignVCenter, f"{v * 100:.0f}%", TEXT)
+        self._text(p, QRectF(r.left(), bar.bottom(), r.width(), self.mm(self.NUMERAL_MM)),
+                   Qt.AlignHCenter | Qt.AlignVCenter, self.numeral(), TEXT)
+
+    def tick_fractions(self) -> tuple[float, ...]:
+        return ()
+
+    def paint_fill(self, p: QPainter, bar: QRectF) -> None:
+        raise NotImplementedError
+
+    def paint_over(self, p: QPainter, bar: QRectF) -> None:
+        pass
+
+    def numeral(self) -> str:
+        raise NotImplementedError
 
 
-class ThrottleHeliWidget(StickWidget):
-    """Collective: centre is what matters, so centre is what the eye gets.
+class ThrottlePlaneWidget(_BarWidget):
+    """Idle-to-stop: fill height is the percentage, 0 at the bottom."""
 
-    A heavy full-width centre line, and a dot that travels the track. At centre
-    (or inside the deadzone) the dot is black inside a bright ring -- an
-    unmistakable "you are on the detent". Off centre it takes the rudder's
-    colour language: red below, green above, growing with distance. The numeral
-    is small on purpose; the exact offset is the part that matters least.
+    def tick_fractions(self) -> tuple[float, ...]:
+        return (0.25, 0.5, 0.75)
+
+    def paint_fill(self, p: QPainter, bar: QRectF) -> None:
+        v = max(0.0, min(1.0, self.value))
+        if v <= 0:
+            return
+        h = bar.height() * v
+        p.setPen(Qt.NoPen)
+        p.setBrush(FILL)
+        p.drawRect(QRectF(bar.left(), bar.bottom() - h, bar.width(), h))
+
+    def numeral(self) -> str:
+        return f"{max(0.0, min(1.0, self.value)) * 100:.0f}%"
+
+
+class ThrottleHeliWidget(_BarWidget):
+    """Collective: the same bar, but filled from the centre detent outwards.
+
+    Green climbing above centre, red falling below, so the direction reads at a
+    glance. A heavy centre line sits on top of the fill -- centre is the thing
+    this instrument exists to show, so nothing is allowed to bury it.
     """
 
-    def __init__(self, *a, **kw):
-        self.value = 0.0   # -1..1 about centre
-        super().__init__(*a, **kw)
+    def tick_fractions(self) -> tuple[float, ...]:
+        return (0.25, 0.75)
 
-    def set_value(self, v: float) -> None:
-        if v != self.value:
-            self.value = v
-            self.update()
-
-    def content_size_mm(self) -> tuple[float, float]:
-        return (self.cfg.dot_max_mm * 1.85 + 17.0, self.cfg.bar_h_mm + 1.0)
-
-    def paint_content(self, p: QPainter, r: QRectF) -> None:
-        d_max = self.mm(self.cfg.dot_max_mm)
-        cx = r.left() + d_max / 2.0
-        cy = r.center().y()
-        travel = (r.height() - d_max) / 2.0
-
-        # Track.
+    def paint_fill(self, p: QPainter, bar: QRectF) -> None:
+        v = max(-1.0, min(1.0, self.value))
+        if v == 0.0:
+            return
+        mid = bar.center().y()
+        h = (bar.height() / 2.0) * abs(v)
         p.setPen(Qt.NoPen)
-        p.setBrush(TRACK)
-        tw = max(2.0, self.mm(1.6))
-        p.drawRect(QRectF(cx - tw / 2.0, r.top() + d_max / 2.0, tw, travel * 2))
+        p.setBrush(RIGHT if v > 0 else LEFT)
+        top = mid - h if v > 0 else mid
+        p.drawRect(QRectF(bar.left(), top, bar.width(), h))
 
-        # Half-travel ticks, then the centre line on top of them.
-        p.setPen(QPen(GRID, max(1.0, self.mm(0.35))))
-        for frac in (-1.0, -0.5, 0.5, 1.0):
-            y = cy - travel * frac
-            w = d_max * (0.42 if abs(frac) == 0.5 else 0.6)
-            p.drawLine(QPointF(cx - w / 2, y), QPointF(cx + w / 2, y))
-
+    def paint_over(self, p: QPainter, bar: QRectF) -> None:
+        mid = bar.center().y()
+        over = self.mm(1.8)
         p.setPen(QPen(GRID_OUTER, max(2.0, self.mm(0.9))))
-        p.drawLine(QPointF(cx - d_max * 0.78, cy), QPointF(cx + d_max * 0.78, cy))
+        p.drawLine(QPointF(bar.left() - over, mid), QPointF(bar.right() + over, mid))
 
-        mag = min(1.0, abs(self.value))
-        dia = self.mm(_lerp(self.cfg.dot_mm, self.cfg.dot_max_mm, mag))
-        y = cy - max(-1.0, min(1.0, self.value)) * travel
-
-        if self.value == 0.0:
-            p.setPen(QPen(CURSOR, max(2.0, self.mm(0.8))))
-            p.setBrush(NEUTRAL)
-        else:
-            fill = LEFT if self.value < 0 else RIGHT
-            p.setPen(QPen(fill.darker(160), max(1.0, self.mm(0.5))))
-            p.setBrush(fill)
-        p.drawEllipse(QPointF(cx, y), dia / 2.0, dia / 2.0)
-
-        p.setFont(self._font(4.0, bold=True))
-        box = QRectF(cx + d_max * 0.85 + self.mm(1.0), y - self.mm(3.5),
-                     self.mm(16), self.mm(7))
-        self._text(p, box, Qt.AlignLeft | Qt.AlignVCenter,
-                   "CTR" if self.value == 0.0 else f"{self.value * 100:+.0f}%",
-                   TEXT if self.value == 0.0 else TEXT_DIM)
+    def numeral(self) -> str:
+        return "CTR" if self.value == 0.0 else f"{self.value * 100:+.0f}%"
 
 
 def make_widget(cfg: WidgetConfig, px_per_mm: float, parent: QWidget | None = None) -> StickWidget:

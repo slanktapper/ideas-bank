@@ -19,13 +19,8 @@ SAVE_DEBOUNCE_MS = 200
 
 
 def new_widget(kind: str, subkind: str = "") -> WidgetConfig:
-    """A widget with sensible starting geometry for its kind."""
-    w = WidgetConfig(id=uuid.uuid4().hex[:8], kind=kind, subkind=subkind)
-    if kind == KIND_THROTTLE and subkind == "heli":
-        # The dot needs somewhere to travel: a 30 mm dot on an 80 mm track
-        # never clears the centre line.
-        w.bar_h_mm = 110.0
-    return w
+    """A widget with its kind's default geometry."""
+    return WidgetConfig(id=uuid.uuid4().hex[:8], kind=kind, subkind=subkind)
 
 
 class App(QObject):

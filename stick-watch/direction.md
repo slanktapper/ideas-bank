@@ -18,9 +18,9 @@ Three axis types:
 | Type | Sub-type | Display |
 | --- | --- | --- |
 | Joystick | — | Concentric squares, a centre dot, and a crosshair cursor driven by two mapped axes |
-| Rudder | — | One dot: black at centre, red growing to the left, green growing to the right |
-| Throttle | plane | Idle-to-stop bar with a large percentage |
-| Throttle | heli | Centre-detent track: heavy centre line, a travelling dot that is black in a bright ring at centre |
+| Rudder | — | Horizontal slider, dead centre in the middle: the dot travels the track, black at centre, red growing to the left, green growing to the right |
+| Throttle | plane | Bar filled from the bottom, with a large percentage |
+| Throttle | heli | The same bar filled from the centre detent: green climbing above, red falling below |
 
 ## Why
 
@@ -54,23 +54,26 @@ so the dot leaves neutral smoothly instead of jumping to 10% the instant the
 stick breaks out. The plane throttle squares off both ends instead, so idle
 really reads 0% and the stop really reads 100%.
 
-**Rudder.** Dot diameter runs from `dot at centre` (19 mm default) to
-`dot at full` (30 mm default). Black in the deadzone, red to the left, green to
-the right. Both diameters are saved.
+**Rudder.** A horizontal slider with dead centre in the middle, marked by a
+heavy full-height line, with ticks at half and full travel. The dot travels the
+track with the pedals and carries the size and colour as well: diameter runs
+from `dot at centre` (19 mm default) to `dot at full` (30 mm default), black in
+the deadzone, red to the left, green to the right. Position says where you are,
+size and colour say how far. Track length (110 mm default) and both diameters
+are saved.
 
 **Joystick.** Box *k* of *N* sits `k × spacing` out from the centre and marks
 `k/N` of full travel, so the outermost box is 100% deflection. Defaults: 4
 boxes at 10 mm spacing, so full deflection is 40 mm from centre and the
-outermost box is 80 mm across. Box count, spacing, centre dot (6 mm) and
+outermost box is 80 mm across. Box count, spacing, centre dot (3 mm) and
 cursor (10 mm) are all saved. Positive roll moves the cursor right, positive
 pitch moves it up; flip either with the Inverted box.
 
-**Throttle, heli.** Centre is what the design is about, so centre is what the
-eye gets: a heavy full-width centre line, and a dot that travels the track and
-turns black inside a bright white ring when it is at centre. Off centre it
-takes the rudder's colour language — red below, green above — and grows with
-distance. The numeral is small on purpose; the exact offset is the part that
-matters least. The track defaults to 110 mm so a 30 mm dot has somewhere to go.
+**Throttle, heli.** The same bar as the plane throttle, filled from the centre
+detent outwards instead of from the bottom: green climbing above centre, red
+falling below. A heavy centre line is drawn on top of the fill and overhangs
+both edges, so nothing can bury the one thing this instrument exists to show.
+The numeral reads `CTR` on centre and a signed percentage off it.
 
 ## Persistence
 
@@ -136,10 +139,6 @@ python -m stickwatch
   settings window, because a real global hotkey needs the Win32 API and this
   stays pure Qt. If reaching for the settings window mid-flight gets annoying,
   that is the thing to add.
-- **The rudder dot does not move.** It only changes size and colour, as
-  specified. A version that also slides left and right along a track would
-  carry position as well as magnitude — worth trying if the dot alone turns out
-  to be ambiguous in the air.
 - **Size settings are per readout, not per type.** Two rudder readouts are
   sized independently. Fine for one of each; tedious if that changes.
 - **No per-axis calibration or curve display.** Raw driver values only.
