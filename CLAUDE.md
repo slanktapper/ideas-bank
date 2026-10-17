@@ -119,10 +119,12 @@ mechanism even when the intent is clear.
 When the user asks for a new idea/tool:
 
 1. Agree on the short name before creating anything.
-2. Create `<short-name>/` at the root.
-3. Create `<short-name>/direction.md` — start it from the template below and fill it
+2. Put the short name on the branch, per **Branch names** below, before the first
+   commit.
+3. Create `<short-name>/` at the root.
+4. Create `<short-name>/direction.md` — start it from the template below and fill it
    in from what the user has told you.
-4. Add a row for it to the registry in `DIRECTION.md`.
+5. Add a row for it to the registry in `DIRECTION.md`.
 
 ### `direction.md` template
 
@@ -246,8 +248,47 @@ status updates, and any timestamp you quote back from git, logs, or a file listi
   fraction handling`. Root direction docs use `docs:` or `direction:`.
 - Never commit secrets, API keys, or credentials. Each project keeps its own
   `.env.example`; the real `.env` stays untracked.
-- Follow the branch instructions given for the session. Do not push to a branch you
-  were not asked to push to, and do not open a pull request unless asked.
+- Name branches per **Branch names** below. Do not push to a branch other than the
+  one you are working on, and do not open a pull request unless asked.
+
+### Branch names
+
+**A branch is named after the project it touches.** The short name is the whole point
+of the convention — a list of branches should say what each one is about without
+anyone having to open it.
+
+```
+claude/<short-name>-<blob>
+```
+
+- **`<short-name>`** is the project folder name, exactly as it appears at the root.
+- **`<blob>`** is six random lowercase alphanumeric characters. It exists for one
+  reason: so two sessions working on the same project do not collide. Generate it,
+  do not invent it, and never reuse one from an earlier branch:
+
+  ```bash
+  openssl rand -hex 3          # e.g. 4f9ac2  ->  claude/recipe-parser-4f9ac2
+  ```
+
+- Work that is not a single project — root direction docs, `CLAUDE.md` itself — uses
+  `claude/docs-<blob>`.
+- A commit that touches two projects wants two commits on two branches; see the
+  one-project-per-commit rule above. If that genuinely cannot be split, name the
+  branch for the project that carries the substance of the change.
+
+**A session usually arrives with a branch already assigned**, generated without
+knowing which project the work would turn out to be about. That name is a starting
+point, not a constraint: once the project is established, rename the branch to the
+convention before the first commit.
+
+```bash
+git branch -m claude/<short-name>-<blob>
+```
+
+This paragraph is the standing permission to do that rename — the assigned branch is
+not a branch the user chose, and renaming it before anything is pushed costs nothing.
+Once a branch has been **pushed**, it is no longer yours to rename: leave it, and say
+so if it is off-convention.
 
 ## Conventions summary
 
@@ -257,7 +298,8 @@ status updates, and any timestamp you quote back from git, logs, or a file listi
 | Cross-project data or code | Ask how to handle it; never move it unilaterally |
 | Root directory | Direction `.md` files and project folders only |
 | Project folder | Self-contained; conventions come from inside it |
-| New idea | Short name → folder → `direction.md` → registry row |
+| New idea | Short name → branch → folder → `direction.md` → registry row |
+| Branch name | `claude/<short-name>-<blob>`; rename the assigned branch before the first commit |
 | Physical capability | Check `available-tools.md`; ask when a fit is plausible but unclear |
 | Colour or material | Check `filament.md`; it is the only stock list, keep it current |
 | Model is "not right" | Fix the thing named, minimally; if truly impossible, options first, then wait |

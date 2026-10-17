@@ -1,0 +1,35 @@
+# sim-control-prints — parametric CAD as code, same shape as the other 3D
+# projects here. Python 3.10+.  Install with:
+#
+#     python3 -m pip install -r requirements.txt
+
+# The renderer and its own dependencies (numpy, pillow, trimesh, and the
+# three packages its section() needs).
+-r ../3d-tools/requirements.txt
+
+manifold3d>=2.3        # boolean engine; build.py asks for it by name
+shapely>=2.0           # the XY outline, built as a hull of four discs
+
+# --- two that ../3d-tools/requirements.txt says are NOT needed -------------
+#
+# That file states networkx and rtree are unnecessary, "verified by running
+# the full check suite in a virtualenv without either". That remains true of
+# the renderer. It is not true of this project, on trimesh 5.1.1:
+#
+#   rtree     Trimesh.contains() builds an rtree bounds tree. Most of the
+#             checks here are containment tests -- is the bolt axis clear,
+#             is there material beside the counterbore -- so without it the
+#             build cannot run at all.
+#   networkx  slice_mesh_plane(cap=True) reaches for a DiGraph to work out
+#             which section loops enclose which. render.section() therefore
+#             needs it on this version, whatever it needed on an older one.
+#
+# Listed here rather than fixed there, because changing ../3d-tools changes
+# what cantstop and flattener install too.
+rtree>=1.0
+networkx>=3.0
+
+matplotlib>=3.8        # annotate() uses it to find a TrueType font. Optional
+                       # for the renderer; not optional here, because the
+                       # dimensioned section is unreadable in PIL's bitmap
+                       # fallback.
