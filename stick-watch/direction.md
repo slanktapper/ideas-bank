@@ -106,6 +106,40 @@ Two SDL settings matter and are applied in `devices.py` before pygame loads:
 reporting axis motion whenever its window is unfocused, which for an overlay
 that never takes focus means every axis reads zero.
 
+## Performance
+
+The polling loop reads axes and repaints; everything else is meant to stay out
+of its way.
+
+- **Hot-plug is incremental.** Devices are opened and dropped one at a time
+  from SDL's own events. Nothing in the loop tears down the joystick
+  subsystem — doing that makes SDL re-announce every device, and reacting to
+  those announcements rescans again, which loops at the polling rate. That bug
+  cost roughly every frame; `selftest.py` now guards against it returning.
+- **Axis values are quantised** to three decimals before they reach a readout.
+  Raw axes jitter in the last few digits, and an unquantised value repaints
+  every readout on every frame even with the stick sitting still.
+- **The Devices tab only updates while it is on screen**, throttled to 20 Hz,
+  and skips bars whose value has not moved.
+
+The Display tab shows the rate actually achieved next to the rate requested.
+If those two disagree badly, something in the loop is costing more than it
+should.
+
+Known remaining cost: in transparent mode the overlay is a full-screen layered
+window, so Windows recomposites a screen-sized surface whenever a readout
+repaints. Shrinking the window to the bounding box of the readouts while
+locked would cut that a lot, and is the next thing to try if it is still slow.
+
+## Self-test
+
+```
+python selftest.py
+```
+
+Checks the deadzone maths, the hot-plug path, and that settings survive a
+crash. No joystick and no display needed.
+
 ## How to run
 
 Windows, first time and every time:

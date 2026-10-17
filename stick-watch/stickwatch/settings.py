@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 from PySide6.QtCore import QObject, QTimer, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QGuiApplication, QPainter, QPen
 from PySide6.QtWidgets import (
@@ -376,6 +378,7 @@ class SettingsWindow(QMainWindow):
         self.app = app
         self.editor: WidgetEditor | None = None
         self._loading = False
+        self._last_bars = 0.0
         self.setWindowTitle("stick-watch")
         self.resize(1000, 760)
 
@@ -582,9 +585,23 @@ class SettingsWindow(QMainWindow):
         v.addStretch(1)
         self.dev_area.setWidget(host)
 
+    def devices_tab_live(self) -> bool:
+        """True only when the axis bars are actually on screen.
+
+        Repainting three dozen progress bars at the polling rate is not free,
+        and it is pure waste while another tab is showing.
+        """
+        tabs = self.centralWidget()
+        return (self.isVisible() and not self.isMinimized()
+                and tabs is not None and tabs.currentIndex() == 1)
+
     def on_tick(self) -> None:
         if not self._bars:
             return
+        now = time.monotonic()
+        if now - self._last_bars < 0.05:    # 20 Hz is plenty for a bar
+            return
+        self._last_bars = now
         cache: dict[int, list[float]] = {}
         for bar, val, dev, i in self._bars:
             vals = cache.get(dev.instance_id)
@@ -592,8 +609,10 @@ class SettingsWindow(QMainWindow):
                 vals = self.app.hub.snapshot(dev)
                 cache[dev.instance_id] = vals
             if i < len(vals):
-                bar.setValue(int(vals[i] * 1000))
-                val.setText(f"{vals[i]:+.3f}")
+                scaled = int(vals[i] * 1000)
+                if bar.value() != scaled:
+                    bar.setValue(scaled)
+                    val.setText(f"{vals[i]:+.3f}")
 
     # -- tab 3 ----------------------------------------------------------
 
@@ -660,6 +679,13 @@ class SettingsWindow(QMainWindow):
         self.hz.setSuffix(" Hz")
         self.hz.valueChanged.connect(self._display_changed)
         of.addRow("Polling rate", self.hz)
+        self.measured = QLabel("measuring…")
+        self.measured.setStyleSheet("color: #888;")
+        of.addRow("", self.measured)
+        self._rate_timer = QTimer(self)
+        self._rate_timer.setInterval(1000)
+        self._rate_timer.timeout.connect(self._update_rate)
+        self._rate_timer.start()
         v.addWidget(ov)
 
         warn = QLabel(
@@ -681,6 +707,12 @@ class SettingsWindow(QMainWindow):
         quit_btn.clicked.connect(self.close)
         v.addWidget(quit_btn)
         return page
+
+    def _update_rate(self) -> None:
+        tabs = self.centralWidget()
+        if not self.isVisible() or self.isMinimized() or tabs is None or tabs.currentIndex() != 2:
+            return
+        self.measured.setText(f"{self.app.measured_hz:.1f} Hz actually achieved")
 
     def _load_display(self) -> None:
         self._loading = True

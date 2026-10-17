@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 import uuid
 
 from PySide6.QtCore import QObject, QTimer, Slot
@@ -41,6 +42,9 @@ class App(QObject):
 
         self._poll = QTimer(self)
         self._poll.timeout.connect(self.tick)
+        self.measured_hz = 0.0
+        self._ticks = 0
+        self._rate_since = time.monotonic()
 
     # -- persistence ----------------------------------------------------
 
@@ -114,14 +118,25 @@ class App(QObject):
                 out[slot] = 0.0
                 continue
             if wcfg.kind == KIND_THROTTLE and wcfg.subkind == "plane":
-                out[slot] = unipolar(raw, wcfg.deadzone)
+                v = unipolar(raw, wcfg.deadzone)
             else:
-                out[slot] = centred(raw, wcfg.deadzone)
+                v = centred(raw, wcfg.deadzone)
+            # Quantise: raw axes jitter in the last few digits, and an
+            # unquantised value repaints every readout on every frame even
+            # when the stick is sitting still.
+            out[slot] = round(v, 3)
 
         return out, (missing or not assigned_any)
 
     @Slot()
     def tick(self) -> None:
+        self._ticks += 1
+        now = time.monotonic()
+        if now - self._rate_since >= 1.0:
+            self.measured_hz = self._ticks / (now - self._rate_since)
+            self._ticks = 0
+            self._rate_since = now
+
         if self.hub.poll() and self.settings is not None:
             self.settings.on_devices_changed()
 
@@ -138,5 +153,5 @@ class App(QObject):
             elif isinstance(w, (RudderWidget, ThrottlePlaneWidget, ThrottleHeliWidget)):
                 w.set_value(vals.get("main", 0.0))
 
-        if self.settings is not None and self.settings.isVisible():
+        if self.settings is not None and self.settings.devices_tab_live():
             self.settings.on_tick()

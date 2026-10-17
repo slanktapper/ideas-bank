@@ -64,21 +64,37 @@ class DeviceHub:
 
     # -- enumeration ----------------------------------------------------
 
+    def _open(self, index: int) -> bool:
+        """Open one device by enumeration index. True if it is new to us.
+
+        Idempotent: SDL re-announces devices it has already announced, and
+        opening one twice must not count as a change.
+        """
+        try:
+            js = pygame.joystick.Joystick(index)
+            js.init()
+            iid = js.get_instance_id()
+        except pygame.error:
+            return False
+        if iid in self._sticks:
+            return False
+        self._sticks[iid] = js
+        return True
+
     def rescan(self) -> None:
-        """Re-open every attached device. Safe to call at any time."""
+        """Re-open every attached device. Only for the manual Rescan button."""
         if not self._started:
             return
         pygame.joystick.quit()
         pygame.joystick.init()
         self._sticks.clear()
         for i in range(pygame.joystick.get_count()):
-            try:
-                js = pygame.joystick.Joystick(i)
-                js.init()
-            except pygame.error:
-                continue
-            self._sticks[js.get_instance_id()] = js
+            self._open(i)
         self._reindex()
+        # Re-initialising the subsystem makes SDL re-announce every device.
+        # Drop those: left queued, the next poll() reads them as a hot-plug
+        # and rescans, which re-announces again -- a loop at the poll rate.
+        pygame.event.clear()
 
     def _reindex(self) -> None:
         seen: dict[str, int] = {}
@@ -102,17 +118,24 @@ class DeviceHub:
     # -- per-frame ------------------------------------------------------
 
     def poll(self) -> bool:
-        """Pump SDL events. Returns True if the device set changed."""
+        """Pump SDL events. Returns True if the device set actually changed.
+
+        Devices are added and dropped one at a time. Nothing here tears down
+        the joystick subsystem: doing that re-announces every device, and
+        reacting to those announcements is how this turns into a loop.
+        """
         if not self._started:
             return False
         changed = False
-        for ev in pygame.event.get():
-            if ev.type in (pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED):
-                changed = True
+        for ev in pygame.event.get():   # get() pumps, so no separate pump
+            if ev.type == pygame.JOYDEVICEADDED:
+                if self._open(ev.device_index):
+                    changed = True
+            elif ev.type == pygame.JOYDEVICEREMOVED:
+                if self._sticks.pop(ev.instance_id, None) is not None:
+                    changed = True
         if changed:
-            self.rescan()
-        else:
-            pygame.event.pump()
+            self._reindex()
         return changed
 
     def _find(self, ref: AxisRef) -> DeviceInfo | None:
