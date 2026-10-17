@@ -9,15 +9,16 @@
 Outputs land in stl/ and renders/. Both are regenerated from scratch and are
 safe to delete.
 
+ONE VIGNETTE IS ONE SHELF, cut into two printed panels of 160 mm. Print the
+pair for each shelf you want to dress; three shelves is about three feet.
+
 TWO WAYS TO PRINT, so two sets of STLs:
 
-  stl/panel-N.stl          the whole panel as one solid. Print in one colour;
-                           the art reads as relief in raking light.
-  stl/colour/panel-N-*.stl the same panel split into the channel plus one body
-                           per NES colour. Load them together in the slicer,
-                           assign a filament to each, and the art comes out in
-                           colour. Same geometry, same place -- they are the
-                           one solid, cut up.
+  stl/shelf-KEY-N.stl        the whole panel as one solid. One colour; the
+                             art reads as relief in raking light.
+  stl/colour/shelf-KEY-N-*   the same panel split into the cap plus one body
+                             per NES colour. Load them together in the slicer
+                             and assign a filament to each.
 """
 
 from __future__ import annotations
@@ -44,7 +45,8 @@ STL_DIR = HERE / "stl"
 COLOUR_DIR = STL_DIR / "colour"
 RENDER_DIR = HERE / "renders"
 
-CHANNEL_COLOUR = (0.17, 0.18, 0.21)        # the body, in black PLA
+CAP_COLOUR = (0.17, 0.18, 0.21)            # the body, in black PLA
+SHELF_COLOUR = (0.78, 0.79, 0.81)          # the shelf proxy, in grey
 
 
 def _rgb(c):
@@ -52,12 +54,27 @@ def _rgb(c):
 
 
 def build_all():
-    """[(vignette, whole, body, {colour: mesh})] for the whole rail."""
+    """[(vignette, idx, whole, body, {colour: mesh})] for every panel."""
     out = []
-    for i, vig in enumerate(V.RAIL):
-        whole, body, art = T.panel(vig, first=(i == 0), last=(i == len(V.RAIL) - 1))
-        out.append((vig, whole, body, art))
+    for vig in V.RAIL:
+        for idx in range(P.PANELS_PER_SHELF):
+            whole, body, art = T.panel(vig, idx)
+            out.append((vig, idx, whole, body, art))
     return out
+
+
+def shelf_proxy(length):
+    """The floor and retainer bar of Rob's shelf, where the rail expects them."""
+    bar_top = P.FACE_H - P.WEB_T
+    floor_top = bar_top - P.BAR_RISE
+    bar = trimesh.creation.box(extents=(length, P.MAT_T, P.BAR_RISE))
+    bar.apply_translation((length / 2, P.FACE_T + P.MAT_T / 2,
+                           floor_top + P.BAR_RISE / 2))
+    depth = 60.0                                  # just enough to read as a shelf
+    floor = trimesh.creation.box(extents=(length, depth, P.MAT_T))
+    floor.apply_translation((length / 2, P.FACE_T + depth / 2,
+                             floor_top - P.MAT_T / 2))
+    return trimesh.boolean.union([bar, floor])
 
 
 # ---------------------------------------------------------------------------
@@ -69,16 +86,14 @@ def write_stls(built):
     COLOUR_DIR.mkdir(exist_ok=True)
     for old in list(STL_DIR.glob("*.stl")) + list(COLOUR_DIR.glob("*.stl")):
         old.unlink()
-
     rows = []
-    for i, (vig, whole, body, art) in enumerate(built, start=1):
-        name = "panel-%d-%s" % (i, vig.key)
+    for vig, idx, whole, body, art in built:
+        name = "shelf-%s-%d" % (vig.key, idx + 1)
         whole.export(STL_DIR / (name + ".stl"))
-        rows.append((name + ".stl", whole.volume, whole.is_watertight))
-        body.export(COLOUR_DIR / (name + "-channel.stl"))
+        rows.append((name, whole.volume, whole.is_watertight))
+        body.export(COLOUR_DIR / (name + "-cap.stl"))
         for colour, mesh in art.items():
-            hexc = "%02x%02x%02x" % colour
-            mesh.export(COLOUR_DIR / ("%s-%s.stl" % (name, hexc)))
+            mesh.export(COLOUR_DIR / ("%s-%02x%02x%02x.stl" % ((name,) + colour)))
     return rows
 
 
@@ -86,17 +101,17 @@ def write_stls(built):
 # renders
 # ---------------------------------------------------------------------------
 
-def _parts_for(vig, body, art, offset=(0.0, 0.0, 0.0)):
-    ps = [{"mesh": T_placed(body, offset), "color": CHANNEL_COLOUR}]
-    for colour, mesh in art.items():
-        ps.append({"mesh": T_placed(mesh, offset), "color": _rgb(colour)})
-    return ps
-
-
-def T_placed(mesh, offset):
+def _placed(mesh, offset):
     m = mesh.copy()
     m.apply_translation(offset)
     return m
+
+
+def _parts_for(body, art, offset=(0.0, 0.0, 0.0)):
+    ps = [{"mesh": _placed(body, offset), "color": CAP_COLOUR}]
+    for colour, mesh in art.items():
+        ps.append({"mesh": _placed(mesh, offset), "color": _rgb(colour)})
+    return ps
 
 
 def _save(img, name):
@@ -105,73 +120,67 @@ def _save(img, name):
     print("  renders/%s" % name)
 
 
-def render_panels(built, ss, w, h):
-    """The four panels stacked, head on -- what the art actually looks like."""
+def render_shelves(built, ss, w, h):
+    """Every shelf's art, assembled from its two panels, stacked."""
     ps = []
     step = P.FACE_H + 7.0
-    for i, (vig, whole, body, art) in enumerate(built):
-        z = (len(built) - 1 - i) * step
-        ps += _parts_for(vig, body, art, offset=(0.0, 0.0, z))
+    for i, vig in enumerate(V.RAIL):
+        z = (len(V.RAIL) - 1 - i) * step
+        for _, idx, _, body, art in [b for b in built if b[0] is vig]:
+            ps += _parts_for(body, art, (idx * P.PANEL_L, 0.0, z))
     cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-90, elevation_deg=0,
                   margin=1.02, ortho=True)
-    img = R.render(ps, width=w, height=h, supersample=ss, edges=0.45, **cam)
-    _save(img, "rail-panels.png")
+    _save(R.render(ps, width=w, height=h, supersample=ss, edges=0.45, **cam),
+          "shelves.png")
 
 
-def render_full(built, ss, w, h):
-    """The whole 900 mm as it hangs, end to end."""
+def render_on_shelf(built, ss, w, h):
+    """One shelf dressed, from in front and above, with the shelf under it."""
+    vig = V.RAIL[1]
     ps = []
-    for i, (vig, whole, body, art) in enumerate(built):
-        ps += _parts_for(vig, body, art, offset=(i * P.PANEL_L, 0.0, 0.0))
-    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-90, elevation_deg=0,
-                  margin=1.01, ortho=True)
-    img = R.render(ps, width=w, height=int(h * 0.20), supersample=ss,
-                   edges=0.35, **cam)
-    _save(img, "rail-full.png")
-
-
-def render_three_quarter(built, ss, w, h):
-    """One panel from in front and above, so the channel reads as a channel."""
-    vig, whole, body, art = built[1]
-    ps = _parts_for(vig, body, art)
-    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-58, elevation_deg=24,
-                  margin=1.05)
-    img = R.render(ps, width=w, height=h, supersample=ss, edges=0.5, **cam)
-    _save(img, "panel-three-quarter.png")
+    for _, idx, _, body, art in [b for b in built if b[0] is vig]:
+        ps += _parts_for(body, art, (idx * P.PANEL_L, 0.0, 0.0))
+    ps.append({"mesh": shelf_proxy(P.SHELF_L), "color": SHELF_COLOUR})
+    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-62, elevation_deg=22,
+                  margin=1.04)
+    _save(R.render(ps, width=w, height=h, supersample=ss, edges=0.5, **cam),
+          "on-shelf.png")
 
 
 def render_clip(built, ss, w, h):
-    """Section through the channel with a shelf board in it."""
-    vig, whole, body, art = built[1]
-    board = trimesh.creation.box(extents=(120.0, 90.0, P.SHELF_T))
-    board.apply_translation((60.0, P.FACE_T + 45.0, P.LEG_T + P.GAP / 2.0))
-
+    """Section through the cap sitting on the retainer bar."""
+    vig, idx, whole, body, art = built[2]
+    shelf = shelf_proxy(80.0)
     ps = []
-    for mesh, colour in ((whole, CHANNEL_COLOUR), (board, (0.74, 0.62, 0.45))):
+    for mesh, colour in ((whole, CAP_COLOUR), (shelf, SHELF_COLOUR)):
         b, caps = R.section(mesh, normal=(-1.0, 0.0, 0.0), origin=(40.0, 0.0, 0.0))
         if len(b.faces):
             ps.append({"mesh": b, "color": colour})
         if len(caps.faces):
             ps.append({"mesh": caps, "color": R.tint(colour)})
-    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-34, elevation_deg=16,
-                  margin=1.12)
+    cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-36, elevation_deg=15,
+                  margin=1.15)
     img = R.render(ps, width=w, height=h, supersample=ss, **cam)
 
+    bar_top = P.FACE_H - P.WEB_T
     notes = [
-        ((0.0, -P.RELIEF, P.FACE_H * 0.62), "art stands %.1f mm proud" % P.RELIEF),
-        ((40.0, P.FACE_T + P.LEG_D * 0.5, P.LEG_T + P.GAP / 2.0),
-         "%.1f mm slot: %.0f mm board + %.1f fit" % (P.GAP, P.SHELF_T, P.FIT)),
-        ((40.0, P.FACE_T + P.LEG_D, P.FACE_H - P.LEG_T / 2.0),
-         "leg %.1f mm thick, %.0f mm deep" % (P.LEG_T, P.LEG_D)),
+        ((0.0, -P.RELIEF, P.FACE_H * 0.55), "art %.1f mm proud, %.1f mm tall"
+         % (P.RELIEF, P.FACE_H)),
+        ((40.0, P.FACE_T + P.SLOT / 2.0, bar_top - P.GRIP / 2.0),
+         "%.1f mm slot over the 4 mm bar" % P.SLOT),
+        ((40.0, P.DEPTH, bar_top - P.GRIP),
+         "inner leg %.0f mm down the bar" % P.GRIP),
+        ((40.0, P.FACE_T, 1.0), "hangs %.1f mm below the shelf"
+         % (bar_top - P.BAR_RISE - P.MAT_T)),
     ]
     px = R.screen_of([n[0] for n in notes], width=w, height=h, **cam)
     items = []
     for (anchor, text), p in zip(notes, px):
         x, y = float(p[0]), float(p[1])
         left = x < w * 0.5
-        tx = 26.0 if left else w - 26.0
-        ty = min(max(y, 34.0), h - 34.0)
-        items.append({"text": text, "px": (x, y), "to": (tx, ty),
+        items.append({"text": text, "px": (x, y),
+                      "to": (26.0 if left else w - 26.0,
+                             min(max(y, 34.0), h - 34.0)),
                       "align": "left" if left else "right"})
     R.annotate(img, items)
     _save(img, "clip-section.png")
@@ -187,22 +196,21 @@ def main():
     do_ren = a.renders or not (a.stl or a.renders)
 
     t = time.time()
-    print("building %d panels ..." % P.PANELS)
+    print("building %d shelves x %d panels ..." % (len(V.RAIL), P.PANELS_PER_SHELF))
     built = build_all()
     print("  %.1fs" % (time.time() - t))
 
     if do_stl:
         print("STLs:")
         for name, vol, tight in write_stls(built):
-            print("  stl/%-28s %8.0f mm3  watertight=%s" % (name, vol, tight))
+            print("  stl/%-24s %8.0f mm3  watertight=%s" % (name + ".stl", vol, tight))
 
     if do_ren:
         print("renders:")
         ss = 1 if a.fast else 2
         w, h = (1100, 820) if a.fast else (1500, 1100)
-        render_panels(built, ss, w, h)
-        render_full(built, ss, w * 2, h)
-        render_three_quarter(built, ss, w, h)
+        render_shelves(built, ss, w, h)
+        render_on_shelf(built, ss, w, h)
         render_clip(built, ss, w, h)
 
     print("done in %.1fs" % (time.time() - t))

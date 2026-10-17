@@ -1,22 +1,31 @@
-"""Geometry for the shelf rail: the U-channel, and the pixels on its face.
+"""Geometry for the shelf rail: the cap that grips the retainer bar, and the
+pixels on its face.
 
-The section, looking along the rail. Y is depth, into the shelf; Z is up.
+The section, looking along the rail. Y is depth, back into the shelf; Z is up.
+The shelf's retainer bar stands up into the slot.
 
-        Y=0   FACE_T                 FACE_T+LEG_D
-         |      |                         |
-    Z=FACE_H  +-+-------------------------+   <- top leg, lies on the shelf
-              | |                         |
-              | |      the board          |   <- GAP = SHELF_T + FIT
-              | |                         |
-    Z=0       +-+-------------------------+   <- bottom leg, under the shelf
-              ^
-              the front plate, FACE_T thick, with the art standing RELIEF
-              proud of it in -Y. The art is the whole 25 mm of the face.
+      Y=0  FACE_T        FACE_T+SLOT   DEPTH
+       |     |                |          |
+  Z=FACE_H  +--+--------------------------+   <- web, bridges the bar's top
+            |  |              |           |
+            |  |   the bar    |###########|   <- inner leg, GRIP deep,
+            |  |   4 mm       |###########|      down the back of the bar
+            |  |              +-----------+
+            |  |
+            |  |                              the face keeps going down past
+            |  |                              the bar, over the shelf's front
+  Z=0       +--+                              edge. The art is all of it.
+
+      ^ art, RELIEF proud, in -Y
+
+Printed UPSIDE DOWN -- web flat on the bed, both walls growing up. Nothing
+overhangs, nothing bridges except the 8 mm half-lap notch. The art ends up
+on a vertical wall, which is why its pixel rows land on layer boundaries.
 
 The art is built as 2D polygons and extruded, not as one box per pixel: a
-panel is 288 x 32 game pixels, and 9216 boolean unions is not a thing worth
-waiting for. Runs of one colour along a row collapse to rectangles first,
-then shapely unions them, then the result is extruded once per colour.
+panel is 208 x 32 game pixels, and 6656 boolean unions is not worth waiting
+for. Runs of one colour along a row collapse to rectangles first, shapely
+unions them, then the result is extruded once per colour.
 """
 
 from __future__ import annotations
@@ -41,25 +50,31 @@ def _box(x0, x1, y0, y1, z0, z1):
     return m
 
 
-def channel(first: bool, last: bool) -> trimesh.Trimesh:
-    """One panel's U-channel, with the half-lap at the ends that need it."""
+def cap(first: bool, last: bool) -> trimesh.Trimesh:
+    """One panel's bar-cap, with the half-lap at the ends that need it."""
+    web_z0 = P.FACE_H - P.WEB_T
+    leg_y0 = P.FACE_T + P.SLOT
+
     face = _box(0, P.PANEL_L, 0, P.FACE_T, 0, P.FACE_H)
-    y0, y1 = P.FACE_T, P.FACE_T + P.LEG_D
-    bottom = _box(0, P.PANEL_L, y0, y1, 0, P.LEG_T)
-    top = _box(0, P.PANEL_L, y0, y1, P.LEG_T + P.GAP, P.FACE_H)
+    web = _box(0, P.PANEL_L, P.FACE_T, P.DEPTH, web_z0, P.FACE_H)
+    leg = _box(0, P.PANEL_L, leg_y0, P.DEPTH, web_z0 - P.GRIP, web_z0)
+    solid = trimesh.boolean.union([face, web, leg])
 
-    solid = trimesh.boolean.union([face, bottom, top])
-
-    half = P.LEG_T / 2.0
+    # The lap lives in the half of the web that lies ON THE BED when printed
+    # upside down -- the top half here. A tongue anywhere else would print
+    # into thin air, because past the panel end there is nothing under it.
+    lap_z = P.FACE_H - P.WEB_T / 2.0
     if not last:
-        # tongue: the lower half of the bottom leg, running past the end
-        tongue = _box(P.PANEL_L, P.PANEL_L + P.LAP_L, y0, y1, 0, half)
-        solid = trimesh.boolean.union([solid, tongue])
+        solid = trimesh.boolean.union([
+            solid,
+            _box(P.PANEL_L, P.PANEL_L + P.LAP_L, P.FACE_T, P.DEPTH,
+                 lap_z, P.FACE_H)])
     if not first:
-        # socket: the same slot taken out of this end, with clearance
-        socket = _box(-1.0, P.LAP_L + P.LAP_FIT, y0 - 1.0, y1 + 1.0,
-                      -1.0, half + P.LAP_FIT)
-        solid = trimesh.boolean.difference([solid, socket])
+        # Y starts at FACE_T so the notch never reaches the art face
+        solid = trimesh.boolean.difference([
+            solid,
+            _box(-1.0, P.LAP_L + P.LAP_FIT, P.FACE_T, P.DEPTH + 1.0,
+                 lap_z - P.LAP_FIT, P.FACE_H + 1.0)])
     return solid
 
 
@@ -75,12 +90,8 @@ def _colour_polygon(grid, colour, rows, cols):
             run = c
             while run < cols and grid[r][run] == colour:
                 run += 1
-            x0 = c * P.PIXEL
-            x1 = run * P.PIXEL
-            # row 0 is the top of the crop
-            z1 = P.FACE_H - r * P.PIXEL
-            z0 = P.FACE_H - (r + 1) * P.PIXEL
-            rects.append(sbox(x0, z0, x1, z1))
+            rects.append(sbox(c * P.PIXEL, P.FACE_H - (r + 1) * P.PIXEL,
+                              run * P.PIXEL, P.FACE_H - r * P.PIXEL))
             c = run
     return unary_union(rects)
 
@@ -99,20 +110,21 @@ def _extrude(g, height):
     holes = []
     for ring in g.interiors:
         h = trimesh.creation.extrude_polygon(SPolygon(ring), height + 2.0)
-        h.apply_translation((0.0, 0.0, -1.0))      # through, both ends
+        h.apply_translation((0.0, 0.0, -1.0))
         holes.append(h)
     return trimesh.boolean.difference([outer] + holes)
 
 
-def art_bodies(vig) -> dict:
-    """{colour: mesh} -- one body per colour, each standing RELIEF proud."""
-    cols, rows, grid = vig.pixels()
+def art_bodies(vig, idx) -> dict:
+    """{colour: mesh} for one printed panel of a vignette."""
+    cols, rows, grid = vig.panel_pixels(idx)
     out = {}
     for colour in vig.colours():
         poly = _colour_polygon(grid, colour, rows, cols)
-        geoms = getattr(poly, "geoms", [poly])
+        if poly.is_empty:
+            continue
         parts = []
-        for g in geoms:
+        for g in getattr(poly, "geoms", [poly]):
             if g.is_empty or g.area <= 0:
                 continue
             m = _extrude(g, P.RELIEF + _BITE)
@@ -124,9 +136,11 @@ def art_bodies(vig) -> dict:
     return out
 
 
-def panel(vig, first: bool, last: bool):
-    """(whole, body, {colour: mesh}) for one panel."""
-    body = channel(first, last)
-    art = art_bodies(vig)
+def panel(vig, idx: int):
+    """(whole, body, {colour: mesh}) for panel `idx` of a vignette."""
+    first = idx == 0
+    last = idx == P.PANELS_PER_SHELF - 1
+    body = cap(first, last)
+    art = art_bodies(vig, idx)
     whole = trimesh.boolean.union([body] + list(art.values()))
     return whole, body, art

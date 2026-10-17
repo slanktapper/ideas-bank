@@ -1,8 +1,8 @@
 """Which bits of which level maps go on the rail, and the pixels themselves.
 
 A vignette is a straight rectangular crop out of one of the real maps in
-maps/ -- no redrawing, no invented pixels. It is `PANEL_TILES` wide and
-`ART_TILES_H` tall, taken from a chosen tile column and a chosen band.
+maps/ -- no redrawing, no invented pixels. It is `TILES_PER_SHELF` wide and
+`ART_TILES_H` tall, and is cut into `PANELS_PER_SHELF` printed panels, taken from a chosen tile column and a chosen band.
 
 WHY BANDS 11-12. A level map is 14 bands of 16 px. Band 13 and most of 12
 are the ground mass; band 11 is where things stand on it. A two-band window
@@ -48,7 +48,7 @@ class Vignette:
         im = Image.open(MAPS / self.gif).convert("RGB")
         x0 = self.tile_x * 16
         y0 = BAND_TOP * 16
-        w = P.PANEL_TILES * 16
+        w = P.TILES_PER_SHELF * 16
         h = P.ART_TILES_H * 16
         if x0 + w > im.width:
             raise ValueError("%s: crop runs off the right of %s (%d > %d)"
@@ -57,6 +57,13 @@ class Vignette:
         px = crop.load()
         grid = [[px[c, r] for c in range(w)] for r in range(h)]
         return w, h, grid
+
+    def panel_pixels(self, idx):
+        """The columns of this vignette that belong to printed panel `idx`."""
+        w, h, grid = self.pixels()
+        per = P.PANEL_TILES * 16
+        c0, c1 = idx * per, (idx + 1) * per
+        return per, h, [row[c0:c1] for row in grid]
 
     def colours(self):
         """Every colour in the crop except the background, most common first."""
@@ -76,8 +83,9 @@ RAIL = [
              "1-1: a goomba between two pipes"),
     Vignette("underground", "mario-1-2.gif", 12, SKY_UNDERGROUND,
              "1-2 underground: coins over teal brick, two goombas"),
-    Vignette("castle",    "mario-1-1.gif", 190, SKY_OVERWORLD,
+    Vignette("castle",    "mario-1-1.gif", 185, SKY_OVERWORLD,
              "1-1 finish: the flagpole base and the castle door"),
 ]
 
-assert len(RAIL) == P.PANELS, "RAIL has %d vignettes, PANELS is %d" % (len(RAIL), P.PANELS)
+# One vignette is one shelf. Print as many as there are shelves; three of
+# them is the "three feet" Rob asked for.
