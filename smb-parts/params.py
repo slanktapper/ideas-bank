@@ -82,6 +82,17 @@ LAP_L = 8.0
 LAP_FIT = 0.3
 
 # ---------------------------------------------------------------------------
+# the fit coupons -- a ladder of slot widths to try on the real shelf before
+# committing to eight panels. Nothing else depends on these.
+# ---------------------------------------------------------------------------
+
+COUPON_W = 5.0             # how long a slice of the rail each coupon is
+COUPON_GAP = 4.0           # space between them on the spine
+COUPON_SLOTS = [4.2, 4.3, 4.4, 4.5, 4.6]   # 4.4 is the design value, SLOT
+SPINE_T = 1.2              # the frangible bar joining them, at the bed face
+DIGIT_PX = 1.3             # pixel size of the embossed slot number
+
+# ---------------------------------------------------------------------------
 # the machine, from ../available-tools.md
 # ---------------------------------------------------------------------------
 

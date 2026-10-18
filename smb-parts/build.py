@@ -35,6 +35,7 @@ import trimesh
 # thing smb-parts takes from outside its own folder.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "3d-tools"))
 
+import coupons as C
 import params as P
 import parts as T
 import render as R
@@ -44,6 +45,7 @@ HERE = Path(__file__).parent
 STL_DIR = HERE / "stl"
 COLOUR_DIR = STL_DIR / "colour"
 RENDER_DIR = HERE / "renders"
+TEST_DIR = STL_DIR / "test"
 
 CAP_COLOUR = (0.17, 0.18, 0.21)            # the body, in black PLA
 SHELF_COLOUR = (0.78, 0.79, 0.81)          # the shelf proxy, in grey
@@ -186,12 +188,51 @@ def render_clip(built, ss, w, h):
     _save(img, "clip-section.png")
 
 
+def write_test_stls():
+    """The fit ladder and the art sample -- print these before the real thing."""
+    TEST_DIR.mkdir(parents=True, exist_ok=True)
+    for old in TEST_DIR.glob("*.stl"):
+        old.unlink()
+    rows = []
+    comb, total = C.fit_ladder()
+    comb.export(TEST_DIR / "fit-ladder.stl")
+    rows.append(("fit-ladder.stl", comb.volume,
+                 "%d coupons, %.0f mm" % (len(P.COUPON_SLOTS), total)))
+    vig = V.RAIL[1]
+    sample, t0 = C.art_sample(vig)
+    sample.export(TEST_DIR / "art-sample.stl")
+    rows.append(("art-sample.stl", sample.volume,
+                 "%s, tiles %d-%d" % (vig.key, t0, t0 + 1)))
+    return rows
+
+
+def render_test(ss, w, h):
+    """The fit ladder, head on, so the embossed slot numbers can be read."""
+    _, plain, numbers, _ = C.fit_ladder(split=True)
+    ps = [{"mesh": plain, "color": CAP_COLOUR},
+          {"mesh": numbers, "color": (0.98, 0.78, 0.16)}]
+    cam = R.frame([plain], azimuth_deg=-90, elevation_deg=0, margin=1.04,
+                  ortho=True)
+    _save(R.render(ps, width=w, height=h, supersample=ss, edges=0.5, **cam),
+          "fit-ladder.png")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stl", action="store_true")
     ap.add_argument("--renders", action="store_true")
     ap.add_argument("--fast", action="store_true")
+    ap.add_argument("--test", action="store_true",
+                    help="only the fit ladder and art sample")
     a = ap.parse_args()
+    if a.test:
+        print("test pieces:")
+        for name, vol, note in write_test_stls():
+            print("  stl/test/%-18s %7.0f mm3 = %4.1f g  (%s)"
+                  % (name, vol, vol / 1000 * 1.24, note))
+        render_test(1 if a.fast else 2, *((1100, 820) if a.fast else (1500, 1100)))
+        return
+
     do_stl = a.stl or not (a.stl or a.renders)
     do_ren = a.renders or not (a.stl or a.renders)
 
@@ -201,6 +242,10 @@ def main():
     print("  %.1fs" % (time.time() - t))
 
     if do_stl:
+        print("test pieces:")
+        for name, vol, note in write_test_stls():
+            print("  stl/test/%-18s %7.0f mm3 = %4.1f g  (%s)"
+                  % (name, vol, vol / 1000 * 1.24, note))
         print("STLs:")
         for name, vol, tight in write_stls(built):
             print("  stl/%-24s %8.0f mm3  watertight=%s" % (name + ".stl", vol, tight))
@@ -212,6 +257,7 @@ def main():
         render_shelves(built, ss, w, h)
         render_on_shelf(built, ss, w, h)
         render_clip(built, ss, w, h)
+        render_test(ss, w, h)
 
     print("done in %.1fs" % (time.time() - t))
 

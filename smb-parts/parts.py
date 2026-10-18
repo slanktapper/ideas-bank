@@ -50,14 +50,22 @@ def _box(x0, x1, y0, y1, z0, z1):
     return m
 
 
-def cap(first: bool, last: bool) -> trimesh.Trimesh:
-    """One panel's bar-cap, with the half-lap at the ends that need it."""
-    web_z0 = P.FACE_H - P.WEB_T
-    leg_y0 = P.FACE_T + P.SLOT
+def cap(first: bool, last: bool, length=None, slot=None) -> trimesh.Trimesh:
+    """One panel's bar-cap, with the half-lap at the ends that need it.
 
-    face = _box(0, P.PANEL_L, 0, P.FACE_T, 0, P.FACE_H)
-    web = _box(0, P.PANEL_L, P.FACE_T, P.DEPTH, web_z0, P.FACE_H)
-    leg = _box(0, P.PANEL_L, leg_y0, P.DEPTH, web_z0 - P.GRIP, web_z0)
+    `length` and `slot` default to a full panel at the design clearance; the
+    fit coupons override both. Depth follows the slot so the leg stays the
+    same thickness whatever the slot is.
+    """
+    length = P.PANEL_L if length is None else length
+    slot = P.SLOT if slot is None else slot
+    depth = P.FACE_T + slot + P.LEG_T
+    web_z0 = P.FACE_H - P.WEB_T
+    leg_y0 = P.FACE_T + slot
+
+    face = _box(0, length, 0, P.FACE_T, 0, P.FACE_H)
+    web = _box(0, length, P.FACE_T, depth, web_z0, P.FACE_H)
+    leg = _box(0, length, leg_y0, depth, web_z0 - P.GRIP, web_z0)
     solid = trimesh.boolean.union([face, web, leg])
 
     # The lap lives in the half of the web that lies ON THE BED when printed
@@ -67,13 +75,13 @@ def cap(first: bool, last: bool) -> trimesh.Trimesh:
     if not last:
         solid = trimesh.boolean.union([
             solid,
-            _box(P.PANEL_L, P.PANEL_L + P.LAP_L, P.FACE_T, P.DEPTH,
+            _box(length, length + P.LAP_L, P.FACE_T, depth,
                  lap_z, P.FACE_H)])
     if not first:
         # Y starts at FACE_T so the notch never reaches the art face
         solid = trimesh.boolean.difference([
             solid,
-            _box(-1.0, P.LAP_L + P.LAP_FIT, P.FACE_T, P.DEPTH + 1.0,
+            _box(-1.0, P.LAP_L + P.LAP_FIT, P.FACE_T, depth + 1.0,
                  lap_z - P.LAP_FIT, P.FACE_H + 1.0)])
     return solid
 

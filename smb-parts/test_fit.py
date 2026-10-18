@@ -14,6 +14,7 @@ import sys
 import trimesh
 
 import params as P
+import coupons as C
 import parts as T
 import vignettes as V
 
@@ -99,6 +100,35 @@ for key, made in by_vig.items():
     check("%-12s panels do not interfere (%.3f mm3)" % (key, vol), vol < 1e-3)
     check("%-12s pair ends flush at the shelf length" % key,
           abs(b.bounds[1][0] - P.SHELF_L) < MESH_TOL, "%.3f" % b.bounds[1][0])
+
+print("\nthe test coupons")
+check("the ladder brackets the design slot (%.1f)" % P.SLOT,
+      min(P.COUPON_SLOTS) < P.SLOT < max(P.COUPON_SLOTS),
+      "a ladder that does not straddle 4.4 cannot confirm it")
+check("the design slot is one of the rungs", P.SLOT in P.COUPON_SLOTS)
+check("every rung is a different width", len(set(P.COUPON_SLOTS)) == len(P.COUPON_SLOTS))
+check("a two-digit label fits the coupon face",
+      2 * (C.DIGIT_H * P.DIGIT_PX) + P.DIGIT_PX <= P.FACE_H
+      and C.DIGIT_W * P.DIGIT_PX <= P.COUPON_W)
+check("every label has a glyph",
+      all(c in C.FONT for s_ in P.COUPON_SLOTS for c in "%d" % round(s_ * 10)))
+check("the spine is thinner than the web, so it snaps not tears",
+      P.SPINE_T < P.WEB_T)
+
+comb, total = C.fit_ladder()
+check("fit ladder is a watertight solid", comb.is_volume)
+check("ladder is %.0f mm, a couple of minutes of printing" % total,
+      total <= 80.0)
+check("ladder depth follows the widest rung",
+      abs(comb.bounds[1][1] - (P.FACE_T + max(P.COUPON_SLOTS) + P.LEG_T)) < MESH_TOL,
+      "%.3f" % comb.bounds[1][1])
+check("ladder is the same height as the real rail",
+      abs(comb.bounds[1][2] - P.FACE_H) < MESH_TOL)
+
+sample, t0 = C.art_sample(V.RAIL[1])
+check("art sample is a watertight solid", sample.is_volume)
+check("art sample is two whole tiles wide",
+      abs(sample.bounds[1][0] - 2 * P.TILE) < MESH_TOL, "%.3f" % sample.bounds[1][0])
 
 print()
 if fails:

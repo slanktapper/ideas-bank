@@ -24,6 +24,39 @@ the face will stop ~2.5 mm short of the shelf's underside — visible, though
 it still grips. Measure floor-top to bar-top; if it is 20 mm rather than 16,
 raise `FACE_H` or `WEB_T` to suit.
 
+## Print this first: the fit ladder
+
+**Two things here are arithmetic, not measurement, and ~8 g of filament
+settles both.**
+
+```bash
+.venv/bin/python build.py --test
+```
+
+`stl/test/fit-ladder.stl` — five 5 mm slices of the rail at slot widths
+**4.2, 4.3, 4.4, 4.5 and 4.6 mm**, joined by a thin spine, each with its own
+width embossed on the face as two stacked digits (`4` over `2` is 4.2). 41 mm
+long, 3.8 g, a couple of minutes. Snap or cut them off the spine — it is
+1.2 mm thick and lies flat on the bed — and push each onto the shelf's
+retainer bar.
+
+- **Which one grips?** Tight enough to need a push, loose enough not to
+  crack. Put that number in `FIT` (slot minus the 4 mm bar: a winning 4.3
+  means `FIT = 0.3`) and rebuild.
+- **Does the face reach past the shelf's underside?** Look at the coupon
+  from the side once it is on. It should hang about 1.5 mm below. If it
+  stops short instead, the drawing's 0.79 in is the bar's rise above the
+  floor rather than the whole front elevation, and `BAR_RISE` is 20.07 —
+  tell me and I will raise `FACE_H`.
+
+`stl/test/art-sample.stl` — two tiles of real art from the `pipes` vignette
+at the design slot, 3.9 g. This is the one to look at to judge whether a
+0.77 mm pixel at 1.2 mm relief reads the way you want before 150 g goes into
+three shelves.
+
+Neither coupon carries the half-lap, so print them flat side down like the
+panels: **web on the bed.**
+
 ## Build
 
 ```bash

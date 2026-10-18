@@ -81,6 +81,8 @@ booleans, `shapely` to collapse pixel runs into polygons before extruding, and
 - `vignettes.py` — which crop of which map goes on which shelf.
 - `parts.py` — the channel and the art bodies.
 - `build.py` — STLs into `stl/`, renders into `renders/`.
+- `coupons.py` — the fit ladder and art sample, plus the 3 x 5 pixel font
+  that labels them. Test gear, not product.
 - `test_fit.py` — the assertions that have to hold before printing.
 
 ## How to run
@@ -88,6 +90,7 @@ booleans, `shapely` to collapse pixel runs into polygons before extruding, and
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python test_fit.py      # must pass
+.venv/bin/python build.py --test  # the 8 g fit ladder -- print this first
 .venv/bin/python build.py         # --stl / --renders / --fast
 ```
 
@@ -99,7 +102,12 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
   as underside-of-floor to top-of-bar, which makes the bar 16.07 mm proud. If
   it is instead the bar's rise above the floor, the face stops about 2.5 mm
   short of the shelf's underside — it still grips, but there is a visible gap.
-  A caliper from floor-top to bar-top settles it.
+  A caliper from floor-top to bar-top settles it, and so does any coupon from
+  the fit ladder: push one on and see whether the face passes the underside.
+- **The slot clearance is a guess too.** 4.4 mm over a 4 mm bar assumes FDM
+  shrink and sheet tolerance neither of which is known here. The fit ladder
+  (`build.py --test`) prints five widths from 4.2 to 4.6 for 3.8 g; whichever
+  grips becomes `FIT`.
 - **How many shelves there are.** The rail is per shelf and four vignettes
   exist; Rob prints the ones he wants. Three is the three feet.
 - **Two colours do not exist and four more are missing entirely.** The
@@ -107,7 +115,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
   the underground shelf has no teal, no pale cyan and no navy on the shelf at
   all. See the table in `print-guide.md`.
 - **Nothing has been printed.** Every number here is from the mesh, not from a
-  part in hand. The slot fit in particular is a calculation.
+  part in hand — which is what the fit ladder exists to end.
 - **Which scenes.** The current four are an arc through 1-1 with a dip into
   1-2. Forty-five other maps are sitting in `maps/` unused.
 - **The cutter is untouched.** 30 sheets of 300 x 300 mm vinyl in red, black
