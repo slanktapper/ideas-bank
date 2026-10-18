@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 from .config import AppConfig
 from .widgets import StickWidget, make_widget
@@ -33,6 +33,44 @@ UNLOCK_HINT = QColor(90, 170, 255, 190)
 UNLOCK_WASH = QColor(10, 14, 20, 90)
 
 
+class LockBar(QWidget):
+    """The way out of unlocked mode, on the overlay itself.
+
+    An unlocked overlay is always-on-top and catching clicks, so the settings
+    window behind it can be unreachable. This bar is the escape hatch, and it
+    does not depend on keyboard focus the way Esc does.
+    """
+
+    def __init__(self, app, parent: QWidget):
+        super().__init__(parent)
+        self.app = app
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet(
+            "LockBar { background: #15243c; border: 2px solid #5aa6ff;"
+            " border-radius: 10px; }"
+        )
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(18, 12, 18, 12)
+        lay.setSpacing(18)
+
+        msg = QLabel("Unlocked — drag the readouts to place them.")
+        msg.setStyleSheet("color: #e8f1ff; font-size: 15px; font-weight: 600;")
+        lay.addWidget(msg)
+
+        done = QPushButton("Done — lock overlay   (Esc)")
+        done.setMinimumHeight(36)
+        done.setCursor(Qt.PointingHandCursor)
+        done.setStyleSheet(
+            "QPushButton { background: #2f7d3a; color: white; font-size: 14px;"
+            " font-weight: 700; border: 1px solid #58c06a; border-radius: 6px;"
+            " padding: 6px 18px; }"
+            "QPushButton:hover { background: #38953f; }"
+        )
+        done.clicked.connect(lambda: self.app.set_locked(True))
+        lay.addWidget(done)
+        self.adjustSize()
+
+
 class OverlayWindow(QWidget):
     def __init__(self, app) -> None:
         super().__init__(None)
@@ -40,6 +78,9 @@ class OverlayWindow(QWidget):
         self.widgets: dict[str, StickWidget] = {}
         self.setWindowTitle("stick-watch overlay")
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.lock_bar = LockBar(app, self)
+        self.lock_bar.hide()
 
     # -- window flags ---------------------------------------------------
 
@@ -76,7 +117,29 @@ class OverlayWindow(QWidget):
             self.show()
         elif was_visible or self.isVisible():
             self.hide()
+
+        self.lock_bar.setVisible(not cfg.overlay_locked and cfg.overlay_visible)
+        if not cfg.overlay_locked:
+            self.position_lock_bar()
+            self.lock_bar.raise_()
+            # Take focus so Esc reaches us. The bar's button is the fallback
+            # for when something else has grabbed the keyboard.
+            self.raise_()
+            self.activateWindow()
+            self.setFocus(Qt.OtherFocusReason)
         self.update()
+
+    def position_lock_bar(self) -> None:
+        self.lock_bar.adjustSize()
+        x = max(0, (self.width() - self.lock_bar.width()) // 2)
+        self.lock_bar.move(x, 24)
+
+    def keyPressEvent(self, ev):
+        if ev.key() == Qt.Key_Escape and not self.app.cfg.overlay_locked:
+            ev.accept()
+            self.app.set_locked(True)   # positions are already saved
+            return
+        super().keyPressEvent(ev)
 
     # -- contents -------------------------------------------------------
 
@@ -104,6 +167,8 @@ class OverlayWindow(QWidget):
             existing.draggable = not cfg.overlay_locked
 
         self.clamp_into_view()
+        if self.lock_bar.isVisible():
+            self.lock_bar.raise_()
 
     def clamp_into_view(self) -> None:
         for w in self.widgets.values():
@@ -116,6 +181,8 @@ class OverlayWindow(QWidget):
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
         self.clamp_into_view()
+        if self.lock_bar.isVisible():
+            self.position_lock_bar()
         if self.app.cfg.overlay_mode == "windowed":
             g = self.geometry()
             self.app.cfg.win_x, self.app.cfg.win_y = g.x(), g.y()

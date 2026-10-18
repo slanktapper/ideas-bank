@@ -119,6 +119,22 @@ Three ways to place them, because the mouse is the one that can fail:
 2. **Position (px)** boxes in each readout's editor — no mouse involved.
 3. **Arrange along the bottom centre**, which resets everything to the row.
 
+### Locking
+
+One big two-state button on the Display tab, green for LOCKED and amber for
+UNLOCKED, saying what it will do when clicked.
+
+Getting back out of unlocked mode needs its own answer, because an unlocked
+overlay is always-on-top and catching clicks, so the settings window behind it
+can be unreachable. Three ways back, and all of them keep your placement:
+
+- **Esc** on the overlay.
+- The **Done — lock overlay** button on the bar across the top of the overlay,
+  which is the one that still works when something else has the keyboard.
+- The big button on the Display tab, if you can reach it.
+
+Locking by any route also raises the settings window back to the front.
+
 Unlocking tints the whole overlay and puts a blue plate on each readout. That
 is not decoration. A translucent window on Windows is hit-tested per pixel, so
 a fully transparent pixel passes the click through to whatever is behind it —

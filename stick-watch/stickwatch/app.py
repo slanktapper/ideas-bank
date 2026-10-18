@@ -83,6 +83,25 @@ class App(QObject):
         self.flush()
         self.hub.stop()
 
+    def set_locked(self, locked: bool) -> None:
+        """Lock or unlock the overlay, keeping whatever was changed.
+
+        Locking brings the settings window back to the front: an unlocked
+        overlay sits on top catching clicks, so without this the way back is
+        not obvious.
+        """
+        if self.cfg.overlay_locked == locked:
+            return
+        self.cfg.overlay_locked = locked
+        self.touch(immediate=True)
+        self.refresh_overlay(remode=True)
+        if self.settings is not None:
+            self.settings.sync_lock_state()
+            if locked:
+                self.settings.show()
+                self.settings.raise_()
+                self.settings.activateWindow()
+
     def refresh_overlay(self, remode: bool = False) -> None:
         self.overlay.rebuild(self.cfg)
         if remode:

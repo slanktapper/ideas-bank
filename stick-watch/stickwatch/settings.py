@@ -696,11 +696,17 @@ class SettingsWindow(QMainWindow):
         self.screen.currentIndexChanged.connect(self._display_changed)
         of.addRow("Monitor", self.screen)
 
+        self.lock_btn = QPushButton()
+        self.lock_btn.setCheckable(True)
+        self.lock_btn.setMinimumHeight(58)
+        self.lock_btn.setCursor(Qt.PointingHandCursor)
+        self.lock_btn.toggled.connect(self._display_changed)
+        of.addRow("", self.lock_btn)
+
         self.visible = QCheckBox("Show overlay")
-        self.locked = QCheckBox("Locked — click-through. Untick to drag readouts.")
         self.labels = QCheckBox("Show labels")
         self.values = QCheckBox("Show numeric values")
-        for cb in (self.visible, self.locked, self.labels, self.values):
+        for cb in (self.visible, self.labels, self.values):
             cb.toggled.connect(self._display_changed)
             of.addRow("", cb)
 
@@ -723,9 +729,9 @@ class SettingsWindow(QMainWindow):
         v.addWidget(ov)
 
         warn = QLabel(
-            "While unlocked the overlay tints the whole screen and each readout "
-            "shows a blue plate — that is what you drag. Lock it again to make "
-            "it click-through.\n\n"
+            "While unlocked the overlay tints the whole screen, each readout "
+            "shows a blue plate to grab, and a bar at the top carries a Done "
+            "button. Esc locks it again too — either way your placement is kept.\n\n"
             "An overlay cannot draw over a sim running in exclusive fullscreen. "
             "Set the sim to borderless windowed, or use the plain window on a "
             "second monitor."
@@ -744,6 +750,31 @@ class SettingsWindow(QMainWindow):
         quit_btn.clicked.connect(self.close)
         v.addWidget(quit_btn)
         return page
+
+    def _paint_lock_button(self) -> None:
+        if self.lock_btn.isChecked():
+            self.lock_btn.setText(
+                "LOCKED  —  overlay ignores the mouse\n"
+                "Click to unlock and move the readouts")
+            self.lock_btn.setStyleSheet(
+                "QPushButton { background: #24502c; color: #dff5e2; font-size: 15px;"
+                " font-weight: 700; border: 2px solid #4f9a5c; border-radius: 8px; }"
+                "QPushButton:hover { background: #2c6236; }")
+        else:
+            self.lock_btn.setText(
+                "UNLOCKED  —  drag the readouts on the overlay\n"
+                "Click to lock, or press Esc on the overlay")
+            self.lock_btn.setStyleSheet(
+                "QPushButton { background: #6a4a15; color: #ffeccc; font-size: 15px;"
+                " font-weight: 700; border: 2px solid #d39a3a; border-radius: 8px; }"
+                "QPushButton:hover { background: #7d581b; }")
+
+    def sync_lock_state(self) -> None:
+        """Follow a lock change made from the overlay (Esc or the Done button)."""
+        self._loading = True
+        self.lock_btn.setChecked(self.app.cfg.overlay_locked)
+        self._loading = False
+        self._paint_lock_button()
 
     def _arrange(self) -> None:
         self.app.overlay.arrange_bottom_centre()
@@ -770,7 +801,8 @@ class SettingsWindow(QMainWindow):
         self.mode_windowed.setChecked(cfg.overlay_mode != "transparent")
         self.screen.setCurrentIndex(max(0, min(cfg.overlay_screen, self.screen.count() - 1)))
         self.visible.setChecked(cfg.overlay_visible)
-        self.locked.setChecked(cfg.overlay_locked)
+        self.lock_btn.setChecked(cfg.overlay_locked)
+        self._paint_lock_button()
         self.labels.setChecked(cfg.show_labels)
         self.values.setChecked(cfg.show_values)
         self.hz.setValue(cfg.poll_hz)
@@ -796,7 +828,8 @@ class SettingsWindow(QMainWindow):
         cfg.overlay_mode = "transparent" if self.mode_transparent.isChecked() else "windowed"
         cfg.overlay_screen = int(self.screen.currentData() or 0)
         cfg.overlay_visible = self.visible.isChecked()
-        cfg.overlay_locked = self.locked.isChecked()
+        cfg.overlay_locked = self.lock_btn.isChecked()
+        self._paint_lock_button()
         cfg.show_labels = self.labels.isChecked()
         cfg.show_values = self.values.isChecked()
         cfg.poll_hz = self.hz.value()
