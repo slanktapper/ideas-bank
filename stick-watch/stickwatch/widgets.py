@@ -25,8 +25,10 @@ TEXT = QColor(226, 226, 226)
 TEXT_DIM = QColor(150, 150, 150)
 SHADOW = QColor(0, 0, 0, 200)
 FILL = QColor(60, 190, 235)             # plane throttle bar
-COLLECTIVE_UP = QColor(90, 184, 255)      # above the detent
-COLLECTIVE_DOWN = QColor(255, 224, 51)    # below it
+# Fully saturated: no white mixed in, so they stay solid colour over a bright
+# sky instead of washing out toward it.
+COLLECTIVE_UP = QColor(0, 132, 255)       # above the detent
+COLLECTIVE_DOWN = QColor(255, 216, 0)     # below it
 TRACK = QColor(70, 70, 70)
 # The collective's track is all but invisible: it sits over the sim, and the
 # fill and the centre line carry the reading on their own.
