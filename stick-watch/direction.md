@@ -234,3 +234,44 @@ python -m stickwatch
 - **Untested against real hardware.** Written and checked headlessly — the
   drawing, the deadzone maths and the persistence are verified, but no physical
   stick has been plugged into it yet.
+
+### Shelved: reading altitude off the game HUD (2026-10-18 MDT)
+
+A vertical-speed readout — a circle sized by climb/descent rate, green up, red
+down — driven by reading the ASL figure out of the WARDOGS HUD by screen
+capture. Designed as a generic "Screen value" readout: drag a box over any HUD
+number, show its value or its rate.
+
+**Shelved on Terms of Service grounds, not technical ones.** Bulkhead's
+enforcement policy bans *"macros, scripts or hardware devices to automate
+inputs or gain an advantage that normal play doesn't allow."* Nothing there
+names screen capture, and capture itself is what streaming software does — but
+the output would be an instrument the aircraft does not have, which is
+arguably that advantage. Unresolved, and the downside is an account ban, so it
+waits. **To unshelve: ask Bulkhead support whether a tool that reads your own
+HUD by screen capture and displays derived flight information is permitted.**
+
+Feasibility was measured before shelving, against a real screenshot, so it
+does not need redoing:
+
+- The HUD is thin light strokes drawn straight over the world — **no opaque
+  panel behind the digits**, so plain brightness thresholding does not work.
+- Subtracting a local median (a ridge filter) separates the strokes cleanly:
+  22x contrast over gravel, 45x over sky. Surviving background noise is
+  isolated speckle, not connected shapes.
+- Normalised cross-correlation against a digit template on the ridge image:
+  **true digit 0.75, best false positive 0.57 (a letter "G", which cannot
+  occur in a digit cell), background 99th percentile 0.27.** Comfortable
+  margin, measured on a JPEG-compressed screenshot downscaled to 2000 px wide;
+  a native 2560x1440 capture is cleaner still.
+- Digit cell measured 10x13 px at 2000 px wide, so roughly **13x17 px native**.
+- Untested background: **low flight over forest canopy**, the noisiest case.
+
+**The limit that would not go away:** the HUD reads whole metres, so measuring
+rate needs roughly a one-second window. The readout would lag by about a
+second and could not resolve drift under about 1 m/s. A trend indicator, not a
+hover instrument.
+
+Everything stick-watch does today is clear of all this: it reads HID axes, the
+same data the game reads from the same devices, and never touches the game
+process, its memory or its files.
