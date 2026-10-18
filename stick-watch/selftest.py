@@ -160,11 +160,65 @@ def test_bottom_centre_layout() -> None:
     sw.deleteLater()
 
 
+def test_positions_survive_a_restart() -> None:
+    """Saved positions must come back on launch, not be clamped away.
+
+    Regression: start() laid the readouts out -- which clamps them to the
+    window -- before apply_mode() had given the window its real size, so every
+    saved position was squashed into Qt's default geometry on each launch. The
+    settings themselves always came back; only placement was lost.
+    """
+    from PySide6.QtWidgets import QApplication
+
+    from stickwatch.app import App
+    from stickwatch.settings import SettingsWindow
+
+    qapp = QApplication.instance() or QApplication([])
+    previous = os.environ["STICKWATCH_CONFIG_DIR"]
+    os.environ["STICKWATCH_CONFIG_DIR"] = tempfile.mkdtemp(prefix="stickwatch-restart-")
+    try:
+        app = App()
+        sw = SettingsWindow(app)
+        app.settings = sw
+        app.start()
+        sw.show()
+        for label in ("Rudder", "Throttle — heli", "Joystick (2 axes)"):
+            sw.add_kind.setCurrentIndex(sw.add_kind.findText(label))
+            sw._add()
+
+        ov = app.overlay
+        placed = {}
+        offset = 10
+        for w in app.cfg.widgets:
+            child = ov.widgets[w.id]
+            x = max(0, min(40, ov.width() - child.width()))
+            y = max(0, min(offset, ov.height() - child.height()))
+            w.x, w.y = x, y
+            child.move(x, y)
+            placed[w.id] = (x, y)
+            offset += 30
+        app.touch(immediate=True)
+        app.shutdown()
+        sw.close()
+
+        again = App()
+        sw2 = SettingsWindow(again)
+        again.settings = sw2
+        again.start()
+        check("restart: every readout keeps its position",
+              {w.id: (w.x, w.y) for w in again.cfg.widgets}, placed)
+        again.shutdown()
+        sw2.close()
+    finally:
+        os.environ["STICKWATCH_CONFIG_DIR"] = previous
+
+
 if __name__ == "__main__":
     test_deadzone()
     test_hotplug_does_not_loop()
     test_config_survives_a_crash()
     test_bottom_centre_layout()
+    test_positions_survive_a_restart()
     print()
     if FAILURES:
         print(f"{len(FAILURES)} FAILED: " + ", ".join(FAILURES))

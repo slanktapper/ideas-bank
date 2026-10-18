@@ -70,8 +70,11 @@ class App(QObject):
     # -- lifecycle ------------------------------------------------------
 
     def start(self) -> None:
-        self.overlay.rebuild(self.cfg)
+        # Geometry first, then the readouts. rebuild() clamps positions to the
+        # window, so laying out before the window has its real size squashes
+        # every saved position into the default one.
         self.overlay.apply_mode(self.cfg)
+        self.overlay.rebuild(self.cfg)
         self.restart_poll()
 
     def restart_poll(self) -> None:
@@ -103,9 +106,9 @@ class App(QObject):
                 self.settings.activateWindow()
 
     def refresh_overlay(self, remode: bool = False) -> None:
-        self.overlay.rebuild(self.cfg)
         if remode:
-            self.overlay.apply_mode(self.cfg)
+            self.overlay.apply_mode(self.cfg)   # resize before laying out
+        self.overlay.rebuild(self.cfg)
 
     @Slot(str, int, int)
     def on_widget_moved(self, wid: str, x: int, y: int) -> None:

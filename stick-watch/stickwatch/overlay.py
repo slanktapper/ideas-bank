@@ -79,6 +79,9 @@ class OverlayWindow(QWidget):
         self.setWindowTitle("stick-watch overlay")
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setFocusPolicy(Qt.StrongFocus)
+        # Until apply_mode() has run, this window is still whatever size Qt
+        # made it, and nothing may be measured or clamped against that.
+        self._geometry_ready = False
         self.lock_bar = LockBar(app, self)
         self.lock_bar.hide()
 
@@ -109,6 +112,7 @@ class OverlayWindow(QWidget):
             self.setGeometry(screens[idx].geometry())
         else:
             self.setGeometry(cfg.win_x, cfg.win_y, cfg.win_w, cfg.win_h)
+        self._geometry_ready = True
 
         for w in self.widgets.values():
             w.draggable = not cfg.overlay_locked
@@ -171,6 +175,8 @@ class OverlayWindow(QWidget):
             self.lock_bar.raise_()
 
     def clamp_into_view(self) -> None:
+        if not self._geometry_ready:
+            return      # see _geometry_ready: clamping now would lose positions
         for w in self.widgets.values():
             x = max(0, min(w.cfg.x, max(0, self.width() - w.width())))
             y = max(0, min(w.cfg.y, max(0, self.height() - w.height())))
@@ -183,7 +189,7 @@ class OverlayWindow(QWidget):
         self.clamp_into_view()
         if self.lock_bar.isVisible():
             self.position_lock_bar()
-        if self.app.cfg.overlay_mode == "windowed":
+        if self._geometry_ready and self.app.cfg.overlay_mode == "windowed":
             g = self.geometry()
             self.app.cfg.win_x, self.app.cfg.win_y = g.x(), g.y()
             self.app.cfg.win_w, self.app.cfg.win_h = g.width(), g.height()
@@ -191,7 +197,7 @@ class OverlayWindow(QWidget):
 
     def moveEvent(self, ev):
         super().moveEvent(ev)
-        if self.app.cfg.overlay_mode == "windowed":
+        if self._geometry_ready and self.app.cfg.overlay_mode == "windowed":
             g = self.geometry()
             self.app.cfg.win_x, self.app.cfg.win_y = g.x(), g.y()
             self.app.touch()

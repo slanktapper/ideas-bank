@@ -99,6 +99,15 @@ most the last fifth of a second of fiddling.
 Settings live in `%APPDATA%\stick-watch\config.json` (override with the
 `STICKWATCH_CONFIG_DIR` environment variable).
 
+**Positions are clamped to the overlay, so the overlay has to know its own
+size before any readout is placed.** `apply_mode()` sets the window geometry
+and `rebuild()` lays the readouts out in it, in that order, on launch and on
+every mode change. `_geometry_ready` guards the rest: until the window has
+been given its real size, nothing is clamped and no window geometry is written
+back. Getting this wrong squashed every saved position into Qt's default
+window size on each launch -- the settings all came back, only the placement
+was lost, which is a confusing way for it to fail. `selftest.py` covers it.
+
 Devices are remembered by **SDL GUID plus an ordinal**, not by enumeration
 order, so axes stay mapped across reboots and USB ports — and two identical
 sticks stay apart. An unplugged device keeps its assignment and the readout
