@@ -106,6 +106,27 @@ Two SDL settings matter and are applied in `devices.py` before pygame loads:
 reporting axis motion whenever its window is unfocused, which for an overlay
 that never takes focus means every axis reads zero.
 
+## Positioning
+
+New readouts land in a centred row along the **bottom of the display**, sharing
+a bottom edge, wrapping to a row above when they no longer fit across. Adding
+one re-tidies the row; **Arrange readouts along the bottom centre** on the
+Display tab does the same on demand.
+
+Three ways to place them, because the mouse is the one that can fail:
+
+1. **Drag**, with the overlay unlocked.
+2. **Position (px)** boxes in each readout's editor — no mouse involved.
+3. **Arrange along the bottom centre**, which resets everything to the row.
+
+Unlocking tints the whole overlay and puts a blue plate on each readout. That
+is not decoration. A translucent window on Windows is hit-tested per pixel, so
+a fully transparent pixel passes the click through to whatever is behind it —
+with only a thin border drawn, nothing but the few opaque pixels of a dot could
+be grabbed, which made the overlay feel immovable. The wash gives every pixel
+an alpha so clicks land. `WindowDoesNotAcceptFocus` is likewise set only while
+locked; unlocked, this is an ordinary interactive window.
+
 ## Performance
 
 The polling loop reads axes and repaints; everything else is meant to stay out

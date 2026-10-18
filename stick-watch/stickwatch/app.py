@@ -94,6 +94,8 @@ class App(QObject):
         if w is not None:
             w.x, w.y = x, y
             self.touch()
+            if self.settings is not None:
+                self.settings.on_widget_moved(wid)
 
     # -- per-frame ------------------------------------------------------
 

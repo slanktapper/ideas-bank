@@ -27,6 +27,8 @@ SHADOW = QColor(0, 0, 0, 200)
 FILL = QColor(60, 190, 235)             # plane throttle bar
 TRACK = QColor(70, 70, 70)
 MISSING = QColor(190, 120, 30)
+DRAG_PLATE = QColor(70, 130, 200, 70)
+DRAG_EDGE = QColor(120, 185, 255, 200)
 
 LABEL_MM = 5.0
 
@@ -142,6 +144,15 @@ class StickWidget(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing, True)
         p.setRenderHint(QPainter.TextAntialiasing, True)
+
+        if self.draggable:
+            # A filled plate over the whole tile: it shows what you can grab,
+            # and it gives the tile an alpha so the click is not passed
+            # through the translucent window to the app behind.
+            plate = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+            p.setPen(QPen(DRAG_EDGE, 1.5))
+            p.setBrush(DRAG_PLATE)
+            p.drawRoundedRect(plate, 6, 6)
 
         strip = self.label_strip_px()
         if self.show_label:

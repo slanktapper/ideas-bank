@@ -280,6 +280,23 @@ class WidgetEditor(QWidget):
         form.addRow("Label", self.label)
         form.addRow("Deadzone", self.deadzone)
 
+        self.pos_x = QSpinBox()
+        self.pos_x.setRange(0, 16000)
+        self.pos_x.setValue(wcfg.x)
+        self.pos_y = QSpinBox()
+        self.pos_y.setRange(0, 16000)
+        self.pos_y.setValue(wcfg.y)
+        prow = QWidget()
+        ph = QHBoxLayout(prow)
+        ph.setContentsMargins(0, 0, 0, 0)
+        ph.addWidget(QLabel("X"))
+        ph.addWidget(self.pos_x, 1)
+        ph.addWidget(QLabel("Y"))
+        ph.addWidget(self.pos_y, 1)
+        self.pos_x.valueChanged.connect(self._move)
+        self.pos_y.valueChanged.connect(self._move)
+        form.addRow("Position (px)", prow)
+
         # Axis slots.
         self.rows: list[AxisRow] = []
         box = QGroupBox("Axes")
@@ -348,6 +365,19 @@ class WidgetEditor(QWidget):
         self.cfg.kind = self.kind.currentData()
         self.cfg.subkind = self.subkind.currentData() if self.cfg.kind == KIND_THROTTLE else ""
         self.kind_changed.emit()
+
+    def _move(self) -> None:
+        if self._loading:
+            return
+        self.cfg.x, self.cfg.y = self.pos_x.value(), self.pos_y.value()
+        self.changed.emit()
+
+    def sync_position(self) -> None:
+        """Pull the boxes back in line after a drag moved the readout."""
+        self._loading = True
+        self.pos_x.setValue(self.cfg.x)
+        self.pos_y.setValue(self.cfg.y)
+        self._loading = False
 
     def _emit(self) -> None:
         if self._loading:
@@ -497,12 +527,12 @@ class SettingsWindow(QMainWindow):
     def _add(self) -> None:
         kind, sub = self.add_kind.currentData()
         w = new_widget(kind, sub)
-        # Stagger new widgets so they do not land on top of each other.
-        n = len(self.app.cfg.widgets)
-        w.x, w.y = 40 + (n % 4) * 60, 40 + (n % 4) * 40
         self.app.cfg.widgets.append(w)
-        self.app.touch(immediate=True)
         self.app.refresh_overlay()
+        # New readouts join the row along the bottom centre. Adding one
+        # re-tidies the row; drag them wherever you like afterwards.
+        self.app.overlay.arrange_bottom_centre()
+        self.app.touch(immediate=True)
         self.reload_list(len(self.app.cfg.widgets) - 1)
 
     def _duplicate(self) -> None:
@@ -667,12 +697,16 @@ class SettingsWindow(QMainWindow):
         of.addRow("Monitor", self.screen)
 
         self.visible = QCheckBox("Show overlay")
-        self.locked = QCheckBox("Locked (click-through; untick to drag widgets)")
+        self.locked = QCheckBox("Locked — click-through. Untick to drag readouts.")
         self.labels = QCheckBox("Show labels")
         self.values = QCheckBox("Show numeric values")
         for cb in (self.visible, self.locked, self.labels, self.values):
             cb.toggled.connect(self._display_changed)
             of.addRow("", cb)
+
+        arrange = QPushButton("Arrange readouts along the bottom centre")
+        arrange.clicked.connect(self._arrange)
+        of.addRow("", arrange)
 
         self.hz = QSpinBox()
         self.hz.setRange(10, 250)
@@ -689,6 +723,9 @@ class SettingsWindow(QMainWindow):
         v.addWidget(ov)
 
         warn = QLabel(
+            "While unlocked the overlay tints the whole screen and each readout "
+            "shows a blue plate — that is what you drag. Lock it again to make "
+            "it click-through.\n\n"
             "An overlay cannot draw over a sim running in exclusive fullscreen. "
             "Set the sim to borderless windowed, or use the plain window on a "
             "second monitor."
@@ -707,6 +744,16 @@ class SettingsWindow(QMainWindow):
         quit_btn.clicked.connect(self.close)
         v.addWidget(quit_btn)
         return page
+
+    def _arrange(self) -> None:
+        self.app.overlay.arrange_bottom_centre()
+        if self.editor is not None:
+            self.editor.sync_position()
+
+    def on_widget_moved(self, wid: str) -> None:
+        """Keep the position boxes honest when a readout is dragged."""
+        if self.editor is not None and self.editor.cfg.id == wid:
+            self.editor.sync_position()
 
     def _update_rate(self) -> None:
         tabs = self.centralWidget()

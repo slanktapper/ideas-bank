@@ -120,10 +120,51 @@ def test_config_survives_a_crash() -> None:
     check("persist: corrupt file falls back", len(C.load().widgets), 1)
 
 
+def test_bottom_centre_layout() -> None:
+    """Readouts must land on screen, bottom centre, not on top of each other."""
+    from PySide6.QtWidgets import QApplication
+
+    from stickwatch.app import App
+    from stickwatch.settings import SettingsWindow
+
+    qapp = QApplication.instance() or QApplication([])
+    app = App()
+    sw = SettingsWindow(app)
+    app.settings = sw
+    app.start()
+
+    for label in ("Rudder", "Throttle — heli", "Joystick (2 axes)", "Throttle — plane"):
+        sw.add_kind.setCurrentIndex(sw.add_kind.findText(label))
+        sw._add()
+
+    app.cfg.overlay_mode = "windowed"
+    app.cfg.win_w, app.cfg.win_h = 2560, 1440
+    app.refresh_overlay(remode=True)
+    ov = app.overlay
+    ov.arrange_bottom_centre()
+
+    rects = [ov.widgets[w.id].geometry() for w in app.cfg.widgets]
+    check("layout: every readout is on screen",
+          all(r.x() >= 0 and r.y() >= 0 and r.right() < ov.width()
+              and r.bottom() < ov.height() for r in rects), True)
+    check("layout: none overlap",
+          any(rects[i].intersects(rects[j])
+              for i in range(len(rects)) for j in range(i + 1, len(rects))), False)
+    check("layout: one shared bottom edge",
+          len({r.bottom() for r in rects}), 1)
+    lo = min(r.x() for r in rects)
+    hi = max(r.right() for r in rects)
+    check("layout: the row is centred", abs((lo + hi) / 2 - ov.width() / 2) < 2, True)
+
+    app.shutdown()
+    sw.deleteLater()
+
+
 if __name__ == "__main__":
     test_deadzone()
     test_hotplug_does_not_loop()
     test_config_survives_a_crash()
+    test_bottom_centre_layout()
     print()
     if FAILURES:
         print(f"{len(FAILURES)} FAILED: " + ", ".join(FAILURES))

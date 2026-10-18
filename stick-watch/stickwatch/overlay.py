@@ -17,7 +17,7 @@ is clamped back into view if you switch to a small window.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
@@ -25,7 +25,12 @@ from .config import AppConfig
 from .widgets import StickWidget, make_widget
 
 BACKDROP = QColor(16, 18, 22)
-UNLOCK_HINT = QColor(90, 170, 255, 110)
+UNLOCK_HINT = QColor(90, 170, 255, 190)
+# While unlocked the whole canvas is tinted. This is not decoration: a
+# translucent window is hit-tested per pixel on Windows, so a fully
+# transparent pixel passes the click through to whatever is behind. Without
+# an alpha everywhere, only the few opaque pixels of a readout are grabbable.
+UNLOCK_WASH = QColor(10, 14, 20, 90)
 
 
 class OverlayWindow(QWidget):
@@ -46,9 +51,10 @@ class OverlayWindow(QWidget):
         flags = Qt.Window
         if transparent:
             flags |= Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint
-            flags |= Qt.WindowDoesNotAcceptFocus
             if cfg.overlay_locked:
-                flags |= Qt.WindowTransparentForInput
+                # Only refuse focus while locked. Unlocked, this is an ordinary
+                # interactive window and needs to behave like one.
+                flags |= Qt.WindowDoesNotAcceptFocus | Qt.WindowTransparentForInput
         else:
             flags |= Qt.WindowStaysOnTopHint
 
@@ -123,14 +129,57 @@ class OverlayWindow(QWidget):
             self.app.cfg.win_x, self.app.cfg.win_y = g.x(), g.y()
             self.app.touch()
 
+    # -- placement ------------------------------------------------------
+
+    def arrange_bottom_centre(self, gap: int = 18, margin: int = 28) -> None:
+        """Lay the readouts out in centred rows along the bottom edge.
+
+        Readouts fill a row left to right, centred; when the next one will not
+        fit, a new row starts above. Rows share a bottom edge, so a short
+        readout sits level with a tall one rather than floating.
+        """
+        order = [self.widgets[w.id] for w in self.app.cfg.widgets
+                 if w.id in self.widgets]
+        if not order:
+            return
+
+        avail = max(1, self.width() - 2 * margin)
+        rows: list[tuple[list, int]] = []
+        run: list = []
+        run_w = 0
+        for w in order:
+            extend = w.width() if not run else run_w + gap + w.width()
+            if run and extend > avail:
+                rows.append((run, run_w))
+                run, run_w = [w], w.width()
+            else:
+                run.append(w)
+                run_w = extend
+        rows.append((run, run_w))
+
+        baseline = self.height() - margin
+        for row, row_w in reversed(rows):
+            tallest = max(w.height() for w in row)
+            top = max(0, baseline - tallest)
+            x = max(0, (self.width() - row_w) // 2)
+            for w in row:
+                y = top + (tallest - w.height())   # bottom-align within the row
+                w.cfg.x, w.cfg.y = x, y
+                w.move(x, y)
+                x += w.width() + gap
+            baseline = top - gap
+        self.app.touch(immediate=True)
+
     def paintEvent(self, ev):
         cfg = self.app.cfg
         p = QPainter(self)
         if cfg.overlay_mode == "windowed":
             p.fillRect(self.rect(), BACKDROP)
         if not cfg.overlay_locked:
-            # A visible edge while unlocked, so it is obvious what you can drag
-            # inside -- and obvious that the overlay is currently catching clicks.
+            if cfg.overlay_mode != "windowed":
+                # Gives every pixel an alpha, so clicks land on the window
+                # instead of falling through it. See UNLOCK_WASH above.
+                p.fillRect(self.rect(), UNLOCK_WASH)
             p.setPen(QPen(UNLOCK_HINT, 4))
             p.setBrush(Qt.NoBrush)
             p.drawRect(self.rect().adjusted(2, 2, -3, -3))
