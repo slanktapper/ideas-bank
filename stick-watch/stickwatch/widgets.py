@@ -252,6 +252,16 @@ class RudderWidget(StickWidget):
             p.setBrush(fill)
         p.drawEllipse(QPointF(x, cy), dia / 2.0, dia / 2.0)
 
+        # The name sits dead centre, drawn last so it survives the dot passing
+        # under it. Its own dark backing carries it over the black neutral dot
+        # and over whatever the sim is showing.
+        if self.show_label:
+            p.setFont(self._font(LABEL_MM, bold=True))
+            band = QRectF(r.left(), cy - self.mm(LABEL_MM),
+                          r.width(), self.mm(LABEL_MM * 2))
+            self._text(p, band, Qt.AlignHCenter | Qt.AlignVCenter,
+                       self.cfg.display_label(), TEXT)
+
 
 class JoystickWidget(StickWidget):
     """Concentric squares marking equal steps of deflection, a centre dot, and

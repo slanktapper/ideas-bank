@@ -18,7 +18,7 @@ Three axis types:
 | Type | Sub-type | Display |
 | --- | --- | --- |
 | Joystick | — | Concentric squares, a centre dot, and a crosshair cursor driven by two mapped axes |
-| Rudder | — | Horizontal slider, dead centre in the middle: the dot travels the track, black at centre, red growing to the left, green growing to the right. No text |
+| Rudder | — | Horizontal slider, dead centre in the middle: the dot travels the track, black at centre, red growing to the left, green growing to the right. Name sits dead centre, no figures |
 | Throttle | plane | Bar filled from the bottom, with a large percentage |
 | Throttle | heli | **Collective** — the same bar filled from the centre detent: blue climbing above, yellow falling below, over a near-transparent track |
 
@@ -62,9 +62,11 @@ the deadzone, red to the left, green to the right. Position says where you are,
 size and colour say how far. Track length (110 mm default) and both diameters
 are saved.
 
-It carries **no text at all** — no name above the track, no figure beside it.
-The dot's position, size and colour say everything, and a word sitting over
-the sim earns nothing. "Show numeric values" does not put a number on it.
+It carries **no figure** — no percentage, no `CTR`. The dot's position, size
+and colour say all of that, and "Show numeric values" does not put a number
+on it. The only text is its **name, dead centre**, drawn last so the dot
+passes under it; its dark backing carries it over the black neutral dot and
+over whatever the sim is showing behind.
 
 **Joystick.** Box *k* of *N* sits `k × spacing` out from the centre and marks
 `k/N` of full travel, so the outermost box is 100% deflection. Defaults: 4
