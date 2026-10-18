@@ -26,6 +26,9 @@ TEXT_DIM = QColor(150, 150, 150)
 SHADOW = QColor(0, 0, 0, 200)
 FILL = QColor(60, 190, 235)             # plane throttle bar
 TRACK = QColor(70, 70, 70)
+# The collective's track is all but invisible: it sits over the sim, and the
+# fill and the centre line carry the reading on their own.
+TRACK_FAINT = QColor(70, 70, 70, 30)
 MISSING = QColor(190, 120, 30)
 DRAG_PLATE = QColor(70, 130, 200, 70)
 DRAG_EDGE = QColor(120, 185, 255, 200)
@@ -73,7 +76,7 @@ class StickWidget(QWidget):
         Measured without any "no device" suffix: an unplugged stick should not
         resize the widget and shuffle the whole overlay.
         """
-        if not self.show_label:
+        if not self.show_label or self.label_strip_px() <= 0:
             return 0.0
         fm = QFontMetricsF(self._font(LABEL_MM, bold=True))
         return fm.horizontalAdvance(self.cfg.display_label()) + self.mm(2.0)
@@ -155,7 +158,7 @@ class StickWidget(QWidget):
             p.drawRoundedRect(plate, 6, 6)
 
         strip = self.label_strip_px()
-        if self.show_label:
+        if self.show_label and strip > 0:
             p.setFont(self._font(LABEL_MM, bold=True))
             r = QRectF(0, 0, self.width(), strip)
             colour = MISSING if self.missing else TEXT
@@ -340,9 +343,9 @@ class JoystickWidget(StickWidget):
 
 
 class _BarWidget(StickWidget):
-    """Shared frame for the two throttles: a vertical bar and a numeral."""
+    """Shared frame for the two throttles: a vertical bar and a caption."""
 
-    NUMERAL_MM = 11.0
+    CAPTION_MM = 11.0
 
     def __init__(self, *a, **kw):
         self.value = 0.0
@@ -353,8 +356,17 @@ class _BarWidget(StickWidget):
             self.value = v
             self.update()
 
+    def caption_size_mm(self) -> float:
+        return 9.0
+
+    def track_colour(self) -> QColor:
+        return TRACK
+
     def content_size_mm(self) -> tuple[float, float]:
-        return (max(self.cfg.bar_w_mm, 26.0), self.cfg.bar_h_mm + self.NUMERAL_MM)
+        fm = QFontMetricsF(self._font(self.caption_size_mm(), bold=True))
+        caption = fm.horizontalAdvance(self.caption()) / max(self.px_per_mm, 0.01)
+        return (max(self.cfg.bar_w_mm, 26.0, caption + 3.0),
+                self.cfg.bar_h_mm + self.CAPTION_MM)
 
     def bar_rect(self, r: QRectF) -> QRectF:
         w = self.mm(self.cfg.bar_w_mm)
@@ -363,7 +375,7 @@ class _BarWidget(StickWidget):
     def paint_content(self, p: QPainter, r: QRectF) -> None:
         bar = self.bar_rect(r)
         p.setPen(Qt.NoPen)
-        p.setBrush(TRACK)
+        p.setBrush(self.track_colour())
         p.drawRect(bar)
 
         self.paint_fill(p, bar)
@@ -379,9 +391,12 @@ class _BarWidget(StickWidget):
         p.setBrush(Qt.NoBrush)
         p.drawRect(bar)
 
-        p.setFont(self._font(9.0, bold=True))
-        self._text(p, QRectF(r.left(), bar.bottom(), r.width(), self.mm(self.NUMERAL_MM)),
-                   Qt.AlignHCenter | Qt.AlignVCenter, self.numeral(), TEXT)
+        caption = self.caption()
+        if caption:
+            p.setFont(self._font(self.caption_size_mm(), bold=True))
+            self._text(p, QRectF(r.left(), bar.bottom(), r.width(),
+                                 self.mm(self.CAPTION_MM)),
+                       Qt.AlignHCenter | Qt.AlignVCenter, caption, TEXT)
 
     def tick_fractions(self) -> tuple[float, ...]:
         return ()
@@ -392,7 +407,7 @@ class _BarWidget(StickWidget):
     def paint_over(self, p: QPainter, bar: QRectF) -> None:
         pass
 
-    def numeral(self) -> str:
+    def caption(self) -> str:
         raise NotImplementedError
 
 
@@ -411,7 +426,7 @@ class ThrottlePlaneWidget(_BarWidget):
         p.setBrush(FILL)
         p.drawRect(QRectF(bar.left(), bar.bottom() - h, bar.width(), h))
 
-    def numeral(self) -> str:
+    def caption(self) -> str:
         return f"{max(0.0, min(1.0, self.value)) * 100:.0f}%"
 
 
@@ -421,6 +436,9 @@ class ThrottleHeliWidget(_BarWidget):
     Green climbing above centre, red falling below, so the direction reads at a
     glance. A heavy centre line sits on top of the fill -- centre is the thing
     this instrument exists to show, so nothing is allowed to bury it.
+
+    The name goes under the bar where the plane throttle puts its percentage,
+    and the track behind the fill is nearly transparent.
     """
 
     def tick_fractions(self) -> tuple[float, ...]:
@@ -443,8 +461,20 @@ class ThrottleHeliWidget(_BarWidget):
         p.setPen(QPen(GRID_OUTER, max(2.0, self.mm(0.9))))
         p.drawLine(QPointF(bar.left() - over, mid), QPointF(bar.right() + over, mid))
 
-    def numeral(self) -> str:
-        return "CTR" if self.value == 0.0 else f"{self.value * 100:+.0f}%"
+    def caption(self) -> str:
+        # The name, not the number: on a collective the only figure that
+        # matters is whether you are on the detent, and the centre line
+        # already says that.
+        return self.cfg.display_label() if self.show_label else ""
+
+    def caption_size_mm(self) -> float:
+        return 5.5
+
+    def track_colour(self) -> QColor:
+        return TRACK_FAINT
+
+    def label_strip_px(self) -> float:
+        return 0.0      # the name lives under the bar instead
 
 
 def make_widget(cfg: WidgetConfig, px_per_mm: float, parent: QWidget | None = None) -> StickWidget:

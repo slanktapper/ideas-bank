@@ -150,7 +150,7 @@ class WidgetConfig:
 
     def default_label(self) -> str:
         if self.kind == KIND_THROTTLE:
-            return f"Throttle ({self.subkind or 'plane'})"
+            return "Collective" if self.subkind == "heli" else "Throttle (plane)"
         return self.kind.capitalize()
 
     def display_label(self) -> str:

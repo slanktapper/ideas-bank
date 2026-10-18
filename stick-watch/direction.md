@@ -20,7 +20,7 @@ Three axis types:
 | Joystick | — | Concentric squares, a centre dot, and a crosshair cursor driven by two mapped axes |
 | Rudder | — | Horizontal slider, dead centre in the middle: the dot travels the track, black at centre, red growing to the left, green growing to the right |
 | Throttle | plane | Bar filled from the bottom, with a large percentage |
-| Throttle | heli | The same bar filled from the centre detent: green climbing above, red falling below |
+| Throttle | heli | **Collective** — the same bar filled from the centre detent: green climbing above, red falling below, over a near-transparent track |
 
 ## Why
 
@@ -69,11 +69,20 @@ outermost box is 80 mm across. Box count, spacing, centre dot (3 mm) and
 cursor (10 mm) are all saved. Positive roll moves the cursor right, positive
 pitch moves it up; flip either with the Inverted box.
 
-**Throttle, heli.** The same bar as the plane throttle, filled from the centre
-detent outwards instead of from the bottom: green climbing above centre, red
-falling below. A heavy centre line is drawn on top of the fill and overhangs
-both edges, so nothing can bury the one thing this instrument exists to show.
-The numeral reads `CTR` on centre and a signed percentage off it.
+**Throttle, heli — the collective.** The same bar as the plane throttle,
+filled from the centre detent outwards instead of from the bottom: green
+climbing above centre, red falling below. A heavy centre line is drawn on top
+of the fill and overhangs both edges, so nothing can bury the one thing this
+instrument exists to show.
+
+It carries no percentage. The only figure that matters on a collective is
+whether you are on the detent, and the centre line already says that, so the
+space under the bar holds the readout's **name** instead — defaulting to
+`Collective`. There is no label above the bar; that would just say it twice.
+
+The track behind the fill is **nearly transparent** (alpha 30), so the sim
+shows through it. The fill, the centre line and the outline stay solid and
+carry the reading on their own. The plane throttle keeps a solid track.
 
 ## Persistence
 
