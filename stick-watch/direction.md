@@ -18,9 +18,9 @@ Three axis types:
 | Type | Sub-type | Display |
 | --- | --- | --- |
 | Joystick | — | Concentric squares, a centre dot, and a crosshair cursor driven by two mapped axes |
-| Rudder | — | Horizontal slider, dead centre in the middle: the dot travels the track, black at centre, red growing to the left, green growing to the right |
+| Rudder | — | Horizontal slider, dead centre in the middle: the dot travels the track, black at centre, red growing to the left, green growing to the right. No text |
 | Throttle | plane | Bar filled from the bottom, with a large percentage |
-| Throttle | heli | **Collective** — the same bar filled from the centre detent: green climbing above, red falling below, over a near-transparent track |
+| Throttle | heli | **Collective** — the same bar filled from the centre detent: blue climbing above, yellow falling below, over a near-transparent track |
 
 ## Why
 
@@ -62,6 +62,10 @@ the deadzone, red to the left, green to the right. Position says where you are,
 size and colour say how far. Track length (110 mm default) and both diameters
 are saved.
 
+It carries **no text at all** — no name above the track, no figure beside it.
+The dot's position, size and colour say everything, and a word sitting over
+the sim earns nothing. "Show numeric values" does not put a number on it.
+
 **Joystick.** Box *k* of *N* sits `k × spacing` out from the centre and marks
 `k/N` of full travel, so the outermost box is 100% deflection. Defaults: 4
 boxes at 10 mm spacing, so full deflection is 40 mm from centre and the
@@ -70,8 +74,8 @@ cursor (10 mm) are all saved. Positive roll moves the cursor right, positive
 pitch moves it up; flip either with the Inverted box.
 
 **Throttle, heli — the collective.** The same bar as the plane throttle,
-filled from the centre detent outwards instead of from the bottom: green
-climbing above centre, red falling below. A heavy centre line is drawn on top
+filled from the centre detent outwards instead of from the bottom: **blue
+climbing above centre, yellow falling below**. A heavy centre line is drawn on top
 of the fill and overhangs both edges, so nothing can bury the one thing this
 instrument exists to show.
 

@@ -25,6 +25,8 @@ TEXT = QColor(226, 226, 226)
 TEXT_DIM = QColor(150, 150, 150)
 SHADOW = QColor(0, 0, 0, 200)
 FILL = QColor(60, 190, 235)             # plane throttle bar
+COLLECTIVE_UP = QColor(43, 127, 255)      # above the detent
+COLLECTIVE_DOWN = QColor(255, 198, 30)    # below it
 TRACK = QColor(70, 70, 70)
 # The collective's track is all but invisible: it sits over the sim, and the
 # fill and the centre line carry the reading on their own.
@@ -190,6 +192,8 @@ class StickWidget(QWidget):
 class RudderWidget(StickWidget):
     """A horizontal slider with dead centre in the middle.
 
+    Carries no text: the dot's position, size and colour say all of it.
+
     The dot travels the track with the pedals and carries the size and colour
     language too: black at centre / in the deadzone, red growing to the left,
     green growing to the right, from `dot_mm` up to `dot_max_mm` at full
@@ -208,9 +212,11 @@ class RudderWidget(StickWidget):
     def track_len_mm(self) -> float:
         return max(self.cfg.track_mm, self.cfg.dot_max_mm)
 
+    def label_strip_px(self) -> float:
+        return 0.0      # no name above the track
+
     def content_size_mm(self) -> tuple[float, float]:
-        extra = 17.0 if self.show_value else 0.0
-        return (self.track_len_mm() + extra, self.cfg.dot_max_mm + 1.0)
+        return (self.track_len_mm(), self.cfg.dot_max_mm + 1.0)
 
     def paint_content(self, p: QPainter, r: QRectF) -> None:
         d_max = self.mm(self.cfg.dot_max_mm)
@@ -245,14 +251,6 @@ class RudderWidget(StickWidget):
             p.setPen(QPen(fill.darker(160), max(1.0, self.mm(0.5))))
             p.setBrush(fill)
         p.drawEllipse(QPointF(x, cy), dia / 2.0, dia / 2.0)
-
-        if self.show_value:
-            p.setFont(self._font(4.2, bold=True))
-            box = QRectF(cx + length / 2.0 + self.mm(1.5), cy - self.mm(3.5),
-                         self.mm(15.5), self.mm(7))
-            self._text(p, box, Qt.AlignLeft | Qt.AlignVCenter,
-                       "CTR" if self.value == 0.0 else f"{self.value * 100:+.0f}%",
-                       TEXT if self.value == 0.0 else TEXT_DIM)
 
 
 class JoystickWidget(StickWidget):
@@ -433,9 +431,9 @@ class ThrottlePlaneWidget(_BarWidget):
 class ThrottleHeliWidget(_BarWidget):
     """Collective: the same bar, but filled from the centre detent outwards.
 
-    Green climbing above centre, red falling below, so the direction reads at a
-    glance. A heavy centre line sits on top of the fill -- centre is the thing
-    this instrument exists to show, so nothing is allowed to bury it.
+    Blue climbing above centre, yellow falling below, so the direction reads at
+    a glance. A heavy centre line sits on top of the fill -- centre is the
+    thing this instrument exists to show, so nothing is allowed to bury it.
 
     The name goes under the bar where the plane throttle puts its percentage,
     and the track behind the fill is nearly transparent.
@@ -451,7 +449,7 @@ class ThrottleHeliWidget(_BarWidget):
         mid = bar.center().y()
         h = (bar.height() / 2.0) * abs(v)
         p.setPen(Qt.NoPen)
-        p.setBrush(RIGHT if v > 0 else LEFT)
+        p.setBrush(COLLECTIVE_UP if v > 0 else COLLECTIVE_DOWN)
         top = mid - h if v > 0 else mid
         p.drawRect(QRectF(bar.left(), top, bar.width(), h))
 
