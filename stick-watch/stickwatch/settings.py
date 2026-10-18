@@ -439,6 +439,13 @@ class SettingsWindow(QMainWindow):
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(8)
 
+        self.enabled_btn = QPushButton()
+        self.enabled_btn.setCheckable(True)
+        self.enabled_btn.setMinimumHeight(58)
+        self.enabled_btn.setCursor(Qt.PointingHandCursor)
+        self.enabled_btn.toggled.connect(self._display_changed)
+        row.addWidget(self.enabled_btn, 2)
+
         self.lock_btn = QPushButton()
         self.lock_btn.setCheckable(True)
         self.lock_btn.setMinimumHeight(58)
@@ -453,6 +460,21 @@ class SettingsWindow(QMainWindow):
         self.labels_btn.toggled.connect(self._display_changed)
         row.addWidget(self.labels_btn, 2)
         return bar
+
+    def _paint_enabled_button(self) -> None:
+        if self.enabled_btn.isChecked():
+            self.enabled_btn.setText("OVERLAY ENABLED\nClick to disable it")
+            self.enabled_btn.setStyleSheet(
+                "QPushButton { background: #19525e; color: #d8f2f8; font-size: 15px;"
+                " font-weight: 700; border: 2px solid #3f93a4; border-radius: 8px; }"
+                "QPushButton:hover { background: #1f6472; }")
+        else:
+            # Deliberately alarming: if nothing is on the glass, this says why.
+            self.enabled_btn.setText("OVERLAY DISABLED\nClick to enable it")
+            self.enabled_btn.setStyleSheet(
+                "QPushButton { background: #532626; color: #f6d5d5; font-size: 15px;"
+                " font-weight: 700; border: 2px solid #9c5151; border-radius: 8px; }"
+                "QPushButton:hover { background: #652e2e; }")
 
     def _paint_labels_button(self) -> None:
         if self.labels_btn.isChecked():
@@ -741,11 +763,9 @@ class SettingsWindow(QMainWindow):
         self.screen.currentIndexChanged.connect(self._display_changed)
         of.addRow("Monitor", self.screen)
 
-        self.visible = QCheckBox("Show overlay")
         self.values = QCheckBox("Show numeric values")
-        for cb in (self.visible, self.values):
-            cb.toggled.connect(self._display_changed)
-            of.addRow("", cb)
+        self.values.toggled.connect(self._display_changed)
+        of.addRow("", self.values)
 
         arrange = QPushButton("Arrange readouts along the bottom centre")
         arrange.clicked.connect(self._arrange)
@@ -836,12 +856,13 @@ class SettingsWindow(QMainWindow):
         self.mode_transparent.setChecked(cfg.overlay_mode == "transparent")
         self.mode_windowed.setChecked(cfg.overlay_mode != "transparent")
         self.screen.setCurrentIndex(max(0, min(cfg.overlay_screen, self.screen.count() - 1)))
-        self.visible.setChecked(cfg.overlay_visible)
+        self.enabled_btn.setChecked(cfg.overlay_visible)
         self.lock_btn.setChecked(cfg.overlay_locked)
         self.labels_btn.setChecked(cfg.show_labels)
         self.values.setChecked(cfg.show_values)
         self.hz.setValue(cfg.poll_hz)
         self._loading = False
+        self._paint_enabled_button()
         self._paint_lock_button()
         self._paint_labels_button()
 
@@ -864,7 +885,8 @@ class SettingsWindow(QMainWindow):
         cfg = self.app.cfg
         cfg.overlay_mode = "transparent" if self.mode_transparent.isChecked() else "windowed"
         cfg.overlay_screen = int(self.screen.currentData() or 0)
-        cfg.overlay_visible = self.visible.isChecked()
+        cfg.overlay_visible = self.enabled_btn.isChecked()
+        self._paint_enabled_button()
         cfg.overlay_locked = self.lock_btn.isChecked()
         self._paint_lock_button()
         cfg.show_labels = self.labels_btn.isChecked()

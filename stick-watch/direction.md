@@ -145,14 +145,18 @@ Three ways to place them, because the mouse is the one that can fail:
 
 ### The header bar
 
-The two controls reached for mid-session sit in a bar **above the tab row**,
-visible whichever tab is showing rather than buried in one of them:
+The three controls reached for mid-session sit in a bar **above the tab row**,
+visible whichever tab is showing rather than buried in one of them. Each has
+its own colour pair, so none of them can be mistaken for another at a glance:
 
+- **Overlay** — teal for ENABLED, red for DISABLED. The master switch: the
+  whole overlay off and on in one click. Red on purpose — if nothing is on
+  the glass, this button says why.
 - **Lock** — green for LOCKED, amber for UNLOCKED.
-- **Labels** — shows or hides every readout's name, so `Rudder` and
-  `Collective` can come off the glass without touching anything else. The
-  collective keeps its caption strip when hidden, so the bottom row does not
-  reflow as you toggle it.
+- **Labels** — blue for SHOWN, grey for HIDDEN. Shows or hides every
+  readout's name, so `Rudder` and `Collective` can come off the glass without
+  touching anything else. The collective keeps its caption strip when hidden,
+  so the bottom row does not reflow as you toggle it.
 
 Both say what they will do when clicked rather than naming their current
 state.

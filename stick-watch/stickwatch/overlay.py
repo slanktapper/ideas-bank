@@ -123,7 +123,7 @@ class OverlayWindow(QWidget):
             self.hide()
 
         self.lock_bar.setVisible(not cfg.overlay_locked and cfg.overlay_visible)
-        if not cfg.overlay_locked:
+        if not cfg.overlay_locked and cfg.overlay_visible:
             self.position_lock_bar()
             self.lock_bar.raise_()
             # Take focus so Esc reaches us. The bar's button is the fallback
