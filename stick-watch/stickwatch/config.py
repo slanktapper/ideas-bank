@@ -130,7 +130,7 @@ class WidgetConfig:
     deadzone: float = 0.05          # fraction of full travel
 
     # The travelling dot on the rudder slider and the heli collective.
-    dot_mm: float = 19.0
+    dot_mm: float = 9.5
     dot_max_mm: float = 30.0
     track_mm: float = 110.0         # rudder slider length, centre to centre
 
@@ -196,7 +196,7 @@ class WidgetConfig:
         w.x = int(d.get("x", 40))
         w.y = int(d.get("y", 40))
         w.deadzone = _clamp(float(d.get("deadzone", 0.05)), 0.0, 0.9)
-        w.dot_mm = _clamp(float(d.get("dot_mm", 19.0)), 2.0, 200.0)
+        w.dot_mm = _clamp(float(d.get("dot_mm", 9.5)), 2.0, 200.0)
         w.dot_max_mm = _clamp(float(d.get("dot_max_mm", 30.0)), w.dot_mm, 300.0)
         w.track_mm = _clamp(float(d.get("track_mm", 110.0)), w.dot_max_mm, 600.0)
         w.boxes = int(_clamp(int(d.get("boxes", 4)), 1, 12))

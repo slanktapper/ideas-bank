@@ -59,8 +59,10 @@ heavy full-height line, with ticks at half and full travel. The dot travels the
 track with the pedals and carries the size and colour as well: diameter runs
 from `dot at centre` (19 mm default) to `dot at full` (30 mm default), black in
 the deadzone, red to the left, green to the right. Position says where you are,
-size and colour say how far. Track length (110 mm default) and both diameters
-are saved.
+size and colour say how far. The dot runs from **9.5 mm at centre to 30 mm at
+full deflection** by default — it more than triples, so the growth is obvious
+in peripheral vision. Track length (110 mm default) and both diameters are
+saved per readout.
 
 It carries **no figure** — no percentage, no `CTR`. The dot's position, size
 and colour say all of that, and "Show numeric values" does not put a number
