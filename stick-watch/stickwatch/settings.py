@@ -412,15 +412,61 @@ class SettingsWindow(QMainWindow):
         self.setWindowTitle("stick-watch")
         self.resize(1000, 760)
 
-        tabs = QTabWidget()
-        tabs.addTab(self._build_axes_tab(), "Overlay axes")
-        tabs.addTab(self._build_devices_tab(), "Devices")
-        tabs.addTab(self._build_display_tab(), "Display && overlay")
-        self.setCentralWidget(tabs)
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self._build_axes_tab(), "Overlay axes")
+        self.tabs.addTab(self._build_devices_tab(), "Devices")
+        self.tabs.addTab(self._build_display_tab(), "Display && overlay")
+
+        # The two controls reached for mid-session live above the tabs, where
+        # they stay visible whichever tab is showing.
+        root = QWidget()
+        col = QVBoxLayout(root)
+        col.setContentsMargins(8, 8, 8, 0)
+        col.setSpacing(8)
+        col.addWidget(self._build_header())
+        col.addWidget(self.tabs, 1)
+        self.setCentralWidget(root)
 
         self.reload_list()
         self.rebuild_device_panel()
         self._load_display()
+
+    # -- header ---------------------------------------------------------
+
+    def _build_header(self) -> QWidget:
+        bar = QWidget()
+        row = QHBoxLayout(bar)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(8)
+
+        self.lock_btn = QPushButton()
+        self.lock_btn.setCheckable(True)
+        self.lock_btn.setMinimumHeight(58)
+        self.lock_btn.setCursor(Qt.PointingHandCursor)
+        self.lock_btn.toggled.connect(self._display_changed)
+        row.addWidget(self.lock_btn, 3)
+
+        self.labels_btn = QPushButton()
+        self.labels_btn.setCheckable(True)
+        self.labels_btn.setMinimumHeight(58)
+        self.labels_btn.setCursor(Qt.PointingHandCursor)
+        self.labels_btn.toggled.connect(self._display_changed)
+        row.addWidget(self.labels_btn, 2)
+        return bar
+
+    def _paint_labels_button(self) -> None:
+        if self.labels_btn.isChecked():
+            self.labels_btn.setText("LABELS SHOWN\nClick to hide them")
+            self.labels_btn.setStyleSheet(
+                "QPushButton { background: #273a52; color: #dceaff; font-size: 15px;"
+                " font-weight: 700; border: 2px solid #5080b4; border-radius: 8px; }"
+                "QPushButton:hover { background: #2f4765; }")
+        else:
+            self.labels_btn.setText("LABELS HIDDEN\nClick to show them")
+            self.labels_btn.setStyleSheet(
+                "QPushButton { background: #33363b; color: #b6bcc4; font-size: 15px;"
+                " font-weight: 700; border: 2px solid #585e66; border-radius: 8px; }"
+                "QPushButton:hover { background: #3d4149; }")
 
     # -- tab 1 ----------------------------------------------------------
 
@@ -453,8 +499,8 @@ class SettingsWindow(QMainWindow):
 
         hint = QLabel(
             "The overlay starts empty. Add an axis, pick the device and axis "
-            "(or hit Detect and wiggle it), then unlock the overlay on the "
-            "Display tab to drag it where you want."
+            "(or hit Detect and wiggle it), then use the button above to "
+            "unlock the overlay and drag it where you want."
         )
         hint.setWordWrap(True)
         hint.setStyleSheet("color: #888;")
@@ -621,9 +667,8 @@ class SettingsWindow(QMainWindow):
         Repainting three dozen progress bars at the polling rate is not free,
         and it is pure waste while another tab is showing.
         """
-        tabs = self.centralWidget()
         return (self.isVisible() and not self.isMinimized()
-                and tabs is not None and tabs.currentIndex() == 1)
+                and self.tabs.currentIndex() == 1)
 
     def on_tick(self) -> None:
         if not self._bars:
@@ -696,17 +741,9 @@ class SettingsWindow(QMainWindow):
         self.screen.currentIndexChanged.connect(self._display_changed)
         of.addRow("Monitor", self.screen)
 
-        self.lock_btn = QPushButton()
-        self.lock_btn.setCheckable(True)
-        self.lock_btn.setMinimumHeight(58)
-        self.lock_btn.setCursor(Qt.PointingHandCursor)
-        self.lock_btn.toggled.connect(self._display_changed)
-        of.addRow("", self.lock_btn)
-
         self.visible = QCheckBox("Show overlay")
-        self.labels = QCheckBox("Show labels")
         self.values = QCheckBox("Show numeric values")
-        for cb in (self.visible, self.labels, self.values):
+        for cb in (self.visible, self.values):
             cb.toggled.connect(self._display_changed)
             of.addRow("", cb)
 
@@ -787,8 +824,7 @@ class SettingsWindow(QMainWindow):
             self.editor.sync_position()
 
     def _update_rate(self) -> None:
-        tabs = self.centralWidget()
-        if not self.isVisible() or self.isMinimized() or tabs is None or tabs.currentIndex() != 2:
+        if not self.isVisible() or self.isMinimized() or self.tabs.currentIndex() != 2:
             return
         self.measured.setText(f"{self.app.measured_hz:.1f} Hz actually achieved")
 
@@ -802,11 +838,12 @@ class SettingsWindow(QMainWindow):
         self.screen.setCurrentIndex(max(0, min(cfg.overlay_screen, self.screen.count() - 1)))
         self.visible.setChecked(cfg.overlay_visible)
         self.lock_btn.setChecked(cfg.overlay_locked)
-        self._paint_lock_button()
-        self.labels.setChecked(cfg.show_labels)
+        self.labels_btn.setChecked(cfg.show_labels)
         self.values.setChecked(cfg.show_values)
         self.hz.setValue(cfg.poll_hz)
         self._loading = False
+        self._paint_lock_button()
+        self._paint_labels_button()
 
     def _ppm_changed(self, v: float) -> None:
         if self._loading:
@@ -830,7 +867,8 @@ class SettingsWindow(QMainWindow):
         cfg.overlay_visible = self.visible.isChecked()
         cfg.overlay_locked = self.lock_btn.isChecked()
         self._paint_lock_button()
-        cfg.show_labels = self.labels.isChecked()
+        cfg.show_labels = self.labels_btn.isChecked()
+        self._paint_labels_button()
         cfg.show_values = self.values.isChecked()
         cfg.poll_hz = self.hz.value()
         self.app.touch()

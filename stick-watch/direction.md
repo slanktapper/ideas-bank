@@ -143,10 +143,21 @@ Three ways to place them, because the mouse is the one that can fail:
 2. **Position (px)** boxes in each readout's editor — no mouse involved.
 3. **Arrange along the bottom centre**, which resets everything to the row.
 
-### Locking
+### The header bar
 
-One big two-state button on the Display tab, green for LOCKED and amber for
-UNLOCKED, saying what it will do when clicked.
+The two controls reached for mid-session sit in a bar **above the tab row**,
+visible whichever tab is showing rather than buried in one of them:
+
+- **Lock** — green for LOCKED, amber for UNLOCKED.
+- **Labels** — shows or hides every readout's name, so `Rudder` and
+  `Collective` can come off the glass without touching anything else. The
+  collective keeps its caption strip when hidden, so the bottom row does not
+  reflow as you toggle it.
+
+Both say what they will do when clicked rather than naming their current
+state.
+
+### Locking
 
 Getting back out of unlocked mode needs its own answer, because an unlocked
 overlay is always-on-top and catching clicks, so the settings window behind it
