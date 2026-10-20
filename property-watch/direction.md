@@ -47,13 +47,23 @@ together they are one system with one place to look.
 
 - **Not a security system.** No sirens, no locks, no door/window contacts, no
   dispatch, no claim of intruder detection. It observes and tells people.
-- **No video, no faces, no plates.** The drive is watched by radar. A camera is
-  a separate decision, with its own privacy conversation, and is not assumed.
+- **Video is in scope, but not yet specified.** The original "no video" line was
+  retired on 2026-10-19 MDT, when the `rover` project was agreed — a camera is
+  coming to the property one way or another, so a blanket refusal here was no
+  longer honest. What is *not* decided is whether fixed cameras go up at
+  chokepoints as well as the one on `rover`. Until that is decided, no camera
+  work happens in this project. Three things land with video whenever it
+  arrives, and they are conditions, not preferences: a stated retention period,
+  nothing recorded past the property line, and audio off by default.
 - **No cloud dependency for the core loop.** Sensing, recording and local
   viewing must work with both uplinks down. Only outbound alerts and remote
   access need the internet.
-- **No control.** Nothing here switches a relay, opens a gate, or turns on heat.
-  Read-only until there is a reason to change that, deliberately taken.
+- **No control — and `rover` does not change this.** Nothing here switches a
+  relay, opens a gate, or turns on heat. The robot does not make this system a
+  controller: `rover` *subscribes* to events this hub publishes and decides for
+  itself what to do. The hub does not command it, does not wait on it, and does
+  not know whether it exists. That direction is deliberate and one-way — see
+  **Related projects** below.
 
 ## Stack
 
@@ -74,6 +84,20 @@ What *is* settled:
 Nothing to run yet. The first piece of work is the hardware spike in
 `spike-01-radar.md` — one ESP32 and one radar module on the drive, logging raw
 tracks, no platform and no app.
+
+## Related projects
+
+- **`rover`** — a tracked patrol robot that drives the property, inspects
+  outbuildings on a schedule, and films when something is detected. Agreed
+  2026-10-19 MDT as a **separate project**, because mechanical, power, traction
+  and navigation work must never become the thing blocking this one from
+  shipping.
+
+  **The coupling, stated explicitly** (per `CLAUDE.md`, cross-project flow is
+  deliberate or it does not happen): `rover` reads this project's published
+  event stream. Nothing flows the other way, and no code or data is shared —
+  only an event contract. If that contract ever needs this project to change,
+  that is a conversation, not a patch.
 
 ## Open questions
 

@@ -168,7 +168,14 @@ machine, alert routing by time of day.
 preferences, remote access over both WANs.
 
 **Phase 5 — expansion.** Whatever the first four made obvious. Likely
-candidates: door/gate state, water, power monitoring, a camera decision.
+candidates: door/gate state, water, power monitoring, and the fixed-camera
+decision left open in `direction.md`.
+
+**Not a phase here — `rover`.** The patrol robot is a separate project. What
+this project owes it is one thing: a published event stream it can subscribe
+to. Worth keeping in mind when Phase 1 designs the hub's event model — an
+external consumer should be a subscription, not a special case bolted on
+later.
 
 ---
 
