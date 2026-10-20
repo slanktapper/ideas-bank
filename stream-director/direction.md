@@ -79,8 +79,61 @@ count ceiling and design the layout presets around it.
 ### Camera latency is not uniform
 
 Each phone lands with 150–500 ms of latency, and **a different amount per phone**.
-OBS supports per-source sync offsets; managing them is in scope and probably needs
-a calibration routine rather than hand-tuned guesses.
+Three distinct problems hide behind that one number:
+
+| Problem | Tractable? |
+| --- | --- |
+| **Static offset** — each source sits at its own fixed lag | Yes. Measure once, correct permanently. |
+| **Clock drift** — phone and laptop clocks differ by tens of ppm, so alignment decays over a session | Partly. Needs re-nudging, maybe hourly. |
+| **Jitter / rebuffering** — a congested channel makes latency jump, not sit still | No. Not fixable with offsets at all. |
+
+**Correction only ever adds delay.** Nothing can make a late source early, so
+aligning sources means delaying all of them to match the worst one. The program
+output therefore sits at the latency of the laggiest camera. Acceptable: viewers do
+not care about absolute latency, and Rob plays off the gaming PC's own monitor, not
+off the OBS preview.
+
+Two different OBS mechanisms, routinely confused:
+
+- **Render Delay** — a video filter, milliseconds. The one for matching camera video
+  to camera video.
+- **Sync Offset** in Advanced Audio Properties — audio only, for matching a source's
+  own audio to its own video.
+
+Both are settable over obs-websocket, so the daemon owns them.
+
+### Sync only matters between some pairs
+
+Not every source needs aligning, which makes this much smaller than it first looks:
+
+| Pair | Tolerance | Why |
+| --- | --- | --- |
+| Mic ↔ face cam | **Tight** | Lip sync. Detectable almost immediately; distracting past ~100 ms. |
+| Game ↔ mic | Moderate | A reaction should land with the thing reacted to. |
+| Overhead hand cam ↔ game | Loose | Keypress-to-response looks odd at 300 ms but survives. |
+| Wide / room shot | **Irrelevant** | Unobservable. |
+
+**Design rule that follows: the face cam goes on USB, and wifi is reserved for the
+cams whose sync does not matter.** DroidCam and Camo both support USB tethering —
+~50–100 ms and, critically, *stable*: no jitter, no rebuffering, no drift to chase.
+The sources where sync matters get the reliable transport; a hiccup on a loose room
+cam costs nothing.
+
+Worth evaluating USB for **all four**, since it deletes the drift and jitter
+problems outright rather than managing them. Open question: USB bandwidth and port
+count on the laptop with four phones at 720p through a hub.
+
+### Calibration routine
+
+Point every camera at one millisecond-resolution stopwatch, capture a few seconds of
+program output, step through frames, read each camera's displayed time. The
+differences are the offsets.
+
+Automatable, and a good fit for this project: the daemon renders a high-contrast
+timecode on the laptop screen, pulls a screenshot of each source over
+obs-websocket, reads the value off each, computes offsets and writes them back as
+Render Delay values. Surfaced as a one-tap **recalibrate** on the phone page, which
+is also the answer to drift.
 
 ## Stack
 
@@ -119,6 +172,8 @@ latency figure is the thing that decides it and it depends on this wifi.
 - **Which Android camera app**, pending a two-phone latency test.
 - **How many cameras the laptop actually sustains.** Four is the ask; the real
   number comes from measurement.
+- **USB or wifi for the cameras.** USB removes drift and jitter entirely; the
+  constraint is laptop ports and bandwidth at four phones. Needs testing.
 - **Does the fast path need to be hardware?** A phone page of buttons may be enough,
   or a Stream Deck may turn out to be the right answer for cuts.
 - **Does Claude need to see the preview?** Reading OBS state is enough for "crop cam
