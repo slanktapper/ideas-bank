@@ -27,6 +27,7 @@ one-line description. Add a row when you create a project.
 | flattener | 3D-printed finger flattener — squeeze two levers, jaws close on 77 mm of finger | prototype |
 | sim-control-prints | Printed bolt-on attachments for flight-sim control hardware — first up, a lipped end cap for the VKB T-Rudder Mk.V foot rest | prototype |
 | property-watch | Whole-property monitoring — ESP32 nodes for dual-WAN health, radar on the front drive, and temperature, reporting to a hub on site | idea |
+| rover | Tracked patrol robot that drives the property, inspects outbuildings on a schedule, and films on a `property-watch` detection — recorded as a future feature | idea |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 
