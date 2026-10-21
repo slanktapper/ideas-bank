@@ -42,6 +42,14 @@ know what the back of the shop looks like.
 - Self-docking and self-charging. A robot needing a human to plug it in is a
   robot that stops being used in week three.
 - Teleoperation and a live view, for when autonomy is not trusted or not wanted.
+- **A radio-quality map of the property, surveyed as a byproduct of patrol.**
+  The robot already knows where it is and already drives everywhere, so
+  position-tagged link measurements cost nothing but storage. Accumulated over
+  repeated passes, per band, with variance kept and not just an average.
+- **Comms-aware behaviour, driven by that map.** Where the robot parks to watch
+  something, and where it uploads from, are chosen against measured signal
+  rather than guessed. Footage is always written locally first and uploaded
+  from ground known to be good.
 
 **Deliberately not in scope**
 
@@ -61,6 +69,12 @@ know what the back of the shop looks like.
   robot, and pretending otherwise would design the wrong thing.
 - **Not load-bearing, not a tool carrier.** It carries sensors. It does not tow,
   plough, lift or mow.
+- **The signal map is not a site survey for anything but the robot.** It is
+  measured at robot antenna height, roughly half a metre, by a machine whose own
+  body shadows its antenna. That is exactly the right data for deciding where
+  *this* robot transmits from, and the wrong data for siting a mast-mounted
+  access point. Do not let it be reused as one without a fresh survey at the
+  real height.
 
 ## The winter problem
 
@@ -144,5 +158,19 @@ practical shape in Canada:
   or accept a robot that is useful two thirds of the year.
 - **Who is allowed to see the footage**, and how long is it kept? Needs the same
   answer as the retention question left open in `property-watch`.
+- **Does the signal map stay inside this project?** It would obviously help
+  `property-watch` decide where a sensor node has coverage and where a repeater
+  is needed. That is a cross-project data flow, so per `CLAUDE.md` it is a
+  decision to be taken deliberately and not a convenience to be helped to.
+  Nothing flows until it is asked and answered — and the height caveat above
+  applies hard if it ever does.
+- **Does robot control belong on WiFi at all?** Surveying the property will
+  prove there are dead zones; the question is whether telemetry, commands and
+  the e-stop heartbeat should be on the same patchy link as the video. A
+  separate low-bandwidth radio for control is the conventional answer and a
+  safety argument, not a performance one.
+- **How good is good enough?** The thresholds that decide "upload from here"
+  have to come from measured uplink throughput on the real hardware, not from
+  dBm rules of thumb. Phase 3 produces them.
 - **TPU is not on the shelf** (`filament.md`), and it is the material for track
   treads, bump trim and anything sealing. Likely needed before Phase 1.
