@@ -1,0 +1,35 @@
+# wall-spacer — parametric CAD as code, same shape as the other 3D projects
+# here. Python 3.10+.  Install with:
+#
+#     python3 -m pip install -r requirements.txt
+
+# The renderer and its own dependencies (numpy, pillow, trimesh, and the
+# three packages its section() needs -- scipy, shapely, mapbox_earcut).
+-r ../3d-tools/requirements.txt
+
+# shapely is already pulled in above, for render.section(). It does far more
+# work here: the entire part is a shapely polygon before it is a mesh.
+
+manifold3d>=2.3        # NOT used to build the part -- the profile is a 2D
+                       # union and the 3D step is one extrusion, so nothing
+                       # here needs a boolean engine. It is needed by the
+                       # CHECKS: proving a 12.7 mm lip drops into the throat
+                       # without fouling the saddle is a mesh intersection,
+                       # and trimesh wants an engine for it.
+
+rtree>=1.0             # Trimesh.contains() builds an rtree bounds tree, and
+                       # the span is measured by firing sample points through
+                       # the part rather than by trusting arithmetic. Without
+                       # it the checks cannot run at all.
+
+networkx>=3.0          # slice_mesh_plane(cap=True) reaches for a DiGraph to
+                       # work out which section loops enclose which, so the
+                       # sectioned render needs it on trimesh 5.1.1.
+                       # ../3d-tools/requirements.txt says networkx and rtree
+                       # are unnecessary; that is true of the renderer alone,
+                       # and not true here. Same note as ../sim-control-prints.
+
+matplotlib>=3.8        # annotate() uses it to find a TrueType font. Optional
+                       # for the renderer; not optional here, because two of
+                       # the six renders carry dimensioned callouts and PIL's
+                       # bitmap fallback makes them unreadable.
