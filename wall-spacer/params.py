@@ -12,12 +12,14 @@ the frame the part SITS IN, not the frame it prints in:
         is at X = SPAN. The hook's outer leg lives at negative X, behind the
         lip.
     Y   the part's width, 0 .. WIDTH. Horizontal, along the lip.
-    Z   up. Z = 0 is the bottom of the tower at the lip end. Z = SEAT is the
-        top edge of the lip, the surface the saddle sits down onto.
+    Z   up. Z = TOP is the flat top plane: the top chords, the saddle bridge
+        and nothing else, all at one level. The tower hangs below it and
+        narrows to a single chord at the bottom.
 
-The profile is constant in Y: the whole part is one 2D shape in X-Z extruded
-WIDTH millimetres. That is not a modelling convenience, it is the print
-strategy -- see direction.md, "Why it is an extrusion".
+The section is a TRIANGLE: two chords along the top, one along the bottom.
+That is the shape of the tower in the reference photograph, and it is also
+what makes the part printable upside down -- see direction.md, "Why it
+prints upside down".
 """
 
 # --- the gap and the lip, measured ------------------------------------------
@@ -54,52 +56,61 @@ LEG_DROP  = 14.0         # PROVISIONAL. How far the outer leg hangs down the
                          # the strut is nudged, short enough not to foul
                          # anything that turns out to be down there.
 
-# --- the part ---------------------------------------------------------------
+# --- the tower --------------------------------------------------------------
 
-WIDTH     = 40.0         # asked for
+WIDTH     = 40.0         # asked for. It is also the width of the TOP face:
+                         # the two top chords sit on Y = 0 and Y = WIDTH, and
+                         # the bottom chord runs up the middle at Y = WIDTH/2.
 
-H_BASE    = 34.0         # tower depth at the lip end. Free to taste: the
-                         # load is axial, so depth buys stiffness the part
-                         # does not especially need. It buys the tower its
-                         # silhouette, which is why it is here at all.
-H_TIP     = 24.0         # depth at the far end. The top chord stays straight
-                         # and the bottom chord rises, so the taper is
-                         # one-sided. A symmetric taper would drop the far
-                         # bearing pad to mid-height, and the only thing
-                         # known about the far side of the gap is that there
-                         # is material at the level the tape was stretched
-                         # across -- which is the level of the lip's top
-                         # edge. Keeping the top chord straight keeps the
-                         # bearing pad up there with it.
+D_BASE    = 38.0         # how far the tower hangs below the top plane at the
+                         # lip end, and D_TIP at the far end. Free to taste:
+                         # the load is axial, so depth buys stiffness the
+                         # part does not especially need. What it does buy is
+                         # the side faces' slope -- see build.py's overhang
+                         # check, which is why these two are not arbitrary.
+D_TIP     = 28.0         # The top plane stays flat and the bottom chord
+                         # rises, so the taper is one-sided. A symmetric
+                         # taper would be more like a real tower and would
+                         # also tilt the top plane, which is the one thing
+                         # that has to stay flat.
 
-SEAT      = H_BASE       # Z of the lip's top edge: the tower hangs from it
+BAYS      = 5            # X-braced bays along the span, in all three faces.
+                         # Five over 123 mm gives 24.6 mm bays. That pitch is
+                         # also how far the bottom chord has to bridge
+                         # between nodes when the part is printed, so it is
+                         # not only a question of looks.
 
-CHORD_T   = 4.0          # the two chords
-BRACE_T   = 3.0          # the diagonals
-BELT_T    = 3.0          # the uprights between bays
-PAD_T     = 4.5          # the two bearing pads, at X = 0 and X = SPAN. These
+CHORD_T   = 4.0          # the two top chords, square, their outer faces
+                         # flush with Y = 0, Y = WIDTH and Z = TOP
+CHORD_B   = 5.0          # the bottom chord. Bigger than the top two because
+                         # it is the only member that is nearly horizontal
+                         # when the part is printed, so it is the only one
+                         # that bridges. Set as a DIAMOND -- see build.py.
+BRACE_T   = 3.0          # the diagonals, in all three faces
+BELT_T    = 3.0          # the transverse members at each bay boundary. One
+                         # in each face, so each bay boundary is a complete
+                         # triangular ring -- which is also what pins the
+                         # bottom chord every 24.6 mm while it prints.
+
+PAD_T     = 4.5          # the two bearing pads, at X = 0 and X = SPAN. Solid
+                         # triangular plates filling the whole section: these
                          # are the faces that actually push on something, so
-                         # they are the full depth of the tower and thicker
-                         # than a chord.
-
-BAYS      = 5            # X-braced bays along the span. Five over 123 mm
-                         # gives 24.6 mm bays, which at this depth is close
-                         # to the square bay a real lattice tower uses.
+                         # they are the one place a lattice would be wrong.
 
 # --- the saddle -------------------------------------------------------------
 
 LEG_T     = 5.0          # thickness of the outer leg
-BRIDGE_T  = 5.0          # the bridge over the top of the lip. This is the
-                         # only thing carrying the part's weight, and it
-                         # carries it in bending over a 13.5 mm throat, so it
-                         # is a chord and a quarter rather than a chord.
+BRIDGE_T  = 5.0          # the bridge over the top of the lip. Its top face
+                         # is in the top plane with everything else, so the
+                         # lip's top edge seats BRIDGE_T below that plane.
 LEAD_IN   = 2.5          # chamfer up the inside bottom corner of the leg, so
                          # the saddle finds the lip instead of catching on it
 
 THROAT    = LIP_T + LIP_CLEAR            # 13.5 -- the slot the lip sits in
 LEG_X     = THROAT + LEG_T               # 18.5 -- how far the part reaches
                                          # behind the lip's near face
-H_TOT     = SEAT + BRIDGE_T              # 39.0 -- overall height
+TOP       = D_BASE                       # Z of the flat top plane
+SEAT      = TOP - BRIDGE_T               # Z of the lip's top edge
 
 # --- print ------------------------------------------------------------------
 
@@ -116,9 +127,10 @@ LAYER     = 0.2
 
 MIN_FEATURE = 3 * NOZZLE     # 1.2 -- nothing in the part may be thinner
 
-FILLET    = 0.8          # radius put into every internal corner of the
-                         # lattice. Half housekeeping, half engineering: it
-                         # is what unpinches the joints where two members
-                         # meet at a single point (see build.py), and a
-                         # filleted node is also where a braced frame stops
-                         # cracking first.
+OVERHANG_MIN = 40.0          # degrees from horizontal. A downward-facing
+                             # face shallower than this needs support. 40
+                             # rather than the usual 45 for one reason: the
+                             # bottom chord is a diamond, so its two lower
+                             # faces sit at exactly 45 and a 45 threshold
+                             # would be deciding the check on a rounding
+                             # error.

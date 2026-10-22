@@ -7,13 +7,12 @@
 A printed strut that fills the **123 mm gap** behind Rob's cabinet so the
 cabinet cannot slide back off the table it stands on. It is **40 mm wide**,
 it **hooks over the wooden lip** at the near side of the gap so it hangs
-there instead of falling in, and the 123 mm it spans is drawn as a
-**lattice radio tower** — two chords, five X-braced bays, tapering away
-from the lip.
+there instead of falling in, and the 123 mm it spans is a **three-sided
+lattice radio tower** — two chords along the top, one along the bottom,
+X-braced in all three faces, tapering away from the lip.
 
-The tower is not decoration bolted onto a block. It *is* the part: the
-whole thing is one 2D profile extruded 40 mm, and the lattice is what that
-profile happens to be.
+The tower is not decoration bolted onto a block. It *is* the part: there is
+no solid section anywhere except the two bearing pads and the saddle.
 
 ## Why
 
@@ -79,8 +78,15 @@ open void behind the board, which is what lets the outer leg drop 14 mm.
 Three pieces, in one solid:
 
     saddle   13.5 mm throat over a 12.7 mm lip, 5 mm bridge, 14 mm outer leg
-    tower    123.0 mm between bearing faces, 5 X-braced bays, 34 -> 24 deep
-    pads     4.5 mm full-depth faces at both ends -- the two that push
+    tower    123.0 mm between bearing faces, 5 X-braced bays, 38 -> 28 deep
+    pads     4.5 mm solid triangular plates at both ends -- the two that push
+
+    32.2 cm3, 141.5 x 40.0 x 38.0 mm
+
+**The section is a triangle.** Two chords run along the top at Y = 0 and
+Y = 40, and one runs along the bottom up the middle at Y = 20. All three
+faces — the top and the two sides — carry the same belt-and-X-bracing, so
+there is no solid face anywhere in the span.
 
 **All the clearance is on the outer side.** The throat's inner wall and the
 strut's bearing face are the same face, at X = 0, so the strut always sits
@@ -91,50 +97,74 @@ costs nothing. Get that backwards and the 123 mm becomes 122.2 mm.
 wants to go, and a saddle does not care: push it towards the lip and the
 bearing face takes it, push it away and the outer leg does.
 
-**The top chord is straight and the taper is one-sided.** A symmetric taper
-would be more like a real tower, and it would drop the far bearing pad to
-mid-height. The only thing known about the far side of the gap is that
-there is material at the level the tape was stretched across — which is
-the level of the lip's top edge. Keeping the top chord straight keeps the
-pad up there with it.
+**The two end pads are solid on purpose.** Everything else is a lattice, but
+these are the faces that actually push on something, and a lattice there
+would stand the whole load on four small feet.
 
-## Why it is an extrusion
+**The top plane stays flat and the taper is one-sided.** A symmetric taper
+would be more like a real tower, and it would tilt the top plane, which is
+the one surface that cannot be tilted — see below. It also keeps the far
+bearing pad up at the top, where the only thing known about the far side of
+the gap is that there is material at the level the tape was stretched
+across.
 
-The part is one 2D shape in X–Z, extruded 40 mm along Y. Printed with that
-40 mm standing up in Z, **every wall is plumb and every layer is identical**:
-no overhangs, no bridges, no supports, nothing for the slicer to be clever
-about, and the lattice's holes are outlines rather than ceilings. The 123 mm
-of compressive load runs along the extrusion lines instead of across the
-layer bonds, which is the direction FDM is good at.
+## Why it prints upside down
 
-That is checkable rather than asserted, and `build.py` checks it: no face in
-the mesh may be anything other than plumb or flat. One face that was neither
-would be an overhang.
+**The whole top of the part is one flat plane**, at `TOP`: the two top
+chords, the lacing between them and the saddle bridge all finish at exactly
+that level and nothing rises above it. Printed **upside down**, that plane
+is the bed — 3399 mm² of first-layer contact, most of it the solid saddle
+bridge — and the tower builds upwards, narrowing to the single bottom chord
+at the very top.
 
-It is also why the tower is a flat lattice rather than a three-dimensional
-one. A real four-legged tower would need supports inside every bay. Drawn as
-an elevation and extruded, it reads as the same thing and prints in one go.
+A shape that narrows as it rises has nothing to support. `build.py` checks
+it rather than claiming it: in the print orientation, **0.00 mm² of the
+part's 27,000 mm² faces downwards at less than 40° from horizontal**.
+
+Two details exist only because of that check.
+
+- **The bottom chord is a diamond, not a square.** It is the one member that
+  lies nearly horizontal when printed, so it is the one member whose
+  underside would otherwise be a flat ceiling in mid-air. Rolled 45°, it has
+  no underside at all: it starts from a single line and widens, which is the
+  one overhang shape FDM is unconditionally good at.
+- **The lacing in the top face is as thick as the chords, not as thick as it
+  is wide.** Drawn 3 mm like the rest, it finished half a millimetre shy of
+  the top plane — 1387 mm² of flat ceiling hanging just above the bed,
+  anchored to nothing. The check found it; nothing else would have, until
+  the print.
+
+What is left is bridging. The bottom chord is pinned at every bay boundary,
+where the belts of all three faces meet it in a complete triangular ring, so
+between nodes it bridges **24.6 mm** — an ordinary distance, and it bridges
+from a single line rather than a face. That is why `BAYS` is a structural
+number rather than a cosmetic one.
+
+It is also why the tower is three-sided rather than four. A four-sided box
+has a bottom face, and a bottom face printed this way is a 123 × 40 mm
+ceiling.
 
 ## Stack
 
-Python, matching the four sibling 3D projects here. `shapely` builds the
-profile, `trimesh` extrudes it, and the renderer in `../3d-tools` draws it.
-No CAD application, no GUI.
+Python, matching the four sibling 3D projects here. `trimesh` builds and
+unions the members, `manifold3d` does the booleans, `shapely` draws the two
+outlines that are extruded rather than assembled, and the renderer in
+`../3d-tools` draws it. No CAD application, no GUI.
 
-**No boolean engine does any real work.** The profile is a union of members
-and two deliberate cuts, all in 2D; the 3D step is a single extrusion. That
-is worth saying because the sibling projects fight manifold3d for their
-geometry, and this one has nothing to fight — the mesh is manifold by
-construction. `manifold3d` is still installed, because the *checks* use
-`mesh.intersection()` to prove a 12.7 mm lip drops into the throat without
-fouling anything.
+The frame is assembled as about fifty boxes, each one run 0.8 mm past its
+node so that struts meet in a lump of solid rather than face to face, and
+then trimmed back to the box it is allowed to occupy. The trim is what puts
+the bearing faces exactly on X = 0 and X = SPAN and the top plane exactly
+flat, rather than wherever the last lap of a diagonal happened to finish.
+It happens **before** the saddle goes on, because the saddle is the one part
+of the part that is allowed behind X = 0.
 
 ## How to run
 
 ```bash
 cd wall-spacer
 python3 -m pip install -r requirements.txt
-python3 build.py          # 23 checks, two STLs (verified on disk), six renders
+python3 build.py          # 24 checks, two STLs (verified on disk), eight renders
 ```
 
 It will not write files if a check fails, and the exit code is non-zero.
@@ -151,11 +181,11 @@ rather than the bug.
 ## Open questions
 
 - **`LEG_DROP` is a guess**, 14 mm. The photograph shows void behind the
-  lip, not how much of it. If something is 10 mm down there, the saddle
-  will not seat and the number has to come down.
+  lip, not how much. If something is 10 mm down there, the saddle will not
+  seat and the number has to come down.
 - **The far side of the gap is unmeasured.** The part assumes a face it can
-  push on somewhere in the top 24 mm below the lip's top edge. That is where
-  the tape was stretched across, so there is something there — but "something"
+  push on somewhere in the top 28 mm below the top plane. That is where the
+  tape was stretched across, so there is something there — but "something"
   is not "a flat face square to the span".
 - **Is 123 mm the gap, or the gap plus a skirting?** If the far face is
   recessed behind a moulding, the pad lands on the moulding and the span is
@@ -163,6 +193,10 @@ rather than the bug.
 - **Nothing resists the cabinet lifting the strut out.** It hangs by gravity.
   That is deliberate — it is also the whole of why it is removable — but if
   the cabinet rides up the bearing face the strut will walk upwards.
+- **It is light now.** 32.2 cm³ against the 96.7 cm³ the first, solid-topped
+  version weighed. That should still be ample for a shove from furniture,
+  but it has not been pushed on yet. If it flexes, `CHORD_T` and `CHORD_B`
+  are the two numbers to raise, not the depth.
 - **One or two?** One strut in the middle of a cabinet lets it skew. Two,
-  one near each end, do not. The part costs about two hours to print, so
-  this is a question for after the first fit.
+  one near each end, do not. The part is about an hour to print, so this is
+  a question for after the first fit.
