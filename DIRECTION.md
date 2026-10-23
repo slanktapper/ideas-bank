@@ -27,6 +27,7 @@ one-line description. Add a row when you create a project.
 | flattener | 3D-printed finger flattener — squeeze two levers, jaws close on 77 mm of finger | prototype |
 | sim-control-prints | Printed bolt-on attachments for flight-sim control hardware — first up, a lipped end cap for the VKB T-Rudder Mk.V foot rest | prototype |
 | stick-watch | Desktop overlay showing flight-sim controller axes live at a calibrated millimetre size — joystick, rudder and throttle readouts, configured at runtime | working |
+| wall-spacer | Printed anti-slide strut for a cabinet — a 123 mm three-sided lattice tower that hooks over a 12.7 mm lip | prototype |
 
 Status values: `idea`, `prototype`, `working`, `parked`, `retired`.
 
