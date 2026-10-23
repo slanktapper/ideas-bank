@@ -3,11 +3,17 @@
 Two open questions need a part in hand rather than arithmetic, and both are
 cheap to answer with a few grams of filament.
 
+0. DOES THE CLIP CLIP? (clip_ladder) -- the new unknown since the design
+   split into a bracket and an art panel. Three art stubs at bead
+   interferences of 0.15, 0.25 and 0.35 mm, with one bracket to try them
+   on. "Easy and safe to add and remove" is a feel, not a number.
+
 1. DOES THE SLOT GRIP? The design slot is 4.4 mm over a 4 mm bar. FDM slots
    print undersize, sheet metal has its own tolerance, and neither is known
    here. One coupon tests one guess, so this builds a LADDER: five 5 mm
    slices at 4.2 to 4.6 mm, joined by a frangible spine, each with its slot
-   width embossed on the face so they cannot be mixed up.
+   width embossed on the face so they cannot be mixed up. SETTLED on
+   2026-10-23: 4.2 gripped, and FIT is 0.2.
 
 2. IS THE BAR 16 MM OR 20 MM PROUD? `params.py` reads the drawing's 0.79 in
    as underside-to-bar-top, which puts the bar 16.07 mm above the floor. Any
@@ -79,6 +85,36 @@ def _number_on_face(text, width):
     return parts
 
 
+def clip_ladder(split=False):
+    """Art stubs at three snap strengths, plus a bracket to try them on.
+
+    The bar slot is settled at 4.2. The NEW unknown is the clip: how hard
+    the bead should have to flex past the bracket's plate. 0.25 is the
+    design value and the other two bracket it, so the feel can be chosen
+    rather than calculated -- there is no way to compute "easy and safe".
+    """
+    pieces, plains, numbers = [], [], []
+    x = 0.0
+    for grab in P.CLIP_GRABS:
+        body = T.art_body(P.COUPON_W * 4, grab=grab)
+        label = "%d" % round(grab * 100)       # 0.25 -> "25"
+        marks = _number_on_face(label, P.COUPON_W * 4)
+        one = trimesh.boolean.union([body] + marks)
+        one.apply_translation((x, 0.0, 0.0))
+        pieces.append(one)
+        if split:
+            b = body.copy(); b.apply_translation((x, 0.0, 0.0)); plains.append(b)
+            n = trimesh.util.concatenate(marks)
+            n.apply_translation((x, 0.0, 0.0)); numbers.append(n)
+        x += P.COUPON_W * 4 + P.COUPON_GAP
+    stubs = trimesh.boolean.union(pieces)
+    test_bracket = T.bracket(width=P.BRACKET_W)
+    if split:
+        return stubs, trimesh.boolean.union(plains), \
+            trimesh.util.concatenate(numbers), test_bracket, x - P.COUPON_GAP
+    return stubs, test_bracket, x - P.COUPON_GAP
+
+
 def fit_ladder(split=False):
     """Every slot width on one snap-apart comb, tightest first.
 
@@ -92,7 +128,7 @@ def fit_ladder(split=False):
     numbers = []
     x = 0.0
     for slot in P.COUPON_SLOTS:
-        body = T.cap(True, True, length=P.COUPON_W, slot=slot)
+        body = T.bracket(width=P.COUPON_W, slot=slot)
         label = "%d" % round(slot * 10)        # 4.4 -> "44", stacked 4 over 4
         marks = _number_on_face(label, P.COUPON_W)
         one = trimesh.boolean.union([body] + marks)
@@ -109,8 +145,8 @@ def fit_ladder(split=False):
     total = x - P.COUPON_GAP
     # The spine lies on the bed when the comb is printed upside down, so it
     # is trivial to cut. Keep it inside the thinnest coupon's depth.
-    thin = P.FACE_T + min(P.COUPON_SLOTS) + P.LEG_T
-    spine = T._box(0.0, total, P.FACE_T, thin,
+    thin = P.SLOT_Y0 + min(P.COUPON_SLOTS) + P.LEG_T
+    spine = T._box(0.0, total, P.ART_T + P.HOOK_D, thin,
                    P.FACE_H - P.SPINE_T, P.FACE_H)
     comb = trimesh.boolean.union(pieces + [spine])
     if split:
@@ -142,7 +178,7 @@ def art_sample(vig, tiles=2):
     rows, cols = len(sub), c1 - c0
     width = tiles * P.TILE
 
-    body = T.cap(True, True, length=width, slot=P.SLOT)
+    body = T.art_body(width)
     art = []
     for colour in vig.colours():
         poly = T._colour_polygon(sub, colour, rows, cols)

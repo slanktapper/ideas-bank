@@ -1,26 +1,29 @@
-"""Geometry for the shelf rail: the cap that grips the retainer bar, and the
-pixels on its face.
+"""Geometry for the shelf rail, in two parts that clip together.
 
-The section, looking along the rail. Y is depth, back into the shelf; Z is up.
-The shelf's retainer bar stands up into the slot.
+THE BRACKET stays on the shelf. It caps the retainer bar and presents a
+front plate for the art to grab.
 
-      Y=0  FACE_T        FACE_T+SLOT   DEPTH
-       |     |                |          |
-  Z=FACE_H  +--+--------------------------+   <- web, bridges the bar's top
-            |  |              |           |
-            |  |   the bar    |###########|   <- inner leg, GRIP deep,
-            |  |   4 mm       |###########|      down the back of the bar
-            |  |              +-----------+
-            |  |
-            |  |                              the face keeps going down past
-            |  |                              the bar, over the shelf's front
-  Z=0       +--+                              edge. The art is all of it.
+THE ART PANEL clips on: hook over the bracket's top plate edge, swing the
+bottom in, and a bead on the bottom lip snaps past the plate's bottom edge.
 
-      ^ art, RELIEF proud, in -Y
+Section, looking along the rail. Y is depth into the shelf, Z is up.
 
-Printed UPSIDE DOWN -- web flat on the bed, both walls growing up. Nothing
-overhangs, nothing bridges except the 8 mm half-lap notch. The art ends up
-on a vertical wall, which is why its pixel rows land on layer boundaries.
+   Y=0  2.4   4.8  7.2      11.4   13.9
+    |    |     |    |         |      |
+    +----+                                  <- art's top return, over the
+    |    |#####|    +----------------+         plate's top edge
+    |    | lip |    |     web        |      <- top lip hangs behind it
+    |    +-----+----+------+  +------+
+    |ART |          |      |  | leg  |      <- the bar stands in the slot
+    |    |  bracket |      |  |      |
+    |    |   body   | slot |  |      |
+    |    +-----+----+------+  +------+
+    |    | lip |    |
+    +----+#####+    the body passes through the gap between the two lips --
+    |    |          with a continuous hook there is no way round it in X
+    +----+
+
+  ^ art, RELIEF proud, in -Y
 
 The art is built as 2D polygons and extruded, not as one box per pixel: a
 panel is 208 x 32 game pixels, and 6656 boolean unions is not worth waiting
@@ -43,6 +46,13 @@ _TO_FACE = trimesh.transformations.rotation_matrix(np.pi / 2.0, [1, 0, 0])
 _BITE = 0.05               # how far the art reaches back into the plate, so
                            # the union has real overlap and not a shared face
 
+# a polygon drawn in (Y, Z) swept along X -- how every chamfer and bead here
+# is made, since they are all constant section along the rail
+_TO_SECTION = np.array([[0.0, 0.0, 1.0, 0.0],
+                        [1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0]])
+
 
 def _box(x0, x1, y0, y1, z0, z1):
     m = trimesh.creation.box(extents=(x1 - x0, y1 - y0, z1 - z0))
@@ -50,40 +60,66 @@ def _box(x0, x1, y0, y1, z0, z1):
     return m
 
 
-def cap(first: bool, last: bool, length=None, slot=None) -> trimesh.Trimesh:
-    """One panel's bar-cap, with the half-lap at the ends that need it.
+def _sweep(points_yz, x0, x1):
+    """A (Y, Z) polygon swept from x0 to x1 along the rail."""
+    m = trimesh.creation.extrude_polygon(SPolygon(points_yz), x1 - x0)
+    m.apply_transform(_TO_SECTION)
+    m.apply_translation((x0, 0.0, 0.0))
+    return m
 
-    `length` and `slot` default to a full panel at the design clearance; the
-    fit coupons override both. Depth follows the slot so the leg stays the
-    same thickness whatever the slot is.
+
+def bracket(width=None, slot=None) -> trimesh.Trimesh:
+    """One shelf bracket: caps the bar, presents a plate for the art.
+
+    `slot` overrides the bar slot for the fit coupons; everything behind the
+    front plate shifts with it, the plate and the clip geometry do not.
     """
-    length = P.PANEL_L if length is None else length
+    w = P.BRACKET_W if width is None else width
     slot = P.SLOT if slot is None else slot
-    depth = P.FACE_T + slot + P.LEG_T
-    web_z0 = P.FACE_H - P.WEB_T
-    leg_y0 = P.FACE_T + slot
+    depth = P.SLOT_Y0 + slot + P.LEG_T
+    bar_top = P.FACE_H - P.WEB_T
 
-    face = _box(0, length, 0, P.FACE_T, 0, P.FACE_H)
-    web = _box(0, length, P.FACE_T, depth, web_z0, P.FACE_H)
-    leg = _box(0, length, leg_y0, depth, web_z0 - P.GRIP, web_z0)
-    solid = trimesh.boolean.union([face, web, leg])
+    plate = _box(0, w, P.ART_T, P.ART_T + P.BRK_T, P.BRK_Z0, P.BRK_Z1)
+    body = _box(0, w, P.ART_T + P.BRK_T, P.SLOT_Y0, P.BODY_Z0, P.BODY_Z1)
+    web = _box(0, w, P.ART_T + P.HOOK_D, depth, bar_top, P.FACE_H)
+    leg = _box(0, w, depth - P.LEG_T, depth, bar_top - P.GRIP, bar_top)
+    solid = trimesh.boolean.union([plate, body, web, leg])
 
-    # The lap lives in the half of the web that lies ON THE BED when printed
-    # upside down -- the top half here. A tongue anywhere else would print
-    # into thin air, because past the panel end there is nothing under it.
-    lap_z = P.FACE_H - P.WEB_T / 2.0
-    if not last:
-        solid = trimesh.boolean.union([
-            solid,
-            _box(length, length + P.LAP_L, P.FACE_T, depth,
-                 lap_z, P.FACE_H)])
-    if not first:
-        # Y starts at FACE_T so the notch never reaches the art face
-        solid = trimesh.boolean.difference([
-            solid,
-            _box(-1.0, P.LAP_L + P.LAP_FIT, P.FACE_T, depth + 1.0,
-                 lap_z - P.LAP_FIT, P.FACE_H + 1.0)])
-    return solid
+    # lead-in where the bar enters, so a 0.2 mm fit does not start square
+    mouth = bar_top - P.GRIP
+    c = P.CHAMFER
+    front = _sweep([(P.SLOT_Y0, mouth), (P.SLOT_Y0, mouth + c),
+                    (P.SLOT_Y0 - c, mouth)], -1.0, w + 1.0)
+    back = _sweep([(depth - P.LEG_T, mouth), (depth - P.LEG_T, mouth + c),
+                   (depth - P.LEG_T + c, mouth)], -1.0, w + 1.0)
+    return trimesh.boolean.difference([solid, front, back])
+
+
+def art_body(length, grab=None) -> trimesh.Trimesh:
+    """The art panel's plate and the two hooks that grab a bracket."""
+    y_lip = P.ART_T + P.BRK_T + P.CLIP_FIT          # front face of both lips
+    y_back = P.ART_T + P.HOOK_D                     # how far the returns reach
+
+    plate = _box(0, length, 0, P.ART_T, 0, P.FACE_H)
+    top_ret = _box(0, length, P.ART_T, y_back, P.FACE_H - P.HOOK_T, P.FACE_H)
+    top_lip = _box(0, length, y_lip, y_back,
+                   P.FACE_H - P.HOOK_T - P.HOOK_LIP_TOP, P.FACE_H - P.HOOK_T)
+    bot_ret = _box(0, length, P.ART_T, y_back, 0, P.HOOK_T)
+    bot_lip = _box(0, length, y_lip, y_back, P.HOOK_T,
+                   P.HOOK_T + P.HOOK_LIP_BOT)
+
+    # the snap: a bead on the bottom lip, chamfered both ways so it rides on
+    # however the panel is swung in, standing CLIP_GRAB proud of the plate's
+    # back face so it has to flex past
+    grab = P.CLIP_GRAB if grab is None else grab
+    y_bead = P.ART_T + P.BRK_T - grab
+    z1 = P.HOOK_T + P.HOOK_LIP_BOT
+    z0 = z1 - P.GRAB_H
+    r = y_lip - y_bead
+    bead = _sweep([(y_lip, z0), (y_bead, z0 + r), (y_bead, z1 - r), (y_lip, z1)],
+                  0.0, length)
+    return trimesh.boolean.union([plate, top_ret, top_lip, bot_ret, bot_lip,
+                                  bead])
 
 
 def _colour_polygon(grid, colour, rows, cols):
@@ -145,10 +181,22 @@ def art_bodies(vig, idx) -> dict:
 
 
 def panel(vig, idx: int):
-    """(whole, body, {colour: mesh}) for panel `idx` of a vignette."""
-    first = idx == 0
-    last = idx == P.PANELS_PER_SHELF - 1
-    body = cap(first, last)
+    """(whole, body, {colour: mesh}) for art panel `idx` of a vignette."""
+    body = art_body(P.PANEL_L)
     art = art_bodies(vig, idx)
     whole = trimesh.boolean.union([body] + list(art.values()))
     return whole, body, art
+
+
+def bracket_positions():
+    """Where the brackets sit along one shelf, left to right.
+
+    Flush at each end, and the middle one centred on the shelf -- which is
+    exactly the joint between the two art panels, so it lines them up and
+    there is no need for a half-lap.
+    """
+    n = P.BRACKETS_PER_SHELF
+    if n == 1:
+        return [(P.SHELF_L - P.BRACKET_W) / 2.0]
+    span = P.SHELF_L - P.BRACKET_W
+    return [i * span / (n - 1) for i in range(n)]

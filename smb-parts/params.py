@@ -73,18 +73,58 @@ FIT = 0.2                  # slip clearance across the bar. MEASURED, not
                            # it over 160 mm of panel.
 SLOT = MAT_T + FIT         # 4.4
 
-FACE_T = 2.4               # the plate behind the art, six 0.4 walls
 WEB_T = 3.0                # the bit that bridges the top of the bar
 LEG_T = 2.5                # the inner leg, down the back of the bar
 GRIP = 12.0                # how far down the bar the slot holds. Short of
                            # BAR_RISE so it seats on the bar, not the floor.
 RELIEF = 1.2               # how far the art stands proud of the plate
+CHAMFER = 0.6              # lead-in where the slot opens, so a 0.2 mm fit
+                           # does not have to start on a square edge
 
-DEPTH = FACE_T + SLOT + LEG_T           # 9.3, all it takes off the shelf
+# ---------------------------------------------------------------------------
+# THE SPLIT: brackets stay on the shelf, the art clips onto them
+# ---------------------------------------------------------------------------
+#
+# Section, front to back. Y is depth into the shelf, Z is up.
+#
+#   art plate | hook zone  | wall | the bar slot | inner leg
+#   0 .. 2.4  | 2.4 .. 6.6 | ..7.2| 7.2 .. 11.4  | 11.4 .. 13.9
+#             ^ the bracket's front plate lives at 2.4..4.8 and the art's
+#               lips wrap behind it at 5.0..6.6
+#
+# The art's hooks are a C opening backwards. The bracket passes through the
+# gap between the two lips, which is the only route from its front plate to
+# the bar cap behind -- a continuous hook means there is no way round in X.
 
-# the half-lap in the web that keeps the two panels of a shelf in line
-LAP_L = 8.0
-LAP_FIT = 0.3
+BRACKETS_PER_SHELF = 3     # flush left, centred on the panel joint, flush
+                           # right. The middle one straddles the joint and
+                           # lines the two panels up, so no half-lap.
+BRACKET_W = 25.0           # how long each bracket is along the shelf
+
+ART_T = 2.4                # the art plate, six 0.4 walls
+BRK_T = 2.4                # the bracket's front plate -- what the hooks grab
+HOOK_T = 1.6               # the art's top and bottom returns
+HOOK_LIP_BOT = 2.5         # how far the bottom lip stands up behind the plate
+CLIP_FIT = 0.2             # clearance around the captured plate
+CLIP_GRAB = 0.25           # the snap: how far the bottom mouth is narrower
+                           # than the plate, so it has to flex on. Rob asked
+                           # for 0.1-0.3 and this sits in the middle.
+GRAB_H = 1.0               # height of the snap bump
+
+# HOOK_LIP_TOP is NOT free. The top lip hangs behind the bracket's front
+# plate, and the bracket's body has to reach past it to meet the web over
+# the bar. That leaves exactly the web's thickness to share out:
+HOOK_LIP_TOP = WEB_T - HOOK_T - CLIP_FIT        # 1.2
+
+HOOK_D = BRK_T + CLIP_FIT + HOOK_T      # 4.2, how far the returns reach back
+FRONT_WALL = 0.6           # the sliver carrying the body up to the web
+SLOT_Y0 = ART_T + HOOK_D + FRONT_WALL   # 7.2, where the bar slot starts
+DEPTH = SLOT_Y0 + SLOT + LEG_T          # 13.9, all it takes off the shelf
+
+BRK_Z0 = HOOK_T + CLIP_FIT                      # 1.8, plate bottom edge
+BRK_Z1 = FACE_H - HOOK_T - CLIP_FIT             # 22.82, plate top edge
+BODY_Z0 = HOOK_T + HOOK_LIP_BOT + CLIP_FIT      # 4.3, clear of the bottom lip
+BODY_Z1 = FACE_H - WEB_T                        # 21.62, clear of the top lip
 
 # ---------------------------------------------------------------------------
 # the fit coupons -- a ladder of slot widths to try on the real shelf before
@@ -96,6 +136,8 @@ COUPON_GAP = 4.0           # space between them on the spine
 COUPON_SLOTS = [4.0, 4.1, 4.2, 4.3, 4.4]   # re-centred on the measured 4.2
                                            # after the first ladder, whose
                                            # winner sat at its tight end
+CLIP_GRABS = [0.15, 0.25, 0.35]            # the clip ladder: how hard the
+                                           # bead flexes past the plate
 SPINE_T = 1.2              # the frangible bar joining them, at the bed face
 DIGIT_PX = 1.3             # pixel size of the embossed slot number
 

@@ -1,10 +1,41 @@
 # smb-parts — printing the shelf rail
 
-A Mario frieze that caps the retainer bar on the front of a floating shelf.
-**One rail per shelf**: two printed panels of 160.02 mm that butt into 320.04 mm,
-the exact length of the shelf. Three shelves is about three feet.
+**Two parts.** Small **brackets** cap the shelf's retainer bar and live there
+permanently; **art panels** clip onto them. One shelf takes **3 brackets and
+2 art panels**, the panels butting into 320.04 mm — the shelf's exact length.
+Three shelves is about three feet.
 
-## The shelf this is cut to
+| Part | Each | Per shelf |
+| --- | --- | --- |
+| bracket, 25 mm | 4.5 g | 3 = 13.4 g |
+| art panel, 160 mm | ~18.6 g | 2 = ~37 g |
+| | | **~50 g a shelf** |
+
+Brackets are hidden behind the art, so print them in whatever is loaded.
+
+## Print the clip ladder first
+
+The bar slot is settled at 4.2 mm. **The snap is not.** `CLIP_GRAB` is 0.25 mm —
+the middle of the 0.1–0.3 you asked for — but "easy and safe to add and
+remove" is a feel, not a number.
+
+```bash
+.venv/bin/python build.py --test
+```
+
+`clip-ladder-stubs.stl` (6 g) is three 20 mm art stubs at bead interferences
+of **0.15, 0.25 and 0.35 mm**, labelled on the face as 15 / 25 / 35.
+`clip-ladder-bracket.stl` (4.5 g) is one real bracket to try them on. Clip
+each stub on and off a few times:
+
+- **Too easy?** It will fall off when you knock the shelf. Go up.
+- **Too hard?** You will mark the art levering it off. Go down.
+- Whichever feels right becomes `CLIP_GRAB`.
+
+`fit-ladder.stl` only matters if something about the shelf or the filament
+changes — the 4.2 mm slot is already settled.
+
+## The shelf this is cut to## The shelf this is cut to
 
 From the product drawing: pressed sheet **4 mm** thick, **12.6 in (320.04 mm)**
 long, **3.95 in** deep, with the front edge turned **up** into a retainer bar.
@@ -33,7 +64,7 @@ settles both.**
 .venv/bin/python build.py --test
 ```
 
-**The slot is now settled: 4.2 mm.** Rob printed the first ladder on
+**The slot is settled: 4.2 mm.** Rob printed the first ladder on
 2026-10-23 MDT and the 4.2 rung gripped, so `FIT` is 0.2 and the panels are
 built to it. The ladder below has been re-centred on that result, and is
 only worth reprinting if something changes — a different shelf, a different
@@ -121,38 +152,41 @@ and the sky is right for free.
 
 ## Orientation and settings
 
-Print **upside down — web flat on the bed, both walls growing up.** Nothing
-overhangs; the only bridge is the 8 mm half-lap notch on one end of one panel
-per shelf. The art ends up on a vertical wall, so its pixel rows land on layer
-boundaries, which is the clean way round.
+**Brackets:** web flat on the bed, walls growing up. No supports, nothing
+overhangs.
 
-Do **not** print it face-up: the art stands 1.2 mm proud, so face-down the
-plate would have to bridge between raised pixels, and face-up puts the inner
-leg out in mid-air.
+**Art panels:** art face **up**, flat on the bed, **with supports**. The two
+hook rails on the back then point down and need support under them. This is
+the one place the design does not get a free print: the top hook is a 4.2 mm
+cantilever, every orientation puts one hook or the other in the air, and a
+gusset to hold it up would foul the bracket. The supports land on the back
+where nothing shows, and they are two straight rails, so they peel.
+
+If you would rather have no supports at all, the alternative is to **recess**
+the art instead of raising it and print face **down** — the art face then
+comes off the bed glassy and the hooks point up, fully supported. That is a
+different look, not a worse one. Say the word and it is one parameter.
 
 | | |
 | --- | --- |
 | Nozzle | 0.4 mm. A game pixel is 0.77 mm, just under two beads. |
 | Layer | 0.2 mm. Relief is 1.2 mm, so six layers. |
-| Walls | 3+. The face is 2.4 mm, which is six walls, i.e. solid. |
+| Walls | 3+. The plate is 2.4 mm, which is six walls, i.e. solid. |
 | Material | PLA. Indoors on a shelf; nothing is structural. |
-| Brim | worth it — the footprint is 9.3 mm wide and 160 mm long. |
-
-About **50 g a shelf** (two panels), so **150 g for three**, from the mesh
-volume at PLA's 1.24 g/cm³. The walls are thick enough that it prints close to
-solid, so treat that as the real number.
+| Brim | worth it on the brackets — they are only 25 mm long. |
 
 ## Assembly
 
-Each shelf takes two panels, `-1` then `-2`, left to right. The web carries a
-**half-lap**: panel 1's tongue runs 8 mm into panel 2's notch, which stops them
-sliding apart along the shelf. No glue — the bar holds them in the other two
-axes.
+1. **Push the three brackets onto the retainer bar**, down from above. Flush
+   at each end and one in the middle. The middle one sits at 147.5 mm, which
+   is where the two art panels meet — it straddles the joint and lines them
+   up, which is why there is no half-lap any more.
+2. **Clip the left art panel on:** hook its top return over the brackets'
+   top plate edge, swing the bottom in, push until the bead snaps past.
+3. **Clip the right panel on** the same way.
 
-Push each panel down onto the retainer bar from above. The slot is the bar plus
-0.4 mm, so it should go on by hand and stay. The grip is deliberately 12 mm
-against a 16 mm bar, so it seats on the bar rather than bottoming out on the
-floor.
+To swap a scene, lever the bottom of a panel off and lift it away. The
+brackets stay where they are.
 
 The four shelves available, each a straight crop of a real level map:
 

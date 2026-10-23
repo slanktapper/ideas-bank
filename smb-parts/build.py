@@ -70,11 +70,11 @@ def shelf_proxy(length):
     bar_top = P.FACE_H - P.WEB_T
     floor_top = bar_top - P.BAR_RISE
     bar = trimesh.creation.box(extents=(length, P.MAT_T, P.BAR_RISE))
-    bar.apply_translation((length / 2, P.FACE_T + P.MAT_T / 2,
+    bar.apply_translation((length / 2, P.SLOT_Y0 + P.MAT_T / 2,
                            floor_top + P.BAR_RISE / 2))
     depth = 60.0                                  # just enough to read as a shelf
     floor = trimesh.creation.box(extents=(length, depth, P.MAT_T))
-    floor.apply_translation((length / 2, P.FACE_T + depth / 2,
+    floor.apply_translation((length / 2, P.SLOT_Y0 + depth / 2,
                              floor_top - P.MAT_T / 2))
     return trimesh.boolean.union([bar, floor])
 
@@ -89,11 +89,14 @@ def write_stls(built):
     for old in list(STL_DIR.glob("*.stl")) + list(COLOUR_DIR.glob("*.stl")):
         old.unlink()
     rows = []
+    brk = T.bracket()
+    brk.export(STL_DIR / "bracket.stl")
+    rows.append(("bracket", brk.volume, brk.is_watertight))
     for vig, idx, whole, body, art in built:
-        name = "shelf-%s-%d" % (vig.key, idx + 1)
+        name = "art-%s-%d" % (vig.key, idx + 1)
         whole.export(STL_DIR / (name + ".stl"))
         rows.append((name, whole.volume, whole.is_watertight))
-        body.export(COLOUR_DIR / (name + "-cap.stl"))
+        body.export(COLOUR_DIR / (name + "-plate.stl"))
         for colour, mesh in art.items():
             mesh.export(COLOUR_DIR / ("%s-%02x%02x%02x.stl" % ((name,) + colour)))
     return rows
@@ -142,6 +145,9 @@ def render_on_shelf(built, ss, w, h):
     ps = []
     for _, idx, _, body, art in [b for b in built if b[0] is vig]:
         ps += _parts_for(body, art, (idx * P.PANEL_L, 0.0, 0.0))
+    for bx in T.bracket_positions():
+        ps.append({"mesh": _placed(T.bracket(), (bx, 0.0, 0.0)),
+                   "color": (0.42, 0.44, 0.48)})
     ps.append({"mesh": shelf_proxy(P.SHELF_L), "color": SHELF_COLOUR})
     cam = R.frame([p["mesh"] for p in ps], azimuth_deg=-62, elevation_deg=22,
                   margin=1.04)
@@ -150,11 +156,13 @@ def render_on_shelf(built, ss, w, h):
 
 
 def render_clip(built, ss, w, h):
-    """Section through the cap sitting on the retainer bar."""
+    """Section through the bracket, the shelf bar, and the art clipped on."""
     vig, idx, whole, body, art = built[2]
     shelf = shelf_proxy(80.0)
+    brk = T.bracket(width=80.0)
     ps = []
-    for mesh, colour in ((whole, CAP_COLOUR), (shelf, SHELF_COLOUR)):
+    for mesh, colour in ((whole, CAP_COLOUR), (brk, (0.42, 0.44, 0.48)),
+                         (shelf, SHELF_COLOUR)):
         b, caps = R.section(mesh, normal=(-1.0, 0.0, 0.0), origin=(40.0, 0.0, 0.0))
         if len(b.faces):
             ps.append({"mesh": b, "color": colour})
@@ -166,14 +174,13 @@ def render_clip(built, ss, w, h):
 
     bar_top = P.FACE_H - P.WEB_T
     notes = [
-        ((0.0, -P.RELIEF, P.FACE_H * 0.55), "art %.1f mm proud, %.1f mm tall"
-         % (P.RELIEF, P.FACE_H)),
-        ((40.0, P.FACE_T + P.SLOT / 2.0, bar_top - P.GRIP / 2.0),
+        ((0.0, -P.RELIEF, P.FACE_H * 0.55), "art panel, %.1f mm tall" % P.FACE_H),
+        ((40.0, P.ART_T + P.BRK_T / 2, P.BRK_Z1),
+         "hook over the plate's top edge"),
+        ((40.0, P.ART_T + P.BRK_T - P.CLIP_GRAB, P.HOOK_T + P.HOOK_LIP_BOT),
+         "bead snaps past, %.2f mm" % P.CLIP_GRAB),
+        ((40.0, P.SLOT_Y0 + P.SLOT / 2.0, bar_top - P.GRIP / 2.0),
          "%.1f mm slot over the 4 mm bar" % P.SLOT),
-        ((40.0, P.DEPTH, bar_top - P.GRIP),
-         "inner leg %.0f mm down the bar" % P.GRIP),
-        ((40.0, P.FACE_T, 1.0), "hangs %.1f mm below the shelf"
-         % (bar_top - P.BAR_RISE - P.MAT_T)),
     ]
     px = R.screen_of([n[0] for n in notes], width=w, height=h, **cam)
     items = []
@@ -198,6 +205,13 @@ def write_test_stls():
     comb.export(TEST_DIR / "fit-ladder.stl")
     rows.append(("fit-ladder.stl", comb.volume,
                  "%d coupons, %.0f mm" % (len(P.COUPON_SLOTS), total)))
+    stubs, test_brk, total = C.clip_ladder()
+    stubs.export(TEST_DIR / "clip-ladder-stubs.stl")
+    rows.append(("clip-ladder-stubs.stl", stubs.volume,
+                 "grabs %s, %.0f mm" % (P.CLIP_GRABS, total)))
+    test_brk.export(TEST_DIR / "clip-ladder-bracket.stl")
+    rows.append(("clip-ladder-bracket.stl", test_brk.volume,
+                 "one bracket to try them on"))
     vig = V.RAIL[1]
     sample, t0 = C.art_sample(vig)
     sample.export(TEST_DIR / "art-sample.stl")
