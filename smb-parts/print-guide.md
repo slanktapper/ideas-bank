@@ -33,8 +33,21 @@ settles both.**
 .venv/bin/python build.py --test
 ```
 
+**The slot is now settled: 4.2 mm.** Rob printed the first ladder on
+2026-10-23 MDT and the 4.2 rung gripped, so `FIT` is 0.2 and the panels are
+built to it. The ladder below has been re-centred on that result, and is
+only worth reprinting if something changes — a different shelf, a different
+filament, a different printer.
+
+**One caveat before trusting it over a whole panel.** 4.2 was the *tightest*
+rung on that ladder, and a coupon is 5 mm of contact where a panel is
+160 mm — thirty-two times as much. Friction scales with contact length, and
+an FDM slot wanders by a few hundredths over that distance. A fit that is a
+firm push at 5 mm can bind at 160 mm. If the first panel fights you, go to
+`FIT = 0.3` rather than forcing it.
+
 `stl/test/fit-ladder.stl` — five 5 mm slices of the rail at slot widths
-**4.2, 4.3, 4.4, 4.5 and 4.6 mm**, joined by a thin spine, each with its own
+**4.0, 4.1, 4.2, 4.3 and 4.4 mm**, joined by a thin spine, each with its own
 width embossed on the face as two stacked digits (`4` over `2` is 4.2). 41 mm
 long, 3.8 g, a couple of minutes. Snap or cut them off the spine — it is
 1.2 mm thick and lies flat on the bed — and push each onto the shelf's
@@ -42,7 +55,7 @@ retainer bar.
 
 - **Which one grips?** Tight enough to need a push, loose enough not to
   crack. Put that number in `FIT` (slot minus the 4 mm bar: a winning 4.3
-  means `FIT = 0.3`) and rebuild.
+  means `FIT = 0.3`) and rebuild. **Answered: 4.2, so `FIT = 0.2`.**
 - **Does the face reach past the shelf's underside?** Look at the coupon
   from the side once it is on. It should hang about 1.5 mm below. If it
   stops short instead, the drawing's 0.79 in is the bar's rise above the

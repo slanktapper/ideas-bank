@@ -64,8 +64,13 @@ PANEL_TILES = TILES_PER_SHELF // PANELS_PER_SHELF   # 13
 # the clip that caps the retainer bar
 # ---------------------------------------------------------------------------
 
-FIT = 0.4                  # slip clearance across the bar. FDM slots come
-                           # out undersize; this lets it push on by hand.
+FIT = 0.2                  # slip clearance across the bar. MEASURED, not
+                           # guessed: Rob printed the fit ladder on
+                           # 2026-10-23 MDT and the 4.2 mm rung was the one
+                           # that gripped, so the slot is bar + 0.2. Note it
+                           # was the TIGHTEST rung on that ladder -- see the
+                           # scale caveat in print-guide.md before trusting
+                           # it over 160 mm of panel.
 SLOT = MAT_T + FIT         # 4.4
 
 FACE_T = 2.4               # the plate behind the art, six 0.4 walls
@@ -88,7 +93,9 @@ LAP_FIT = 0.3
 
 COUPON_W = 5.0             # how long a slice of the rail each coupon is
 COUPON_GAP = 4.0           # space between them on the spine
-COUPON_SLOTS = [4.2, 4.3, 4.4, 4.5, 4.6]   # 4.4 is the design value, SLOT
+COUPON_SLOTS = [4.0, 4.1, 4.2, 4.3, 4.4]   # re-centred on the measured 4.2
+                                           # after the first ladder, whose
+                                           # winner sat at its tight end
 SPINE_T = 1.2              # the frangible bar joining them, at the bed face
 DIGIT_PX = 1.3             # pixel size of the embossed slot number
 

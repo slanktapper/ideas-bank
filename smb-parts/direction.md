@@ -104,18 +104,20 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
   short of the shelf's underside — it still grips, but there is a visible gap.
   A caliper from floor-top to bar-top settles it, and so does any coupon from
   the fit ladder: push one on and see whether the face passes the underside.
-- **The slot clearance is a guess too.** 4.4 mm over a 4 mm bar assumes FDM
-  shrink and sheet tolerance neither of which is known here. The fit ladder
-  (`build.py --test`) prints five widths from 4.2 to 4.6 for 3.8 g; whichever
-  grips becomes `FIT`.
+- ~~**The slot clearance is a guess.**~~ **Settled 2026-10-23 MDT.** Rob
+  printed the fit ladder and the 4.2 mm rung gripped, so `FIT` is 0.2 and
+  the panels are built to a measured number rather than an assumed one.
+  Open only in one respect: 4.2 was the tightest rung on the ladder, and a
+  5 mm coupon is not a 160 mm panel. If the first real panel binds, 0.3.
 - **How many shelves there are.** The rail is per shelf and four vignettes
   exist; Rob prints the ones he wants. Three is the three feet.
 - **Two colours do not exist and four more are missing entirely.** The
   overworld shelves lose the light green of the bushes and an olive detail;
   the underground shelf has no teal, no pale cyan and no navy on the shelf at
   all. See the table in `print-guide.md`.
-- **Nothing has been printed.** Every number here is from the mesh, not from a
-  part in hand — which is what the fit ladder exists to end.
+- **Only the coupons have been printed.** The slot is now a measured number;
+  everything else — the grip over a full panel, whether the art reads at
+  0.77 mm, the half-lap — is still mesh arithmetic.
 - **Which scenes.** The current four are an arc through 1-1 with a dip into
   1-2. Forty-five other maps are sitting in `maps/` unused.
 - **The cutter is untouched.** 30 sheets of 300 x 300 mm vinyl in red, black
