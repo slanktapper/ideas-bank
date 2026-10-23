@@ -82,49 +82,53 @@ CHAMFER = 0.6              # lead-in where the slot opens, so a 0.2 mm fit
                            # does not have to start on a square edge
 
 # ---------------------------------------------------------------------------
-# THE SPLIT: brackets stay on the shelf, the art clips onto them
+# THE SPLIT: the art is a plain slab, the holder does all the work
 # ---------------------------------------------------------------------------
 #
 # Section, front to back. Y is depth into the shelf, Z is up.
 #
-#   art plate | hook zone  | wall | the bar slot | inner leg
-#   0 .. 2.4  | 2.4 .. 6.6 | ..7.2| 7.2 .. 11.4  | 11.4 .. 13.9
-#             ^ the bracket's front plate lives at 2.4..4.8 and the art's
-#               lips wrap behind it at 5.0..6.6
+#        -1.2  0        2.4 2.6   4.6        8.8   11.3
+#          |   |         |   |     |          |     |
+#   lip -> +---+                                            <- flush with the
+#          |ART SLAB    |   | back |  slot    | leg |          deepest relief
+#          +---+         |   | wall |          |     |
 #
-# The art's hooks are a C opening backwards. The bracket passes through the
-# gap between the two lips, which is the only route from its front plate to
-# the bar cap behind -- a continuous hook means there is no way round in X.
+# The slab is a rectangle and nothing else: no hooks, no returns, no features
+# on its back. The holder wraps its top and bottom edges, and a bead on the
+# upper lip snaps over the front face.
+#
+# WHY THE ART HAS A PLAIN MARGIN. The lip has to bear on the slab's front
+# face, but that face is at Y=0 where the art is background and Y=-1.2 where
+# a pixel stands proud. A lip set clear of the relief would leave the slab
+# 1.2 mm of rattle. So the top and bottom ART_MARGIN of the panel carry no
+# relief, and the lips bear on flat plate with ART_FIT to spare.
 
 BRACKETS_PER_SHELF = 3     # flush left, centred on the panel joint, flush
                            # right. The middle one straddles the joint and
-                           # lines the two panels up, so no half-lap.
-BRACKET_W = 25.0           # how long each bracket is along the shelf
+                           # lines the two panels up.
+BRACKET_W = 25.0           # how long each holder is along the shelf
 
-ART_T = 2.4                # the art plate, six 0.4 walls
-BRK_T = 2.4                # the bracket's front plate -- what the hooks grab
-HOOK_T = 1.6               # the art's top and bottom returns
-HOOK_LIP_BOT = 2.5         # how far the bottom lip stands up behind the plate
-CLIP_FIT = 0.2             # clearance around the captured plate
-CLIP_GRAB = 0.25           # the snap: how far the bottom mouth is narrower
-                           # than the plate, so it has to flex on. Rob asked
-                           # for 0.1-0.3 and this sits in the middle.
-GRAB_H = 1.0               # height of the snap bump
+ART_T = 2.4                # the slab, six 0.4 walls
+ART_FIT = 0.2              # clearance around the slab inside the holder
+ART_MARGIN = 1.0           # plain border top and bottom for the lips to grip
 
-# HOOK_LIP_TOP is NOT free. The top lip hangs behind the bracket's front
-# plate, and the bracket's body has to reach past it to meet the web over
-# the bar. That leaves exactly the web's thickness to share out:
-HOOK_LIP_TOP = WEB_T - HOOK_T - CLIP_FIT        # 1.2
+LIP_T = 1.0                # how thick the retaining lips are, front to back
+LIP_OVER = 1.0             # how far they reach over the slab's face
+RET_T = 1.0                # the return wrapping the slab's top/bottom edge
+BACK_T = 2.0               # the holder's back wall, behind the slab
+CLIP_GRAB = 0.25           # the snap: how far the bead on the top lip stands
+                           # over the slab's face, so it has to flex past.
+                           # Rob asked for 0.1-0.3; this is the middle.
+GRAB_H = 0.8               # height of the bead
 
-HOOK_D = BRK_T + CLIP_FIT + HOOK_T      # 4.2, how far the returns reach back
-FRONT_WALL = 0.6           # the sliver carrying the body up to the web
-SLOT_Y0 = ART_T + HOOK_D + FRONT_WALL   # 7.2, where the bar slot starts
-DEPTH = SLOT_Y0 + SLOT + LEG_T          # 13.9, all it takes off the shelf
-
-BRK_Z0 = HOOK_T + CLIP_FIT                      # 1.8, plate bottom edge
-BRK_Z1 = FACE_H - HOOK_T - CLIP_FIT             # 22.82, plate top edge
-BODY_Z0 = HOOK_T + HOOK_LIP_BOT + CLIP_FIT      # 4.3, clear of the bottom lip
-BODY_Z1 = FACE_H - WEB_T                        # 21.62, clear of the top lip
+# derived -- the lips land flush with the deepest relief, which is why they
+# do not read as protrusions
+LIP_Y0 = -RELIEF           # front face of both lips, = -1.2
+LIP_Y1 = -ART_FIT          # back face of both lips
+SLOT_Y0 = ART_T + ART_FIT + BACK_T      # 4.6, where the bar slot starts
+DEPTH = SLOT_Y0 + SLOT + LEG_T          # 11.3 measured from the slab's face
+HOLDER_Z0 = -RET_T                      # bottom of the holder
+HOLDER_Z1 = FACE_H + ART_FIT + RET_T    # top of the holder
 
 # ---------------------------------------------------------------------------
 # the fit coupons -- a ladder of slot widths to try on the real shelf before

@@ -86,19 +86,19 @@ def _number_on_face(text, width):
 
 
 def clip_ladder(split=False):
-    """Art stubs at three snap strengths, plus a bracket to try them on.
+    """Holders at three snap strengths, plus one art stub to try them on.
 
-    The bar slot is settled at 4.2. The NEW unknown is the clip: how hard
-    the bead should have to flex past the bracket's plate. 0.25 is the
-    design value and the other two bracket it, so the feel can be chosen
-    rather than calculated -- there is no way to compute "easy and safe".
+    The bead moved onto the holder when the art became a plain slab, so the
+    ladder is now holders rather than art. The bar slot is settled at 4.2;
+    the open number is how hard the bead should have to flex past, and
+    "easy and safe to add and remove" is a feel, not a calculation.
     """
     pieces, plains, numbers = [], [], []
     x = 0.0
     for grab in P.CLIP_GRABS:
-        body = T.art_body(P.COUPON_W * 4, grab=grab)
+        body = T.bracket(width=P.BRACKET_W, grab=grab)
         label = "%d" % round(grab * 100)       # 0.25 -> "25"
-        marks = _number_on_face(label, P.COUPON_W * 4)
+        marks = _number_on_face(label, P.BRACKET_W)
         one = trimesh.boolean.union([body] + marks)
         one.apply_translation((x, 0.0, 0.0))
         pieces.append(one)
@@ -106,13 +106,13 @@ def clip_ladder(split=False):
             b = body.copy(); b.apply_translation((x, 0.0, 0.0)); plains.append(b)
             n = trimesh.util.concatenate(marks)
             n.apply_translation((x, 0.0, 0.0)); numbers.append(n)
-        x += P.COUPON_W * 4 + P.COUPON_GAP
-    stubs = trimesh.boolean.union(pieces)
-    test_bracket = T.bracket(width=P.BRACKET_W)
+        x += P.BRACKET_W + P.COUPON_GAP
+    holders = trimesh.boolean.union(pieces)
+    stub = T.art_body(P.BRACKET_W * 2)
     if split:
-        return stubs, trimesh.boolean.union(plains), \
-            trimesh.util.concatenate(numbers), test_bracket, x - P.COUPON_GAP
-    return stubs, test_bracket, x - P.COUPON_GAP
+        return holders, trimesh.boolean.union(plains), \
+            trimesh.util.concatenate(numbers), stub, x - P.COUPON_GAP
+    return holders, stub, x - P.COUPON_GAP
 
 
 def fit_ladder(split=False):
@@ -146,7 +146,7 @@ def fit_ladder(split=False):
     # The spine lies on the bed when the comb is printed upside down, so it
     # is trivial to cut. Keep it inside the thinnest coupon's depth.
     thin = P.SLOT_Y0 + min(P.COUPON_SLOTS) + P.LEG_T
-    spine = T._box(0.0, total, P.ART_T + P.HOOK_D, thin,
+    spine = T._box(0.0, total, P.SLOT_Y0 - P.SPINE_T, thin,
                    P.FACE_H - P.SPINE_T, P.FACE_H)
     comb = trimesh.boolean.union(pieces + [spine])
     if split:

@@ -71,34 +71,48 @@ for v in V.RAIL:
           0.15 <= frac <= 0.85)
 
 print("\nthe clip")
-check("top lip clears the bracket body by CLIP_FIT",
-      abs((P.FACE_H - P.HOOK_T - P.HOOK_LIP_TOP) - P.BODY_Z1 - P.CLIP_FIT) < 1e-9,
-      "the body has to pass between the two lips")
-check("bottom lip clears the bracket body by CLIP_FIT",
-      abs(P.BODY_Z0 - (P.HOOK_T + P.HOOK_LIP_BOT) - P.CLIP_FIT) < 1e-9)
-check("top hook actually overlaps the plate (%.2f mm)"
-      % (P.BRK_Z1 - (P.FACE_H - P.HOOK_T - P.HOOK_LIP_TOP)),
-      P.BRK_Z1 > P.FACE_H - P.HOOK_T - P.HOOK_LIP_TOP)
+check("lips land flush with the deepest relief",
+      abs(P.LIP_Y0 + P.RELIEF) < 1e-9,
+      "otherwise the holder reads as a protrusion")
+check("lips clear the slab's face by ART_FIT",
+      abs(P.LIP_Y1 + P.ART_FIT) < 1e-9)
+check("the margin is wider than the lips reach (%.1f >= %.1f)"
+      % (P.ART_MARGIN, P.LIP_OVER), P.ART_MARGIN >= P.LIP_OVER,
+      "a lip bearing on relief would leave the slab rattling")
 check("the snap is in the 0.1-0.3 Rob asked for (%.2f)" % P.CLIP_GRAB,
       0.10 <= P.CLIP_GRAB <= 0.30)
 check("the bead is shallower than the lip it sits on",
-      P.GRAB_H < P.HOOK_LIP_BOT)
+      P.GRAB_H < P.LIP_OVER + 1e-9)
 check("art still clears the shelf underside (%.2f mm)"
       % ((P.FACE_H - P.WEB_T) - P.BAR_RISE - P.MAT_T),
       (P.FACE_H - P.WEB_T) - P.BAR_RISE - P.MAT_T >= 0)
-check("depth off the shelf stays under 15 mm (%.1f)" % P.DEPTH, P.DEPTH <= 15.0)
+check("depth off the shelf stays under 13 mm (%.1f)" % P.DEPTH, P.DEPTH <= 13.0)
+check("it sticks out less than 7 mm in front of the shelf (%.1f)"
+      % (P.SLOT_Y0 - P.LIP_Y0), P.SLOT_Y0 - P.LIP_Y0 <= 7.0)
 
-print("\nbrackets")
+print("\nholders")
 brk = T.bracket()
-check("bracket is a watertight solid", brk.is_volume)
-check("bracket is one connected body (%d)" % brk.body_count, brk.body_count == 1,
-      "the body has to reach the web past both lips")
-check("bracket is FACE_H tall", abs(brk.bounds[1][2] - P.FACE_H) < MESH_TOL)
+check("holder is a watertight solid", brk.is_volume)
+check("holder is one connected body (%d)" % brk.body_count, brk.body_count == 1)
+check("holder front face is the lips, at LIP_Y0",
+      abs(brk.bounds[0][1] - P.LIP_Y0) < MESH_TOL, "%.3f" % brk.bounds[0][1])
+check("holder stands %.1f mm proud of the slab, top and bottom"
+      % P.RET_T, abs(brk.bounds[1][2] - P.HOLDER_Z1) < MESH_TOL)
 pos = T.bracket_positions()
-check("%d brackets, none hanging off the shelf" % len(pos),
+check("%d holders, none hanging off the shelf" % len(pos),
       pos[0] >= -1e-9 and pos[-1] + P.BRACKET_W <= P.SHELF_L + 1e-9)
-check("a bracket straddles the joint between the two art panels",
+check("a holder straddles the joint between the two art panels",
       any(x < P.SHELF_L / 2 < x + P.BRACKET_W for x in pos))
+
+print("\nthe art slab is a plain rectangle")
+slab = T.art_body(P.PANEL_L)
+check("slab is a watertight solid", slab.is_volume)
+check("slab is a box: 12 triangles, 8 vertices (%d/%d)"
+      % (len(slab.faces), len(slab.vertices)),
+      len(slab.faces) == 12 and len(slab.vertices) == 8,
+      "anything more means a feature crept back onto the art")
+check("slab has nothing behind its face",
+      abs(slab.bounds[1][1] - P.ART_T) < MESH_TOL)
 
 print("\nart panels")
 made = {}
@@ -113,8 +127,12 @@ for vig in V.RAIL:
               abs((hi[2] - lo[2]) - P.FACE_H) < MESH_TOL, "%.4f" % (hi[2] - lo[2]))
         check("%-14s art stands %.1f mm proud, no more" % (tag, P.RELIEF),
               abs(lo[1] + P.RELIEF) < MESH_TOL, "%.4f" % lo[1])
-        check("%-14s hooks reach back to HOOK_D" % tag,
-              abs(hi[1] - (P.ART_T + P.HOOK_D)) < MESH_TOL, "%.4f" % hi[1])
+        check("%-14s nothing behind the slab face" % tag,
+              abs(hi[1] - P.ART_T) < MESH_TOL, "%.4f" % hi[1])
+        check("%-14s relief stops at the margins" % tag,
+              all(abs(m.bounds[0][2] - P.ART_MARGIN) > -1e-6
+                  and m.bounds[1][2] <= P.FACE_H - P.ART_MARGIN + MESH_TOL
+                  for m in art.values()))
 
 print("\nthe art actually clips onto the bracket")
 probe = made[V.RAIL[1].key][0]
@@ -128,8 +146,10 @@ if vol > 0.1:
     check("interference is only the bead, %.3f mm deep" % (hi[1] - lo[1]),
           abs((hi[1] - lo[1]) - P.CLIP_GRAB) < 0.02,
           "anything else means the hooks foul the bracket")
-    check("interference sits at the bead's Y",
-          abs(lo[1] - (P.ART_T + P.BRK_T - P.CLIP_GRAB)) < MESH_TOL)
+    check("interference sits on the slab's front face",
+          abs(lo[1]) < MESH_TOL, "%.4f" % lo[1])
+    check("interference is up at the top lip",
+          lo[2] > P.FACE_H - P.LIP_OVER - P.GRAB_H - MESH_TOL)
     check("interference is one place, not several (%d)" % inter.body_count,
           inter.body_count == 1)
     check("interference stays inside the bracket's span",
@@ -167,16 +187,19 @@ check("ladder is %.0f mm, a couple of minutes of printing" % total,
 check("ladder depth follows the widest rung",
       abs(comb.bounds[1][1] - (P.SLOT_Y0 + max(P.COUPON_SLOTS) + P.LEG_T)) < MESH_TOL,
       "%.3f" % comb.bounds[1][1])
-check("ladder is the same height as the real rail",
-      abs(comb.bounds[1][2] - P.FACE_H) < MESH_TOL)
+check("ladder rungs are real holders, full height",
+      abs((comb.bounds[1][2] - comb.bounds[0][2])
+          - (P.HOLDER_Z1 - P.HOLDER_Z0)) < MESH_TOL,
+      "%.3f" % (comb.bounds[1][2] - comb.bounds[0][2]))
 
-stubs, test_brk, _ = C.clip_ladder()
-check("clip ladder stubs are a watertight solid", stubs.is_volume)
+holders, test_stub, _ = C.clip_ladder()
+check("clip ladder holders are a watertight solid", holders.is_volume)
 check("clip ladder brackets the design grab (%.2f)" % P.CLIP_GRAB,
       min(P.CLIP_GRABS) < P.CLIP_GRAB < max(P.CLIP_GRABS))
 check("every clip label has a glyph",
       all(c in C.FONT for g in P.CLIP_GRABS for c in "%d" % round(g * 100)))
-check("clip ladder ships a bracket to try the stubs on", test_brk.is_volume)
+check("clip ladder ships an art stub to try the holders on",
+      test_stub.is_volume)
 
 sample, t0 = C.art_sample(V.RAIL[1])
 check("art sample is a watertight solid", sample.is_volume)

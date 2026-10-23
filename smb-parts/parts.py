@@ -68,58 +68,53 @@ def _sweep(points_yz, x0, x1):
     return m
 
 
-def bracket(width=None, slot=None) -> trimesh.Trimesh:
-    """One shelf bracket: caps the bar, presents a plate for the art.
+def bracket(width=None, slot=None, grab=None) -> trimesh.Trimesh:
+    """One shelf holder: caps the bar, and holds the art slab.
 
-    `slot` overrides the bar slot for the fit coupons; everything behind the
-    front plate shifts with it, the plate and the clip geometry do not.
+    All the clip geometry is here. The slab is a plain rectangle, so every
+    feature that retains it -- the bottom ledge, the top lip, the snap bead
+    -- belongs to this part, which is the one that stays on the shelf.
     """
     w = P.BRACKET_W if width is None else width
     slot = P.SLOT if slot is None else slot
+    grab = P.CLIP_GRAB if grab is None else grab
     depth = P.SLOT_Y0 + slot + P.LEG_T
     bar_top = P.FACE_H - P.WEB_T
+    y_back = P.ART_T + P.ART_FIT                 # back of the slab pocket
+    z_top = P.FACE_H + P.ART_FIT                 # top of the slab pocket
 
-    plate = _box(0, w, P.ART_T, P.ART_T + P.BRK_T, P.BRK_Z0, P.BRK_Z1)
-    body = _box(0, w, P.ART_T + P.BRK_T, P.SLOT_Y0, P.BODY_Z0, P.BODY_Z1)
-    web = _box(0, w, P.ART_T + P.HOOK_D, depth, bar_top, P.FACE_H)
+    back = _box(0, w, y_back, P.SLOT_Y0, P.HOLDER_Z0, P.HOLDER_Z1)
+    bot_ret = _box(0, w, P.LIP_Y0, P.SLOT_Y0, P.HOLDER_Z0, 0.0)
+    top_ret = _box(0, w, P.LIP_Y0, P.SLOT_Y0, z_top, P.HOLDER_Z1)
+    bot_lip = _box(0, w, P.LIP_Y0, P.LIP_Y1, 0.0, P.LIP_OVER)
+    top_lip = _box(0, w, P.LIP_Y0, P.LIP_Y1, z_top - P.LIP_OVER, z_top)
+
+    # the snap: a bead on the top lip standing `grab` over the slab's face,
+    # ramped underneath so the slab pushes it open rather than jamming
+    y_bead = 0.0 + grab
+    z1 = z_top - P.LIP_OVER + P.GRAB_H
+    bead = _sweep([(P.LIP_Y1, z_top - P.LIP_OVER + P.GRAB_H + (y_bead - P.LIP_Y1)),
+                   (y_bead, z1), (y_bead, z1 - P.GRAB_H),
+                   (P.LIP_Y1, z1 - P.GRAB_H)], 0.0, w)
+
+    web = _box(0, w, P.SLOT_Y0, depth, bar_top, P.FACE_H)
     leg = _box(0, w, depth - P.LEG_T, depth, bar_top - P.GRIP, bar_top)
-    solid = trimesh.boolean.union([plate, body, web, leg])
+    solid = trimesh.boolean.union([back, bot_ret, top_ret, bot_lip, top_lip,
+                                   bead, web, leg])
 
     # lead-in where the bar enters, so a 0.2 mm fit does not start square
     mouth = bar_top - P.GRIP
     c = P.CHAMFER
-    front = _sweep([(P.SLOT_Y0, mouth), (P.SLOT_Y0, mouth + c),
-                    (P.SLOT_Y0 - c, mouth)], -1.0, w + 1.0)
-    back = _sweep([(depth - P.LEG_T, mouth), (depth - P.LEG_T, mouth + c),
-                   (depth - P.LEG_T + c, mouth)], -1.0, w + 1.0)
-    return trimesh.boolean.difference([solid, front, back])
+    cuts = [_sweep([(P.SLOT_Y0, mouth), (P.SLOT_Y0, mouth + c),
+                    (P.SLOT_Y0 - c, mouth)], -1.0, w + 1.0),
+            _sweep([(depth - P.LEG_T, mouth), (depth - P.LEG_T, mouth + c),
+                    (depth - P.LEG_T + c, mouth)], -1.0, w + 1.0)]
+    return trimesh.boolean.difference([solid] + cuts)
 
 
-def art_body(length, grab=None) -> trimesh.Trimesh:
-    """The art panel's plate and the two hooks that grab a bracket."""
-    y_lip = P.ART_T + P.BRK_T + P.CLIP_FIT          # front face of both lips
-    y_back = P.ART_T + P.HOOK_D                     # how far the returns reach
-
-    plate = _box(0, length, 0, P.ART_T, 0, P.FACE_H)
-    top_ret = _box(0, length, P.ART_T, y_back, P.FACE_H - P.HOOK_T, P.FACE_H)
-    top_lip = _box(0, length, y_lip, y_back,
-                   P.FACE_H - P.HOOK_T - P.HOOK_LIP_TOP, P.FACE_H - P.HOOK_T)
-    bot_ret = _box(0, length, P.ART_T, y_back, 0, P.HOOK_T)
-    bot_lip = _box(0, length, y_lip, y_back, P.HOOK_T,
-                   P.HOOK_T + P.HOOK_LIP_BOT)
-
-    # the snap: a bead on the bottom lip, chamfered both ways so it rides on
-    # however the panel is swung in, standing CLIP_GRAB proud of the plate's
-    # back face so it has to flex past
-    grab = P.CLIP_GRAB if grab is None else grab
-    y_bead = P.ART_T + P.BRK_T - grab
-    z1 = P.HOOK_T + P.HOOK_LIP_BOT
-    z0 = z1 - P.GRAB_H
-    r = y_lip - y_bead
-    bead = _sweep([(y_lip, z0), (y_bead, z0 + r), (y_bead, z1 - r), (y_lip, z1)],
-                  0.0, length)
-    return trimesh.boolean.union([plate, top_ret, top_lip, bot_ret, bot_lip,
-                                  bead])
+def art_body(length) -> trimesh.Trimesh:
+    """The art slab. A rectangle, and nothing else."""
+    return _box(0, length, 0, P.ART_T, 0, P.FACE_H)
 
 
 def _colour_polygon(grid, colour, rows, cols):
@@ -137,7 +132,11 @@ def _colour_polygon(grid, colour, rows, cols):
             rects.append(sbox(c * P.PIXEL, P.FACE_H - (r + 1) * P.PIXEL,
                               run * P.PIXEL, P.FACE_H - r * P.PIXEL))
             c = run
-    return unary_union(rects)
+    poly = unary_union(rects)
+    # the top and bottom margins stay flat: that is where the holder's lips
+    # bear, and relief under them would leave the slab rattling
+    keep = sbox(-1.0, P.ART_MARGIN, cols * P.PIXEL + 1.0, P.FACE_H - P.ART_MARGIN)
+    return poly.intersection(keep)
 
 
 def _extrude(g, height):

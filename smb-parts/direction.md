@@ -5,12 +5,12 @@
 ## What it is
 
 A Mario frieze for the front of a floating shelf, in **two separate parts**.
-Small **brackets** cap the shelf's retainer bar and stay there; **art panels**
-clip onto them — hook the top over the bracket's plate, swing the bottom in,
-and a bead snaps past. Swapping a scene means unclipping a panel, not
-unbolting the shelf.
+Small **holders** cap the shelf's retainer bar and stay there; **art slabs**
+clip into them. The art is a plain rectangle — relief on one face, nothing at
+all on its back. Every feature that holds it belongs to the holder, which is
+the piece bolted to nothing and clipped to the shelf.
 
-One shelf takes three brackets and two art panels of 160.02 mm, butting into
+One shelf takes three holders and two art slabs of 160.02 mm, butting into
 320.04 mm — the exact length of the shelf. The art is lifted straight out of
 the real *Super Mario Bros.* level maps: no redrawing, no invented pixels.
 
@@ -44,8 +44,9 @@ for multi-material. Renders the lot so it can be checked before filament.
   shows through, so the sky is whatever colour the body is printed in.
 - **Attach to furniture.** The brackets push onto the retainer bar and lift
   off. No screws, no adhesive, no modification to the shelf.
-- **Make the art structural.** The art panel carries nothing but itself. All
-  the gripping is the bracket's job, which is why the two are separate.
+- **Put anything on the art but art.** The slab is a rectangle: 12 triangles
+  before the relief goes on, and `test_fit.py` asserts exactly that so a
+  feature cannot creep back onto it.
 - **Span shelves.** One rail is one shelf. A continuous run across separate
   floating shelves is not a thing this builds.
 - **Grow a tile library or a level editor.** Crops are specified by numbers in
@@ -63,12 +64,16 @@ shelf to fit. The rail now caps the bar: a 4.4 mm slot drops over it, an inner
 leg runs 12 mm down the back, and the face hangs outside, covering the whole
 20 mm front elevation with 1.5 mm to spare. It costs 9.3 mm of shelf depth.
 
-**The clip is pinned by the bar.** The art's top lip has to hang behind the
-bracket's front plate but stay clear of the bar behind it, and the bracket's
-body has to pass between the two lips to reach the web — with a continuous
-hook there is no way round it along the rail. That leaves exactly the web's
-thickness to share out, so `HOOK_LIP_TOP` is derived, not chosen: 1.2 mm.
-Splitting the parts also cost 4.8 mm of depth, 9.1 to 13.9.
+**Why the art has a plain margin.** The holder's lips bear on the slab's
+front face — but that face is at Y=0 where the art is background and 1.2 mm
+proud where a pixel stands. Lips set clear of the relief would leave the slab
+rattling 1.2 mm. So the top and bottom 1.0 mm of each slab carry no relief,
+about 1.3 game pixels, and the lips bear on flat plate. It is the one thing
+the art gives up to be a rectangle.
+
+**The lips are flush with the relief.** `LIP_Y0 = -RELIEF` is not a
+coincidence but a constraint: a holder standing proud of the art would read
+as a protrusion, which is what the first clip design got wrong.
 
 **And a rail cannot span shelves.** 320 mm is not three feet; three of these
 are. Floating shelves are separate objects with gaps between them, so one rail
@@ -136,9 +141,6 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
   0.1–0.3 Rob asked for, but "easy and safe to add and remove" is a feel and
   not a number. `build.py --test` prints three stubs at 0.15/0.25/0.35 and a
   bracket to try them on.
-- **The art panel needs supports.** Its top hook is a 4.2 mm cantilever and
-  every orientation puts one hook or the other in the air; a gusset would
-  foul the bracket. Supports land on the back where nothing shows.
 - **Which scenes.** The current four are an arc through 1-1 with a dip into
   1-2. Forty-five other maps are sitting in `maps/` unused.
 - **The cutter is untouched.** 30 sheets of 300 x 300 mm vinyl in red, black

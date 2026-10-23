@@ -90,13 +90,13 @@ def write_stls(built):
         old.unlink()
     rows = []
     brk = T.bracket()
-    brk.export(STL_DIR / "bracket.stl")
-    rows.append(("bracket", brk.volume, brk.is_watertight))
+    brk.export(STL_DIR / "holder.stl")
+    rows.append(("holder", brk.volume, brk.is_watertight))
     for vig, idx, whole, body, art in built:
         name = "art-%s-%d" % (vig.key, idx + 1)
         whole.export(STL_DIR / (name + ".stl"))
         rows.append((name, whole.volume, whole.is_watertight))
-        body.export(COLOUR_DIR / (name + "-plate.stl"))
+        body.export(COLOUR_DIR / (name + "-slab.stl"))
         for colour, mesh in art.items():
             mesh.export(COLOUR_DIR / ("%s-%02x%02x%02x.stl" % ((name,) + colour)))
     return rows
@@ -175,10 +175,9 @@ def render_clip(built, ss, w, h):
     bar_top = P.FACE_H - P.WEB_T
     notes = [
         ((0.0, -P.RELIEF, P.FACE_H * 0.55), "art panel, %.1f mm tall" % P.FACE_H),
-        ((40.0, P.ART_T + P.BRK_T / 2, P.BRK_Z1),
-         "hook over the plate's top edge"),
-        ((40.0, P.ART_T + P.BRK_T - P.CLIP_GRAB, P.HOOK_T + P.HOOK_LIP_BOT),
-         "bead snaps past, %.2f mm" % P.CLIP_GRAB),
+        ((40.0, P.LIP_Y0, P.FACE_H + P.ART_FIT - P.LIP_OVER / 2),
+         "top lip, bead snaps %.2f mm over" % P.CLIP_GRAB),
+        ((40.0, P.LIP_Y0, P.LIP_OVER / 2), "bottom ledge: the slab rests here"),
         ((40.0, P.SLOT_Y0 + P.SLOT / 2.0, bar_top - P.GRIP / 2.0),
          "%.1f mm slot over the 4 mm bar" % P.SLOT),
     ]
@@ -205,13 +204,13 @@ def write_test_stls():
     comb.export(TEST_DIR / "fit-ladder.stl")
     rows.append(("fit-ladder.stl", comb.volume,
                  "%d coupons, %.0f mm" % (len(P.COUPON_SLOTS), total)))
-    stubs, test_brk, total = C.clip_ladder()
-    stubs.export(TEST_DIR / "clip-ladder-stubs.stl")
-    rows.append(("clip-ladder-stubs.stl", stubs.volume,
+    holders, test_stub, total = C.clip_ladder()
+    holders.export(TEST_DIR / "clip-ladder-holders.stl")
+    rows.append(("clip-ladder-holders.stl", holders.volume,
                  "grabs %s, %.0f mm" % (P.CLIP_GRABS, total)))
-    test_brk.export(TEST_DIR / "clip-ladder-bracket.stl")
-    rows.append(("clip-ladder-bracket.stl", test_brk.volume,
-                 "one bracket to try them on"))
+    test_stub.export(TEST_DIR / "clip-ladder-slab.stl")
+    rows.append(("clip-ladder-slab.stl", test_stub.volume,
+                 "a plain slab to try the holders on"))
     vig = V.RAIL[1]
     sample, t0 = C.art_sample(vig)
     sample.export(TEST_DIR / "art-sample.stl")

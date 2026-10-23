@@ -1,17 +1,21 @@
 # smb-parts — printing the shelf rail
 
-**Two parts.** Small **brackets** cap the shelf's retainer bar and live there
-permanently; **art panels** clip onto them. One shelf takes **3 brackets and
-2 art panels**, the panels butting into 320.04 mm — the shelf's exact length.
-Three shelves is about three feet.
+**Two parts.** Small **holders** cap the shelf's retainer bar and live there
+permanently; **art panels** are plain rectangular slabs that clip into them.
+One shelf takes **3 holders and 2 art slabs**, the slabs butting into
+320.04 mm — the shelf's exact length. Three shelves is about three feet.
 
 | Part | Each | Per shelf |
 | --- | --- | --- |
-| bracket, 25 mm | 4.5 g | 3 = 13.4 g |
-| art panel, 160 mm | ~18.6 g | 2 = ~37 g |
-| | | **~50 g a shelf** |
+| holder, 25 mm | 3.5 g | 3 = 10.5 g |
+| art slab, 160 mm | ~14.3 g | 2 = ~29 g |
+| | | **~39 g a shelf** |
 
-Brackets are hidden behind the art, so print them in whatever is loaded.
+**The art carries nothing.** It is a rectangle 160.02 x 24.618 x 2.4 mm with
+relief on one face and nothing at all on its back — no hooks, no returns, no
+features. Every part of the clip lives on the holder, which is the piece that
+stays on the shelf. That is why the slab prints flat with no supports, and
+why the holders barely show: their lips sit **flush** with the deepest relief.
 
 ## Print the clip ladder first
 
@@ -152,41 +156,44 @@ and the sky is right for free.
 
 ## Orientation and settings
 
-**Brackets:** web flat on the bed, walls growing up. No supports, nothing
-overhangs.
+**Art slabs: flat on the bed, relief up, no supports.** The back is a plain
+face, so it lies straight down and nothing overhangs. This is the payoff from
+moving every feature onto the holder — the previous design needed supports
+under its hooks and this one needs none.
 
-**Art panels:** art face **up**, flat on the bed, **with supports**. The two
-hook rails on the back then point down and need support under them. This is
-the one place the design does not get a free print: the top hook is a 4.2 mm
-cantilever, every orientation puts one hook or the other in the air, and a
-gusset to hold it up would foul the bracket. The supports land on the back
-where nothing shows, and they are two straight rails, so they peel.
-
-If you would rather have no supports at all, the alternative is to **recess**
-the art instead of raising it and print face **down** — the art face then
-comes off the bed glassy and the hooks point up, fully supported. That is a
-different look, not a worse one. Say the word and it is one parameter.
+**Holders: stand them on end**, the 25 mm length vertical. The holder is a
+constant section swept along its length, so with that axis up, every face is
+either a vertical wall or one of the two ends: zero overhang, no supports, no
+bridges. Footprint is about 12.5 x 27 mm, so use a brim — they are tall for
+their base. Print all three at once.
 
 | | |
 | --- | --- |
 | Nozzle | 0.4 mm. A game pixel is 0.77 mm, just under two beads. |
 | Layer | 0.2 mm. Relief is 1.2 mm, so six layers. |
-| Walls | 3+. The plate is 2.4 mm, which is six walls, i.e. solid. |
+| Walls | 3+. The slab is 2.4 mm, which is six walls, i.e. solid. |
 | Material | PLA. Indoors on a shelf; nothing is structural. |
-| Brim | worth it on the brackets — they are only 25 mm long. |
+| Brim | on the holders. The slabs do not need one. |
+
+### What the margin costs
+
+The top and bottom **1.0 mm** of each slab carry no relief — that is the flat
+the holder's lips bear on. It works out at about **1.3 game pixels** top and
+bottom. Without it the lips would have to clear the raised pixels and the
+slab would rattle 1.2 mm front to back. The colour is unaffected; only the
+relief stops short.
 
 ## Assembly
 
-1. **Push the three brackets onto the retainer bar**, down from above. Flush
+1. **Push the three holders onto the retainer bar**, down from above. Flush
    at each end and one in the middle. The middle one sits at 147.5 mm, which
-   is where the two art panels meet — it straddles the joint and lines them
-   up, which is why there is no half-lap any more.
-2. **Clip the left art panel on:** hook its top return over the brackets'
-   top plate edge, swing the bottom in, push until the bead snaps past.
-3. **Clip the right panel on** the same way.
+   is where the two slabs meet — it straddles the joint and lines them up.
+2. **Drop a slab in:** sit its bottom edge on the holders' bottom ledges,
+   push the top back until the bead on each top lip snaps over the face.
+3. Same for the second slab.
 
-To swap a scene, lever the bottom of a panel off and lift it away. The
-brackets stay where they are.
+To swap a scene, ease the top of a slab forward past the beads and lift it
+out. The holders never move.
 
 The four shelves available, each a straight crop of a real level map:
 
