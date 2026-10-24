@@ -159,7 +159,10 @@ def render_clip(built, ss, w, h):
     """Section through the bracket, the shelf bar, and the art clipped on."""
     vig, idx, whole, body, art = built[2]
     shelf = shelf_proxy(80.0)
-    brk = T.bracket(width=80.0)
+    # the REAL holder, straddling the cut -- an earlier version of this render
+    # drew an 80 mm stand-in here so it would span the section plane, which
+    # made the clip look three times the size of the actual part
+    brk = _placed(T.bracket(), (40.0 - P.BRACKET_W / 2.0, 0.0, 0.0))
     ps = []
     for mesh, colour in ((whole, CAP_COLOUR), (brk, (0.42, 0.44, 0.48)),
                          (shelf, SHELF_COLOUR)):

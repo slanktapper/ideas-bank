@@ -106,14 +106,19 @@ CHAMFER = 0.6              # lead-in where the slot opens, so a 0.2 mm fit
 BRACKETS_PER_SHELF = 3     # flush left, centred on the panel joint, flush
                            # right. The middle one straddles the joint and
                            # lines the two panels up.
-BRACKET_W = 25.0           # how long each holder is along the shelf
+BRACKET_W = 20.0           # how long each holder is along the shelf. Rob's
+                           # ceiling, 2026-10-24: at most 20.
 
 ART_T = 2.4                # the slab, six 0.4 walls
 ART_FIT = 0.2              # clearance around the slab inside the holder
-ART_MARGIN = 1.0           # plain border top and bottom for the lips to grip
+# plain border top and bottom for the lips to grip. Derived rather than
+# chosen: set equal to LIP_OVER it leaves the lip's top face exactly coplanar
+# with the first row of relief, which is a degenerate contact the booleans
+# and the slicer both have to guess about. One ART_FIT of daylight instead.
 
 LIP_T = 1.0                # how thick the retaining lips are, front to back
 LIP_OVER = 1.0             # how far they reach over the slab's face
+ART_MARGIN = LIP_OVER + ART_FIT         # 1.2, see the note above
 RET_T = 1.0                # the return wrapping the slab's top/bottom edge
 BACK_T = 2.0               # the holder's back wall, behind the slab
 CLIP_GRAB = 0.25           # the snap: how far the bead on the top lip stands

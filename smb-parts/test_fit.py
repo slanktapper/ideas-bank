@@ -76,9 +76,10 @@ check("lips land flush with the deepest relief",
       "otherwise the holder reads as a protrusion")
 check("lips clear the slab's face by ART_FIT",
       abs(P.LIP_Y1 + P.ART_FIT) < 1e-9)
-check("the margin is wider than the lips reach (%.1f >= %.1f)"
-      % (P.ART_MARGIN, P.LIP_OVER), P.ART_MARGIN >= P.LIP_OVER,
-      "a lip bearing on relief would leave the slab rattling")
+check("the margin clears the lips by ART_FIT (%.1f vs %.1f)"
+      % (P.ART_MARGIN, P.LIP_OVER),
+      abs(P.ART_MARGIN - P.LIP_OVER - P.ART_FIT) < 1e-9,
+      "equal would leave the lip coplanar with the first row of relief")
 check("the snap is in the 0.1-0.3 Rob asked for (%.2f)" % P.CLIP_GRAB,
       0.10 <= P.CLIP_GRAB <= 0.30)
 check("the bead is shallower than the lip it sits on",
@@ -139,7 +140,15 @@ probe = made[V.RAIL[1].key][0]
 b = T.bracket()
 b.apply_translation((40.0, 0.0, 0.0))
 inter = trimesh.boolean.intersection([probe, b])
-vol = 0.0 if inter is None or inter.is_empty else float(inter.volume)
+# zero-volume slivers are coplanar touches, not interference -- drop them
+# before judging where the parts actually press on each other
+real = []
+if inter is not None and not inter.is_empty:
+    for comp in inter.split(only_watertight=False):
+        if float(comp.volume) > 1e-6:
+            real.append(comp)
+inter = trimesh.util.concatenate(real) if real else None
+vol = sum(float(c.volume) for c in real)
 check("there IS interference, or nothing snaps (%.3f mm3)" % vol, vol > 0.1)
 if vol > 0.1:
     lo, hi = inter.bounds
@@ -150,8 +159,8 @@ if vol > 0.1:
           abs(lo[1]) < MESH_TOL, "%.4f" % lo[1])
     check("interference is up at the top lip",
           lo[2] > P.FACE_H - P.LIP_OVER - P.GRAB_H - MESH_TOL)
-    check("interference is one place, not several (%d)" % inter.body_count,
-          inter.body_count == 1)
+    check("interference is one place, not several (%d)" % len(real),
+          len(real) == 1)
     check("interference stays inside the bracket's span",
           lo[0] >= 40.0 - MESH_TOL and hi[0] <= 40.0 + P.BRACKET_W + MESH_TOL)
 

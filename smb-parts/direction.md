@@ -67,8 +67,11 @@ leg runs 12 mm down the back, and the face hangs outside, covering the whole
 **Why the art has a plain margin.** The holder's lips bear on the slab's
 front face — but that face is at Y=0 where the art is background and 1.2 mm
 proud where a pixel stands. Lips set clear of the relief would leave the slab
-rattling 1.2 mm. So the top and bottom 1.0 mm of each slab carry no relief,
-about 1.3 game pixels, and the lips bear on flat plate. It is the one thing
+rattling 1.2 mm. So the top and bottom 1.2 mm of each slab carry no relief,
+about 1.6 game pixels, and the lips bear on flat plate. The margin is
+derived as `LIP_OVER + ART_FIT`, not chosen: set equal to the lip's reach it
+leaves the lip coplanar with the first row of relief, a degenerate contact
+the booleans and the slicer both have to guess about. It is the one thing
 the art gives up to be a rectangle.
 
 **The lips are flush with the relief.** `LIP_Y0 = -RELIEF` is not a

@@ -7,9 +7,9 @@ One shelf takes **3 holders and 2 art slabs**, the slabs butting into
 
 | Part | Each | Per shelf |
 | --- | --- | --- |
-| holder, 25 mm | 3.5 g | 3 = 10.5 g |
-| art slab, 160 mm | ~14.3 g | 2 = ~29 g |
-| | | **~39 g a shelf** |
+| holder, 20 mm | 2.8 g | 3 = 8.4 g |
+| art slab, 160 mm | ~14.8 g | 2 = ~30 g |
+| | | **~38 g a shelf** |
 
 **The art carries nothing.** It is a rectangle 160.02 x 24.618 x 2.4 mm with
 relief on one face and nothing at all on its back — no hooks, no returns, no
@@ -161,7 +161,7 @@ face, so it lies straight down and nothing overhangs. This is the payoff from
 moving every feature onto the holder — the previous design needed supports
 under its hooks and this one needs none.
 
-**Holders: stand them on end**, the 25 mm length vertical. The holder is a
+**Holders: stand them on end**, the 20 mm length vertical. The holder is a
 constant section swept along its length, so with that axis up, every face is
 either a vertical wall or one of the two ends: zero overhang, no supports, no
 bridges. Footprint is about 12.5 x 27 mm, so use a brim — they are tall for
@@ -177,17 +177,19 @@ their base. Print all three at once.
 
 ### What the margin costs
 
-The top and bottom **1.0 mm** of each slab carry no relief — that is the flat
-the holder's lips bear on. It works out at about **1.3 game pixels** top and
-bottom. Without it the lips would have to clear the raised pixels and the
+The top and bottom **1.2 mm** of each slab carry no relief — that is the flat
+the holder's lips bear on, plus 0.2 mm of daylight so the lip's top face is
+not exactly coplanar with the first row of pixels. It works out at about
+**1.6 game pixels** top and bottom. Without it the lips would have to clear the raised pixels and the
 slab would rattle 1.2 mm front to back. The colour is unaffected; only the
 relief stops short.
 
 ## Assembly
 
 1. **Push the three holders onto the retainer bar**, down from above. Flush
-   at each end and one in the middle. The middle one sits at 147.5 mm, which
-   is where the two slabs meet — it straddles the joint and lines them up.
+   at each end and one in the middle. The middle one sits at 150.0 mm and
+   spans to 170.0, so it straddles the joint at 160.0 and lines the two
+   slabs up.
 2. **Drop a slab in:** sit its bottom edge on the holders' bottom ledges,
    push the top back until the bead on each top lip snaps over the face.
 3. Same for the second slab.
